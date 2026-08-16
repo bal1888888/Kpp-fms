@@ -255,7 +255,47 @@
         .hidden {
             display: none !important;
         }
-    </style>
+    
+/* ===== KPP-FMS GLOBAL NAV ===== */
+.app-nav{
+    background:#111827;
+    border-top:1px solid rgba(255,255,255,.08);
+    border-bottom:1px solid #374151;
+    padding:9px 12px;
+    position:sticky;
+    top:0;
+    z-index:999;
+}
+.app-nav-inner{
+    max-width:1250px;
+    margin:0 auto;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    overflow-x:auto;
+    scrollbar-width:thin;
+}
+.app-nav a{
+    color:#e5e7eb;
+    text-decoration:none;
+    padding:9px 13px;
+    border-radius:7px;
+    white-space:nowrap;
+    font-size:13px;
+    font-weight:bold;
+    border:1px solid transparent;
+}
+.app-nav a:hover{
+    background:#374151;
+    color:#fff;
+}
+.app-nav a.active{
+    background:#2563eb;
+    color:#fff;
+    border-color:#60a5fa;
+}
+
+</style>
 </head>
 
 <body>
@@ -265,6 +305,7 @@
     <p>PT KPP - Pengisian Fuel</p>
 </div>
 
+<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html" class="active">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a></div></nav>
 <div class="container">
     <div class="form-box">
 
@@ -383,8 +424,8 @@
             </button>
         </div>
 
-        <a href="index.html" class="back">
-            ← Kembali ke Dashboard
+        <a href="dashboard.html" class="back">
+            ← Dashboard
         </a>
 
     </div>
