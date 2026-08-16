@@ -7,8 +7,10 @@
 
     <title>Riwayat Pengisian - KPP FMS</title>
 
-    <style>
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <style>
         * {
             box-sizing: border-box;
             margin: 0;
@@ -55,11 +57,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 15px;
             margin-bottom: 20px;
         }
 
         .title h2 {
             font-size: 20px;
+        }
+
+        .right-tools {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .total {
@@ -69,6 +78,16 @@
             border-radius: 8px;
             font-size: 14px;
             font-weight: bold;
+        }
+
+        .refresh-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
         }
 
         .table-container {
@@ -101,7 +120,7 @@
             background: #f8fafc;
         }
 
-        .fuel {
+        .unit {
             font-weight: bold;
         }
 
@@ -109,21 +128,24 @@
             font-weight: bold;
         }
 
-        .empty {
+        .fuel {
+            font-weight: bold;
+        }
+
+        .status {
             text-align: center;
-            padding: 40px;
+            padding: 35px;
             color: #777;
         }
 
-        .clear-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: 13px;
-            margin-top: 20px;
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: none;
         }
 
         .back {
@@ -134,279 +156,412 @@
             font-size: 14px;
         }
 
+        @media (max-width: 650px) {
+            .container {
+                padding: 10px;
+                margin: 15px auto;
+            }
+
+            .box {
+                padding: 15px;
+            }
+
+            .title {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .right-tools {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
     </style>
-
 </head>
-
 
 <body>
 
-    <div class="header">
+<div class="header">
+    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+    <p>PT KPP - Riwayat Pengisian Fuel</p>
+</div>
 
-        <h1>
-            KPP FUEL MANAGEMENT SYSTEM
-        </h1>
+<div class="container">
 
-        <p>
-            PT KPP - Riwayat Pengisian Fuel
-        </p>
+    <div class="box">
 
-    </div>
+        <div class="title">
 
+            <h2>📋 Riwayat Pengisian</h2>
 
-    <div class="container">
-
-        <div class="box">
-
-            <div class="title">
-
-                <h2>
-                    📋 Riwayat Pengisian
-                </h2>
+            <div class="right-tools">
 
                 <div class="total">
-
                     Total Transaksi:
                     <span id="totalData">0</span>
-
                 </div>
 
-            </div>
-
-
-            <div class="table-container">
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>No</th>
-
-                            <th>Tanggal</th>
-
-                            <th>Jam</th>
-
-                            <th>Unit</th>
-
-                            <th>Operator</th>
-
-                            <th>HM Awal</th>
-
-                            <th>HM Akhir</th>
-
-                            <th>HM Jalan</th>
-
-                            <th>Fuel (L)</th>
-
-                            <th>Shift</th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody id="historyTable">
-
-                    </tbody>
-
-                </table>
+                <button
+                    class="refresh-btn"
+                    onclick="tampilkanRiwayat()">
+                    ↻ Refresh
+                </button>
 
             </div>
-
-
-            <div
-                id="emptyData"
-                class="empty"
-                style="display:none;">
-
-                Belum ada data pengisian fuel.
-
-            </div>
-
-
-            <button
-                class="clear-btn"
-                onclick="hapusRiwayat()">
-
-                Hapus Semua Riwayat
-
-            </button>
-
-
-            <br>
-
-
-            <a
-                href="index.html"
-                class="back">
-
-                ← Kembali ke Dashboard
-
-            </a>
 
         </div>
 
+        <div class="error" id="errorBox"></div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Jam</th>
+                        <th>Unit</th>
+                        <th>Operator</th>
+                        <th>HM Awal</th>
+                        <th>HM Akhir</th>
+                        <th>HM Jalan</th>
+                        <th>Fuel (L)</th>
+                        <th>Shift</th>
+                    </tr>
+                </thead>
+
+                <tbody id="historyTable"></tbody>
+
+            </table>
+
+        </div>
+
+        <div id="statusData" class="status">
+            Mengambil data dari database...
+        </div>
+
+        <a href="index.html" class="back">
+            ← Kembali ke Dashboard
+        </a>
+
     </div>
 
-
-    <script>
-
-        function tampilkanRiwayat() {
-
-            const data =
-                JSON.parse(
-                    localStorage.getItem(
-                        "fuelHistory"
-                    )
-                ) || [];
+</div>
 
 
-            const table =
-                document.getElementById(
-                    "historyTable"
+<script>
+
+    // ========================================
+    // SUPABASE
+    // ========================================
+
+    const SUPABASE_URL =
+        "PASTE_PROJECT_URL_DI_SINI";
+
+    const SUPABASE_KEY =
+        "PASTE_PUBLISHABLE_KEY_DI_SINI";
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // ========================================
+    // FORMAT ANGKA
+    // ========================================
+
+    function formatAngka(angka) {
+
+        if (
+            angka === null ||
+            angka === undefined
+        ) {
+            return "-";
+        }
+
+        return Number(angka)
+            .toLocaleString("id-ID");
+
+    }
+
+
+    // ========================================
+    // FORMAT TANGGAL
+    // ========================================
+
+    function formatTanggal(tanggal) {
+
+        if (!tanggal) {
+            return "-";
+        }
+
+        const bagian =
+            tanggal.split("-");
+
+        if (bagian.length !== 3) {
+            return tanggal;
+        }
+
+        return (
+            bagian[2] + "/" +
+            bagian[1] + "/" +
+            bagian[0]
+        );
+
+    }
+
+
+    // ========================================
+    // BUAT CELL AMAN
+    // ========================================
+
+    function buatCell(text, className = "") {
+
+        const td =
+            document.createElement("td");
+
+        td.textContent = text;
+
+        if (className) {
+            td.className = className;
+        }
+
+        return td;
+
+    }
+
+
+    // ========================================
+    // AMBIL DATA SUPABASE
+    // ========================================
+
+    async function tampilkanRiwayat() {
+
+        const table =
+            document.getElementById(
+                "historyTable"
+            );
+
+        const total =
+            document.getElementById(
+                "totalData"
+            );
+
+        const status =
+            document.getElementById(
+                "statusData"
+            );
+
+        const errorBox =
+            document.getElementById(
+                "errorBox"
+            );
+
+
+        table.innerHTML = "";
+
+        total.textContent = "0";
+
+        status.style.display =
+            "block";
+
+        status.textContent =
+            "Mengambil data dari database...";
+
+        errorBox.style.display =
+            "none";
+
+
+        const { data, error } =
+            await supabaseClient
+
+                .from("fuel_history")
+
+                .select(`
+                    id,
+                    tanggal,
+                    jam,
+                    unit,
+                    operator,
+                    hm_awal,
+                    hm_akhir,
+                    hm_jalan,
+                    fuel,
+                    shift
+                `)
+
+                .order(
+                    "tanggal",
+                    {
+                        ascending: false
+                    }
+                )
+
+                .order(
+                    "jam",
+                    {
+                        ascending: false
+                    }
                 );
 
 
-            const empty =
-                document.getElementById(
-                    "emptyData"
-                );
+        if (error) {
 
+            console.error(error);
 
-            const total =
-                document.getElementById(
-                    "totalData"
-                );
-
-
-            table.innerHTML = "";
-
-
-            total.textContent =
-                data.length;
-
-
-            if (data.length === 0) {
-
-                empty.style.display =
-                    "block";
-
-                return;
-
-            }
-
-
-            empty.style.display =
+            status.style.display =
                 "none";
 
+            errorBox.style.display =
+                "block";
 
-            data.forEach(
-                function(item, index) {
+            errorBox.textContent =
+                "❌ Gagal mengambil data: " +
+                error.message;
 
-                    const row =
-                        document.createElement(
-                            "tr"
-                        );
-
-
-                    row.innerHTML = `
-
-                        <td>
-                            ${index + 1}
-                        </td>
-
-                        <td>
-                            ${item.tanggal}
-                        </td>
-
-                        <td>
-                            ${item.jam}
-                        </td>
-
-                        <td>
-                            <strong>
-                                ${item.unit}
-                            </strong>
-                        </td>
-
-                        <td class="operator">
-                            ${item.operator || "-"}
-                        </td>
-
-                        <td>
-                            ${
-                                item.hmAwal > 0
-                                ? item.hmAwal
-                                : "-"
-                            }
-                        </td>
-
-                        <td>
-                            ${item.hmAkhir}
-                        </td>
-
-                        <td>
-                            ${
-                                item.hmJalan > 0
-                                ? item.hmJalan + " HM"
-                                : "-"
-                            }
-                        </td>
-
-                        <td class="fuel">
-                            ${item.fuel} L
-                        </td>
-
-                        <td>
-                            Shift ${item.shift}
-                        </td>
-
-                    `;
-
-
-                    table.appendChild(row);
-
-                }
-            );
+            return;
 
         }
 
 
-        function hapusRiwayat() {
+        total.textContent =
+            data.length;
 
-            const yakin =
-                confirm(
-                    "Yakin ingin menghapus semua riwayat?"
+
+        if (data.length === 0) {
+
+            status.style.display =
+                "block";
+
+            status.textContent =
+                "Belum ada data pengisian fuel.";
+
+            return;
+
+        }
+
+
+        status.style.display =
+            "none";
+
+
+        data.forEach(
+            function(item, index) {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                row.appendChild(
+                    buatCell(
+                        index + 1
+                    )
                 );
 
 
-            if (!yakin) {
+                row.appendChild(
+                    buatCell(
+                        formatTanggal(
+                            item.tanggal
+                        )
+                    )
+                );
 
-                return;
+
+                row.appendChild(
+                    buatCell(
+                        item.jam
+                            ? item.jam.substring(0, 8)
+                            : "-"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        item.unit || "-",
+                        "unit"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        item.operator || "-",
+                        "operator"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        item.hm_awal > 0
+                            ? formatAngka(
+                                item.hm_awal
+                              )
+                            : "-"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        formatAngka(
+                            item.hm_akhir
+                        )
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        item.hm_jalan > 0
+                            ? formatAngka(
+                                item.hm_jalan
+                              ) + " HM"
+                            : "-"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        formatAngka(
+                            item.fuel
+                        ) + " L",
+                        "fuel"
+                    )
+                );
+
+
+                row.appendChild(
+                    buatCell(
+                        "Shift " +
+                        item.shift
+                    )
+                );
+
+
+                table.appendChild(
+                    row
+                );
 
             }
+        );
+
+    }
 
 
-            localStorage.removeItem(
-                "fuelHistory"
-            );
+    // Jalankan otomatis saat halaman dibuka
+    tampilkanRiwayat();
 
-
-            alert(
-                "Semua riwayat telah dihapus."
-            );
-
-
-            tampilkanRiwayat();
-
-        }
-
-
-        tampilkanRiwayat();
-
-    </script>
+</script>
 
 </body>
 
