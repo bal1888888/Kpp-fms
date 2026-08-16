@@ -947,8 +947,15 @@ async function ambilHmTerakhir(unit) {
     const { data, error } =
         await supabaseClient
             .from("fuel_history")
-            .select("id,hm_akhir")
+            .select("id,tanggal,hm_akhir")
             .eq("unit", unit)
+            .not("hm_akhir", "is", null)
+            .order(
+                "tanggal",
+                {
+                    ascending: false
+                }
+            )
             .order(
                 "id",
                 {
