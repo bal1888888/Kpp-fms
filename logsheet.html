@@ -39,10 +39,51 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 .status-error{background:#ffedd5!important;color:#c2410c;font-weight:bold}
 .hidden{display:none!important}
 @media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
+
+/* ===== KPP-FMS GLOBAL NAV ===== */
+.app-nav{
+    background:#111827;
+    border-top:1px solid rgba(255,255,255,.08);
+    border-bottom:1px solid #374151;
+    padding:9px 12px;
+    position:sticky;
+    top:0;
+    z-index:999;
+}
+.app-nav-inner{
+    max-width:1250px;
+    margin:0 auto;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    overflow-x:auto;
+    scrollbar-width:thin;
+}
+.app-nav a{
+    color:#e5e7eb;
+    text-decoration:none;
+    padding:9px 13px;
+    border-radius:7px;
+    white-space:nowrap;
+    font-size:13px;
+    font-weight:bold;
+    border:1px solid transparent;
+}
+.app-nav a:hover{
+    background:#374151;
+    color:#fff;
+}
+.app-nav a.active{
+    background:#2563eb;
+    color:#fff;
+    border-color:#60a5fa;
+}
+
 </style>
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Daily Fuel Logsheet</p></div>
+<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html" class="active">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a></div></nav>
 <div class="container"><div class="sheet">
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
@@ -92,7 +133,6 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <a href="pengisian.html" class="btn btn-green">⛽ Pengisian Fuel</a>
 <a href="dashboard.html" class="btn">📊 Dashboard</a>
 <a href="riwayat.html" class="btn">📋 Riwayat</a>
-<a href="index.html" class="btn">🏠 Menu Utama</a>
 </div>
 </div></div>
 
