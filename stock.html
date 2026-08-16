@@ -5,163 +5,755 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stock Fuel - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
 body{margin:0;background:#f3f4f6;color:#111827}
 .header{background:#1f2937;color:#fff;text-align:center;padding:20px}
-.container{max-width:1200px;margin:20px auto;padding:12px}
+.container{max-width:1250px;margin:20px auto;padding:12px}
 .panel{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
-input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+textarea{min-height:70px;resize:vertical}
 button,.btn{border:0;border-radius:7px;padding:11px 14px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block}
-.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.orange{background:#ea580c;color:#fff}.gray{background:#475569;color:#fff}
+.primary{background:#2563eb;color:#fff}
+.green{background:#16a34a;color:#fff}
+.orange{background:#ea580c;color:#fff}
+.purple{background:#7c3aed;color:#fff}
+.gray{background:#475569;color:#fff}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-.card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}.card small{color:#64748b}.card strong{display:block;font-size:22px;margin-top:5px}
-.total{background:#ecfdf5;border-color:#a7f3d0}.total strong{color:#15803d}
-table{width:100%;border-collapse:collapse;min-width:800px}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}th{background:#e5e7eb}.table-wrap{overflow-x:auto}
-.note{font-size:12px;color:#64748b;line-height:1.5}.status{margin-top:10px;font-size:13px;font-weight:bold}
+.card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}
+.card small{color:#64748b}
+.card strong{display:block;font-size:22px;margin-top:5px}
+.total{background:#ecfdf5;border-color:#a7f3d0}
+.total strong{color:#15803d}
+table{width:100%;border-collapse:collapse;min-width:800px}
+th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}
+th{background:#e5e7eb}
+.table-wrap{overflow-x:auto}
+.note{font-size:12px;color:#64748b;line-height:1.5}
+.status{margin-top:10px;font-size:13px;font-weight:bold}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+.closing-table input{min-width:115px}
+.diff-positive{color:#15803d;font-weight:bold}
+.diff-negative{color:#dc2626;font-weight:bold}
+.diff-zero{color:#475569;font-weight:bold}
+.closing-summary{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:10px;margin:14px 0}
+.summary-box{border:1px solid #d1d5db;border-radius:9px;padding:12px;background:#f8fafc}
+.summary-box small{color:#64748b}
+.summary-box strong{display:block;font-size:19px;margin-top:4px}
+.checkbox-row{display:flex;align-items:flex-start;gap:8px;margin-top:12px}
+.checkbox-row input{width:auto;margin-top:2px}
+@media(max-width:700px){
+ .container{padding:6px}
+ .panel{padding:12px}
+ .closing-summary{grid-template-columns:1fr}
+}
 </style>
 </head>
+
 <body>
-<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Stock Fuel</div></div>
+
+<div class="header">
+    <h2>KPP FUEL MANAGEMENT SYSTEM</h2>
+    <div>Stock Fuel</div>
+</div>
+
 <div class="container">
 
 <div class="panel">
-  <h3>Periode Stock</h3>
-  <div class="grid">
-    <div><label>Tanggal</label><input type="date" id="tanggal"></div>
-    <div><label>Shift</label><select id="shift"><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
-    <div style="align-self:end"><button class="primary" onclick="loadStock()">REFRESH STOCK</button></div>
-  </div>
+    <h3>Periode Stock</h3>
+    <div class="grid">
+        <div>
+            <label>Tanggal</label>
+            <input type="date" id="tanggal">
+        </div>
+        <div>
+            <label>Shift</label>
+            <select id="shift">
+                <option value="1">Shift 1</option>
+                <option value="2">Shift 2</option>
+            </select>
+        </div>
+        <div style="align-self:end">
+            <button class="primary" onclick="loadStock()">REFRESH STOCK</button>
+        </div>
+    </div>
 </div>
 
 <div class="panel">
-  <h3>Stock Saat Ini</h3>
-  <div class="cards" id="stockCards"></div>
-  <div class="note" style="margin-top:12px">Rumus: Stock Closing = Stock Opening + Fuel Masuk + Transfer Masuk − Transfer Keluar − Pengisian Unit.</div>
+    <h3>Stock Saat Ini</h3>
+    <div class="cards" id="stockCards"></div>
+    <div class="note" style="margin-top:12px">
+        Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk − Transfer Keluar − Pengisian Unit.
+    </div>
 </div>
 
 <div class="panel">
-  <h3>1. Stock Opening Awal Shift</h3>
-  <div class="grid">
-    <div><label>Storage</label><select id="openingStorage"></select></div>
-    <div><label>Qty Opening (Liter)</label><input type="number" id="openingQty" min="0" step="0.1"></div>
-    <div><label>Fuelman / Operator</label><input id="openingOperator" placeholder="Nama fuelman"></div>
-    <div style="align-self:end"><button class="green" onclick="saveOpening()">SIMPAN OPENING</button></div>
-  </div>
-  <div class="status" id="openingStatus"></div>
+    <h3>1. Stock Opening Awal Shift</h3>
+    <div class="grid">
+        <div>
+            <label>Storage</label>
+            <select id="openingStorage"></select>
+        </div>
+        <div>
+            <label>Qty Opening (Liter)</label>
+            <input type="number" id="openingQty" min="0" step="0.1">
+        </div>
+        <div>
+            <label>Fuelman / Operator</label>
+            <input id="openingOperator" placeholder="Nama fuelman">
+        </div>
+        <div style="align-self:end">
+            <button class="green" onclick="saveOpening()">SIMPAN OPENING</button>
+        </div>
+    </div>
+    <div class="status" id="openingStatus"></div>
 </div>
 
 <div class="panel">
-  <h3>2. Penerimaan Solar</h3>
-  <div class="grid">
-    <div><label>Masuk ke</label><select id="receiptDestination"><option>MT01</option><option>MT02</option><option>MT03</option><option>MT04</option><option value="FT0073">FT0073 (WH FT02)</option><option value="FT0075">FT0075 (WH FT01)</option></select></div>
-    <div><label>Qty Diterima (Liter)</label><input type="number" id="receiptQty" min="0" step="0.1"></div>
-    <div><label>Transportir</label><input id="receiptTransporter" placeholder="Contoh: PT SHA"></div>
-    <div><label>Operator</label><input id="receiptOperator" placeholder="Nama fuelman"></div>
-    <div style="align-self:end"><button class="orange" onclick="saveReceipt()">SIMPAN PENERIMAAN</button></div>
-  </div>
-  <div class="status" id="receiptStatus"></div>
+    <h3>2. Penerimaan Solar</h3>
+    <div class="grid">
+        <div>
+            <label>Masuk ke</label>
+            <select id="receiptDestination">
+                <option>MT01</option>
+                <option>MT02</option>
+                <option>MT03</option>
+                <option>MT04</option>
+                <option value="FT0073">FT0073 (WH FT02)</option>
+                <option value="FT0075">FT0075 (WH FT01)</option>
+            </select>
+        </div>
+        <div>
+            <label>Qty Diterima (Liter)</label>
+            <input type="number" id="receiptQty" min="0" step="0.1">
+        </div>
+        <div>
+            <label>Transportir</label>
+            <input id="receiptTransporter" placeholder="Contoh: PT SHA">
+        </div>
+        <div>
+            <label>Operator</label>
+            <input id="receiptOperator" placeholder="Nama fuelman">
+        </div>
+        <div style="align-self:end">
+            <button class="orange" onclick="saveReceipt()">SIMPAN PENERIMAAN</button>
+        </div>
+    </div>
+    <div class="status" id="receiptStatus"></div>
 </div>
 
 <div class="panel">
-  <h3>3. Transfer MT → FT</h3>
-  <div class="grid">
-    <div><label>Dari MT</label><select id="transferSource"><option>MT01</option><option>MT02</option><option>MT03</option><option>MT04</option></select></div>
-    <div><label>Ke Fuel Truck</label><select id="transferDestination"><option value="FT0073">FT0073 (WH FT02)</option><option value="FT0075">FT0075 (WH FT01)</option></select></div>
-    <div><label>Qty Transfer (Liter)</label><input type="number" id="transferQty" min="0" step="0.1"></div>
-    <div><label>Operator</label><input id="transferOperator" placeholder="Nama fuelman"></div>
-    <div style="align-self:end"><button class="primary" onclick="saveTransfer()">SIMPAN TRANSFER</button></div>
-  </div>
-  <div class="status" id="transferStatus"></div>
+    <h3>3. Transfer MT → FT</h3>
+    <div class="grid">
+        <div>
+            <label>Dari MT</label>
+            <select id="transferSource">
+                <option>MT01</option>
+                <option>MT02</option>
+                <option>MT03</option>
+                <option>MT04</option>
+            </select>
+        </div>
+        <div>
+            <label>Ke Fuel Truck</label>
+            <select id="transferDestination">
+                <option value="FT0073">FT0073 (WH FT02)</option>
+                <option value="FT0075">FT0075 (WH FT01)</option>
+            </select>
+        </div>
+        <div>
+            <label>Qty Transfer (Liter)</label>
+            <input type="number" id="transferQty" min="0" step="0.1">
+        </div>
+        <div>
+            <label>Operator</label>
+            <input id="transferOperator" placeholder="Nama fuelman">
+        </div>
+        <div style="align-self:end">
+            <button class="primary" onclick="saveTransfer()">SIMPAN TRANSFER</button>
+        </div>
+    </div>
+    <div class="status" id="transferStatus"></div>
 </div>
 
 <div class="panel">
-  <h3>Pergerakan Fuel Shift Ini</h3>
-  <div class="table-wrap"><table><thead><tr><th>Jam</th><th>Jenis</th><th>Dari</th><th>Ke</th><th>Qty</th><th>Operator</th><th>Keterangan</th></tr></thead><tbody id="movementBody"></tbody></table></div>
+    <h3>4. Stock Closing / Stock Taking</h3>
+
+    <div class="note" style="margin-bottom:12px">
+        Stock Sistem dihitung otomatis. Isi Stock Fisik / hasil sonding pada akhir shift.
+        Selisih = Stock Fisik − Stock Sistem.
+    </div>
+
+    <div class="table-wrap">
+        <table class="closing-table">
+            <thead>
+                <tr>
+                    <th>Storage</th>
+                    <th>Stock Sistem</th>
+                    <th>Stock Fisik / Sonding</th>
+                    <th>Selisih</th>
+                </tr>
+            </thead>
+            <tbody id="closingBody"></tbody>
+        </table>
+    </div>
+
+    <div class="closing-summary">
+        <div class="summary-box">
+            <small>TOTAL STOCK SISTEM</small>
+            <strong id="closingSystemTotal">0 L</strong>
+        </div>
+        <div class="summary-box">
+            <small>TOTAL STOCK FISIK</small>
+            <strong id="closingActualTotal">-</strong>
+        </div>
+        <div class="summary-box">
+            <small>TOTAL SELISIH</small>
+            <strong id="closingDifferenceTotal">-</strong>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div>
+            <label>Fuelman / Operator Closing</label>
+            <input id="closingOperator" placeholder="Nama fuelman">
+        </div>
+        <div>
+            <label>Keterangan</label>
+            <textarea id="closingNote" placeholder="Opsional: catatan stock taking / sonding"></textarea>
+        </div>
+    </div>
+
+    <label class="checkbox-row">
+        <input type="checkbox" id="carryForward" checked>
+        <span>
+            Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>.
+            Shift 1 → Opening Shift 2. Shift 2 → Opening Shift 1 tanggal berikutnya.
+        </span>
+    </label>
+
+    <div style="margin-top:14px">
+        <button class="purple" onclick="saveClosing()">SIMPAN STOCK CLOSING</button>
+    </div>
+
+    <div class="status" id="closingStatus"></div>
+</div>
+
+<div class="panel">
+    <h3>Pergerakan Fuel Shift Ini</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Jam</th>
+                    <th>Jenis</th>
+                    <th>Dari</th>
+                    <th>Ke</th>
+                    <th>Qty</th>
+                    <th>Operator</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody id="movementBody"></tbody>
+        </table>
+    </div>
 </div>
 
 <div class="panel actions">
-<a href="pengisian.html" class="btn green">⛽ Pengisian Fuel</a>
-<a href="dashboard.html" class="btn primary">📊 Dashboard</a>
-<a href="logsheet.html" class="btn gray">📋 Logsheet</a>
-<a href="index.html" class="btn gray">🏠 Menu Utama</a>
+    <a href="pengisian.html" class="btn green">⛽ Pengisian Fuel</a>
+    <a href="dashboard.html" class="btn primary">📊 Dashboard</a>
+    <a href="logsheet.html" class="btn gray">📋 Logsheet</a>
+    <a href="index.html" class="btn gray">🏠 Menu Utama</a>
 </div>
+
 </div>
 
 <script>
+
 const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
 const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
 const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
 
-function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function localTime(){const d=new Date();return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`}
-function n(v){return Number(v||0)}
-function fmt(v){return n(v).toLocaleString('id-ID',{maximumFractionDigits:1})+' L'}
-function getPeriod(){return {tanggal:document.getElementById('tanggal').value,shift:Number(document.getElementById('shift').value)}}
+let CURRENT_SYSTEM_STOCK=
+    Object.fromEntries(STORAGES.map(storage=>[storage,0]));
+
+function localDate(){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function localTime(){
+    const d=new Date();
+    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+}
+
+function n(value){return Number(value||0)}
+
+function fmt(value){
+    return n(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+}
+
+function fmtSigned(value){
+    const number=n(value);
+    return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+}
+
+function getPeriod(){
+    return {
+        tanggal:document.getElementById("tanggal").value,
+        shift:Number(document.getElementById("shift").value)
+    };
+}
+
+function getNextPeriod(tanggal,shift){
+    if(Number(shift)===1){
+        return {tanggal,shift:2};
+    }
+
+    const d=new Date(tanggal+"T00:00:00");
+    d.setDate(d.getDate()+1);
+
+    return {
+        tanggal:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,
+        shift:1
+    };
+}
+
 function sourceFromFuel(row){
- const ft=String(row.fuel_truck||'').toUpperCase(); if(ft==='FT0073'||ft==='FT0075') return ft;
- const wh=String(row.wh||'').toUpperCase(); if(wh==='FT02') return 'FT0073'; if(wh==='FT01') return 'FT0075'; return '';
+    const ft=String(row.fuel_truck||"").toUpperCase();
+    if(ft==="FT0073"||ft==="FT0075") return ft;
+
+    const wh=String(row.wh||"").toUpperCase();
+    if(wh==="FT02") return "FT0073";
+    if(wh==="FT01") return "FT0075";
+    return "";
 }
 
 async function loadStock(){
- const {tanggal,shift}=getPeriod();
- if(!tanggal)return;
- const [o,m,f]=await Promise.all([
-   db.from('stock_opening').select('*').eq('tanggal',tanggal).eq('shift',shift),
-   db.from('stock_movements').select('*').eq('tanggal',tanggal).eq('shift',shift).order('id',{ascending:true}),
-   db.from('fuel_history').select('id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator').eq('tanggal',tanggal).eq('shift',shift)
- ]);
- if(o.error||m.error||f.error){alert('Gagal mengambil stock: '+(o.error?.message||m.error?.message||f.error?.message));return}
- const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
- (o.data||[]).forEach(x=>stock[x.storage]=n(x.qty));
- (m.data||[]).forEach(x=>{
-   if(x.jenis==='RECEIPT' && x.destination_storage) stock[x.destination_storage]+=n(x.qty);
-   if(x.jenis==='TRANSFER'){
-     if(x.source_storage) stock[x.source_storage]-=n(x.qty);
-     if(x.destination_storage) stock[x.destination_storage]+=n(x.qty);
-   }
- });
- (f.data||[]).forEach(x=>{const src=sourceFromFuel(x);if(src)stock[src]-=n(x.fuel)});
- const total=Object.values(stock).reduce((a,b)=>a+b,0);
- const cards=document.getElementById('stockCards');cards.innerHTML='';
- STORAGES.forEach(s=>{cards.innerHTML+=`<div class="card"><small>${s}${s==='FT0073'?' / WH FT02':s==='FT0075'?' / WH FT01':''}</small><strong>${fmt(stock[s])}</strong></div>`});
- cards.innerHTML+=`<div class="card total"><small>TOTAL STOCK ALL WHS</small><strong>${fmt(total)}</strong></div>`;
- const body=document.getElementById('movementBody');body.innerHTML='';
- const rows=[];
- (m.data||[]).forEach(x=>rows.push({jam:x.jam||'-',jenis:x.jenis,dari:x.source_storage||'-',ke:x.destination_storage||'-',qty:n(x.qty),operator:x.operator||'-',note:x.transporter||x.note||'-'}));
- (f.data||[]).forEach(x=>rows.push({jam:x.jam||'-',jenis:'PENGISIAN',dari:sourceFromFuel(x)||'-',ke:x.unit||'-',qty:n(x.fuel),operator:x.operator||'-',note:'Fuel keluar ke unit'}));
- rows.sort((a,b)=>String(a.jam).localeCompare(String(b.jam)));
- rows.forEach(x=>body.innerHTML+=`<tr><td>${x.jam}</td><td>${x.jenis}</td><td>${x.dari}</td><td>${x.ke}</td><td>${fmt(x.qty)}</td><td>${x.operator}</td><td>${x.note}</td></tr>`);
- if(!rows.length)body.innerHTML='<tr><td colspan="7">Belum ada pergerakan fuel pada shift ini.</td></tr>';
+    const {tanggal,shift}=getPeriod();
+    if(!tanggal)return;
+
+    const [o,m,f,c]=await Promise.all([
+        db.from("stock_opening").select("*").eq("tanggal",tanggal).eq("shift",shift),
+        db.from("stock_movements").select("*").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
+        db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator").eq("tanggal",tanggal).eq("shift",shift),
+        db.from("stock_closing").select("*").eq("tanggal",tanggal).eq("shift",shift)
+    ]);
+
+    const anyError=o.error||m.error||f.error||c.error;
+
+    if(anyError){
+        alert("Gagal mengambil stock: "+anyError.message);
+        return;
+    }
+
+    const stock=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
+
+    (o.data||[]).forEach(row=>{
+        stock[row.storage]=n(row.qty);
+    });
+
+    (m.data||[]).forEach(row=>{
+        if(row.jenis==="RECEIPT" && row.destination_storage){
+            stock[row.destination_storage]+=n(row.qty);
+        }
+
+        if(row.jenis==="TRANSFER"){
+            if(row.source_storage) stock[row.source_storage]-=n(row.qty);
+            if(row.destination_storage) stock[row.destination_storage]+=n(row.qty);
+        }
+    });
+
+    (f.data||[]).forEach(row=>{
+        const source=sourceFromFuel(row);
+        if(source) stock[source]-=n(row.fuel);
+    });
+
+    CURRENT_SYSTEM_STOCK={...stock};
+
+    renderStockCards(stock);
+    renderClosing(stock,c.data||[]);
+    renderMovement(m.data||[],f.data||[]);
+}
+
+function renderStockCards(stock){
+    const total=Object.values(stock).reduce((sum,value)=>sum+n(value),0);
+    const cards=document.getElementById("stockCards");
+    cards.innerHTML="";
+
+    STORAGES.forEach(storage=>{
+        let suffix="";
+        if(storage==="FT0073") suffix=" / WH FT02";
+        if(storage==="FT0075") suffix=" / WH FT01";
+
+        cards.innerHTML+=`
+        <div class="card">
+            <small>${storage}${suffix}</small>
+            <strong>${fmt(stock[storage])}</strong>
+        </div>`;
+    });
+
+    cards.innerHTML+=`
+    <div class="card total">
+        <small>TOTAL STOCK ALL WHS</small>
+        <strong>${fmt(total)}</strong>
+    </div>`;
+}
+
+function renderClosing(stock,savedClosing){
+    const savedMap={};
+
+    savedClosing.forEach(row=>{
+        savedMap[row.storage]=row;
+    });
+
+    const body=document.getElementById("closingBody");
+    body.innerHTML="";
+
+    STORAGES.forEach(storage=>{
+        const saved=savedMap[storage];
+        const actualValue=saved?saved.actual_qty:"";
+
+        body.innerHTML+=`
+        <tr>
+            <td><b>${storage}</b></td>
+            <td>${fmt(stock[storage])}</td>
+            <td>
+                <input
+                    type="number"
+                    id="actual-${storage}"
+                    min="0"
+                    step="0.1"
+                    value="${actualValue}"
+                    placeholder="Liter fisik"
+                    oninput="updateClosingDifference()"
+                >
+            </td>
+            <td id="diff-${storage}" class="diff-zero">-</td>
+        </tr>`;
+    });
+
+    const firstSaved=savedClosing.length?savedClosing[0]:null;
+
+    if(firstSaved){
+        document.getElementById("closingOperator").value=firstSaved.operator||"";
+        document.getElementById("closingNote").value=firstSaved.note||"";
+        document.getElementById("closingStatus").textContent=
+            "✅ Stock closing periode ini sudah pernah disimpan. Bisa diperbarui bila perlu.";
+    }else{
+        document.getElementById("closingOperator").value="";
+        document.getElementById("closingNote").value="";
+        document.getElementById("closingStatus").textContent="";
+    }
+
+    updateClosingDifference();
+}
+
+function updateClosingDifference(){
+    let systemTotal=0;
+    let actualTotal=0;
+    let hasAllActual=true;
+
+    STORAGES.forEach(storage=>{
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        systemTotal+=systemQty;
+
+        const input=document.getElementById(`actual-${storage}`);
+        const diffCell=document.getElementById(`diff-${storage}`);
+
+        if(!input || input.value===""){
+            hasAllActual=false;
+            if(diffCell){
+                diffCell.textContent="-";
+                diffCell.className="diff-zero";
+            }
+            return;
+        }
+
+        const actualQty=n(input.value);
+        actualTotal+=actualQty;
+
+        const difference=actualQty-systemQty;
+
+        if(diffCell){
+            diffCell.textContent=fmtSigned(difference);
+            diffCell.className=
+                difference>0?"diff-positive":
+                difference<0?"diff-negative":
+                "diff-zero";
+        }
+    });
+
+    document.getElementById("closingSystemTotal").textContent=fmt(systemTotal);
+    document.getElementById("closingActualTotal").textContent=hasAllActual?fmt(actualTotal):"-";
+
+    const totalDifference=actualTotal-systemTotal;
+    const el=document.getElementById("closingDifferenceTotal");
+
+    if(hasAllActual){
+        el.textContent=fmtSigned(totalDifference);
+        el.className=
+            totalDifference>0?"diff-positive":
+            totalDifference<0?"diff-negative":
+            "diff-zero";
+    }else{
+        el.textContent="-";
+        el.className="";
+    }
+}
+
+function renderMovement(movementData,fuelData){
+    const body=document.getElementById("movementBody");
+    body.innerHTML="";
+
+    const rows=[];
+
+    movementData.forEach(row=>{
+        rows.push({
+            jam:row.jam||"-",
+            jenis:row.jenis,
+            dari:row.source_storage||"-",
+            ke:row.destination_storage||"-",
+            qty:n(row.qty),
+            operator:row.operator||"-",
+            note:row.transporter||row.note||"-"
+        });
+    });
+
+    fuelData.forEach(row=>{
+        rows.push({
+            jam:row.jam||"-",
+            jenis:"PENGISIAN",
+            dari:sourceFromFuel(row)||"-",
+            ke:row.unit||"-",
+            qty:n(row.fuel),
+            operator:row.operator||"-",
+            note:"Fuel keluar ke unit"
+        });
+    });
+
+    rows.sort((a,b)=>String(a.jam).localeCompare(String(b.jam)));
+
+    rows.forEach(row=>{
+        body.innerHTML+=`
+        <tr>
+            <td>${row.jam}</td>
+            <td>${row.jenis}</td>
+            <td>${row.dari}</td>
+            <td>${row.ke}</td>
+            <td>${fmt(row.qty)}</td>
+            <td>${row.operator}</td>
+            <td>${row.note}</td>
+        </tr>`;
+    });
+
+    if(!rows.length){
+        body.innerHTML='<tr><td colspan="7">Belum ada pergerakan fuel pada shift ini.</td></tr>';
+    }
 }
 
 async function saveOpening(){
- const {tanggal,shift}=getPeriod(),storage=document.getElementById('openingStorage').value,qty=n(document.getElementById('openingQty').value),operator=document.getElementById('openingOperator').value.trim();
- if(!tanggal||!storage||qty<0){alert('Lengkapi stock opening.');return}
- const {error}=await db.from('stock_opening').upsert({tanggal,shift,storage,qty,operator},{onConflict:'tanggal,shift,storage'});
- document.getElementById('openingStatus').textContent=error?'❌ '+error.message:'✅ Stock opening tersimpan.'; if(!error)loadStock();
-}
-async function saveReceipt(){
- const {tanggal,shift}=getPeriod(),destination_storage=document.getElementById('receiptDestination').value,qty=n(document.getElementById('receiptQty').value),transporter=document.getElementById('receiptTransporter').value.trim(),operator=document.getElementById('receiptOperator').value.trim();
- if(qty<=0){alert('Qty penerimaan harus lebih dari 0.');return}
- const {error}=await db.from('stock_movements').insert({tanggal,jam:localTime(),shift,jenis:'RECEIPT',source_storage:null,destination_storage,qty,operator,transporter});
- document.getElementById('receiptStatus').textContent=error?'❌ '+error.message:'✅ Penerimaan tersimpan dan stock bertambah.'; if(!error)loadStock();
-}
-async function saveTransfer(){
- const {tanggal,shift}=getPeriod(),source_storage=document.getElementById('transferSource').value,destination_storage=document.getElementById('transferDestination').value,qty=n(document.getElementById('transferQty').value),operator=document.getElementById('transferOperator').value.trim();
- if(qty<=0){alert('Qty transfer harus lebih dari 0.');return}
- const {error}=await db.from('stock_movements').insert({tanggal,jam:localTime(),shift,jenis:'TRANSFER',source_storage,destination_storage,qty,operator});
- document.getElementById('transferStatus').textContent=error?'❌ '+error.message:'✅ Transfer tersimpan. Total WHS tidak berubah.'; if(!error)loadStock();
+    const {tanggal,shift}=getPeriod();
+    const storage=document.getElementById("openingStorage").value;
+    const qty=n(document.getElementById("openingQty").value);
+    const operator=document.getElementById("openingOperator").value.trim();
+
+    if(!tanggal||!storage||qty<0){
+        alert("Lengkapi stock opening.");
+        return;
+    }
+
+    const {error}=await db.from("stock_opening").upsert(
+        {tanggal,shift,storage,qty,operator},
+        {onConflict:"tanggal,shift,storage"}
+    );
+
+    document.getElementById("openingStatus").textContent=
+        error?"❌ "+error.message:"✅ Stock opening tersimpan.";
+
+    if(!error)loadStock();
 }
 
-const os=document.getElementById('openingStorage');STORAGES.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s+(s==='FT0073'?' (WH FT02)':s==='FT0075'?' (WH FT01)':'');os.appendChild(o)});
-document.getElementById('tanggal').value=localDate();
-document.getElementById('tanggal').addEventListener('change',loadStock);document.getElementById('shift').addEventListener('change',loadStock);
+async function saveReceipt(){
+    const {tanggal,shift}=getPeriod();
+    const destination_storage=document.getElementById("receiptDestination").value;
+    const qty=n(document.getElementById("receiptQty").value);
+    const transporter=document.getElementById("receiptTransporter").value.trim();
+    const operator=document.getElementById("receiptOperator").value.trim();
+
+    if(qty<=0){
+        alert("Qty penerimaan harus lebih dari 0.");
+        return;
+    }
+
+    const {error}=await db.from("stock_movements").insert({
+        tanggal,
+        jam:localTime(),
+        shift,
+        jenis:"RECEIPT",
+        source_storage:null,
+        destination_storage,
+        qty,
+        operator,
+        transporter
+    });
+
+    document.getElementById("receiptStatus").textContent=
+        error?"❌ "+error.message:"✅ Penerimaan tersimpan dan stock bertambah.";
+
+    if(!error){
+        document.getElementById("receiptQty").value="";
+        loadStock();
+    }
+}
+
+async function saveTransfer(){
+    const {tanggal,shift}=getPeriod();
+    const source_storage=document.getElementById("transferSource").value;
+    const destination_storage=document.getElementById("transferDestination").value;
+    const qty=n(document.getElementById("transferQty").value);
+    const operator=document.getElementById("transferOperator").value.trim();
+
+    if(qty<=0){
+        alert("Qty transfer harus lebih dari 0.");
+        return;
+    }
+
+    if(qty>n(CURRENT_SYSTEM_STOCK[source_storage])){
+        const lanjut=confirm(
+            "⚠️ Qty transfer lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
+        );
+        if(!lanjut)return;
+    }
+
+    const {error}=await db.from("stock_movements").insert({
+        tanggal,
+        jam:localTime(),
+        shift,
+        jenis:"TRANSFER",
+        source_storage,
+        destination_storage,
+        qty,
+        operator
+    });
+
+    document.getElementById("transferStatus").textContent=
+        error?"❌ "+error.message:"✅ Transfer tersimpan. Total WHS tidak berubah.";
+
+    if(!error){
+        document.getElementById("transferQty").value="";
+        loadStock();
+    }
+}
+
+async function saveClosing(){
+    const {tanggal,shift}=getPeriod();
+    const operator=document.getElementById("closingOperator").value.trim();
+    const note=document.getElementById("closingNote").value.trim();
+
+    if(!operator){
+        alert("Masukkan nama Fuelman / Operator Closing.");
+        return;
+    }
+
+    const closingRows=[];
+
+    for(const storage of STORAGES){
+        const input=document.getElementById(`actual-${storage}`);
+
+        if(!input || input.value===""){
+            alert("Isi Stock Fisik / Sonding untuk semua storage terlebih dahulu.");
+            return;
+        }
+
+        const actualQty=n(input.value);
+
+        if(actualQty<0){
+            alert("Stock fisik tidak boleh negatif.");
+            return;
+        }
+
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+
+        closingRows.push({
+            tanggal,
+            shift,
+            storage,
+            system_qty:systemQty,
+            actual_qty:actualQty,
+            difference_qty:actualQty-systemQty,
+            operator,
+            note
+        });
+    }
+
+    const {error:closingError}=await db.from("stock_closing").upsert(
+        closingRows,
+        {onConflict:"tanggal,shift,storage"}
+    );
+
+    if(closingError){
+        document.getElementById("closingStatus").textContent=
+            "❌ Gagal simpan closing: "+closingError.message;
+        return;
+    }
+
+    if(document.getElementById("carryForward").checked){
+        const nextPeriod=getNextPeriod(tanggal,shift);
+
+        const nextOpeningRows=closingRows.map(row=>({
+            tanggal:nextPeriod.tanggal,
+            shift:nextPeriod.shift,
+            storage:row.storage,
+            qty:row.actual_qty,
+            operator
+        }));
+
+        const {error:openingError}=await db.from("stock_opening").upsert(
+            nextOpeningRows,
+            {onConflict:"tanggal,shift,storage"}
+        );
+
+        if(openingError){
+            document.getElementById("closingStatus").textContent=
+                "✅ Closing tersimpan, tapi gagal membuat opening berikutnya: "+openingError.message;
+            return;
+        }
+
+        document.getElementById("closingStatus").textContent=
+            "✅ Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
+            nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
+    }else{
+        document.getElementById("closingStatus").textContent=
+            "✅ Stock closing tersimpan.";
+    }
+
+    loadStock();
+}
+
+const openingStorage=document.getElementById("openingStorage");
+
+STORAGES.forEach(storage=>{
+    const option=document.createElement("option");
+    option.value=storage;
+    option.textContent=
+        storage+
+        (storage==="FT0073"?" (WH FT02)":
+         storage==="FT0075"?" (WH FT01)":"");
+    openingStorage.appendChild(option);
+});
+
+document.getElementById("tanggal").value=localDate();
+document.getElementById("tanggal").addEventListener("change",loadStock);
+document.getElementById("shift").addEventListener("change",loadStock);
+
 loadStock();
+
 </script>
 </body>
 </html>
