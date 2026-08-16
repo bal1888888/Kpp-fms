@@ -196,6 +196,54 @@
         </div>
 
     </div>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
+<script>
+    const scanButton = document.querySelector(".scan-btn");
+
+    scanButton.addEventListener("click", function () {
+
+        const scannerBox = document.querySelector(".scan-box");
+
+        scannerBox.innerHTML = `
+            <div id="reader" style="width:100%;"></div>
+        `;
+
+        const scanner = new Html5Qrcode("reader");
+
+        scanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            (decodedText) => {
+
+                document.getElementById("unit").value = decodedText;
+
+                scanner.stop();
+
+                scannerBox.innerHTML = `
+                    <div class="scan-icon">✅</div>
+                    <p>QR berhasil dibaca</p>
+                    <p><strong>${decodedText}</strong></p>
+                `;
+            },
+            (errorMessage) => {
+                // Scanner sedang mencari QR
+            }
+        ).catch((err) => {
+            scannerBox.innerHTML = `
+                <p style="color:red;">
+                    Kamera tidak dapat dibuka.
+                </p>
+                <p>
+                    Pastikan izin kamera sudah diberikan.
+                </p>
+            `;
+        });
+
+    });
+</script>
 </body>
 </html>
