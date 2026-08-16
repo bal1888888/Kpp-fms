@@ -1,1526 +1,322 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Logsheet Fuel - KPP FMS</title>
-
-    <!-- SUPABASE -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background: #e5e7eb;
-            color: #111827;
-        }
-
-        .header {
-            background: #1f2937;
-            color: white;
-            padding: 18px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 22px;
-            margin-bottom: 4px;
-        }
-
-        .header p {
-            font-size: 13px;
-            opacity: 0.8;
-        }
-
-        .container {
-            max-width: 1550px;
-            margin: 20px auto;
-            padding: 15px;
-        }
-
-        .sheet {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
-
-        .company {
-            text-align: center;
-            margin-bottom: 22px;
-        }
-
-        .company h2 {
-            font-size: 20px;
-            margin-bottom: 3px;
-        }
-
-        .company p {
-            font-size: 13px;
-        }
-
-        .period {
-            text-align: center;
-            font-weight: bold;
-            margin-top: 12px;
-            font-size: 16px;
-        }
-
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
-        .summary-card {
-            border: 1px solid #d1d5db;
-            padding: 14px;
-            border-radius: 8px;
-            background: #f9fafb;
-        }
-
-        .summary-title {
-            color: #6b7280;
-            font-size: 11px;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .summary-value {
-            font-size: 21px;
-            font-weight: bold;
-        }
-
-        .filters {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 18px;
-
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 10px;
-        }
-
-        .filter-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .filter-group input,
-        .filter-group select {
-            width: 100%;
-            padding: 9px;
-            border: 1px solid #cbd5e1;
-            border-radius: 5px;
-        }
-
-        .refresh-btn {
-            align-self: end;
-            background: #16a34a;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            border: 1px solid #9ca3af;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1450px;
-        }
-
-        th,
-        td {
-            border: 1px solid #9ca3af;
-            padding: 7px 8px;
-            font-size: 11px;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        thead th {
-            background: #d1d5db;
-            font-weight: bold;
-        }
-
-        tbody tr:nth-child(even) {
-            background: #f9fafb;
-        }
-
-        tbody tr:hover {
-            background: #eff6ff;
-        }
-
-        .egi-cell {
-            text-align: left;
-            white-space: normal;
-            min-width: 260px;
-        }
-
-        .qty {
-            font-weight: bold;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 30px;
-            color: #6b7280;
-        }
-
-        .error {
-            display: none;
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #b91c1c;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-
-        .actions {
-            margin-top: 18px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: #2563eb;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 13px;
-        }
-
-        .btn-green {
-            background: #16a34a;
-        }
-
-        @media (max-width: 700px) {
-            .container {
-                padding: 6px;
-            }
-
-            .sheet {
-                padding: 10px;
-            }
-
-            .company h2 {
-                font-size: 17px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logsheet Fuel - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#e5e7eb;color:#111827}
+.header{background:#1f2937;color:#fff;padding:18px;text-align:center}
+.header h1{font-size:22px;margin-bottom:4px}.header p{font-size:13px;opacity:.8}
+.container{max-width:1550px;margin:20px auto;padding:15px}
+.sheet{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.company{text-align:center;margin-bottom:22px}.company h2{font-size:20px;margin-bottom:3px}.company p{font-size:13px}
+.period{text-align:center;font-weight:bold;margin-top:12px;font-size:16px}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:10px;border-radius:6px;margin-bottom:15px;font-size:12px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
+.summary-card{border:1px solid #d1d5db;padding:14px;border-radius:8px;background:#f9fafb}
+.summary-title{color:#6b7280;font-size:11px;margin-bottom:5px;font-weight:bold}.summary-value{font-size:21px;font-weight:bold}
+.filters{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:15px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.filter-group label{display:block;font-size:11px;font-weight:bold;margin-bottom:5px}
+.filter-group input,.filter-group select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:5px}
+.button-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+button{border:none;padding:10px 12px;border-radius:6px;cursor:pointer;font-weight:bold}
+.refresh-btn{background:#16a34a;color:#fff}.download-btn{background:#2563eb;color:#fff}
+.table-wrapper{overflow:auto;border:1px solid #9ca3af;max-height:68vh}
+table{width:100%;border-collapse:collapse;min-width:1450px}
+th,td{border:1px solid #9ca3af;padding:7px 8px;font-size:11px;text-align:center;white-space:nowrap}
+thead th{background:#d1d5db;font-weight:bold;position:sticky;top:0;z-index:2}
+tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
+.egi-cell{text-align:left;white-space:normal;min-width:260px}.qty{font-weight:bold}
+.loading{text-align:center;padding:30px;color:#6b7280}
+.error{display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:12px;border-radius:6px;margin-bottom:15px}
+.actions{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:#2563eb;color:#fff;padding:10px 15px;border-radius:6px;text-decoration:none;font-size:13px}.btn-green{background:#16a34a}
+.hidden{display:none!important}
+@media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
+</style>
 </head>
-
-
 <body>
+<div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Daily Fuel Logsheet</p></div>
+<div class="container"><div class="sheet">
+<div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
-<div class="header">
-    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-    <p>PT KPP - Daily Fuel Logsheet</p>
+<div class="notice" id="dataNotice">Memuat seluruh histori dari database...</div>
+
+<div class="summary">
+  <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
+  <div class="summary-card"><div class="summary-title">TOTAL TRANSAKSI</div><div class="summary-value" id="totalTransaksi">0</div></div>
+  <div class="summary-card"><div class="summary-title">FT01</div><div class="summary-value" id="totalFT01">0 L</div></div>
+  <div class="summary-card"><div class="summary-title">FT02</div><div class="summary-value" id="totalFT02">0 L</div></div>
+  <div class="summary-card"><div class="summary-title">SHIFT 1</div><div class="summary-value" id="totalShift1">0 L</div></div>
+  <div class="summary-card"><div class="summary-title">SHIFT 2</div><div class="summary-value" id="totalShift2">0 L</div></div>
 </div>
 
-
-<div class="container">
-
-    <div class="sheet">
-
-
-        <!-- HEADER LOGSHEET -->
-
-        <div class="company">
-
-            <h2>
-                PT. KALIMANTAN PRIMA PERSADA
-            </h2>
-
-            <p>
-                Integrated Mining Services
-            </p>
-
-            <div class="period">
-                DAILY FUEL BY LOGSHEET
-            </div>
-
-        </div>
-
-
-        <!-- SUMMARY -->
-
-        <div class="summary">
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    TOTAL QTY ISSUED
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalFuel">
-
-                    0 L
-
-                </div>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    TOTAL TRANSAKSI
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalTransaksi">
-
-                    0
-
-                </div>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    FT01
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalFT01">
-
-                    0 L
-
-                </div>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    FT02
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalFT02">
-
-                    0 L
-
-                </div>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    SHIFT 1
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalShift1">
-
-                    0 L
-
-                </div>
-
-            </div>
-
-
-            <div class="summary-card">
-
-                <div class="summary-title">
-                    SHIFT 2
-                </div>
-
-                <div
-                    class="summary-value"
-                    id="totalShift2">
-
-                    0 L
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- FILTER -->
-
-        <div class="filters">
-
-            <div class="filter-group">
-
-                <label>
-                    Tanggal
-                </label>
-
-                <input
-                    type="date"
-                    id="filterTanggal"
-                >
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label>
-                    Shift
-                </label>
-
-                <select id="filterShift">
-
-                    <option value="">
-                        Semua Shift
-                    </option>
-
-                    <option value="1">
-                        Shift 1
-                    </option>
-
-                    <option value="2">
-                        Shift 2
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label>
-                    WH
-                </label>
-
-                <select id="filterWH">
-
-                    <option value="">
-                        Semua WH
-                    </option>
-
-                    <option value="FT01">
-                        FT01
-                    </option>
-
-                    <option value="FT02">
-                        FT02
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="filter-group">
-
-                <label>
-                    Code Unit
-                </label>
-
-                <input
-                    type="text"
-                    id="filterUnit"
-                    placeholder="Contoh: DT7441"
-                >
-
-            </div>
-
-
-            <button
-                class="refresh-btn"
-                onclick="loadData()">
-
-                ↻ REFRESH DATA
-
-            </button>
-
-        </div>
-
-
-        <div
-            id="errorBox"
-            class="error">
-        </div>
-
-
-        <!-- TABLE -->
-
-        <div class="table-wrapper">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>LOG NO</th>
-
-                        <th>TANGGAL</th>
-
-                        <th>SHIF</th>
-
-                        <th>WH</th>
-
-                        <th>CODE UNIT</th>
-
-                        <th>EGI</th>
-
-                        <th>CODE ELLIPS</th>
-
-                        <th>HM</th>
-
-                        <th>QTY ISSUED</th>
-
-                        <th>OPERATOR NAME</th>
-
-                        <th>STD + Fuelman</th>
-
-                        <th>COST</th>
-
-                        <th>ALOKASI</th>
-
-                        <th>CEK</th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="logsheetBody">
-                </tbody>
-
-            </table>
-
-        </div>
-
-
-        <div
-            id="loading"
-            class="loading">
-
-            Mengambil data dari database...
-
-        </div>
-
-
-        <div class="actions">
-
-            <a
-                href="pengisian.html"
-                class="btn btn-green">
-
-                ⛽ Pengisian Fuel
-
-            </a>
-
-
-            <a
-                href="dashboard.html"
-                class="btn">
-
-                📊 Dashboard
-
-            </a>
-
-
-            <a
-                href="index.html"
-                class="btn">
-
-                🏠 Menu Utama
-
-            </a>
-
-        </div>
-
-
-    </div>
-
+<div class="filters">
+  <div class="filter-group">
+    <label>Mode Tanggal</label>
+    <select id="dateMode">
+      <option value="all">Semua Tanggal</option>
+      <option value="single">Tanggal Tertentu</option>
+      <option value="range">Rentang Tanggal</option>
+    </select>
+  </div>
+  <div class="filter-group hidden" id="singleDateBox"><label>Tanggal</label><input type="date" id="filterTanggal"></div>
+  <div class="filter-group hidden" id="startDateBox"><label>Dari Tanggal</label><input type="date" id="filterTanggalAwal"></div>
+  <div class="filter-group hidden" id="endDateBox"><label>Sampai Tanggal</label><input type="date" id="filterTanggalAkhir"></div>
+  <div class="filter-group"><label>Shift</label><select id="filterShift"><option value="">Semua Shift</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
+  <div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option><option value="FT01">FT01</option><option value="FT02">FT02</option></select></div>
+  <div class="filter-group"><label>Code Unit</label><input type="text" id="filterUnit" placeholder="Contoh: DT7441"></div>
+  <div class="button-row"><button class="refresh-btn" id="refreshBtn">↻ REFRESH</button><button class="download-btn" id="downloadBtn">📥 DOWNLOAD EXCEL</button></div>
 </div>
 
+<div id="errorBox" class="error"></div>
+
+<div class="table-wrapper">
+<table>
+<thead><tr>
+<th>LOG NO</th><th>TANGGAL</th><th>SHIF</th><th>WH</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR NAME</th><th>STD + Fuelman</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
+</tr></thead>
+<tbody id="logsheetBody"></tbody>
+</table>
+</div>
+
+<div id="loading" class="loading">Mengambil data dari database...</div>
+
+<div class="actions">
+<a href="pengisian.html" class="btn btn-green">⛽ Pengisian Fuel</a>
+<a href="dashboard.html" class="btn">📊 Dashboard</a>
+<a href="riwayat.html" class="btn">📋 Riwayat</a>
+<a href="index.html" class="btn">🏠 Menu Utama</a>
+</div>
+</div></div>
 
 <script>
+const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
+const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+const MASTER_UNIT={"CB1019":{"egi":"MERLO MODEL P120.10EE","ellipse":"CB1019"},"CM0108":{"egi":"PORTABLE SCREW AIR COMPRESSOR","ellipse":"CM0108"},"CP118":{"egi":"COMPACTOR BOMAG BW216D4","ellipse":"CP118"},"CP119":{"egi":"COMPACTOR BOMAG BW216D4","ellipse":"CP119"},"CRAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"CRAJ001"},"CRAJ002":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"CRAJ002"},"CRSI001":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"CRSI001"},"CRSI002":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"CRSI002"},"CT0042":{"egi":"TADANO CRANE MDL GR500E-2","ellipse":"CT0042"},"CT0054":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"CT0054"},"CT0058":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"CT0058"},"DL0051":{"egi":"PATRIA CDL50","ellipse":"DL0051"},"DT7049":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7049"},"DT7081":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7081"},"DT7102":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7102"},"DT7122":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7122"},"DT7127":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7127"},"DT7220":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7220"},"DT7441":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7441"},"DT7442":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7442"},"DT7443":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7443"},"DT7444":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7444"},"DT7445":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7445"},"DT7446":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7446"},"DT7447":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7447"},"DT7448":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7448"},"DT7449":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7449"},"DT7450":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7450"},"DT7451":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7451"},"DT7452":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7452"},"DT7453":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7453"},"DT7454":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7454"},"DT7455":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7455"},"DT7456":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7456"},"DT7457":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7457"},"DZ1034":{"egi":"KOMATSU DOZZER MODEL D155A-6A","ellipse":"DZ1034"},"DZ1050":{"egi":"BULLDOZER KOMATSU D155A-6R","ellipse":"DZ1050"},"DZ124":{"egi":"BULLDOZER KOMATSU D85ESS2","ellipse":"DZ124"},"DZ129":{"egi":"BULLDOZER KOMATSU D85ESS2","ellipse":"DZ129"},"DZ3041":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3041"},"DZ3043":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3043"},"DZ3044":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3044"},"EX1028":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1028"},"EX1045":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1045"},"EX1050":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1050"},"EX1051":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1051"},"EX2056":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2056"},"EX2057":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2057"},"EX2058":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2058"},"EX238":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX238"},"EX239":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX239"},"EX240":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX240"},"EX241":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX241"},"EX432":{"egi":"EXCAVATOR KOMATSU PC400LCSE8","ellipse":"EX432"},"EX433":{"egi":"EXCAVATOR KOMATSU PC400LCSE8","ellipse":"EX433"},"EX501":{"egi":"EXCAVATOR KOMATSU PC500LC-10R","ellipse":"EX501"},"FT0020":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"FT0020"},"FT0073":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"FT0073"},"FT0075":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"FT0075"},"GR2060":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2060"},"GR2061":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2061"},"GR2062":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2062"},"GS0186":{"egi":"PERKINS GENSET MODEL PL45P","ellipse":"GS0186"},"GS0192":{"egi":"PATRIA PERKINS GENSET MDL PL65","ellipse":"GS0192"},"JH01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"JH01"},"LBAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ001"},"LBAJ002":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ002"},"LBAJ003":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ003"},"LBAJ004":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ004"},"LBSI001":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"LBSI001"},"LBSI002":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"LBSI002"},"LD0487":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0487"},"LD0488":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0488"},"LD0489":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0489"},"LD0498":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0498"},"LO0019":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"LO0019"},"LO0054":{"egi":"SCANIA MODEL P410 B6X6-4","ellipse":"LO0054"},"PM5017":{"egi":"SCANIA R620","ellipse":"PM5017"},"SD4098":{"egi":"VESSEL TRAILLER YORK PATRIA SST74","ellipse":"SD4098"},"SD4099":{"egi":"VESSEL TRAILLER YORK PATRIA SST74","ellipse":"SD4099"},"TH0006":{"egi":"ATTACHMENT TYRE HANDLER","ellipse":"TH0006"},"TL0007":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0007"},"TL0050":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0050"},"TL0074":{"egi":"TEREX TOWER LAMP MODEL RL4000","ellipse":"TL0074"},"TL0076":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0076"},"TL0121":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0121"},"TL0123":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0123"},"TL0131":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0131"},"TL0146":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0146"},"TL0147":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0147"},"TL0156":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0156"},"TL0157":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0157"},"TL0158":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0158"},"TL0201":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0201"},"TL0222":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0222"},"TL0247":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0247"},"TL0248":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0248"},"TL0249":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0249"},"TL0250":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0250"},"TL0251":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0251"},"TL0274":{"egi":"TOWER LAMP BP MODEL AM-LTH90-4D-KSS","ellipse":"TL0274"},"TMAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"TMAJ001"},"TR-B01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-B01"},"TR-B03":{"egi":"MITSUBISHI TRITON","ellipse":"TR-B03"},"TR-D01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-D01"},"TR-D02":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-D02"},"TR-D03":{"egi":"MITSUBISHI TRITON","ellipse":"TR-D03"},"TR-F01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-F01"},"TR-F02":{"egi":"MITSUBISHI TRITON","ellipse":"TR-F02"},"TR-F03":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F03"},"TR-F04":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F04"},"TR-F05":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F05"},"TR-F06":{"egi":"MITSUBISHI ELF CANTER 4X2","ellipse":"TR-F06"},"TR-J01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-J01"},"TR-KP01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-KP01"},"WE0049":{"egi":"MILLER WELDING MACHINE-BIG BLUE","ellipse":"WE0049"},"WP0121":{"egi":"KUBOTA WATER PUMP","ellipse":"WP0121"},"WP0141":{"egi":"MULTIFLOW PUMP MODEL MF420E","ellipse":"WP0141"},"WP0162":{"egi":"MULTIFLOW RF85MV","ellipse":"WP0162"},"WT0050":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"WT0050"},"WT0097":{"egi":"SCANIA MODEL P410 B6X6-4","ellipse":"WT0097"},"WT0099":{"egi":"SCANIA P420-6X6 SUPER","ellipse":"WT0099"},"WT0101":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"WT0101"},"TR-B04":{"egi":"MITSUBISHI TRITON","ellipse":"TR-B04"}};
 
-// ================================================
-// SUPABASE
-// ================================================
+let ALL_DATA=[];
 
-const SUPABASE_URL =
-    "https://pwowtyfybfqsveuvqrsb.supabase.co";
-
-
-const SUPABASE_KEY =
-    "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
-
-
-const supabaseClient =
-    supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
-
-
-// ================================================
-// MASTER UNIT → EGI
-// ================================================
-
-const MASTER_UNIT = {
-
-    "CB1019": "MERLO MODEL P120.10EE",
-    "CM0108": "PORTABLE SCREW AIR COMPRESSOR",
-
-    "CP118": "COMPACTOR BOMAG BW216D4",
-    "CP119": "COMPACTOR BOMAG BW216D4",
-
-    "CRAJ001": "BACKCHARGE PT. ARTHA JAYA TRANS",
-    "CRAJ002": "BACKCHARGE PT. ARTHA JAYA TRANS",
-
-    "CRSI001": "BACKCHARGE PT. SIMA TRANS INDONESIA",
-    "CRSI002": "BACKCHARGE PT. SIMA TRANS INDONESIA",
-
-    "CT0042": "TADANO CRANE MDL GR500E-2",
-
-    "CT0054": "LIGHT TRUCK SCANIA MDL P410CB6X6",
-    "CT0058": "LIGHT TRUCK SCANIA MDL P410CB6X6",
-
-    "DL0051": "PATRIA CDL50",
-
-    "DT7049": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7081": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7102": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7122": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7127": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7220": "KOMATSU DUMP TRUCK MODEL HD785-7",
-
-    "DT7441": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7442": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7443": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7444": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7445": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7446": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7447": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7448": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7449": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7450": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7451": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7452": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7453": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7454": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7455": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7456": "KOMATSU DUMP TRUCK MODEL HD785-7",
-    "DT7457": "KOMATSU DUMP TRUCK MODEL HD785-7",
-
-    "DZ1034": "KOMATSU DOZZER MODEL D155A-6A",
-    "DZ1050": "BULLDOZER KOMATSU D155A-6R",
-    "DZ124": "BULLDOZER KOMATSU D85ESS2",
-    "DZ129": "BULLDOZER KOMATSU D85ESS2",
-
-    "DZ3041": "KOMATSU DOZER D375A-6",
-    "DZ3043": "KOMATSU DOZER D375A-6",
-    "DZ3044": "KOMATSU DOZER D375A-6",
-
-    "EX1028": "KOMATSU EXCAVATOR TYPE PC850",
-    "EX1045": "KOMATSU EXCAVATOR TYPE PC850",
-    "EX1050": "KOMATSU EXCAVATOR TYPE PC850",
-    "EX1051": "KOMATSU EXCAVATOR TYPE PC850",
-
-    "EX2056": "EXCAVATOR KOMATSU PC1250-11R",
-    "EX2057": "EXCAVATOR KOMATSU PC1250-11R",
-    "EX2058": "EXCAVATOR KOMATSU PC1250-11R",
-
-    "EX238": "EXCAVATOR KOMATSU PC210-10M0",
-    "EX239": "EXCAVATOR KOMATSU PC210-10M0",
-    "EX240": "EXCAVATOR KOMATSU PC210-10M0",
-    "EX241": "EXCAVATOR KOMATSU PC210-10M0",
-
-    "EX432": "EXCAVATOR KOMATSU PC400LCSE8",
-    "EX433": "EXCAVATOR KOMATSU PC400LCSE8",
-
-    "EX501": "EXCAVATOR KOMATSU PC500LC-10R",
-
-    "FT0020": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-    "FT0073": "LIGHT TRUCK SCANIA MDL P410CB6X6",
-    "FT0075": "LIGHT TRUCK SCANIA MDL P410CB6X6",
-
-    "GR2060": "KOMATSU MT GRADER MDL GD825A-2",
-    "GR2061": "KOMATSU MT GRADER MDL GD825A-2",
-    "GR2062": "KOMATSU MT GRADER MDL GD825A-2",
-
-    "GS0186": "PERKINS GENSET MODEL PL45P",
-    "GS0192": "PATRIA PERKINS GENSET MDL PL65",
-
-    "JH01": "TOYOTA HILUX DOUBLE CABIN",
-
-    "LBAJ001": "BACKCHARGE PT. ARTHA JAYA TRANS",
-    "LBAJ002": "BACKCHARGE PT. ARTHA JAYA TRANS",
-    "LBAJ003": "BACKCHARGE PT. ARTHA JAYA TRANS",
-    "LBAJ004": "BACKCHARGE PT. ARTHA JAYA TRANS",
-
-    "LBSI001": "BACKCHARGE PT. SIMA TRANS INDONESIA",
-    "LBSI002": "BACKCHARGE PT. SIMA TRANS INDONESIA",
-
-    "LD0487": "SCANIA MODEL P410 B6X4HZ TV30",
-    "LD0488": "SCANIA MODEL P410 B6X4HZ TV30",
-    "LD0489": "SCANIA MODEL P410 B6X4HZ TV30",
-    "LD0498": "SCANIA MODEL P410 B6X4HZ TV30",
-
-    "LO0019": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-    "LO0054": "SCANIA MODEL P410 B6X6-4",
-
-    "PM5017": "SCANIA R620",
-
-    "SD4098": "VESSEL TRAILLER YORK PATRIA SST74",
-    "SD4099": "VESSEL TRAILLER YORK PATRIA SST74",
-
-    "TH0006": "ATTACHMENT TYRE HANDLER",
-
-    "TL0007": "PATRIA TOWER LAMP MDL LS4-600",
-    "TL0050": "PATRIA TOWER LAMP MDL LS4-600",
-    "TL0074": "TEREX TOWER LAMP MODEL RL4000",
-    "TL0076": "PATRIA TOWER LAMP MDL LS4-600",
-
-    "TL0121": "TOWER LAMP PATRIA - LS42000",
-    "TL0123": "TOWER LAMP PATRIA - LS42000",
-    "TL0131": "TOWER LAMP PATRIA - LS42000",
-    "TL0146": "TOWER LAMP PATRIA - LS42000",
-    "TL0147": "TOWER LAMP PATRIA - LS42000",
-    "TL0156": "TOWER LAMP PATRIA - LS42000",
-    "TL0157": "TOWER LAMP PATRIA - LS42000",
-    "TL0158": "TOWER LAMP PATRIA - LS42000",
-    "TL0201": "TOWER LAMP PATRIA - LS42000",
-    "TL0222": "TOWER LAMP PATRIA - LS42000",
-
-    "TL0247": "TOWERLAMP AMLTFH-6X480 BINA PERTIWI",
-    "TL0248": "TOWERLAMP AMLTFH-6X480 BINA PERTIWI",
-    "TL0249": "TOWERLAMP AMLTFH-6X480 BINA PERTIWI",
-    "TL0250": "TOWERLAMP AMLTFH-6X480 BINA PERTIWI",
-    "TL0251": "TOWERLAMP AMLTFH-6X480 BINA PERTIWI",
-
-    "TL0274": "TOWER LAMP BP MODEL AM-LTH90-4D-KSS",
-
-    "TMAJ001": "BACKCHARGE PT. ARTHA JAYA TRANS",
-
-    "TR-B01": "TOYOTA HILUX DOUBLE CABIN",
-    "TR-B03": "MITSUBISHI TRITON",
-    "TR-B04": "MITSUBISHI TRITON",
-
-    "TR-D01": "TOYOTA HILUX DOUBLE CABIN",
-    "TR-D02": "TOYOTA HILUX DOUBLE CABIN",
-    "TR-D03": "MITSUBISHI TRITON",
-
-    "TR-F01": "TOYOTA HILUX DOUBLE CABIN",
-    "TR-F02": "MITSUBISHI TRITON",
-
-    "TR-F03": "CANTER 136 KORSSERI LAKSANA 4X4",
-    "TR-F04": "CANTER 136 KORSSERI LAKSANA 4X4",
-    "TR-F05": "CANTER 136 KORSSERI LAKSANA 4X4",
-
-    "TR-F06": "MITSUBISHI ELF CANTER 4X2",
-
-    "TR-J01": "TOYOTA HILUX DOUBLE CABIN",
-    "TR-KP01": "TOYOTA HILUX DOUBLE CABIN",
-
-    "WE0049": "MILLER WELDING MACHINE-BIG BLUE",
-
-    "WP0121": "KUBOTA WATER PUMP",
-    "WP0141": "MULTIFLOW PUMP MODEL MF420E",
-    "WP0162": "MULTIFLOW RF85MV",
-
-    "WT0050": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-    "WT0097": "SCANIA MODEL P410 B6X6-4",
-    "WT0099": "SCANIA P420-6X6 SUPER",
-    "WT0101": "LIGHT TRUCK SCANIA MDL P410CB6X6"
-
-};
-
-
-// ================================================
-// FORMAT ANGKA
-// ================================================
-
-function formatAngka(value) {
-
-    return Number(value || 0)
-        .toLocaleString("id-ID");
-
+function formatAngka(v){ return Number(v||0).toLocaleString("id-ID"); }
+function formatTanggal(v){
+  if(!v) return "-";
+  const p=String(v).split("-");
+  return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
+}
+function getWH(item){
+  if(item.wh) return String(item.wh).trim().toUpperCase();
+  const ft=String(item.fuel_truck||"").trim().toUpperCase();
+  if(ft==="FT0073") return "FT02";
+  if(ft==="FT0075") return "FT01";
+  return "-";
 }
 
+async function fetchAllFuelHistory(){
+  const pageSize=1000;
+  let from=0, all=[];
+  while(true){
+    const {data,error}=await supabaseClient
+      .from("fuel_history")
+      .select("*")
+      .order("tanggal",{ascending:true})
+      .order("id",{ascending:true})
+      .range(from,from+pageSize-1);
 
-// ================================================
-// FORMAT TANGGAL
-// ================================================
-
-function formatTanggal(value) {
-
-    if (!value) {
-
-        return "-";
-
-    }
-
-
-    const split =
-        value.split("-");
-
-
-    if (
-        split.length !== 3
-    ) {
-
-        return value;
-
-    }
-
-
-    return (
-        split[2] +
-        "/" +
-        split[1] +
-        "/" +
-        split[0]
-    );
-
+    if(error) throw error;
+    all=all.concat(data||[]);
+    if(!data || data.length<pageSize) break;
+    from+=pageSize;
+  }
+  return all;
 }
 
-
-// ================================================
-// WH
-// ================================================
-
-function getWH(item) {
-
-    if (item.wh) {
-
-        return String(
-            item.wh
-        )
-        .trim()
-        .toUpperCase();
-
-    }
-
-
-    const fuelTruck =
-        String(
-            item.fuel_truck || ""
-        )
-        .trim()
-        .toUpperCase();
-
-
-    if (
-        fuelTruck === "FT0073"
-    ) {
-
-        return "FT02";
-
-    }
-
-
-    if (
-        fuelTruck === "FT0075"
-    ) {
-
-        return "FT01";
-
-    }
-
-
-    return "-";
-
+function updateDateMode(){
+  const mode=document.getElementById("dateMode").value;
+  document.getElementById("singleDateBox").classList.toggle("hidden",mode!=="single");
+  document.getElementById("startDateBox").classList.toggle("hidden",mode!=="range");
+  document.getElementById("endDateBox").classList.toggle("hidden",mode!=="range");
+  renderFiltered();
 }
 
+function applyFilter(data){
+  const mode=document.getElementById("dateMode").value;
+  const single=document.getElementById("filterTanggal").value;
+  const start=document.getElementById("filterTanggalAwal").value;
+  const end=document.getElementById("filterTanggalAkhir").value;
+  const shift=document.getElementById("filterShift").value;
+  const wh=document.getElementById("filterWH").value;
+  const unit=document.getElementById("filterUnit").value.trim().toUpperCase();
 
-// ================================================
-// FILTER
-// ================================================
-
-function applyFilter(data) {
-
-    const tanggal =
-        document
-            .getElementById(
-                "filterTanggal"
-            )
-            .value;
-
-
-    const shift =
-        document
-            .getElementById(
-                "filterShift"
-            )
-            .value;
-
-
-    const wh =
-        document
-            .getElementById(
-                "filterWH"
-            )
-            .value;
-
-
-    const unit =
-        document
-            .getElementById(
-                "filterUnit"
-            )
-            .value
-            .trim()
-            .toUpperCase();
-
-
-    return data.filter(
-        function(item) {
-
-            if (
-                tanggal &&
-                item.tanggal !== tanggal
-            ) {
-
-                return false;
-
-            }
-
-
-            if (
-                shift &&
-                String(
-                    item.shift
-                ) !== shift
-            ) {
-
-                return false;
-
-            }
-
-
-            if (
-                wh &&
-                getWH(item) !== wh
-            ) {
-
-                return false;
-
-            }
-
-
-            if (
-                unit &&
-                !String(
-                    item.unit || ""
-                )
-                .toUpperCase()
-                .includes(
-                    unit
-                )
-            ) {
-
-                return false;
-
-            }
-
-
-            return true;
-
-        }
-    );
-
+  return data.filter(item=>{
+    const t=item.tanggal||"";
+    if(mode==="single" && single && t!==single) return false;
+    if(mode==="range" && start && t<start) return false;
+    if(mode==="range" && end && t>end) return false;
+    if(shift && String(item.shift)!==shift) return false;
+    if(wh && getWH(item)!==wh) return false;
+    if(unit && !String(item.unit||"").toUpperCase().includes(unit)) return false;
+    return true;
+  });
 }
 
+function updateSummary(data){
+  let total=0,ft01=0,ft02=0,s1=0,s2=0;
+  data.forEach(item=>{
+    const q=Number(item.fuel)||0;
+    total+=q;
+    const wh=getWH(item);
+    if(wh==="FT01") ft01+=q;
+    if(wh==="FT02") ft02+=q;
+    if(Number(item.shift)===1) s1+=q;
+    if(Number(item.shift)===2) s2+=q;
+  });
 
-// ================================================
-// SUMMARY
-// ================================================
-
-function updateSummary(data) {
-
-    let total = 0;
-
-    let ft01 = 0;
-
-    let ft02 = 0;
-
-    let shift1 = 0;
-
-    let shift2 = 0;
-
-
-    data.forEach(
-        function(item) {
-
-            const qty =
-                Number(
-                    item.fuel
-                ) || 0;
-
-
-            total += qty;
-
-
-            const wh =
-                getWH(
-                    item
-                );
-
-
-            if (
-                wh === "FT01"
-            ) {
-
-                ft01 += qty;
-
-            }
-
-
-            if (
-                wh === "FT02"
-            ) {
-
-                ft02 += qty;
-
-            }
-
-
-            if (
-                Number(
-                    item.shift
-                ) === 1
-            ) {
-
-                shift1 += qty;
-
-            }
-
-
-            if (
-                Number(
-                    item.shift
-                ) === 2
-            ) {
-
-                shift2 += qty;
-
-            }
-
-        }
-    );
-
-
-    document
-        .getElementById(
-            "totalFuel"
-        )
-        .textContent =
-        formatAngka(
-            total
-        ) +
-        " L";
-
-
-    document
-        .getElementById(
-            "totalTransaksi"
-        )
-        .textContent =
-        data.length;
-
-
-    document
-        .getElementById(
-            "totalFT01"
-        )
-        .textContent =
-        formatAngka(
-            ft01
-        ) +
-        " L";
-
-
-    document
-        .getElementById(
-            "totalFT02"
-        )
-        .textContent =
-        formatAngka(
-            ft02
-        ) +
-        " L";
-
-
-    document
-        .getElementById(
-            "totalShift1"
-        )
-        .textContent =
-        formatAngka(
-            shift1
-        ) +
-        " L";
-
-
-    document
-        .getElementById(
-            "totalShift2"
-        )
-        .textContent =
-        formatAngka(
-            shift2
-        ) +
-        " L";
-
+  document.getElementById("totalFuel").textContent=formatAngka(total)+" L";
+  document.getElementById("totalTransaksi").textContent=formatAngka(data.length);
+  document.getElementById("totalFT01").textContent=formatAngka(ft01)+" L";
+  document.getElementById("totalFT02").textContent=formatAngka(ft02)+" L";
+  document.getElementById("totalShift1").textContent=formatAngka(s1)+" L";
+  document.getElementById("totalShift2").textContent=formatAngka(s2)+" L";
 }
 
-
-// ================================================
-// BUAT CELL
-// ================================================
-
-function td(
-    text,
-    className = ""
-) {
-
-    const cell =
-        document.createElement(
-            "td"
-        );
-
-
-    cell.textContent =
-        text;
-
-
-    if (
-        className
-    ) {
-
-        cell.className =
-            className;
-
-    }
-
-
-    return cell;
-
+function td(text,cls=""){
+  const cell=document.createElement("td");
+  cell.textContent=text;
+  if(cls) cell.className=cls;
+  return cell;
 }
 
+function renderTable(data){
+  const body=document.getElementById("logsheetBody");
+  body.innerHTML="";
 
-// ================================================
-// RENDER TABLE
-// ================================================
+  data.forEach((item,index)=>{
+    const unit=String(item.unit||"").trim().toUpperCase();
+    const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
+    const row=document.createElement("tr");
 
-function renderTable(data) {
+    row.appendChild(td(item.id||index+1));
+    row.appendChild(td(formatTanggal(item.tanggal)));
+    row.appendChild(td(item.shift||"-"));
+    row.appendChild(td(getWH(item)));
+    row.appendChild(td(unit||"(KOSONG)"));
+    row.appendChild(td(m.egi||"-","egi-cell"));
+    row.appendChild(td(m.ellipse||unit||"-"));
+    row.appendChild(td(item.hm_akhir!==null && item.hm_akhir!==undefined && item.hm_akhir!=="" ? formatAngka(item.hm_akhir) : "-"));
+    row.appendChild(td(formatAngka(item.fuel),"qty"));
+    row.appendChild(td(item.operator||"-"));
+    row.appendChild(td(item.fuelman||"-"));
+    row.appendChild(td(item.cost||"-"));
+    row.appendChild(td(item.alokasi||"-"));
+    row.appendChild(td("TERPOSTING"));
 
-    const body =
-        document.getElementById(
-            "logsheetBody"
-        );
-
-
-    body.innerHTML =
-        "";
-
-
-    data.forEach(
-        function(
-            item,
-            index
-        ) {
-
-            const row =
-                document.createElement(
-                    "tr"
-                );
-
-
-            const unit =
-                String(
-                    item.unit || ""
-                )
-                .trim()
-                .toUpperCase();
-
-
-            const egi =
-                MASTER_UNIT[
-                    unit
-                ] ||
-                "-";
-
-
-            // LOG NO
-
-            row.appendChild(
-                td(
-                    item.id ||
-                    index + 1
-                )
-            );
-
-
-            // TANGGAL
-
-            row.appendChild(
-                td(
-                    formatTanggal(
-                        item.tanggal
-                    )
-                )
-            );
-
-
-            // SHIFT
-
-            row.appendChild(
-                td(
-                    item.shift ||
-                    "-"
-                )
-            );
-
-
-            // WH
-
-            row.appendChild(
-                td(
-                    getWH(
-                        item
-                    )
-                )
-            );
-
-
-            // CODE UNIT
-
-            row.appendChild(
-                td(
-                    unit ||
-                    "-"
-                )
-            );
-
-
-            // EGI
-
-            row.appendChild(
-                td(
-                    egi,
-                    "egi-cell"
-                )
-            );
-
-
-            // CODE ELLIPSE
-
-            row.appendChild(
-                td(
-                    unit ||
-                    "-"
-                )
-            );
-
-
-            // HM
-
-            row.appendChild(
-                td(
-                    item.hm_akhir !== null &&
-                    item.hm_akhir !== undefined
-                    ?
-                    formatAngka(
-                        item.hm_akhir
-                    )
-                    :
-                    "-"
-                )
-            );
-
-
-            // QTY ISSUED
-
-            row.appendChild(
-                td(
-                    formatAngka(
-                        item.fuel
-                    ),
-                    "qty"
-                )
-            );
-
-
-            // OPERATOR NAME
-
-            row.appendChild(
-                td(
-                    item.operator ||
-                    "-"
-                )
-            );
-
-
-            // STD + FUELMAN
-
-            row.appendChild(
-                td(
-                    item.fuelman ||
-                    "-"
-                )
-            );
-
-
-            // COST
-
-            row.appendChild(
-                td(
-                    item.cost ||
-                    "-"
-                )
-            );
-
-
-            // ALOKASI
-
-            row.appendChild(
-                td(
-                    item.alokasi ||
-                    "-"
-                )
-            );
-
-
-            // CEK - TANPA WARNA DULU
-
-            row.appendChild(
-                td(
-                    "TERPOSTING"
-                )
-            );
-
-
-            body.appendChild(
-                row
-            );
-
-        }
-    );
-
+    body.appendChild(row);
+  });
 }
 
+function renderFiltered(){
+  const filtered=applyFilter(ALL_DATA);
+  updateSummary(filtered);
+  renderTable(filtered);
 
-// ================================================
-// LOAD SUPABASE
-// ================================================
+  const loading=document.getElementById("loading");
+  if(filtered.length===0){
+    loading.style.display="block";
+    loading.textContent="Tidak ada data untuk filter yang dipilih.";
+  } else {
+    loading.style.display="none";
+  }
 
-async function loadData() {
+  document.getElementById("dataNotice").textContent=
+    `Database terbaca: ${formatAngka(ALL_DATA.length)} transaksi. Filter aktif: ${formatAngka(filtered.length)} transaksi.`;
 
-    const loading =
-        document.getElementById(
-            "loading"
-        );
-
-
-    const errorBox =
-        document.getElementById(
-            "errorBox"
-        );
-
-
-    loading.style.display =
-        "block";
-
-
-    loading.textContent =
-        "Mengambil data dari database...";
-
-
-    errorBox.style.display =
-        "none";
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-
-            .from(
-                "fuel_history"
-            )
-
-            .select("*")
-
-            .order(
-                "tanggal",
-                {
-                    ascending: true
-                }
-            )
-
-            .order(
-                "shift",
-                {
-                    ascending: true
-                }
-            )
-
-            .order(
-                "id",
-                {
-                    ascending: true
-                }
-            );
-
-
-    if (
-        error
-    ) {
-
-        console.error(
-            error
-        );
-
-
-        loading.style.display =
-            "none";
-
-
-        errorBox.style.display =
-            "block";
-
-
-        errorBox.textContent =
-            "❌ Gagal mengambil data logsheet: " +
-            error.message;
-
-
-        return;
-
-    }
-
-
-    const filtered =
-        applyFilter(
-            data || []
-        );
-
-
-    updateSummary(
-        filtered
-    );
-
-
-    renderTable(
-        filtered
-    );
-
-
-    if (
-        filtered.length === 0
-    ) {
-
-        loading.style.display =
-            "block";
-
-
-        loading.textContent =
-            "Tidak ada data untuk filter yang dipilih.";
-
-    } else {
-
-        loading.style.display =
-            "none";
-
-    }
-
+  return filtered;
 }
 
+async function loadData(){
+  const loading=document.getElementById("loading");
+  const errorBox=document.getElementById("errorBox");
 
-// ================================================
-// FILTER OTOMATIS
-// ================================================
+  loading.style.display="block";
+  loading.textContent="Mengambil seluruh data dari database...";
+  errorBox.style.display="none";
 
-document
-    .getElementById(
-        "filterTanggal"
-    )
-    .addEventListener(
-        "change",
-        loadData
-    );
+  try{
+    ALL_DATA=await fetchAllFuelHistory();
+    renderFiltered();
+  }catch(error){
+    console.error(error);
+    loading.style.display="none";
+    errorBox.style.display="block";
+    errorBox.textContent="❌ Gagal mengambil data logsheet: "+error.message;
+  }
+}
 
+function downloadExcel(){
+  const data=renderFiltered();
 
-document
-    .getElementById(
-        "filterShift"
-    )
-    .addEventListener(
-        "change",
-        loadData
-    );
+  if(data.length===0){
+    alert("Tidak ada data untuk didownload.");
+    return;
+  }
 
+  const exportRows=data.map((item,index)=>{
+    const unit=String(item.unit||"").trim().toUpperCase();
+    const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
 
-document
-    .getElementById(
-        "filterWH"
-    )
-    .addEventListener(
-        "change",
-        loadData
-    );
+    return {
+      "LOG NO": item.id||index+1,
+      "TANGGAL": formatTanggal(item.tanggal),
+      "SHIF": item.shift||"",
+      "WH": getWH(item),
+      "CODE UNIT": unit,
+      "EGI": m.egi||"",
+      "CODE ELLIPS": m.ellipse||unit,
+      "HM": item.hm_akhir ?? "",
+      "QTY ISSUED": Number(item.fuel)||0,
+      "OPERATOR NAME": item.operator||"",
+      "STD + Fuelman": item.fuelman||"",
+      "COST": item.cost||"",
+      "ALOKASI": item.alokasi||"",
+      "Cek": "TERPOSTING"
+    };
+  });
 
+  const ws=XLSX.utils.json_to_sheet(exportRows);
+  ws["!cols"]=[
+    {wch:10},{wch:13},{wch:7},{wch:8},{wch:13},{wch:34},{wch:15},
+    {wch:12},{wch:14},{wch:22},{wch:16},{wch:12},{wch:14},{wch:14}
+  ];
 
-document
-    .getElementById(
-        "filterUnit"
-    )
-    .addEventListener(
-        "input",
-        loadData
-    );
+  const book=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book,ws,"LOGSHEET FUEL");
 
+  const mode=document.getElementById("dateMode").value;
+  let suffix="SEMUA_TANGGAL";
+  if(mode==="single") suffix=document.getElementById("filterTanggal").value||"TANGGAL";
+  if(mode==="range"){
+    suffix=(document.getElementById("filterTanggalAwal").value||"AWAL")+
+      "_sd_"+(document.getElementById("filterTanggalAkhir").value||"AKHIR");
+  }
 
-// ================================================
-// START
-// ================================================
+  XLSX.writeFile(book,"KPP_Fuel_Logsheet_"+suffix+".xlsx");
+}
+
+["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift","filterWH"]
+  .forEach(id=>document.getElementById(id).addEventListener("change",renderFiltered));
+
+document.getElementById("filterUnit").addEventListener("input",renderFiltered);
+document.getElementById("dateMode").addEventListener("change",updateDateMode);
+document.getElementById("refreshBtn").addEventListener("click",loadData);
+document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
 
 loadData();
-
 </script>
-
 </body>
-
 </html>
