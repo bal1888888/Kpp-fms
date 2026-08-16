@@ -11,7 +11,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-
         * {
             box-sizing: border-box;
             margin: 0;
@@ -56,7 +55,7 @@
 
         .company {
             text-align: center;
-            margin-bottom: 18px;
+            margin-bottom: 22px;
         }
 
         .company h2 {
@@ -75,45 +74,9 @@
             font-size: 16px;
         }
 
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 18px 0;
-        }
-
-        .legend-item {
-            padding: 7px 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            font-weight: bold;
-            border: 1px solid #d1d5db;
-        }
-
-        .yellow {
-            background: #fef08a;
-        }
-
-        .orange {
-            background: #fdba74;
-        }
-
-        .red {
-            background: #fca5a5;
-        }
-
-        .white {
-            background: white;
-        }
-
-        .green {
-            background: #86efac;
-        }
-
         .summary {
             display: grid;
-            grid-template-columns:
-                repeat(auto-fit, minmax(170px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 10px;
             margin-bottom: 18px;
         }
@@ -145,8 +108,7 @@
             margin-bottom: 18px;
 
             display: grid;
-            grid-template-columns:
-                repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 10px;
         }
 
@@ -219,11 +181,6 @@
             font-weight: bold;
         }
 
-        .status-posted {
-            background: #86efac;
-            font-weight: bold;
-        }
-
         .loading {
             text-align: center;
             padding: 30px;
@@ -261,7 +218,6 @@
         }
 
         @media (max-width: 700px) {
-
             .container {
                 padding: 6px;
             }
@@ -273,380 +229,343 @@
             .company h2 {
                 font-size: 17px;
             }
-
         }
-
     </style>
 </head>
 
 
 <body>
 
-
 <div class="header">
-
     <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-
     <p>PT KPP - Daily Fuel Logsheet</p>
-
 </div>
 
 
 <div class="container">
 
-<div class="sheet">
+    <div class="sheet">
 
 
-    <!-- ================================= -->
-    <!-- HEADER LOGSHEET -->
-    <!-- ================================= -->
+        <!-- HEADER LOGSHEET -->
 
-    <div class="company">
+        <div class="company">
 
-        <h2>
-            PT. KALIMANTAN PRIMA PERSADA
-        </h2>
+            <h2>
+                PT. KALIMANTAN PRIMA PERSADA
+            </h2>
 
-        <p>
-            Integrated Mining Services
-        </p>
+            <p>
+                Integrated Mining Services
+            </p>
 
-        <div class="period">
-            DAILY FUEL BY LOGSHEET
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- LEGEND -->
-    <!-- ================================= -->
-
-    <div class="legend">
-
-        <div class="legend-item yellow">
-            KUNING = DRAFT / QUEUE
-        </div>
-
-        <div class="legend-item orange">
-            JINGGA = BELUM DIKETAHUI / ERROR
-        </div>
-
-        <div class="legend-item red">
-            MERAH = DOUBLE POSTING
-        </div>
-
-        <div class="legend-item white">
-            PUTIH = BELUM POSTING
-        </div>
-
-        <div class="legend-item green">
-            HIJAU = TERPOSTING
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- SUMMARY -->
-    <!-- ================================= -->
-
-    <div class="summary">
-
-        <div class="summary-card">
-
-            <div class="summary-title">
-                TOTAL QTY ISSUED
-            </div>
-
-            <div
-                class="summary-value"
-                id="totalFuel">
-
-                0 L
-
+            <div class="period">
+                DAILY FUEL BY LOGSHEET
             </div>
 
         </div>
 
 
-        <div class="summary-card">
+        <!-- SUMMARY -->
 
-            <div class="summary-title">
-                TOTAL TRANSAKSI
-            </div>
+        <div class="summary">
 
-            <div
-                class="summary-value"
-                id="totalTransaksi">
+            <div class="summary-card">
 
-                0
+                <div class="summary-title">
+                    TOTAL QTY ISSUED
+                </div>
 
-            </div>
+                <div
+                    class="summary-value"
+                    id="totalFuel">
 
-        </div>
+                    0 L
 
-
-        <div class="summary-card">
-
-            <div class="summary-title">
-                FT01
-            </div>
-
-            <div
-                class="summary-value"
-                id="totalFT01">
-
-                0 L
+                </div>
 
             </div>
 
-        </div>
 
+            <div class="summary-card">
 
-        <div class="summary-card">
+                <div class="summary-title">
+                    TOTAL TRANSAKSI
+                </div>
 
-            <div class="summary-title">
-                FT02
-            </div>
+                <div
+                    class="summary-value"
+                    id="totalTransaksi">
 
-            <div
-                class="summary-value"
-                id="totalFT02">
+                    0
 
-                0 L
-
-            </div>
-
-        </div>
-
-
-        <div class="summary-card">
-
-            <div class="summary-title">
-                SHIFT 1
-            </div>
-
-            <div
-                class="summary-value"
-                id="totalShift1">
-
-                0 L
+                </div>
 
             </div>
 
-        </div>
 
+            <div class="summary-card">
 
-        <div class="summary-card">
-
-            <div class="summary-title">
-                SHIFT 2
-            </div>
-
-            <div
-                class="summary-value"
-                id="totalShift2">
-
-                0 L
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- FILTER -->
-    <!-- ================================= -->
-
-    <div class="filters">
-
-
-        <div class="filter-group">
-
-            <label>Tanggal</label>
-
-            <input
-                type="date"
-                id="filterTanggal"
-            >
-
-        </div>
-
-
-        <div class="filter-group">
-
-            <label>Shift</label>
-
-            <select id="filterShift">
-
-                <option value="">
-                    Semua Shift
-                </option>
-
-                <option value="1">
-                    Shift 1
-                </option>
-
-                <option value="2">
-                    Shift 2
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <div class="filter-group">
-
-            <label>WH</label>
-
-            <select id="filterWH">
-
-                <option value="">
-                    Semua WH
-                </option>
-
-                <option value="FT01">
+                <div class="summary-title">
                     FT01
-                </option>
+                </div>
 
-                <option value="FT02">
+                <div
+                    class="summary-value"
+                    id="totalFT01">
+
+                    0 L
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-title">
                     FT02
-                </option>
+                </div>
 
-            </select>
+                <div
+                    class="summary-value"
+                    id="totalFT02">
+
+                    0 L
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-title">
+                    SHIFT 1
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="totalShift1">
+
+                    0 L
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-title">
+                    SHIFT 2
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="totalShift2">
+
+                    0 L
+
+                </div>
+
+            </div>
 
         </div>
 
 
-        <div class="filter-group">
+        <!-- FILTER -->
 
-            <label>Code Unit</label>
+        <div class="filters">
 
-            <input
-                type="text"
-                id="filterUnit"
-                placeholder="Contoh: DT7441"
-            >
+            <div class="filter-group">
+
+                <label>
+                    Tanggal
+                </label>
+
+                <input
+                    type="date"
+                    id="filterTanggal"
+                >
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label>
+                    Shift
+                </label>
+
+                <select id="filterShift">
+
+                    <option value="">
+                        Semua Shift
+                    </option>
+
+                    <option value="1">
+                        Shift 1
+                    </option>
+
+                    <option value="2">
+                        Shift 2
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label>
+                    WH
+                </label>
+
+                <select id="filterWH">
+
+                    <option value="">
+                        Semua WH
+                    </option>
+
+                    <option value="FT01">
+                        FT01
+                    </option>
+
+                    <option value="FT02">
+                        FT02
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label>
+                    Code Unit
+                </label>
+
+                <input
+                    type="text"
+                    id="filterUnit"
+                    placeholder="Contoh: DT7441"
+                >
+
+            </div>
+
+
+            <button
+                class="refresh-btn"
+                onclick="loadData()">
+
+                ↻ REFRESH DATA
+
+            </button>
 
         </div>
 
 
-        <button
-            class="refresh-btn"
-            onclick="loadData()">
+        <div
+            id="errorBox"
+            class="error">
+        </div>
 
-            ↻ REFRESH DATA
 
-        </button>
+        <!-- TABLE -->
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>LOG NO</th>
+
+                        <th>TANGGAL</th>
+
+                        <th>SHIF</th>
+
+                        <th>WH</th>
+
+                        <th>CODE UNIT</th>
+
+                        <th>EGI</th>
+
+                        <th>CODE ELLIPS</th>
+
+                        <th>HM</th>
+
+                        <th>QTY ISSUED</th>
+
+                        <th>OPERATOR NAME</th>
+
+                        <th>STD + Fuelman</th>
+
+                        <th>COST</th>
+
+                        <th>ALOKASI</th>
+
+                        <th>CEK</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="logsheetBody">
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="loading"
+            class="loading">
+
+            Mengambil data dari database...
+
+        </div>
+
+
+        <div class="actions">
+
+            <a
+                href="pengisian.html"
+                class="btn btn-green">
+
+                ⛽ Pengisian Fuel
+
+            </a>
+
+
+            <a
+                href="dashboard.html"
+                class="btn">
+
+                📊 Dashboard
+
+            </a>
+
+
+            <a
+                href="index.html"
+                class="btn">
+
+                🏠 Menu Utama
+
+            </a>
+
+        </div>
+
 
     </div>
-
-
-    <div
-        id="errorBox"
-        class="error">
-    </div>
-
-
-    <!-- ================================= -->
-    <!-- TABLE -->
-    <!-- ================================= -->
-
-    <div class="table-wrapper">
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th>LOG NO</th>
-
-                    <th>TANGGAL</th>
-
-                    <th>SHIF</th>
-
-                    <th>WH</th>
-
-                    <th>CODE UNIT</th>
-
-                    <th>EGI</th>
-
-                    <th>CODE ELLIPS</th>
-
-                    <th>HM</th>
-
-                    <th>QTY ISSUED</th>
-
-                    <th>OPERATOR NAME</th>
-
-                    <th>STD + Fuelman</th>
-
-                    <th>COST</th>
-
-                    <th>ALOKASI</th>
-
-                    <th>Cek</th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody id="logsheetBody">
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-
-    <div
-        id="loading"
-        class="loading">
-
-        Mengambil data dari database...
-
-    </div>
-
-
-    <div class="actions">
-
-        <a
-            href="pengisian.html"
-            class="btn btn-green">
-
-            ⛽ Pengisian Fuel
-
-        </a>
-
-
-        <a
-            href="dashboard.html"
-            class="btn">
-
-            📊 Dashboard
-
-        </a>
-
-
-        <a
-            href="index.html"
-            class="btn">
-
-            🏠 Menu Utama
-
-        </a>
-
-    </div>
-
-
-</div>
 
 </div>
 
@@ -654,9 +573,9 @@
 <script>
 
 
-// ===================================================
+// ================================================
 // SUPABASE
-// ===================================================
+// ================================================
 
 const SUPABASE_URL =
     "https://pwowtyfybfqsveuvqrsb.supabase.co";
@@ -673,15 +592,13 @@ const supabaseClient =
     );
 
 
-// ===================================================
-// MASTER POPULASI UNIT
-// CODE UNIT -> EGI
-// ===================================================
+// ================================================
+// MASTER UNIT → EGI
+// ================================================
 
 const MASTER_UNIT = {
 
     "CB1019": "MERLO MODEL P120.10EE",
-
     "CM0108": "PORTABLE SCREW AIR COMPRESSOR",
 
     "CP118": "COMPACTOR BOMAG BW216D4",
@@ -699,7 +616,6 @@ const MASTER_UNIT = {
     "CT0058": "LIGHT TRUCK SCANIA MDL P410CB6X6",
 
     "DL0051": "PATRIA CDL50",
-
 
     "DT7049": "KOMATSU DUMP TRUCK MODEL HD785-7",
     "DT7081": "KOMATSU DUMP TRUCK MODEL HD785-7",
@@ -726,7 +642,6 @@ const MASTER_UNIT = {
     "DT7456": "KOMATSU DUMP TRUCK MODEL HD785-7",
     "DT7457": "KOMATSU DUMP TRUCK MODEL HD785-7",
 
-
     "DZ1034": "KOMATSU DOZZER MODEL D155A-6A",
     "DZ1050": "BULLDOZER KOMATSU D155A-6R",
     "DZ124": "BULLDOZER KOMATSU D85ESS2",
@@ -735,7 +650,6 @@ const MASTER_UNIT = {
     "DZ3041": "KOMATSU DOZER D375A-6",
     "DZ3043": "KOMATSU DOZER D375A-6",
     "DZ3044": "KOMATSU DOZER D375A-6",
-
 
     "EX1028": "KOMATSU EXCAVATOR TYPE PC850",
     "EX1045": "KOMATSU EXCAVATOR TYPE PC850",
@@ -756,23 +670,18 @@ const MASTER_UNIT = {
 
     "EX501": "EXCAVATOR KOMATSU PC500LC-10R",
 
-
     "FT0020": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-
     "FT0073": "LIGHT TRUCK SCANIA MDL P410CB6X6",
     "FT0075": "LIGHT TRUCK SCANIA MDL P410CB6X6",
-
 
     "GR2060": "KOMATSU MT GRADER MDL GD825A-2",
     "GR2061": "KOMATSU MT GRADER MDL GD825A-2",
     "GR2062": "KOMATSU MT GRADER MDL GD825A-2",
 
-
     "GS0186": "PERKINS GENSET MODEL PL45P",
     "GS0192": "PATRIA PERKINS GENSET MDL PL65",
 
     "JH01": "TOYOTA HILUX DOUBLE CABIN",
-
 
     "LBAJ001": "BACKCHARGE PT. ARTHA JAYA TRANS",
     "LBAJ002": "BACKCHARGE PT. ARTHA JAYA TRANS",
@@ -782,26 +691,20 @@ const MASTER_UNIT = {
     "LBSI001": "BACKCHARGE PT. SIMA TRANS INDONESIA",
     "LBSI002": "BACKCHARGE PT. SIMA TRANS INDONESIA",
 
-
     "LD0487": "SCANIA MODEL P410 B6X4HZ TV30",
     "LD0488": "SCANIA MODEL P410 B6X4HZ TV30",
     "LD0489": "SCANIA MODEL P410 B6X4HZ TV30",
     "LD0498": "SCANIA MODEL P410 B6X4HZ TV30",
 
-
     "LO0019": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-
     "LO0054": "SCANIA MODEL P410 B6X6-4",
 
     "PM5017": "SCANIA R620",
 
-
     "SD4098": "VESSEL TRAILLER YORK PATRIA SST74",
     "SD4099": "VESSEL TRAILLER YORK PATRIA SST74",
 
-
     "TH0006": "ATTACHMENT TYRE HANDLER",
-
 
     "TL0007": "PATRIA TOWER LAMP MDL LS4-600",
     "TL0050": "PATRIA TOWER LAMP MDL LS4-600",
@@ -827,9 +730,7 @@ const MASTER_UNIT = {
 
     "TL0274": "TOWER LAMP BP MODEL AM-LTH90-4D-KSS",
 
-
     "TMAJ001": "BACKCHARGE PT. ARTHA JAYA TRANS",
-
 
     "TR-B01": "TOYOTA HILUX DOUBLE CABIN",
     "TR-B03": "MITSUBISHI TRITON",
@@ -851,29 +752,23 @@ const MASTER_UNIT = {
     "TR-J01": "TOYOTA HILUX DOUBLE CABIN",
     "TR-KP01": "TOYOTA HILUX DOUBLE CABIN",
 
-
     "WE0049": "MILLER WELDING MACHINE-BIG BLUE",
-
 
     "WP0121": "KUBOTA WATER PUMP",
     "WP0141": "MULTIFLOW PUMP MODEL MF420E",
     "WP0162": "MULTIFLOW RF85MV",
 
-
     "WT0050": "LIGHT TRUCK SCANIA MDL P380CB6X6",
-
     "WT0097": "SCANIA MODEL P410 B6X6-4",
-
     "WT0099": "SCANIA P420-6X6 SUPER",
-
     "WT0101": "LIGHT TRUCK SCANIA MDL P410CB6X6"
 
 };
 
 
-// ===================================================
-// FORMAT
-// ===================================================
+// ================================================
+// FORMAT ANGKA
+// ================================================
 
 function formatAngka(value) {
 
@@ -883,10 +778,16 @@ function formatAngka(value) {
 }
 
 
+// ================================================
+// FORMAT TANGGAL
+// ================================================
+
 function formatTanggal(value) {
 
     if (!value) {
+
         return "-";
+
     }
 
 
@@ -894,8 +795,12 @@ function formatTanggal(value) {
         value.split("-");
 
 
-    if (split.length !== 3) {
+    if (
+        split.length !== 3
+    ) {
+
         return value;
+
     }
 
 
@@ -910,24 +815,23 @@ function formatTanggal(value) {
 }
 
 
-// ===================================================
+// ================================================
 // WH
-// ===================================================
+// ================================================
 
 function getWH(item) {
 
-
-    // Kalau sudah ada WH di Supabase
     if (item.wh) {
 
         return String(
             item.wh
-        ).toUpperCase();
+        )
+        .trim()
+        .toUpperCase();
 
     }
 
 
-    // Kalau Fuel Truck sudah tersimpan
     const fuelTruck =
         String(
             item.fuel_truck || ""
@@ -959,12 +863,11 @@ function getWH(item) {
 }
 
 
-// ===================================================
-// FILTER DATA
-// ===================================================
+// ================================================
+// FILTER
+// ================================================
 
 function applyFilter(data) {
-
 
     const tanggal =
         document
@@ -1003,7 +906,6 @@ function applyFilter(data) {
     return data.filter(
         function(item) {
 
-
             if (
                 tanggal &&
                 item.tanggal !== tanggal
@@ -1016,8 +918,9 @@ function applyFilter(data) {
 
             if (
                 shift &&
-                String(item.shift) !==
-                shift
+                String(
+                    item.shift
+                ) !== shift
             ) {
 
                 return false;
@@ -1041,7 +944,9 @@ function applyFilter(data) {
                     item.unit || ""
                 )
                 .toUpperCase()
-                .includes(unit)
+                .includes(
+                    unit
+                )
             ) {
 
                 return false;
@@ -1057,36 +962,25 @@ function applyFilter(data) {
 }
 
 
-// ===================================================
+// ================================================
 // SUMMARY
-// ===================================================
+// ================================================
 
 function updateSummary(data) {
 
+    let total = 0;
 
-    let total =
-        0;
+    let ft01 = 0;
 
+    let ft02 = 0;
 
-    let ft01 =
-        0;
+    let shift1 = 0;
 
-
-    let ft02 =
-        0;
-
-
-    let shift1 =
-        0;
-
-
-    let shift2 =
-        0;
+    let shift2 = 0;
 
 
     data.forEach(
         function(item) {
-
 
             const qty =
                 Number(
@@ -1094,20 +988,20 @@ function updateSummary(data) {
                 ) || 0;
 
 
-            total +=
-                qty;
+            total += qty;
 
 
             const wh =
-                getWH(item);
+                getWH(
+                    item
+                );
 
 
             if (
                 wh === "FT01"
             ) {
 
-                ft01 +=
-                    qty;
+                ft01 += qty;
 
             }
 
@@ -1116,8 +1010,7 @@ function updateSummary(data) {
                 wh === "FT02"
             ) {
 
-                ft02 +=
-                    qty;
+                ft02 += qty;
 
             }
 
@@ -1128,8 +1021,7 @@ function updateSummary(data) {
                 ) === 1
             ) {
 
-                shift1 +=
-                    qty;
+                shift1 += qty;
 
             }
 
@@ -1140,8 +1032,7 @@ function updateSummary(data) {
                 ) === 2
             ) {
 
-                shift2 +=
-                    qty;
+                shift2 += qty;
 
             }
 
@@ -1214,12 +1105,14 @@ function updateSummary(data) {
 }
 
 
-// ===================================================
+// ================================================
 // BUAT CELL
-// ===================================================
+// ================================================
 
-function td(text, className = "") {
-
+function td(
+    text,
+    className = ""
+) {
 
     const cell =
         document.createElement(
@@ -1231,7 +1124,9 @@ function td(text, className = "") {
         text;
 
 
-    if (className) {
+    if (
+        className
+    ) {
 
         cell.className =
             className;
@@ -1244,12 +1139,11 @@ function td(text, className = "") {
 }
 
 
-// ===================================================
+// ================================================
 // RENDER TABLE
-// ===================================================
+// ================================================
 
 function renderTable(data) {
-
 
     const body =
         document.getElementById(
@@ -1262,8 +1156,10 @@ function renderTable(data) {
 
 
     data.forEach(
-        function(item, index) {
-
+        function(
+            item,
+            index
+        ) {
 
             const row =
                 document.createElement(
@@ -1280,19 +1176,24 @@ function renderTable(data) {
 
 
             const egi =
-                MASTER_UNIT[unit] ||
+                MASTER_UNIT[
+                    unit
+                ] ||
                 "-";
 
 
             // LOG NO
+
             row.appendChild(
                 td(
-                    item.id || index + 1
+                    item.id ||
+                    index + 1
                 )
             );
 
 
             // TANGGAL
+
             row.appendChild(
                 td(
                     formatTanggal(
@@ -1303,30 +1204,38 @@ function renderTable(data) {
 
 
             // SHIFT
+
             row.appendChild(
                 td(
-                    item.shift || "-"
+                    item.shift ||
+                    "-"
                 )
             );
 
 
             // WH
+
             row.appendChild(
                 td(
-                    getWH(item)
+                    getWH(
+                        item
+                    )
                 )
             );
 
 
             // CODE UNIT
+
             row.appendChild(
                 td(
-                    unit || "-"
+                    unit ||
+                    "-"
                 )
             );
 
 
             // EGI
+
             row.appendChild(
                 td(
                     egi,
@@ -1336,20 +1245,21 @@ function renderTable(data) {
 
 
             // CODE ELLIPSE
+
             row.appendChild(
                 td(
-                    unit || "-"
+                    unit ||
+                    "-"
                 )
             );
 
 
             // HM
+
             row.appendChild(
                 td(
-                    item.hm_akhir !==
-                    null &&
-                    item.hm_akhir !==
-                    undefined
+                    item.hm_akhir !== null &&
+                    item.hm_akhir !== undefined
                     ?
                     formatAngka(
                         item.hm_akhir
@@ -1361,6 +1271,7 @@ function renderTable(data) {
 
 
             // QTY ISSUED
+
             row.appendChild(
                 td(
                     formatAngka(
@@ -1372,6 +1283,7 @@ function renderTable(data) {
 
 
             // OPERATOR NAME
+
             row.appendChild(
                 td(
                     item.operator ||
@@ -1381,6 +1293,7 @@ function renderTable(data) {
 
 
             // STD + FUELMAN
+
             row.appendChild(
                 td(
                     item.fuelman ||
@@ -1390,6 +1303,7 @@ function renderTable(data) {
 
 
             // COST
+
             row.appendChild(
                 td(
                     item.cost ||
@@ -1399,6 +1313,7 @@ function renderTable(data) {
 
 
             // ALOKASI
+
             row.appendChild(
                 td(
                     item.alokasi ||
@@ -1407,11 +1322,11 @@ function renderTable(data) {
             );
 
 
-            // CEK
+            // CEK - TANPA WARNA DULU
+
             row.appendChild(
                 td(
-                    "TERPOSTING",
-                    "status-posted"
+                    "TERPOSTING"
                 )
             );
 
@@ -1420,19 +1335,17 @@ function renderTable(data) {
                 row
             );
 
-
         }
     );
 
 }
 
 
-// ===================================================
-// LOAD DATA SUPABASE
-// ===================================================
+// ================================================
+// LOAD SUPABASE
+// ================================================
 
 async function loadData() {
-
 
     const loading =
         document.getElementById(
@@ -1458,7 +1371,10 @@ async function loadData() {
         "none";
 
 
-    const { data, error } =
+    const {
+        data,
+        error
+    } =
         await supabaseClient
 
             .from(
@@ -1489,8 +1405,9 @@ async function loadData() {
             );
 
 
-    if (error) {
-
+    if (
+        error
+    ) {
 
         console.error(
             error
@@ -1506,9 +1423,7 @@ async function loadData() {
 
 
         errorBox.textContent =
-
             "❌ Gagal mengambil data logsheet: " +
-
             error.message;
 
 
@@ -1537,7 +1452,6 @@ async function loadData() {
         filtered.length === 0
     ) {
 
-
         loading.style.display =
             "block";
 
@@ -1545,22 +1459,19 @@ async function loadData() {
         loading.textContent =
             "Tidak ada data untuk filter yang dipilih.";
 
-
     } else {
-
 
         loading.style.display =
             "none";
-
 
     }
 
 }
 
 
-// ===================================================
+// ================================================
 // FILTER OTOMATIS
-// ===================================================
+// ================================================
 
 document
     .getElementById(
@@ -1602,15 +1513,13 @@ document
     );
 
 
-// ===================================================
+// ================================================
 // START
-// ===================================================
+// ================================================
 
 loadData();
 
-
 </script>
-
 
 </body>
 
