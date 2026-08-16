@@ -1,1 +1,451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HM Master - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:20px}
+.header h2{margin:0 0 5px}
+.container{max-width:1050px;margin:22px auto;padding:12px}
+.panel{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
+input,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px}
+textarea{min-height:78px;resize:vertical}
+button{border:0;border-radius:7px;padding:11px 15px;cursor:pointer;font-weight:bold}
+.primary{background:#2563eb;color:#fff}
+.green{background:#16a34a;color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px}
+.card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}
+.card small{color:#64748b;display:block;margin-bottom:6px}
+.card strong{font-size:20px;display:block}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:13px;font-size:13px;line-height:1.55}
+.warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:13px;font-size:13px;line-height:1.55;margin-top:10px}
+.status{margin-top:12px;font-weight:bold;font-size:13px}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}
+th{background:#e5e7eb}
+.table-wrap{overflow-x:auto}
 
+/* ===== KPP-FMS GLOBAL NAV ===== */
+.app-nav{
+    background:#111827;
+    border-top:1px solid rgba(255,255,255,.08);
+    border-bottom:1px solid #374151;
+    padding:9px 12px;
+    position:sticky;
+    top:0;
+    z-index:999;
+}
+.app-nav-inner{
+    max-width:1250px;
+    margin:0 auto;
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    align-items:center;
+    overflow-x:auto;
+    scrollbar-width:thin;
+}
+.app-nav a{
+    color:#e5e7eb;
+    text-decoration:none;
+    padding:10px 16px;
+    border-radius:7px;
+    white-space:nowrap;
+    font-size:13px;
+    font-weight:bold;
+    border:1px solid transparent;
+}
+.app-nav a:hover{background:#374151;color:#fff}
+.app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}
+@media(max-width:700px){
+    .app-nav-inner{justify-content:flex-start}
+    .app-nav a{padding:9px 12px;font-size:12px}
+}
+
+</style>
+</head>
+<body>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>HM Master / Koreksi HM Aktual</div></div>
+<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html" class="active">⚙️ HM Master</a></div></nav>
+<div class="container">
+    <div class="panel">
+        <div class="info">
+            HM Master dipakai untuk memasukkan <b>HM aktual yang benar-benar terbaca di unit</b> saat mulai go-live atau saat HM lama diketahui salah.
+            Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
+        </div>
+        <div class="warning">
+            Setelah ada pengisian yang waktunya lebih baru dari koreksi ini, HM transaksi pengisian tersebut otomatis menjadi HM sebelumnya berikutnya.
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>1. Pilih Unit</h3>
+        <div class="grid">
+            <div>
+                <label>CODE UNIT</label>
+                <input id="unitInput" list="unitOptions" placeholder="Contoh: DT7441" autocomplete="off">
+                <datalist id="unitOptions"></datalist>
+            </div>
+            <div style="align-self:end">
+                <button class="primary" onclick="checkUnit()">CEK HM UNIT</button>
+            </div>
+        </div>
+        <div class="cards">
+            <div class="card"><small>HM YANG DIPAKAI SEKARANG</small><strong id="currentHm">-</strong><small id="currentSource" style="margin-top:6px">-</small></div>
+            <div class="card"><small>BASELINE LOGSHEET LAMA</small><strong id="baselineHm">-</strong></div>
+            <div class="card"><small>KOREKSI TERAKHIR</small><strong id="lastCorrection">-</strong><small id="lastCorrectionTime" style="margin-top:6px">-</small></div>
+        </div>
+        <div class="status" id="checkStatus"></div>
+    </div>
+
+    <div class="panel">
+        <h3>2. Masukkan HM Aktual</h3>
+        <div class="grid">
+            <div><label>HM Aktual Unit</label><input type="number" id="actualHm" min="0" step="0.1" placeholder="HM sesuai display unit"></div>
+            <div><label>Tanggal Efektif</label><input type="date" id="effectiveDate"></div>
+            <div><label>Jam Efektif</label><input type="time" id="effectiveTime" step="1"></div>
+            <div><label>Fuelman / Operator</label><input id="operator" placeholder="Nama yang input koreksi"></div>
+        </div>
+        <div style="margin-top:12px">
+            <label>Keterangan</label>
+            <textarea id="note" placeholder="Contoh: HM aktual dicek langsung dari display unit sebelum go-live"></textarea>
+        </div>
+        <div style="margin-top:14px"><button class="green" onclick="saveCorrection()">SIMPAN HM AKTUAL</button></div>
+        <div class="status" id="saveStatus"></div>
+    </div>
+
+    <div class="panel">
+        <h3>Riwayat Koreksi Unit Terpilih</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Tanggal</th><th>Jam</th><th>Unit</th><th>HM</th><th>Operator</th><th>Keterangan</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="6">Pilih unit terlebih dahulu.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
+const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const MASTER_UNITS = [
+        "CB1019",
+        "CM0108",
+        "CP118",
+        "CP119",
+        "CRAJ001",
+        "CRAJ002",
+        "CRSI001",
+        "CRSI002",
+        "CT0042",
+        "CT0054",
+        "CT0058",
+        "DL0051",
+        "DT7049",
+        "DT7081",
+        "DT7102",
+        "DT7122",
+        "DT7127",
+        "DT7220",
+        "DT7441",
+        "DT7442",
+        "DT7443",
+        "DT7444",
+        "DT7445",
+        "DT7446",
+        "DT7447",
+        "DT7448",
+        "DT7449",
+        "DT7450",
+        "DT7451",
+        "DT7452",
+        "DT7453",
+        "DT7454",
+        "DT7455",
+        "DT7456",
+        "DT7457",
+        "DZ1034",
+        "DZ1050",
+        "DZ124",
+        "DZ129",
+        "DZ3041",
+        "DZ3043",
+        "DZ3044",
+        "EX1028",
+        "EX1045",
+        "EX1050",
+        "EX1051",
+        "EX2056",
+        "EX2057",
+        "EX2058",
+        "EX238",
+        "EX239",
+        "EX240",
+        "EX241",
+        "EX432",
+        "EX433",
+        "EX501",
+        "FT0020",
+        "FT0073",
+        "FT0075",
+        "GR2060",
+        "GR2061",
+        "GR2062",
+        "GS0186",
+        "GS0192",
+        "JH01",
+        "LBAJ001",
+        "LBAJ002",
+        "LBAJ003",
+        "LBAJ004",
+        "LBSI001",
+        "LBSI002",
+        "LD0487",
+        "LD0488",
+        "LD0489",
+        "LD0498",
+        "LO0019",
+        "LO0054",
+        "PM5017",
+        "SD4098",
+        "SD4099",
+        "TH0006",
+        "TL0007",
+        "TL0050",
+        "TL0074",
+        "TL0076",
+        "TL0121",
+        "TL0123",
+        "TL0131",
+        "TL0146",
+        "TL0147",
+        "TL0156",
+        "TL0157",
+        "TL0158",
+        "TL0201",
+        "TL0222",
+        "TL0247",
+        "TL0248",
+        "TL0249",
+        "TL0250",
+        "TL0251",
+        "TL0274",
+        "TMAJ001",
+        "TR-B01",
+        "TR-B03",
+        "TR-D01",
+        "TR-D02",
+        "TR-D03",
+        "TR-F01",
+        "TR-F02",
+        "TR-F03",
+        "TR-F04",
+        "TR-F05",
+        "TR-F06",
+        "TR-J01",
+        "TR-KP01",
+        "WE0049",
+        "WP0121",
+        "WP0141",
+        "WP0162",
+        "WT0050",
+        "WT0097",
+        "WT0099",
+        "WT0101",
+        "TR-B04"
+];
+const MASTER_LAST_HM = {
+        "CB1019": 587,
+        "CM0108": 545,
+        "CP118": 1820,
+        "CP119": 1907,
+        "CT0042": 4508,
+        "CT0054": 1033,
+        "CT0058": 530,
+        "DT7049": 41515,
+        "DT7081": 39478,
+        "DT7102": 30655,
+        "DT7122": 25854,
+        "DT7127": 27624,
+        "DT7441": 2463,
+        "DT7442": 2218,
+        "DT7443": 2406,
+        "DT7444": 2158,
+        "DT7445": 2511,
+        "DT7446": 2304,
+        "DT7447": 2327,
+        "DT7448": 2317,
+        "DT7449": 2339,
+        "DT7450": 2380,
+        "DT7451": 2474,
+        "DT7452": 2151,
+        "DT7453": 1826,
+        "DT7454": 2021,
+        "DT7455": 1693,
+        "DT7456": 1322,
+        "DT7457": 1642,
+        "DZ1034": 13455,
+        "DZ1050": 3311,
+        "DZ124": 11570,
+        "DZ129": 3322,
+        "DZ3041": 905,
+        "DZ3043": 2744,
+        "EX1028": 2913,
+        "EX1045": 3961,
+        "EX1051": 4220,
+        "EX2056": 2429,
+        "EX2057": 2244,
+        "EX2058": 1738,
+        "EX238": 3214,
+        "EX239": 2067,
+        "EX240": 2430,
+        "EX241": 2428,
+        "EX432": 2682,
+        "EX433": 2803,
+        "EX501": 15045,
+        "FT0073": 5035,
+        "FT0075": 1646,
+        "GR2060": 3195,
+        "GR2061": 2919,
+        "GR2062": 158,
+        "GS0186": 5203,
+        "GS0192": 11937,
+        "JH01": 98261,
+        "LD0487": 6675,
+        "LD0488": 6092,
+        "LD0489": 7399,
+        "LD0498": 9165,
+        "LO0054": 2017,
+        "TL0007": 5816,
+        "TL0050": 74957,
+        "TL0074": 2261,
+        "TL0076": 56528,
+        "TL0121": 27977,
+        "TL0123": 6773,
+        "TL0146": 19690,
+        "TL0147": 20186,
+        "TL0156": 12431,
+        "TL0157": 1499,
+        "TL0222": 7449,
+        "TL0247": 495,
+        "TL0248": 479,
+        "TL0249": 2021,
+        "TL0250": 93405,
+        "TL0251": 2567,
+        "TR-B01": 27663,
+        "TR-B03": 24098,
+        "TR-D01": 21261,
+        "TR-D02": 88880,
+        "TR-D03": 28158,
+        "TR-F01": 30308,
+        "TR-F02": 26617,
+        "TR-F03": 18712,
+        "TR-F04": 17650,
+        "TR-F05": 25039,
+        "TR-F06": 22454,
+        "TR-J01": 27913,
+        "WE0049": 39190,
+        "WP0141": 118583,
+        "WT0050": 40348,
+        "WT0097": 453,
+        "WT0099": 899,
+        "WT0101": 734,
+        "TR-B04": 27963
+};
+let selectedUnit="";
+
+function pad(v){return String(v).padStart(2,"0")}
+function localDate(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function localTime(){const d=new Date();return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+function n(v){return Number(v||0)}
+function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1})}
+function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
+function operationalKey(row){if(!row)return "0000-00-00T00:00:00";return `${row.tanggal||"0000-00-00"}T${String(row.jam||"00:00:00").slice(0,8)}`}
+
+const opts=document.getElementById("unitOptions");
+MASTER_UNITS.forEach(u=>{const o=document.createElement("option");o.value=u;opts.appendChild(o)});
+document.getElementById("effectiveDate").value=localDate();
+document.getElementById("effectiveTime").value=localTime();
+document.getElementById("unitInput").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
+
+async function getLatest(unit){
+    const [fuelRes,corrRes]=await Promise.all([
+        db.from("fuel_history").select("id,tanggal,jam,hm_akhir").eq("unit",unit).not("hm_akhir","is",null).order("tanggal",{ascending:false}).order("jam",{ascending:false}).order("id",{ascending:false}).limit(1),
+        db.from("hm_corrections").select("id,tanggal,jam,hm,operator,note").eq("unit",unit).order("tanggal",{ascending:false}).order("jam",{ascending:false}).order("id",{ascending:false}).limit(1)
+    ]);
+    if(fuelRes.error) throw fuelRes.error;
+    if(corrRes.error) throw corrRes.error;
+    const fuel=fuelRes.data?.[0]||null;
+    const corr=corrRes.data?.[0]||null;
+    let current=null;
+    if(fuel&&corr) current=operationalKey(corr)>=operationalKey(fuel)?{hm:n(corr.hm),source:`HM Master / Koreksi Aktual (${corr.tanggal} ${String(corr.jam).slice(0,5)})`}:{hm:n(fuel.hm_akhir),source:`Transaksi online terakhir (${fuel.tanggal} ${String(fuel.jam||"").slice(0,5)})`};
+    else if(corr) current={hm:n(corr.hm),source:`HM Master / Koreksi Aktual (${corr.tanggal} ${String(corr.jam).slice(0,5)})`};
+    else if(fuel) current={hm:n(fuel.hm_akhir),source:`Transaksi online terakhir (${fuel.tanggal} ${String(fuel.jam||"").slice(0,5)})`};
+    else if(Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit)) current={hm:n(MASTER_LAST_HM[unit]),source:"Baseline logsheet Excel"};
+    else current={hm:0,source:"Belum ada HM"};
+    return {fuel,corr,current};
+}
+
+async function checkUnit(){
+    const unit=normalizeUnit(document.getElementById("unitInput").value);
+    if(!MASTER_UNITS.includes(unit)){alert("CODE UNIT tidak ada di master populasi.");return}
+    selectedUnit=unit;
+    document.getElementById("checkStatus").textContent="Mengambil HM...";
+    try{
+        const data=await getLatest(unit);
+        document.getElementById("currentHm").textContent=data.current.hm>0?fmt(data.current.hm):"Belum ada";
+        document.getElementById("currentSource").textContent=data.current.source;
+        const baseline=Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit)?MASTER_LAST_HM[unit]:null;
+        document.getElementById("baselineHm").textContent=baseline!==null?fmt(baseline):"Tidak ada";
+        document.getElementById("lastCorrection").textContent=data.corr?fmt(data.corr.hm):"Belum ada";
+        document.getElementById("lastCorrectionTime").textContent=data.corr?`${data.corr.tanggal} ${String(data.corr.jam).slice(0,5)} • ${data.corr.operator||"-"}`:"-";
+        document.getElementById("actualHm").value="";
+        document.getElementById("checkStatus").textContent=`✅ ${unit} siap dikoreksi bila HM aktual berbeda.`;
+        await loadHistory(unit);
+    }catch(err){document.getElementById("checkStatus").textContent="❌ "+err.message}
+}
+
+async function loadHistory(unit){
+    const {data,error}=await db.from("hm_corrections").select("id,tanggal,jam,unit,hm,operator,note").eq("unit",unit).order("tanggal",{ascending:false}).order("jam",{ascending:false}).order("id",{ascending:false}).limit(20);
+    const body=document.getElementById("historyBody");
+    if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}
+    if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
+    body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");
+}
+
+async function saveCorrection(){
+    if(!selectedUnit){alert("Cek/pilih unit terlebih dahulu.");return}
+    const hm=parseFloat(document.getElementById("actualHm").value);
+    const tanggal=document.getElementById("effectiveDate").value;
+    const jam=document.getElementById("effectiveTime").value;
+    const operator=document.getElementById("operator").value.trim();
+    const note=document.getElementById("note").value.trim();
+    if(Number.isNaN(hm)||hm<0){alert("Masukkan HM aktual yang valid.");return}
+    if(!tanggal||!jam){alert("Tanggal dan jam efektif wajib diisi.");return}
+    if(!operator){alert("Masukkan nama operator/fuelman.");return}
+    const ok=confirm(`Simpan HM aktual?
+
+Unit: ${selectedUnit}
+HM Aktual: ${fmt(hm)}
+Efektif: ${tanggal} ${jam}
+
+Data histori logsheet lama tidak akan dihapus.`);
+    if(!ok)return;
+    const {error}=await db.from("hm_corrections").insert({tanggal,jam,unit:selectedUnit,hm,operator,note});
+    const status=document.getElementById("saveStatus");
+    if(error){status.textContent="❌ "+error.message;return}
+    status.textContent=`✅ HM aktual ${selectedUnit} = ${fmt(hm)} tersimpan dan menjadi patokan sesuai waktu efektif.`;
+    document.getElementById("effectiveDate").value=localDate();
+    document.getElementById("effectiveTime").value=localTime();
+    document.getElementById("actualHm").value="";
+    await checkUnit();
+}
+</script>
+</body>
+</html>
