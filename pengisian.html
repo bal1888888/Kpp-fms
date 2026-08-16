@@ -596,12 +596,39 @@
             }
 
 
-            // Simpan HM terakhir
-            localStorage.setItem(
-                "hm_" + currentUnit,
-                currentHM
-            );
+            // ================================
+// SIMPAN TRANSAKSI
+// ================================
 
+const transactions =
+    JSON.parse(localStorage.getItem("fuelHistory")) || [];
+
+const now = new Date();
+
+const transaction = {
+    tanggal: now.toLocaleDateString("id-ID"),
+    jam: now.toLocaleTimeString("id-ID"),
+    unit: currentUnit,
+    hmAwal: previousHM,
+    hmAkhir: currentHM,
+    hmJalan: previousHM > 0 ? currentHM - previousHM : 0,
+    fuel: fuel,
+    shift: shift
+};
+
+transactions.push(transaction);
+
+// Simpan seluruh riwayat
+localStorage.setItem(
+    "fuelHistory",
+    JSON.stringify(transactions)
+);
+
+// Simpan HM terakhir untuk unit
+localStorage.setItem(
+    "hm_" + currentUnit,
+    currentHM
+);
 
             alert(
                 "Data pengisian berhasil disimpan!\n\n" +
