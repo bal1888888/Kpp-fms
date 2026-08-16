@@ -35,6 +35,8 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 .error{display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:12px;border-radius:6px;margin-bottom:15px}
 .actions{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap}
 .btn{background:#2563eb;color:#fff;padding:10px 15px;border-radius:6px;text-decoration:none;font-size:13px}.btn-green{background:#16a34a}
+.status-double{background:#fee2e2!important;color:#b91c1c;font-weight:bold}
+.status-error{background:#ffedd5!important;color:#c2410c;font-weight:bold}
 .hidden{display:none!important}
 @media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
 </style>
@@ -44,7 +46,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <div class="container"><div class="sheet">
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
-<div class="notice" id="dataNotice">Memuat seluruh histori dari database...</div>
+<div class="notice" id="dataNotice">Memuat seluruh histori dari database... CEK hanya menampilkan DOUBLE POSTING dan ERROR / BELUM DIKETAHUI.</div>
 
 <div class="summary">
   <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
@@ -102,6 +104,7 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const MASTER_UNIT={"CB1019":{"egi":"MERLO MODEL P120.10EE","ellipse":"CB1019"},"CM0108":{"egi":"PORTABLE SCREW AIR COMPRESSOR","ellipse":"CM0108"},"CP118":{"egi":"COMPACTOR BOMAG BW216D4","ellipse":"CP118"},"CP119":{"egi":"COMPACTOR BOMAG BW216D4","ellipse":"CP119"},"CRAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"CRAJ001"},"CRAJ002":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"CRAJ002"},"CRSI001":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"CRSI001"},"CRSI002":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"CRSI002"},"CT0042":{"egi":"TADANO CRANE MDL GR500E-2","ellipse":"CT0042"},"CT0054":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"CT0054"},"CT0058":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"CT0058"},"DL0051":{"egi":"PATRIA CDL50","ellipse":"DL0051"},"DT7049":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7049"},"DT7081":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7081"},"DT7102":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7102"},"DT7122":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7122"},"DT7127":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7127"},"DT7220":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7220"},"DT7441":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7441"},"DT7442":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7442"},"DT7443":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7443"},"DT7444":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7444"},"DT7445":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7445"},"DT7446":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7446"},"DT7447":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7447"},"DT7448":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7448"},"DT7449":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7449"},"DT7450":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7450"},"DT7451":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7451"},"DT7452":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7452"},"DT7453":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7453"},"DT7454":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7454"},"DT7455":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7455"},"DT7456":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7456"},"DT7457":{"egi":"KOMATSU DUMP TRUCK MODEL HD785-7","ellipse":"DT7457"},"DZ1034":{"egi":"KOMATSU DOZZER MODEL D155A-6A","ellipse":"DZ1034"},"DZ1050":{"egi":"BULLDOZER KOMATSU D155A-6R","ellipse":"DZ1050"},"DZ124":{"egi":"BULLDOZER KOMATSU D85ESS2","ellipse":"DZ124"},"DZ129":{"egi":"BULLDOZER KOMATSU D85ESS2","ellipse":"DZ129"},"DZ3041":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3041"},"DZ3043":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3043"},"DZ3044":{"egi":"KOMATSU DOZER D375A-6","ellipse":"DZ3044"},"EX1028":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1028"},"EX1045":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1045"},"EX1050":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1050"},"EX1051":{"egi":"KOMATSU EXCAVATOR TYPE PC850","ellipse":"EX1051"},"EX2056":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2056"},"EX2057":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2057"},"EX2058":{"egi":"EXCAVATOR KOMATSU PC1250-11R","ellipse":"EX2058"},"EX238":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX238"},"EX239":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX239"},"EX240":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX240"},"EX241":{"egi":"EXCAVATOR KOMATSU PC210-10M0","ellipse":"EX241"},"EX432":{"egi":"EXCAVATOR KOMATSU PC400LCSE8","ellipse":"EX432"},"EX433":{"egi":"EXCAVATOR KOMATSU PC400LCSE8","ellipse":"EX433"},"EX501":{"egi":"EXCAVATOR KOMATSU PC500LC-10R","ellipse":"EX501"},"FT0020":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"FT0020"},"FT0073":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"FT0073"},"FT0075":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"FT0075"},"GR2060":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2060"},"GR2061":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2061"},"GR2062":{"egi":"KOMATSU MT GRADER MDL GD825A-2","ellipse":"GR2062"},"GS0186":{"egi":"PERKINS GENSET MODEL PL45P","ellipse":"GS0186"},"GS0192":{"egi":"PATRIA PERKINS GENSET MDL PL65","ellipse":"GS0192"},"JH01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"JH01"},"LBAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ001"},"LBAJ002":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ002"},"LBAJ003":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ003"},"LBAJ004":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"LBAJ004"},"LBSI001":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"LBSI001"},"LBSI002":{"egi":"BACKCHARGE PT. SIMA TRANS INDONESIA","ellipse":"LBSI002"},"LD0487":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0487"},"LD0488":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0488"},"LD0489":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0489"},"LD0498":{"egi":"SCANIA MODEL P410 B6X4HZ TV30","ellipse":"LD0498"},"LO0019":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"LO0019"},"LO0054":{"egi":"SCANIA MODEL P410 B6X6-4","ellipse":"LO0054"},"PM5017":{"egi":"SCANIA R620","ellipse":"PM5017"},"SD4098":{"egi":"VESSEL TRAILLER YORK PATRIA SST74","ellipse":"SD4098"},"SD4099":{"egi":"VESSEL TRAILLER YORK PATRIA SST74","ellipse":"SD4099"},"TH0006":{"egi":"ATTACHMENT TYRE HANDLER","ellipse":"TH0006"},"TL0007":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0007"},"TL0050":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0050"},"TL0074":{"egi":"TEREX TOWER LAMP MODEL RL4000","ellipse":"TL0074"},"TL0076":{"egi":"PATRIA TOWER LAMP MDL LS4-600","ellipse":"TL0076"},"TL0121":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0121"},"TL0123":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0123"},"TL0131":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0131"},"TL0146":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0146"},"TL0147":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0147"},"TL0156":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0156"},"TL0157":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0157"},"TL0158":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0158"},"TL0201":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0201"},"TL0222":{"egi":"TOWER LAMP PATRIA - LS42000","ellipse":"TL0222"},"TL0247":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0247"},"TL0248":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0248"},"TL0249":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0249"},"TL0250":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0250"},"TL0251":{"egi":"TOWERLAMP AMLTFH-6X480 BINA PERTIWI","ellipse":"TL0251"},"TL0274":{"egi":"TOWER LAMP BP MODEL AM-LTH90-4D-KSS","ellipse":"TL0274"},"TMAJ001":{"egi":"BACKCHARGE PT. ARTHA JAYA TRANS","ellipse":"TMAJ001"},"TR-B01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-B01"},"TR-B03":{"egi":"MITSUBISHI TRITON","ellipse":"TR-B03"},"TR-D01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-D01"},"TR-D02":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-D02"},"TR-D03":{"egi":"MITSUBISHI TRITON","ellipse":"TR-D03"},"TR-F01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-F01"},"TR-F02":{"egi":"MITSUBISHI TRITON","ellipse":"TR-F02"},"TR-F03":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F03"},"TR-F04":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F04"},"TR-F05":{"egi":"CANTER 136 KORSSERI LAKSANA 4X4","ellipse":"TR-F05"},"TR-F06":{"egi":"MITSUBISHI ELF CANTER 4X2","ellipse":"TR-F06"},"TR-J01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-J01"},"TR-KP01":{"egi":"TOYOTA HILUX DOUBLE CABIN","ellipse":"TR-KP01"},"WE0049":{"egi":"MILLER WELDING MACHINE-BIG BLUE","ellipse":"WE0049"},"WP0121":{"egi":"KUBOTA WATER PUMP","ellipse":"WP0121"},"WP0141":{"egi":"MULTIFLOW PUMP MODEL MF420E","ellipse":"WP0141"},"WP0162":{"egi":"MULTIFLOW RF85MV","ellipse":"WP0162"},"WT0050":{"egi":"LIGHT TRUCK SCANIA MDL P380CB6X6","ellipse":"WT0050"},"WT0097":{"egi":"SCANIA MODEL P410 B6X6-4","ellipse":"WT0097"},"WT0099":{"egi":"SCANIA P420-6X6 SUPER","ellipse":"WT0099"},"WT0101":{"egi":"LIGHT TRUCK SCANIA MDL P410CB6X6","ellipse":"WT0101"},"TR-B04":{"egi":"MITSUBISHI TRITON","ellipse":"TR-B04"}};
 
 let ALL_DATA=[];
+let STATUS_MAP=new Map();
 
 function formatAngka(v){ return Number(v||0).toLocaleString("id-ID"); }
 function formatTanggal(v){
@@ -115,6 +118,99 @@ function getWH(item){
   if(ft==="FT0073") return "FT02";
   if(ft==="FT0075") return "FT01";
   return "-";
+}
+
+function duplicateSignature(item){
+  const tanggal=String(item.tanggal||"").trim();
+  const shift=String(item.shift||"").trim();
+  const wh=getWH(item);
+  const unit=String(item.unit||"").trim().toUpperCase();
+  const fuel=Number(item.fuel);
+  const hmRaw=item.hm_akhir;
+  const jam=String(item.jam||"").trim();
+
+  if(!tanggal || !shift || !unit || !Number.isFinite(fuel) || fuel<=0) return "";
+
+  // Paling aman: transaksi dianggap dobel bila HM-nya sama persis.
+  // Untuk transaksi web yang punya jam tetapi tidak punya HM, jam dipakai sebagai pengaman.
+  if(hmRaw!==null && hmRaw!==undefined && hmRaw!==""){
+    const hm=Number(hmRaw);
+    if(Number.isFinite(hm)){
+      return `HM|${tanggal}|${shift}|${wh}|${unit}|${hm}|${fuel}`;
+    }
+  }
+
+  if(jam){
+    return `JAM|${tanggal}|${shift}|${wh}|${unit}|${jam}|${fuel}`;
+  }
+
+  return "";
+}
+
+function buildStatusMap(data){
+  const statusMap=new Map();
+  const seen=new Set();
+
+  data.forEach((item,index)=>{
+    const key=duplicateSignature(item);
+    const rowKey=String(item.id ?? `idx-${index}`);
+
+    if(key){
+      if(seen.has(key)){
+        statusMap.set(rowKey,{
+          text:"DOUBLE POSTING",
+          cls:"status-double",
+          reason:"Transaksi sama sudah ada sebelumnya (tanggal, shift, WH, unit, HM/jam, dan QTY sama)."
+        });
+      }else{
+        seen.add(key);
+      }
+    }
+  });
+
+  return statusMap;
+}
+
+function getErrorStatus(item){
+  const problems=[];
+  const unit=String(item.unit||"").trim().toUpperCase();
+  const wh=getWH(item);
+  const shift=Number(item.shift);
+  const fuel=Number(item.fuel);
+
+  if(!item.tanggal) problems.push("tanggal kosong");
+  if(!unit) problems.push("CODE UNIT kosong");
+  else if(!MASTER_UNIT[unit]) problems.push("CODE UNIT tidak ada di master populasi");
+  if(wh!=="FT01" && wh!=="FT02") problems.push("WH tidak diketahui");
+  if(shift!==1 && shift!==2) problems.push("shift tidak valid");
+  if(!Number.isFinite(fuel) || fuel<=0) problems.push("QTY fuel tidak valid");
+
+  const awal=item.hm_awal;
+  const akhir=item.hm_akhir;
+  if(awal!==null && awal!==undefined && awal!=="" && akhir!==null && akhir!==undefined && akhir!==""){
+    const hmAwal=Number(awal);
+    const hmAkhir=Number(akhir);
+    if(Number.isFinite(hmAwal) && Number.isFinite(hmAkhir) && hmAkhir<hmAwal){
+      problems.push("HM akhir lebih kecil dari HM awal");
+    }
+  }
+
+  if(problems.length===0) return null;
+
+  return {
+    text:"ERROR / BELUM DIKETAHUI",
+    cls:"status-error",
+    reason:problems.join(", ")
+  };
+}
+
+function getRowStatus(item,index){
+  // Error data lebih diprioritaskan daripada status dobel.
+  const errorStatus=getErrorStatus(item);
+  if(errorStatus) return errorStatus;
+
+  const rowKey=String(item.id ?? `idx-${index}`);
+  return STATUS_MAP.get(rowKey) || {text:"",cls:"",reason:""};
 }
 
 async function fetchAllFuelHistory(){
@@ -185,10 +281,11 @@ function updateSummary(data){
   document.getElementById("totalShift2").textContent=formatAngka(s2)+" L";
 }
 
-function td(text,cls=""){
+function td(text,cls="",title=""){
   const cell=document.createElement("td");
   cell.textContent=text;
   if(cls) cell.className=cls;
+  if(title) cell.title=title;
   return cell;
 }
 
@@ -214,7 +311,9 @@ function renderTable(data){
     row.appendChild(td(item.fuelman||"-"));
     row.appendChild(td(item.cost||"-"));
     row.appendChild(td(item.alokasi||"-"));
-    row.appendChild(td("TERPOSTING"));
+
+    const status=getRowStatus(item,index);
+    row.appendChild(td(status.text,status.cls,status.reason));
 
     body.appendChild(row);
   });
@@ -233,8 +332,15 @@ function renderFiltered(){
     loading.style.display="none";
   }
 
+  const statusCounts=filtered.reduce((acc,item,index)=>{
+    const st=getRowStatus(item,index).text;
+    if(st==="DOUBLE POSTING") acc.double++;
+    if(st==="ERROR / BELUM DIKETAHUI") acc.error++;
+    return acc;
+  },{double:0,error:0});
+
   document.getElementById("dataNotice").textContent=
-    `Database terbaca: ${formatAngka(ALL_DATA.length)} transaksi. Filter aktif: ${formatAngka(filtered.length)} transaksi.`;
+    `Database terbaca: ${formatAngka(ALL_DATA.length)} transaksi. Filter aktif: ${formatAngka(filtered.length)} transaksi. DOUBLE: ${formatAngka(statusCounts.double)} | ERROR: ${formatAngka(statusCounts.error)}.`;
 
   return filtered;
 }
@@ -249,6 +355,7 @@ async function loadData(){
 
   try{
     ALL_DATA=await fetchAllFuelHistory();
+    STATUS_MAP=buildStatusMap(ALL_DATA);
     renderFiltered();
   }catch(error){
     console.error(error);
@@ -284,7 +391,7 @@ function downloadExcel(){
       "STD + Fuelman": item.fuelman||"",
       "COST": item.cost||"",
       "ALOKASI": item.alokasi||"",
-      "Cek": "TERPOSTING"
+      "Cek": getRowStatus(item,index).text
     };
   });
 
