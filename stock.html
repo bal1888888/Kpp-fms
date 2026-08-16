@@ -187,36 +187,53 @@ th{background:#e5e7eb}
 </div>
 
 <div class="panel">
-    <h3>3. Transfer MT → FT</h3>
+    <h3>3. Transfer Antar Storage</h3>
+
+    <div class="note" style="margin-bottom:12px">
+        Bisa transfer MT → FT, FT → MT, FT → FT, atau MT → MT.
+        Total Stock All WHS tidak berubah karena hanya berpindah antar storage.
+    </div>
+
     <div class="grid">
         <div>
-            <label>Dari MT</label>
-            <select id="transferSource">
-                <option>MT01</option>
-                <option>MT02</option>
-                <option>MT03</option>
-                <option>MT04</option>
-            </select>
-        </div>
-        <div>
-            <label>Ke Fuel Truck</label>
-            <select id="transferDestination">
+            <label>Dari Storage</label>
+            <select id="transferSource" onchange="syncTransferDestination()">
+                <option value="MT01">MT01</option>
+                <option value="MT02">MT02</option>
+                <option value="MT03">MT03</option>
+                <option value="MT04">MT04</option>
                 <option value="FT0073">FT0073 (WH FT02)</option>
                 <option value="FT0075">FT0075 (WH FT01)</option>
             </select>
         </div>
+
+        <div>
+            <label>Ke Storage</label>
+            <select id="transferDestination">
+                <option value="MT01">MT01</option>
+                <option value="MT02">MT02</option>
+                <option value="MT03">MT03</option>
+                <option value="MT04">MT04</option>
+                <option value="FT0073">FT0073 (WH FT02)</option>
+                <option value="FT0075">FT0075 (WH FT01)</option>
+            </select>
+        </div>
+
         <div>
             <label>Qty Transfer (Liter)</label>
             <input type="number" id="transferQty" min="0" step="0.1">
         </div>
+
         <div>
             <label>Operator</label>
             <input id="transferOperator" placeholder="Nama fuelman">
         </div>
+
         <div style="align-self:end">
             <button class="primary" onclick="saveTransfer()">SIMPAN TRANSFER</button>
         </div>
     </div>
+
     <div class="status" id="transferStatus"></div>
 </div>
 
@@ -652,6 +669,21 @@ async function saveReceipt(){
     }
 }
 
+
+function syncTransferDestination(){
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination");
+
+    Array.from(destination.options).forEach(option=>{
+        option.disabled=(option.value===source);
+    });
+
+    if(destination.value===source){
+        const firstAvailable=Array.from(destination.options).find(option=>!option.disabled);
+        if(firstAvailable) destination.value=firstAvailable.value;
+    }
+}
+
 async function saveTransfer(){
     const {tanggal,shift}=getPeriod();
     const source_storage=document.getElementById("transferSource").value;
@@ -661,6 +693,11 @@ async function saveTransfer(){
 
     if(qty<=0){
         alert("Qty transfer harus lebih dari 0.");
+        return;
+    }
+
+    if(source_storage===destination_storage){
+        alert("Storage sumber dan tujuan tidak boleh sama.");
         return;
     }
 
@@ -683,7 +720,7 @@ async function saveTransfer(){
     });
 
     document.getElementById("transferStatus").textContent=
-        error?"❌ "+error.message:"✅ Transfer tersimpan. Total WHS tidak berubah.";
+        error?"❌ "+error.message:"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Total WHS tidak berubah.";
 
     if(!error){
         document.getElementById("transferQty").value="";
@@ -792,6 +829,7 @@ document.getElementById("tanggal").value=localDate();
 document.getElementById("tanggal").addEventListener("change",loadStock);
 document.getElementById("shift").addEventListener("change",loadStock);
 
+syncTransferDestination();
 loadStock();
 
 </script>
