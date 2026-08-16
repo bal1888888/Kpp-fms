@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +39,7 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 620px;
             margin: 30px auto;
             padding: 20px;
         }
@@ -60,13 +59,13 @@
         .info {
             background: #eff6ff;
             padding: 12px;
-            border-radius: 7px;
+            border-radius: 8px;
             margin-bottom: 20px;
             font-size: 13px;
             line-height: 1.5;
         }
 
-        .unit-box {
+        .section-box {
             background: #f8fafc;
             border: 1px solid #e5e7eb;
             border-radius: 10px;
@@ -104,10 +103,24 @@
             text-transform: uppercase;
         }
 
-        .unit-help {
-            color: #777;
-            font-size: 12px;
-            margin-top: 6px;
+        .wh-display {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            padding: 15px;
+            border-radius: 9px;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .wh-display small {
+            display: block;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .wh-display strong {
+            font-size: 24px;
+            color: #15803d;
         }
 
         .check-btn {
@@ -121,28 +134,25 @@
             cursor: pointer;
         }
 
-        .check-btn:disabled {
+        .check-btn:disabled,
+        .save-btn:disabled {
             background: #94a3b8;
             cursor: not-allowed;
         }
 
-        /* ========================= */
-        /* SARAN UNIT */
-        /* ========================= */
-
         .suggestion-box {
             background: #fff7ed;
             border: 1px solid #fed7aa;
-            border-radius: 10px;
-            padding: 14px;
+            border-radius: 9px;
+            padding: 13px;
             margin-top: 12px;
         }
 
         .suggestion-title {
             font-size: 13px;
-            color: #9a3412;
             font-weight: bold;
-            margin-bottom: 10px;
+            color: #9a3412;
+            margin-bottom: 9px;
         }
 
         .suggestion-list {
@@ -159,30 +169,21 @@
             border-radius: 7px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 13px;
-        }
-
-        .suggestion-btn:hover {
-            background: #eff6ff;
         }
 
         .unit-result {
             background: #f8fafc;
             border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 15px;
+            padding: 14px;
+            border-radius: 9px;
             margin-bottom: 15px;
-        }
-
-        .unit-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .unit-name {
-            font-weight: bold;
-            font-size: 18px;
+        .unit-result strong {
+            font-size: 19px;
         }
 
         .previous-hm {
@@ -194,7 +195,8 @@
             text-align: center;
         }
 
-        .previous-hm small {
+        .previous-hm small,
+        .hm-result small {
             display: block;
             color: #777;
             margin-bottom: 5px;
@@ -212,12 +214,6 @@
             border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
-        }
-
-        .hm-result small {
-            display: block;
-            color: #666;
-            margin-bottom: 5px;
         }
 
         .hm-result strong {
@@ -247,11 +243,6 @@
             cursor: pointer;
         }
 
-        .save-btn:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-
         .back {
             display: block;
             text-align: center;
@@ -262,11 +253,10 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
     </style>
 </head>
-
 
 <body>
 
@@ -275,7 +265,6 @@
     <p>PT KPP - Pengisian Fuel</p>
 </div>
 
-
 <div class="container">
 
     <div class="form-box">
@@ -283,57 +272,68 @@
         <h2>⛽ Pengisian Fuel</h2>
 
         <div class="info">
-            Ketik atau pilih <b>CODE UNIT</b>.
-            Jika terjadi salah ketik, sistem akan memberikan
-            saran unit yang paling mendekati.
+            Pilih Fuel Truck terlebih dahulu. WH akan ditentukan otomatis.
+            Kemudian cari CODE UNIT dan sistem akan mengambil HM terakhir dari database.
         </div>
 
-
-        <div class="unit-box">
+        <!-- FUEL TRUCK -->
+        <div class="section-box">
 
             <div class="form-group">
 
-                <label>Unit</label>
+                <label>Fuel Truck / Sumber Pengisian</label>
+
+                <select id="fuelTruck">
+                    <option value="">-- Pilih Fuel Truck --</option>
+                    <option value="FT0073">FT0073</option>
+                    <option value="FT0075">FT0075</option>
+                </select>
+
+            </div>
+
+            <div id="whBox" class="wh-display hidden">
+                <small>WAREHOUSE / WH</small>
+                <strong id="whDisplay">-</strong>
+            </div>
+
+        </div>
+
+        <!-- UNIT -->
+        <div class="section-box">
+
+            <div class="form-group">
+
+                <label>CODE UNIT</label>
 
                 <input
                     type="text"
                     id="unitInput"
                     list="unitOptions"
-                    placeholder="Contoh: DT7441 / FT0075"
+                    placeholder="Ketik / cari unit..."
                     autocomplete="off"
                 >
 
                 <datalist id="unitOptions"></datalist>
 
-                <div class="unit-help">
-                    Ketik CODE UNIT sesuai populasi unit.
-                </div>
-
             </div>
 
-
             <button
-                class="check-btn"
-                id="checkUnitButton">
-
+                id="checkUnitButton"
+                class="check-btn">
                 CEK UNIT / AMBIL HM
-
             </button>
 
-
-            <!-- SARAN UNIT -->
-
             <div
-                class="suggestion-box hidden"
-                id="suggestionBox">
+                id="suggestionBox"
+                class="suggestion-box hidden">
 
                 <div class="suggestion-title">
                     🔎 Mungkin yang kamu maksud:
                 </div>
 
                 <div
-                    class="suggestion-list"
-                    id="suggestionList">
+                    id="suggestionList"
+                    class="suggestion-list">
                 </div>
 
             </div>
@@ -341,36 +341,25 @@
         </div>
 
 
-        <!-- UNIT TERPILIH -->
-
         <div
-            class="unit-result hidden"
-            id="unitResult">
+            id="unitResult"
+            class="unit-result hidden">
 
-            <div class="unit-row">
+            <span>Unit Terpilih</span>
 
-                <span>Unit Terpilih</span>
-
-                <span
-                    class="unit-name"
-                    id="unitDisplay">
-                    -
-                </span>
-
-            </div>
+            <strong id="unitDisplay">
+                -
+            </strong>
 
         </div>
 
 
         <!-- HM SEBELUMNYA -->
-
         <div
-            class="previous-hm hidden"
-            id="previousHmBox">
+            id="previousHmBox"
+            class="previous-hm hidden">
 
-            <small>
-                HM SEBELUMNYA
-            </small>
+            <small>HM SEBELUMNYA</small>
 
             <strong id="previousHm">
                 -
@@ -380,17 +369,13 @@
 
 
         <!-- FORM -->
-
         <div
             id="formArea"
             class="hidden">
 
-
             <div class="form-group">
 
-                <label>
-                    HM Sekarang
-                </label>
+                <label>HM Sekarang</label>
 
                 <input
                     type="number"
@@ -404,9 +389,7 @@
 
             <div class="hm-result">
 
-                <small>
-                    HM JALAN
-                </small>
+                <small>HM JALAN</small>
 
                 <strong id="hmDifference">
                     0 HM
@@ -416,8 +399,8 @@
 
 
             <div
-                class="warning"
-                id="warning">
+                id="warning"
+                class="warning">
 
                 ⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.
 
@@ -426,9 +409,7 @@
 
             <div class="form-group">
 
-                <label>
-                    Nama Operator
-                </label>
+                <label>Nama Operator</label>
 
                 <input
                     type="text"
@@ -441,9 +422,7 @@
 
             <div class="form-group">
 
-                <label>
-                    Jumlah Fuel (Liter)
-                </label>
+                <label>Jumlah Fuel (Liter)</label>
 
                 <input
                     type="number"
@@ -458,9 +437,7 @@
 
             <div class="form-group">
 
-                <label>
-                    Shift
-                </label>
+                <label>Shift</label>
 
                 <select id="shift">
 
@@ -482,8 +459,8 @@
 
 
             <button
-                class="save-btn"
-                id="saveButton">
+                id="saveButton"
+                class="save-btn">
 
                 SIMPAN DATA
 
@@ -507,862 +484,867 @@
 
 <script>
 
-    // =========================================
-    // SUPABASE
-    // =========================================
+const SUPABASE_URL =
+    "https://pwowtyfybfqsveuvqrsb.supabase.co";
 
-    const SUPABASE_URL =
-        "https://pwowtyfybfqsveuvqrsb.supabase.co";
+const SUPABASE_KEY =
+    "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 
-    const SUPABASE_KEY =
-        "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
 
 
-    const supabaseClient =
-        supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY
+// ==========================================
+// FUEL TRUCK → WH
+// ==========================================
+
+const FUEL_TRUCK_MAP = {
+
+    "FT0073": "FT02",
+    "FT0075": "FT01"
+
+};
+
+
+// ==========================================
+// POPULASI UNIT RESMI
+// DARI SHEET POPULASI UNIT → CODE.UNIT
+// ==========================================
+
+const MASTER_UNITS = [
+
+    "CB1019",
+    "CM0108",
+    "CP118",
+    "CP119",
+    "CRAJ001",
+    "CRAJ002",
+    "CRSI001",
+    "CRSI002",
+    "CT0042",
+    "CT0054",
+    "CT0058",
+    "DL0051",
+
+    "DT7049",
+    "DT7081",
+    "DT7102",
+    "DT7122",
+    "DT7127",
+    "DT7220",
+    "DT7441",
+    "DT7442",
+    "DT7443",
+    "DT7444",
+    "DT7445",
+    "DT7446",
+    "DT7447",
+    "DT7448",
+    "DT7449",
+    "DT7450",
+    "DT7451",
+    "DT7452",
+    "DT7453",
+    "DT7454",
+    "DT7455",
+    "DT7456",
+    "DT7457",
+
+    "DZ1034",
+    "DZ1050",
+    "DZ124",
+    "DZ129",
+    "DZ3041",
+    "DZ3043",
+    "DZ3044",
+
+    "EX1028",
+    "EX1045",
+    "EX1050",
+    "EX1051",
+    "EX2056",
+    "EX2057",
+    "EX2058",
+    "EX238",
+    "EX239",
+    "EX240",
+    "EX241",
+    "EX432",
+    "EX433",
+    "EX501",
+
+    "FT0020",
+    "FT0073",
+    "FT0075",
+
+    "GR2060",
+    "GR2061",
+    "GR2062",
+
+    "GS0186",
+    "GS0192",
+
+    "JH01",
+
+    "LBAJ001",
+    "LBAJ002",
+    "LBAJ003",
+    "LBAJ004",
+
+    "LBSI001",
+    "LBSI002",
+
+    "LD0487",
+    "LD0488",
+    "LD0489",
+    "LD0498",
+
+    "LO0019",
+    "LO0054",
+
+    "PM5017",
+
+    "SD4098",
+    "SD4099",
+
+    "TH0006",
+
+    "TL0007",
+    "TL0050",
+    "TL0074",
+    "TL0076",
+    "TL0121",
+    "TL0123",
+    "TL0131",
+    "TL0146",
+    "TL0147",
+    "TL0156",
+    "TL0157",
+    "TL0158",
+    "TL0201",
+    "TL0222",
+    "TL0247",
+    "TL0248",
+    "TL0249",
+    "TL0250",
+    "TL0251",
+    "TL0274",
+
+    "TMAJ001",
+
+    "TR-B01",
+    "TR-B03",
+    "TR-D01",
+    "TR-D02",
+    "TR-D03",
+    "TR-F01",
+    "TR-F02",
+    "TR-F03",
+    "TR-F04",
+    "TR-F05",
+    "TR-F06",
+    "TR-J01",
+    "TR-KP01",
+
+    "WE0049",
+
+    "WP0121",
+    "WP0141",
+    "WP0162",
+
+    "WT0050",
+    "WT0097",
+    "WT0099",
+    "WT0101",
+
+    "TR-B04"
+
+];
+
+
+// ==========================================
+// VARIABEL
+// ==========================================
+
+let currentUnit = "";
+let previousHM = 0;
+let checkedUnit = "";
+let selectedFuelTruck = "";
+let selectedWH = "";
+
+
+// ==========================================
+// DATALIST UNIT
+// ==========================================
+
+const unitOptions =
+    document.getElementById(
+        "unitOptions"
+    );
+
+MASTER_UNITS.forEach(function(unit) {
+
+    const option =
+        document.createElement(
+            "option"
+        );
+
+    option.value =
+        unit;
+
+    unitOptions.appendChild(
+        option
+    );
+
+});
+
+
+// ==========================================
+// FUEL TRUCK
+// ==========================================
+
+document
+    .getElementById("fuelTruck")
+    .addEventListener(
+        "change",
+        function() {
+
+            selectedFuelTruck =
+                this.value;
+
+            selectedWH =
+                FUEL_TRUCK_MAP[
+                    selectedFuelTruck
+                ] || "";
+
+            const whBox =
+                document.getElementById(
+                    "whBox"
+                );
+
+            if (selectedWH) {
+
+                document
+                    .getElementById(
+                        "whDisplay"
+                    )
+                    .textContent =
+                    selectedWH;
+
+                whBox.classList.remove(
+                    "hidden"
+                );
+
+            } else {
+
+                whBox.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+    );
+
+
+// ==========================================
+// NORMALISASI
+// ==========================================
+
+function normalisasiUnit(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+
+}
+
+
+function normalisasiCari(value) {
+
+    return normalisasiUnit(value)
+        .replace(
+            /[^A-Z0-9]/g,
+            ""
+        );
+
+}
+
+
+function unitTerdaftar(unit) {
+
+    return MASTER_UNITS.includes(
+        normalisasiUnit(unit)
+    );
+
+}
+
+
+// ==========================================
+// LEVENSHTEIN
+// ==========================================
+
+function levenshtein(a, b) {
+
+    a =
+        normalisasiCari(a);
+
+    b =
+        normalisasiCari(b);
+
+
+    const matrix = [];
+
+
+    for (
+        let i = 0;
+        i <= b.length;
+        i++
+    ) {
+
+        matrix[i] = [i];
+
+    }
+
+
+    for (
+        let j = 0;
+        j <= a.length;
+        j++
+    ) {
+
+        matrix[0][j] = j;
+
+    }
+
+
+    for (
+        let i = 1;
+        i <= b.length;
+        i++
+    ) {
+
+        for (
+            let j = 1;
+            j <= a.length;
+            j++
+        ) {
+
+            if (
+                b[i - 1] ===
+                a[j - 1]
+            ) {
+
+                matrix[i][j] =
+                    matrix[i - 1][j - 1];
+
+            } else {
+
+                matrix[i][j] =
+                    Math.min(
+
+                        matrix[i - 1][j - 1] + 1,
+
+                        matrix[i][j - 1] + 1,
+
+                        matrix[i - 1][j] + 1
+
+                    );
+
+            }
+
+        }
+
+    }
+
+
+    return matrix[b.length][a.length];
+
+}
+
+
+// ==========================================
+// SARAN UNIT
+// ==========================================
+
+function cariUnitTerdekat(input) {
+
+    const query =
+        normalisasiCari(input);
+
+
+    if (!query) {
+
+        return [];
+
+    }
+
+
+    return MASTER_UNITS
+
+        .map(function(unit) {
+
+            const candidate =
+                normalisasiCari(unit);
+
+            let score =
+                levenshtein(
+                    query,
+                    candidate
+                );
+
+
+            if (
+                candidate.startsWith(
+                    query
+                )
+            ) {
+
+                score -= 2;
+
+            }
+
+
+            if (
+                query.startsWith(
+                    candidate
+                )
+            ) {
+
+                score -= 1;
+
+            }
+
+
+            return {
+
+                unit: unit,
+                score: score
+
+            };
+
+        })
+
+        .sort(function(a, b) {
+
+            if (
+                a.score === b.score
+            ) {
+
+                return a.unit
+                    .localeCompare(
+                        b.unit
+                    );
+
+            }
+
+            return a.score - b.score;
+
+        })
+
+        .slice(0, 5)
+
+        .map(function(item) {
+
+            return item.unit;
+
+        });
+
+}
+
+
+function tampilkanSaran(input) {
+
+    const box =
+        document.getElementById(
+            "suggestionBox"
+        );
+
+    const list =
+        document.getElementById(
+            "suggestionList"
+        );
+
+    const unit =
+        normalisasiUnit(input);
+
+
+    list.innerHTML =
+        "";
+
+
+    if (
+        !unit ||
+        unitTerdaftar(unit)
+    ) {
+
+        box.classList.add(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    const saran =
+        cariUnitTerdekat(
+            unit
         );
 
 
-    // =========================================
-    // MASTER CODE UNIT
-    // =========================================
+    saran.forEach(function(kode) {
 
-    const MASTER_UNITS = [
+        const button =
+            document.createElement(
+                "button"
+            );
 
-        "CB1019",
-        "CM0108",
-        "CP118",
-        "CP119",
-        "CRAJ001",
-        "CRAJ002",
-        "CRSI001",
-        "CRSI002",
-        "CT0042",
-        "CT0054",
-        "CT0058",
-        "DL0051",
+        button.type =
+            "button";
 
-        "DT7049",
-        "DT7081",
-        "DT7102",
-        "DT7122",
-        "DT7127",
-        "DT7220",
-        "DT7441",
-        "DT7442",
-        "DT7443",
-        "DT7444",
-        "DT7445",
-        "DT7446",
-        "DT7447",
-        "DT7448",
-        "DT7449",
-        "DT7450",
-        "DT7451",
-        "DT7452",
-        "DT7453",
-        "DT7454",
-        "DT7455",
-        "DT7456",
-        "DT7457",
+        button.className =
+            "suggestion-btn";
 
-        "DZ1034",
-        "DZ1050",
-        "DZ124",
-        "DZ129",
-        "DZ3041",
-        "DZ3043",
-        "DZ3044",
-
-        "EX1028",
-        "EX1045",
-        "EX1050",
-        "EX1051",
-        "EX2056",
-        "EX2057",
-        "EX2058",
-        "EX238",
-        "EX239",
-        "EX240",
-        "EX241",
-        "EX432",
-        "EX433",
-        "EX501",
-
-        "FT0020",
-        "FT0073",
-        "FT0075",
-
-        "GR2060",
-        "GR2061",
-        "GR2062",
-
-        "GS0186",
-        "GS0192",
-
-        "JH01",
-
-        "LBAJ001",
-        "LBAJ002",
-        "LBAJ003",
-        "LBAJ004",
-
-        "LBSI001",
-        "LBSI002",
-
-        "LD0487",
-        "LD0488",
-        "LD0489",
-        "LD0498",
-
-        "LO0019",
-        "LO0054",
-
-        "PM5017",
-
-        "SD4098",
-        "SD4099",
-
-        "TH0006",
-
-        "TL0007",
-        "TL0050",
-        "TL0074",
-        "TL0076",
-        "TL0121",
-        "TL0123",
-        "TL0131",
-        "TL0146",
-        "TL0147",
-        "TL0156",
-        "TL0157",
-        "TL0158",
-        "TL0201",
-        "TL0222",
-        "TL0247",
-        "TL0248",
-        "TL0249",
-        "TL0250",
-        "TL0251",
-        "TL0274",
-
-        "TMAJ001",
-
-        "TR-B01",
-        "TR-B03",
-        "TR-D01",
-        "TR-D02",
-        "TR-D03",
-        "TR-F01",
-        "TR-F02",
-        "TR-F03",
-        "TR-F04",
-        "TR-F05",
-        "TR-F06",
-        "TR-J01",
-        "TR-KP01",
-
-        "WE0049",
-
-        "WP0121",
-        "WP0141",
-        "WP0162",
-
-        "WT0050",
-        "WT0097",
-        "WT0099",
-        "WT0101",
-
-        "TR-B04"
-
-    ];
+        button.textContent =
+            kode;
 
 
-    // =========================================
-    // MASUKKAN KE DATALIST
-    // =========================================
+        button.onclick =
+            async function() {
 
-    const unitOptions =
-        document.getElementById("unitOptions");
+                document
+                    .getElementById(
+                        "unitInput"
+                    )
+                    .value =
+                    kode;
+
+                box.classList.add(
+                    "hidden"
+                );
+
+                await cekUnit();
+
+            };
 
 
-    MASTER_UNITS.forEach(function(unit) {
-
-        const option =
-            document.createElement("option");
-
-        option.value =
-            unit;
-
-        unitOptions.appendChild(
-            option
+        list.appendChild(
+            button
         );
 
     });
 
 
-    // =========================================
-    // VARIABEL
-    // =========================================
+    box.classList.remove(
+        "hidden"
+    );
 
-    let currentUnit = "";
+}
 
-    let previousHM = 0;
 
-    let checkedUnit = "";
+// ==========================================
+// INPUT UNIT
+// ==========================================
 
+document
+    .getElementById("unitInput")
+    .addEventListener(
+        "input",
+        function() {
 
-    // =========================================
-    // NORMALISASI
-    // =========================================
+            this.value =
+                this.value.toUpperCase();
 
-    function normalisasiUnit(unit) {
-
-        return String(unit || "")
-            .trim()
-            .toUpperCase();
-
-    }
-
-
-    function normalisasiPerbandingan(unit) {
-
-        return normalisasiUnit(unit)
-            .replace(/[^A-Z0-9]/g, "");
-
-    }
-
-
-    function unitTerdaftar(unit) {
-
-        return MASTER_UNITS.includes(
-            normalisasiUnit(unit)
-        );
-
-    }
-
-
-    // =========================================
-    // LEVENSHTEIN DISTANCE
-    // =========================================
-    // Mencari teks yang paling mirip.
-    // Contoh FT075 -> FT0075
-
-    function levenshtein(a, b) {
-
-        a =
-            normalisasiPerbandingan(a);
-
-        b =
-            normalisasiPerbandingan(b);
-
-
-        const matrix = [];
-
-
-        for (
-            let i = 0;
-            i <= b.length;
-            i++
-        ) {
-
-            matrix[i] = [i];
-
-        }
-
-
-        for (
-            let j = 0;
-            j <= a.length;
-            j++
-        ) {
-
-            matrix[0][j] = j;
-
-        }
-
-
-        for (
-            let i = 1;
-            i <= b.length;
-            i++
-        ) {
-
-            for (
-                let j = 1;
-                j <= a.length;
-                j++
-            ) {
-
-                if (
-                    b.charAt(i - 1) ===
-                    a.charAt(j - 1)
-                ) {
-
-                    matrix[i][j] =
-                        matrix[i - 1][j - 1];
-
-                } else {
-
-                    matrix[i][j] =
-                        Math.min(
-
-                            matrix[i - 1][j - 1] + 1,
-
-                            matrix[i][j - 1] + 1,
-
-                            matrix[i - 1][j] + 1
-
-                        );
-
-                }
-
-            }
-
-        }
-
-
-        return matrix[b.length][a.length];
-
-    }
-
-
-    // =========================================
-    // HITUNG KEMIRIPAN UNIT
-    // =========================================
-
-    function cariUnitTerdekat(input) {
-
-        const query =
-            normalisasiPerbandingan(input);
-
-
-        if (!query) {
-
-            return [];
-
-        }
-
-
-        const hasil =
-            MASTER_UNITS.map(
-                function(unit) {
-
-                    const kandidat =
-                        normalisasiPerbandingan(
-                            unit
-                        );
-
-
-                    let score =
-                        levenshtein(
-                            query,
-                            kandidat
-                        );
-
-
-                    /*
-                    Bonus jika awalan mirip.
-                    Contoh:
-                    DT744 -> DT7441
-                    FT07  -> FT0075
-                    */
-
-                    if (
-                        kandidat.startsWith(
-                            query
-                        )
-                    ) {
-
-                        score -= 2;
-
-                    }
-
-
-                    if (
-                        query.startsWith(
-                            kandidat
-                        )
-                    ) {
-
-                        score -= 1;
-
-                    }
-
-
-                    /*
-                    Bonus kesamaan karakter awal
-                    */
-
-                    let prefix = 0;
-
-
-                    const maxPrefix =
-                        Math.min(
-                            query.length,
-                            kandidat.length
-                        );
-
-
-                    for (
-                        let i = 0;
-                        i < maxPrefix;
-                        i++
-                    ) {
-
-                        if (
-                            query[i] ===
-                            kandidat[i]
-                        ) {
-
-                            prefix++;
-
-                        } else {
-
-                            break;
-
-                        }
-
-                    }
-
-
-                    score -=
-                        prefix * 0.15;
-
-
-                    return {
-
-                        unit: unit,
-                        score: score
-
-                    };
-
-                }
-            );
-
-
-        hasil.sort(
-            function(a, b) {
-
-                if (
-                    a.score === b.score
-                ) {
-
-                    return a.unit.localeCompare(
-                        b.unit
-                    );
-
-                }
-
-
-                return a.score - b.score;
-
-            }
-        );
-
-
-        return hasil
-            .slice(0, 5)
-            .map(
-                function(item) {
-
-                    return item.unit;
-
-                }
-            );
-
-    }
-
-
-    // =========================================
-    // TAMPILKAN SARAN
-    // =========================================
-
-    function tampilkanSaran(input) {
-
-        const box =
-            document.getElementById(
-                "suggestionBox"
-            );
-
-
-        const list =
-            document.getElementById(
-                "suggestionList"
-            );
-
-
-        list.innerHTML = "";
-
-
-        const unit =
-            normalisasiUnit(input);
-
-
-        if (
-            !unit ||
-            unitTerdaftar(unit)
-        ) {
-
-            box.classList.add(
-                "hidden"
-            );
-
-            return;
-
-        }
-
-
-        const saran =
-            cariUnitTerdekat(unit);
-
-
-        if (
-            saran.length === 0
-        ) {
-
-            box.classList.add(
-                "hidden"
-            );
-
-            return;
-
-        }
-
-
-        saran.forEach(
-            function(kode) {
-
-
-                const button =
-                    document.createElement(
-                        "button"
-                    );
-
-
-                button.type =
-                    "button";
-
-
-                button.className =
-                    "suggestion-btn";
-
-
-                button.textContent =
-                    kode;
-
-
-                button.addEventListener(
-                    "click",
-                    async function() {
-
-
-                        document
-                            .getElementById(
-                                "unitInput"
-                            )
-                            .value =
-                            kode;
-
-
-                        box.classList.add(
-                            "hidden"
-                        );
-
-
-                        await cekUnit();
-
-                    }
+            const value =
+                normalisasiUnit(
+                    this.value
                 );
-
-
-                list.appendChild(
-                    button
-                );
-
-            }
-        );
-
-
-        box.classList.remove(
-            "hidden"
-        );
-
-    }
-
-
-    // =========================================
-    // INPUT UNIT
-    // =========================================
-
-    document
-        .getElementById(
-            "unitInput"
-        )
-        .addEventListener(
-            "input",
-            function() {
-
-
-                this.value =
-                    this.value.toUpperCase();
-
-
-                const value =
-                    normalisasiUnit(
-                        this.value
-                    );
-
-
-                /*
-                Kalau unit diubah setelah HM
-                sudah diambil, form disembunyikan
-                supaya HM unit lama tidak ikut
-                dipakai.
-                */
-
-                if (
-                    checkedUnit &&
-                    value !== checkedUnit
-                ) {
-
-                    currentUnit = "";
-
-                    checkedUnit = "";
-
-                    previousHM = 0;
-
-
-                    document
-                        .getElementById(
-                            "unitResult"
-                        )
-                        .classList
-                        .add("hidden");
-
-
-                    document
-                        .getElementById(
-                            "previousHmBox"
-                        )
-                        .classList
-                        .add("hidden");
-
-
-                    document
-                        .getElementById(
-                            "formArea"
-                        )
-                        .classList
-                        .add("hidden");
-
-                }
-
-
-                /*
-                Mulai kasih saran setelah
-                user mengetik minimal 2 karakter.
-                */
-
-                if (
-                    value.length >= 2
-                ) {
-
-                    tampilkanSaran(
-                        value
-                    );
-
-                } else {
-
-                    document
-                        .getElementById(
-                            "suggestionBox"
-                        )
-                        .classList
-                        .add("hidden");
-
-                }
-
-            }
-        );
-
-
-    // =========================================
-    // ENTER = CEK UNIT
-    // =========================================
-
-    document
-        .getElementById(
-            "unitInput"
-        )
-        .addEventListener(
-            "keydown",
-            function(event) {
-
-
-                if (
-                    event.key === "Enter"
-                ) {
-
-                    event.preventDefault();
-
-                    cekUnit();
-
-                }
-
-            }
-        );
-
-
-    // =========================================
-    // AMBIL HM TERAKHIR
-    // =========================================
-
-    async function ambilHmTerakhir(unit) {
-
-        const { data, error } =
-            await supabaseClient
-
-                .from(
-                    "fuel_history"
-                )
-
-                .select(
-                    "hm_akhir,id"
-                )
-
-                .eq(
-                    "unit",
-                    unit
-                )
-
-                .order(
-                    "id",
-                    {
-                        ascending: false
-                    }
-                )
-
-                .limit(1);
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        if (
-            data &&
-            data.length > 0
-        ) {
-
-            return Number(
-                data[0].hm_akhir
-            ) || 0;
-
-        }
-
-
-        return 0;
-
-    }
-
-
-    // =========================================
-    // CEK UNIT
-    // =========================================
-
-    async function cekUnit() {
-
-
-        const button =
-            document.getElementById(
-                "checkUnitButton"
-            );
-
-
-        const inputUnit =
-            normalisasiUnit(
-                document
-                    .getElementById(
-                        "unitInput"
-                    )
-                    .value
-            );
-
-
-        if (!inputUnit) {
-
-            alert(
-                "Masukkan CODE UNIT terlebih dahulu."
-            );
-
-            return;
-
-        }
-
-
-        // UNIT SALAH
-
-        if (
-            !unitTerdaftar(
-                inputUnit
-            )
-        ) {
-
-
-            tampilkanSaran(
-                inputUnit
-            );
-
-
-            const saran =
-                cariUnitTerdekat(
-                    inputUnit
-                );
-
-
-            let pesan =
-
-                "❌ CODE UNIT " +
-                inputUnit +
-                " tidak terdaftar.";
 
 
             if (
-                saran.length > 0
+                checkedUnit &&
+                value !== checkedUnit
             ) {
 
-                pesan +=
-                    "\n\nMungkin yang kamu maksud:\n" +
-                    saran
-                        .map(
-                            function(unit) {
+                currentUnit = "";
+                checkedUnit = "";
+                previousHM = 0;
 
-                                return "• " + unit;
+                document
+                    .getElementById(
+                        "unitResult"
+                    )
+                    .classList
+                    .add("hidden");
 
-                            }
-                        )
-                        .join("\n");
+                document
+                    .getElementById(
+                        "previousHmBox"
+                    )
+                    .classList
+                    .add("hidden");
+
+                document
+                    .getElementById(
+                        "formArea"
+                    )
+                    .classList
+                    .add("hidden");
 
             }
 
 
-            alert(
-                pesan
+            if (
+                value.length >= 2
+            ) {
+
+                tampilkanSaran(
+                    value
+                );
+
+            } else {
+
+                document
+                    .getElementById(
+                        "suggestionBox"
+                    )
+                    .classList
+                    .add("hidden");
+
+            }
+
+        }
+    );
+
+
+document
+    .getElementById("unitInput")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                cekUnit();
+
+            }
+
+        }
+    );
+
+
+// ==========================================
+// HM TERAKHIR
+// ==========================================
+
+async function ambilHmTerakhir(unit) {
+
+    const { data, error } =
+        await supabaseClient
+
+            .from(
+                "fuel_history"
+            )
+
+            .select(
+                "id,hm_akhir"
+            )
+
+            .eq(
+                "unit",
+                unit
+            )
+
+            .order(
+                "id",
+                {
+                    ascending: false
+                }
+            )
+
+            .limit(1);
+
+
+    if (error) {
+
+        throw error;
+
+    }
+
+
+    if (
+        data &&
+        data.length > 0
+    ) {
+
+        return Number(
+            data[0].hm_akhir
+        ) || 0;
+
+    }
+
+
+    return 0;
+
+}
+
+
+// ==========================================
+// CEK UNIT
+// ==========================================
+
+async function cekUnit() {
+
+    if (!selectedFuelTruck) {
+
+        alert(
+            "Pilih Fuel Truck terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+
+    const inputUnit =
+        normalisasiUnit(
+            document
+                .getElementById(
+                    "unitInput"
+                )
+                .value
+        );
+
+
+    if (!inputUnit) {
+
+        alert(
+            "Masukkan CODE UNIT terlebih dahulu."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !unitTerdaftar(
+            inputUnit
+        )
+    ) {
+
+        tampilkanSaran(
+            inputUnit
+        );
+
+
+        const saran =
+            cariUnitTerdekat(
+                inputUnit
             );
 
 
-            return;
+        alert(
 
-        }
+            "❌ CODE UNIT " +
+            inputUnit +
+            " tidak terdaftar.\n\n" +
+
+            "Mungkin yang kamu maksud:\n" +
+
+            saran
+                .map(
+                    function(unit) {
+
+                        return "• " + unit;
+
+                    }
+                )
+                .join("\n")
+
+        );
 
 
-        // UNIT BENAR
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "checkUnitButton"
+        );
+
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "MENGAMBIL HM...";
+
+
+    try {
+
+        previousHM =
+            await ambilHmTerakhir(
+                inputUnit
+            );
+
+
+        currentUnit =
+            inputUnit;
+
+        checkedUnit =
+            inputUnit;
+
+
+        document
+            .getElementById(
+                "unitInput"
+            )
+            .value =
+            currentUnit;
+
+
+        document
+            .getElementById(
+                "unitDisplay"
+            )
+            .textContent =
+            currentUnit;
+
+
+        document
+            .getElementById(
+                "unitResult"
+            )
+            .classList
+            .remove("hidden");
+
+
+        document
+            .getElementById(
+                "previousHmBox"
+            )
+            .classList
+            .remove("hidden");
+
+
+        document
+            .getElementById(
+                "formArea"
+            )
+            .classList
+            .remove("hidden");
+
 
         document
             .getElementById(
@@ -1372,638 +1354,561 @@
             .add("hidden");
 
 
-        button.disabled =
-            true;
+        if (
+            previousHM > 0
+        ) {
+
+            document
+                .getElementById(
+                    "previousHm"
+                )
+                .textContent =
+                previousHM
+                    .toLocaleString(
+                        "id-ID"
+                    );
+
+        } else {
+
+            document
+                .getElementById(
+                    "previousHm"
+                )
+                .textContent =
+                "Belum ada data";
+
+        }
 
 
-        button.textContent =
-            "MENGAMBIL HM...";
+        document
+            .getElementById(
+                "currentHm"
+            )
+            .value =
+            "";
 
 
-        try {
+        document
+            .getElementById(
+                "hmDifference"
+            )
+            .textContent =
+            "0 HM";
 
 
-            previousHM =
-                await ambilHmTerakhir(
-                    inputUnit
+        document
+            .getElementById(
+                "warning"
+            )
+            .style.display =
+            "none";
+
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        alert(
+
+            "❌ Gagal mengambil HM terakhir.\n\n" +
+
+            error.message
+
+        );
+
+    }
+
+
+    button.disabled =
+        false;
+
+    button.textContent =
+        "CEK UNIT / AMBIL HM";
+
+}
+
+
+document
+    .getElementById(
+        "checkUnitButton"
+    )
+    .addEventListener(
+        "click",
+        cekUnit
+    );
+
+
+// ==========================================
+// HM JALAN
+// ==========================================
+
+document
+    .getElementById("currentHm")
+    .addEventListener(
+        "input",
+        function() {
+
+            const currentHM =
+                parseFloat(
+                    this.value
+                );
+
+            const result =
+                document.getElementById(
+                    "hmDifference"
+                );
+
+            const warning =
+                document.getElementById(
+                    "warning"
                 );
 
 
-            currentUnit =
-                inputUnit;
+            if (
+                isNaN(currentHM)
+            ) {
+
+                result.textContent =
+                    "0 HM";
+
+                warning.style.display =
+                    "none";
+
+                return;
+
+            }
 
 
-            checkedUnit =
-                inputUnit;
+            if (
+                previousHM > 0 &&
+                currentHM < previousHM
+            ) {
+
+                result.textContent =
+                    "HM TIDAK VALID";
+
+                warning.style.display =
+                    "block";
+
+                return;
+
+            }
 
 
-            document
-                .getElementById(
-                    "unitInput"
-                )
-                .value =
-                currentUnit;
-
-
-            document
-                .getElementById(
-                    "unitDisplay"
-                )
-                .textContent =
-                currentUnit;
-
-
-            document
-                .getElementById(
-                    "unitResult"
-                )
-                .classList
-                .remove("hidden");
-
-
-            document
-                .getElementById(
-                    "previousHmBox"
-                )
-                .classList
-                .remove("hidden");
-
-
-            document
-                .getElementById(
-                    "formArea"
-                )
-                .classList
-                .remove("hidden");
+            warning.style.display =
+                "none";
 
 
             if (
                 previousHM > 0
             ) {
 
-                document
-                    .getElementById(
-                        "previousHm"
-                    )
-                    .textContent =
-                    previousHM
+                const hmJalan =
+                    currentHM -
+                    previousHM;
+
+
+                result.textContent =
+                    hmJalan
                         .toLocaleString(
                             "id-ID"
-                        );
+                        ) +
+                    " HM";
 
             } else {
 
-                document
-                    .getElementById(
-                        "previousHm"
-                    )
-                    .textContent =
-                    "Belum ada data";
+                result.textContent =
+                    "Data awal";
 
             }
-
-
-            document
-                .getElementById(
-                    "currentHm"
-                )
-                .value =
-                "";
-
-
-            document
-                .getElementById(
-                    "hmDifference"
-                )
-                .textContent =
-                "0 HM";
-
-
-            document
-                .getElementById(
-                    "warning"
-                )
-                .style
-                .display =
-                "none";
-
-
-        } catch (error) {
-
-
-            console.error(
-                error
-            );
-
-
-            alert(
-
-                "❌ Gagal mengambil HM terakhir.\n\n" +
-
-                error.message
-
-            );
 
         }
+    );
 
 
-        button.disabled =
-            false;
+// ==========================================
+// WAKTU LOKAL
+// ==========================================
+
+function getLocalDateTime() {
+
+    const now =
+        new Date();
 
 
-        button.textContent =
-            "CEK UNIT / AMBIL HM";
+    const y =
+        now.getFullYear();
 
-    }
+    const m =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
 
+    const d =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
 
-    document
-        .getElementById(
-            "checkUnitButton"
-        )
-        .addEventListener(
-            "click",
-            cekUnit
+    const h =
+        String(
+            now.getHours()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const min =
+        String(
+            now.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const s =
+        String(
+            now.getSeconds()
+        ).padStart(
+            2,
+            "0"
         );
 
 
-    // =========================================
-    // HITUNG HM JALAN
-    // =========================================
+    return {
 
-    document
-        .getElementById(
-            "currentHm"
-        )
-        .addEventListener(
-            "input",
-            function() {
+        tanggal:
+            `${y}-${m}-${d}`,
 
+        jam:
+            `${h}:${min}:${s}`
 
-                const currentHM =
-                    parseFloat(
-                        this.value
-                    );
+    };
+
+}
 
 
-                const warning =
-                    document.getElementById(
-                        "warning"
-                    );
+// ==========================================
+// SIMPAN
+// ==========================================
+
+document
+    .getElementById("saveButton")
+    .addEventListener(
+        "click",
+        async function() {
+
+            const saveButton =
+                document.getElementById(
+                    "saveButton"
+                );
 
 
-                const result =
-                    document.getElementById(
-                        "hmDifference"
-                    );
+            if (
+                !selectedFuelTruck ||
+                !selectedWH
+            ) {
 
+                alert(
+                    "Pilih Fuel Truck terlebih dahulu."
+                );
 
-                if (
-                    isNaN(
-                        currentHM
-                    )
-                ) {
-
-                    result.textContent =
-                        "0 HM";
-
-
-                    warning.style.display =
-                        "none";
-
-
-                    return;
-
-                }
-
-
-                if (
-                    previousHM > 0 &&
-                    currentHM < previousHM
-                ) {
-
-                    warning.style.display =
-                        "block";
-
-
-                    result.textContent =
-                        "HM TIDAK VALID";
-
-
-                    return;
-
-                }
-
-
-                warning.style.display =
-                    "none";
-
-
-                if (
-                    previousHM > 0
-                ) {
-
-                    const selisih =
-                        currentHM -
-                        previousHM;
-
-
-                    result.textContent =
-                        selisih
-                            .toLocaleString(
-                                "id-ID"
-                            ) +
-                        " HM";
-
-                } else {
-
-                    result.textContent =
-                        "Data awal";
-
-                }
+                return;
 
             }
-        );
 
 
-    // =========================================
-    // WAKTU LOKAL PERANGKAT
-    // =========================================
-
-    function getLocalDateTime() {
-
-        const now =
-            new Date();
-
-
-        const year =
-            now.getFullYear();
-
-
-        const month =
-            String(
-                now.getMonth() + 1
-            ).padStart(2, "0");
-
-
-        const day =
-            String(
-                now.getDate()
-            ).padStart(2, "0");
-
-
-        const hour =
-            String(
-                now.getHours()
-            ).padStart(2, "0");
-
-
-        const minute =
-            String(
-                now.getMinutes()
-            ).padStart(2, "0");
-
-
-        const second =
-            String(
-                now.getSeconds()
-            ).padStart(2, "0");
-
-
-        return {
-
-            tanggal:
-                `${year}-${month}-${day}`,
-
-            jam:
-                `${hour}:${minute}:${second}`
-
-        };
-
-    }
-
-
-    // =========================================
-    // SIMPAN DATA
-    // =========================================
-
-    document
-        .getElementById(
-            "saveButton"
-        )
-        .addEventListener(
-            "click",
-            async function() {
-
-
-                const saveButton =
-                    document.getElementById(
-                        "saveButton"
-                    );
-
-
-                const unitSekarang =
-                    normalisasiUnit(
-                        document
-                            .getElementById(
-                                "unitInput"
-                            )
-                            .value
-                    );
-
-
-                // CEK UNIT RESMI LAGI
-
-                if (
-                    !unitTerdaftar(
-                        unitSekarang
-                    )
-                ) {
-
-                    tampilkanSaran(
-                        unitSekarang
-                    );
-
-
-                    alert(
-                        "❌ CODE UNIT tidak terdaftar.\nData tidak dapat disimpan."
-                    );
-
-
-                    return;
-
-                }
-
-
-                // CEK HM SUDAH DIAMBIL
-
-                if (
-                    !checkedUnit ||
-                    unitSekarang !== checkedUnit
-                ) {
-
-                    alert(
-
-                        "Unit belum diverifikasi.\n\n" +
-
-                        "Silakan tekan CEK UNIT / AMBIL HM."
-
-                    );
-
-
-                    return;
-
-                }
-
-
-                const currentHM =
-                    parseFloat(
-                        document
-                            .getElementById(
-                                "currentHm"
-                            )
-                            .value
-                    );
-
-
-                const operator =
+            const unitSekarang =
+                normalisasiUnit(
                     document
                         .getElementById(
-                            "operator"
+                            "unitInput"
                         )
                         .value
-                        .trim();
+                );
 
 
-                const fuel =
-                    parseFloat(
-                        document
-                            .getElementById(
-                                "fuelQty"
-                            )
-                            .value
-                    );
+            if (
+                !unitTerdaftar(
+                    unitSekarang
+                )
+            ) {
+
+                alert(
+                    "CODE UNIT tidak terdaftar."
+                );
+
+                return;
+
+            }
 
 
-                const shift =
+            if (
+                !checkedUnit ||
+                unitSekarang !== checkedUnit
+            ) {
+
+                alert(
+                    "Silakan tekan CEK UNIT / AMBIL HM terlebih dahulu."
+                );
+
+                return;
+
+            }
+
+
+            const currentHM =
+                parseFloat(
                     document
                         .getElementById(
-                            "shift"
+                            "currentHm"
                         )
-                        .value;
+                        .value
+                );
 
 
-                // =================================
-                // VALIDASI
-                // =================================
-
-                if (
-                    isNaN(
-                        currentHM
+            const operator =
+                document
+                    .getElementById(
+                        "operator"
                     )
-                ) {
-
-                    alert(
-                        "Masukkan HM sekarang."
-                    );
-
-                    return;
-
-                }
+                    .value
+                    .trim();
 
 
-                if (
-                    previousHM > 0 &&
-                    currentHM < previousHM
-                ) {
-
-                    alert(
-                        "HM sekarang tidak boleh lebih kecil dari HM sebelumnya."
-                    );
-
-                    return;
-
-                }
-
-
-                if (!operator) {
-
-                    alert(
-                        "Masukkan nama operator."
-                    );
-
-                    return;
-
-                }
-
-
-                if (
-                    isNaN(fuel) ||
-                    fuel <= 0
-                ) {
-
-                    alert(
-                        "Masukkan jumlah fuel."
-                    );
-
-                    return;
-
-                }
-
-
-                if (!shift) {
-
-                    alert(
-                        "Silakan pilih shift."
-                    );
-
-                    return;
-
-                }
-
-
-                const waktu =
-                    getLocalDateTime();
-
-
-                const hmJalan =
-                    previousHM > 0
-                    ? currentHM - previousHM
-                    : 0;
-
-
-                saveButton.disabled =
-                    true;
-
-
-                saveButton.textContent =
-                    "MENYIMPAN...";
-
-
-                // =================================
-                // INSERT SUPABASE
-                // =================================
-
-                const { error } =
-                    await supabaseClient
-
-                        .from(
-                            "fuel_history"
+            const fuel =
+                parseFloat(
+                    document
+                        .getElementById(
+                            "fuelQty"
                         )
-
-                        .insert({
-
-                            tanggal:
-                                waktu.tanggal,
-
-                            jam:
-                                waktu.jam,
-
-                            unit:
-                                currentUnit,
-
-                            operator:
-                                operator,
-
-                            hm_awal:
-                                previousHM,
-
-                            hm_akhir:
-                                currentHM,
-
-                            hm_jalan:
-                                hmJalan,
-
-                            fuel:
-                                fuel,
-
-                            shift:
-                                Number(
-                                    shift
-                                )
-
-                        });
+                        .value
+                );
 
 
-                if (error) {
+            const shift =
+                document
+                    .getElementById(
+                        "shift"
+                    )
+                    .value;
 
 
-                    console.error(
-                        error
-                    );
+            if (
+                isNaN(currentHM)
+            ) {
+
+                alert(
+                    "Masukkan HM sekarang."
+                );
+
+                return;
+
+            }
 
 
-                    alert(
+            if (
+                previousHM > 0 &&
+                currentHM < previousHM
+            ) {
 
-                        "❌ Data gagal disimpan.\n\n" +
+                alert(
+                    "HM sekarang tidak boleh lebih kecil dari HM sebelumnya."
+                );
 
-                        error.message
+                return;
 
-                    );
-
-
-                    saveButton.disabled =
-                        false;
-
-
-                    saveButton.textContent =
-                        "SIMPAN DATA";
+            }
 
 
-                    return;
+            if (!operator) {
 
-                }
+                alert(
+                    "Masukkan nama operator."
+                );
+
+                return;
+
+            }
 
 
-                // =================================
-                // BERHASIL
-                // =================================
+            if (
+                isNaN(fuel) ||
+                fuel <= 0
+            ) {
+
+                alert(
+                    "Masukkan jumlah fuel."
+                );
+
+                return;
+
+            }
+
+
+            if (!shift) {
+
+                alert(
+                    "Pilih shift."
+                );
+
+                return;
+
+            }
+
+
+            const waktu =
+                getLocalDateTime();
+
+
+            const hmJalan =
+                previousHM > 0
+                ? currentHM - previousHM
+                : 0;
+
+
+            saveButton.disabled =
+                true;
+
+            saveButton.textContent =
+                "MENYIMPAN...";
+
+
+            const { error } =
+                await supabaseClient
+
+                    .from(
+                        "fuel_history"
+                    )
+
+                    .insert({
+
+                        tanggal:
+                            waktu.tanggal,
+
+                        jam:
+                            waktu.jam,
+
+                        fuel_truck:
+                            selectedFuelTruck,
+
+                        wh:
+                            selectedWH,
+
+                        unit:
+                            currentUnit,
+
+                        operator:
+                            operator,
+
+                        hm_awal:
+                            previousHM,
+
+                        hm_akhir:
+                            currentHM,
+
+                        hm_jalan:
+                            hmJalan,
+
+                        fuel:
+                            fuel,
+
+                        shift:
+                            Number(
+                                shift
+                            )
+
+                    });
+
+
+            if (error) {
+
+                console.error(
+                    error
+                );
+
 
                 alert(
 
-                    "✅ DATA BERHASIL DISIMPAN!\n\n" +
+                    "❌ Data gagal disimpan.\n\n" +
 
-                    "Unit: " +
-                    currentUnit +
-                    "\n" +
-
-                    "Operator: " +
-                    operator +
-                    "\n" +
-
-                    "HM Sebelumnya: " +
-                    (
-                        previousHM > 0
-                        ? previousHM
-                        : "-"
-                    ) +
-                    "\n" +
-
-                    "HM Sekarang: " +
-                    currentHM +
-                    "\n" +
-
-                    "HM Jalan: " +
-                    hmJalan +
-                    "\n" +
-
-                    "Fuel: " +
-                    fuel +
-                    " L\n" +
-
-                    "Shift: " +
-                    shift
+                    error.message
 
                 );
 
 
-                location.reload();
+                saveButton.disabled =
+                    false;
+
+                saveButton.textContent =
+                    "SIMPAN DATA";
+
+
+                return;
 
             }
-        );
+
+
+            alert(
+
+                "✅ DATA BERHASIL DISIMPAN!\n\n" +
+
+                "Fuel Truck: " +
+                selectedFuelTruck +
+                "\n" +
+
+                "WH: " +
+                selectedWH +
+                "\n" +
+
+                "Unit: " +
+                currentUnit +
+                "\n" +
+
+                "Operator: " +
+                operator +
+                "\n" +
+
+                "HM Sebelumnya: " +
+                (
+                    previousHM > 0
+                    ? previousHM
+                    : "-"
+                ) +
+                "\n" +
+
+                "HM Sekarang: " +
+                currentHM +
+                "\n" +
+
+                "HM Jalan: " +
+                hmJalan +
+                "\n" +
+
+                "Fuel: " +
+                fuel +
+                " L\n" +
+
+                "Shift: " +
+                shift
+
+            );
+
+
+            location.reload();
+
+        }
+    );
 
 </script>
 
 </body>
-
 </html>
