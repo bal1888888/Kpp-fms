@@ -1,1 +1,707 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard Admin - KPP FMS</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 23px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(220px, 1fr));
+
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card-icon {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.08);
+
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            font-size: 19px;
+            margin-bottom: 20px;
+        }
+
+        .shift-container {
+            display: grid;
+
+            grid-template-columns:
+                repeat(auto-fit, minmax(200px, 1fr));
+
+            gap: 15px;
+        }
+
+        .shift-card {
+            background: #f8fafc;
+            padding: 18px;
+            border-radius: 10px;
+
+            border: 1px solid #e5e7eb;
+        }
+
+        .shift-card h3 {
+            margin-bottom: 8px;
+        }
+
+        .shift-fuel {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            background: #1f2937;
+            color: white;
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 11px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 30px;
+        }
+
+        .buttons {
+            margin-top: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+
+            padding: 10px 16px;
+            border-radius: 7px;
+
+            text-decoration: none;
+            font-size: 14px;
+
+            margin-right: 8px;
+        }
+
+        .btn-green {
+            background: #16a34a;
+        }
+
+        .btn-red {
+            background: #dc2626;
+            border: none;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                padding: 10px;
+                margin: 15px auto;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>
+        KPP FUEL MANAGEMENT SYSTEM
+    </h1>
+
+    <p>
+        PT KPP - Dashboard Admin
+    </p>
+
+</div>
+
+
+<div class="container">
+
+
+    <!-- ========================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ========================= -->
+
+    <div class="cards">
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                ⛽
+            </div>
+
+            <div class="card-title">
+                TOTAL FUEL
+            </div>
+
+            <div
+                class="card-value"
+                id="totalFuel">
+
+                0 L
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                🚛
+            </div>
+
+            <div class="card-title">
+                TOTAL TRANSAKSI
+            </div>
+
+            <div
+                class="card-value"
+                id="totalTransaction">
+
+                0
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                🚜
+            </div>
+
+            <div class="card-title">
+                TOTAL UNIT
+            </div>
+
+            <div
+                class="card-value"
+                id="totalUnit">
+
+                0
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-icon">
+                👷
+            </div>
+
+            <div class="card-title">
+                TOTAL OPERATOR
+            </div>
+
+            <div
+                class="card-value"
+                id="totalOperator">
+
+                0
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- SHIFT -->
+    <!-- ========================= -->
+
+    <div class="section">
+
+        <h2>
+            📊 Penggunaan Fuel per Shift
+        </h2>
+
+
+        <div class="shift-container">
+
+
+            <div class="shift-card">
+
+                <h3>
+                    Shift 1
+                </h3>
+
+                <div
+                    class="shift-fuel"
+                    id="shift1Fuel">
+
+                    0 L
+
+                </div>
+
+            </div>
+
+
+            <div class="shift-card">
+
+                <h3>
+                    Shift 2
+                </h3>
+
+                <div
+                    class="shift-fuel"
+                    id="shift2Fuel">
+
+                    0 L
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- TRANSAKSI TERBARU -->
+    <!-- ========================= -->
+
+    <div class="section">
+
+        <h2>
+            📋 Transaksi Pengisian
+        </h2>
+
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Jam</th>
+                        <th>Unit</th>
+                        <th>Operator</th>
+                        <th>HM Awal</th>
+                        <th>HM Akhir</th>
+                        <th>HM Jalan</th>
+                        <th>Fuel</th>
+                        <th>Shift</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody
+                    id="transactionTable">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="emptyData"
+            class="empty"
+            style="display:none;">
+
+            Belum ada transaksi.
+
+        </div>
+
+
+        <div class="buttons">
+
+            <a
+                href="pengisian.html"
+                class="btn btn-green">
+
+                ⛽ Pengisian Fuel
+
+            </a>
+
+
+            <a
+                href="riwayat.html"
+                class="btn">
+
+                📋 Riwayat
+
+            </a>
+
+
+            <a
+                href="index.html"
+                class="btn">
+
+                🏠 Dashboard Utama
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+// =================================
+// AMBIL DATA
+// =================================
+
+const data =
+    JSON.parse(
+        localStorage.getItem(
+            "fuelHistory"
+        )
+    ) || [];
+
+
+// =================================
+// TOTAL FUEL
+// =================================
+
+let totalFuel = 0;
+
+
+data.forEach(function(item) {
+
+    totalFuel +=
+        Number(item.fuel) || 0;
+
+});
+
+
+document
+    .getElementById("totalFuel")
+    .textContent =
+    totalFuel.toLocaleString(
+        "id-ID"
+    ) + " L";
+
+
+// =================================
+// TOTAL TRANSAKSI
+// =================================
+
+document
+    .getElementById("totalTransaction")
+    .textContent =
+    data.length;
+
+
+// =================================
+// TOTAL UNIT
+// =================================
+
+const units = [
+
+    ...new Set(
+
+        data.map(function(item) {
+
+            return item.unit;
+
+        })
+
+    )
+
+];
+
+
+document
+    .getElementById("totalUnit")
+    .textContent =
+    units.length;
+
+
+// =================================
+// TOTAL OPERATOR
+// =================================
+
+const operators = [
+
+    ...new Set(
+
+        data
+
+            .map(function(item) {
+
+                return item.operator;
+
+            })
+
+            .filter(Boolean)
+
+    )
+
+];
+
+
+document
+    .getElementById("totalOperator")
+    .textContent =
+    operators.length;
+
+
+// =================================
+// FUEL PER SHIFT
+// =================================
+
+let shift1 = 0;
+
+let shift2 = 0;
+
+
+data.forEach(function(item) {
+
+    const fuel =
+        Number(item.fuel) || 0;
+
+
+    if (item.shift === "1") {
+
+        shift1 += fuel;
+
+    }
+
+
+    if (item.shift === "2") {
+
+        shift2 += fuel;
+
+    }
+
+});
+
+
+document
+    .getElementById("shift1Fuel")
+    .textContent =
+    shift1.toLocaleString(
+        "id-ID"
+    ) + " L";
+
+
+document
+    .getElementById("shift2Fuel")
+    .textContent =
+    shift2.toLocaleString(
+        "id-ID"
+    ) + " L";
+
+
+// =================================
+// TABEL TRANSAKSI
+// =================================
+
+const table =
+    document.getElementById(
+        "transactionTable"
+    );
+
+
+if (data.length === 0) {
+
+    document
+        .getElementById("emptyData")
+        .style.display =
+        "block";
+
+}
+
+
+data.forEach(function(item, index) {
+
+
+    const row =
+        document.createElement(
+            "tr"
+        );
+
+
+    row.innerHTML = `
+
+        <td>
+            ${index + 1}
+        </td>
+
+        <td>
+            ${item.tanggal}
+        </td>
+
+        <td>
+            ${item.jam}
+        </td>
+
+        <td>
+            <strong>
+                ${item.unit}
+            </strong>
+        </td>
+
+        <td>
+            ${item.operator || "-"}
+        </td>
+
+        <td>
+            ${
+                item.hmAwal > 0
+                ? item.hmAwal
+                : "-"
+            }
+        </td>
+
+        <td>
+            ${item.hmAkhir}
+        </td>
+
+        <td>
+            ${
+                item.hmJalan > 0
+                ? item.hmJalan + " HM"
+                : "-"
+            }
+        </td>
+
+        <td>
+            <strong>
+                ${item.fuel} L
+            </strong>
+        </td>
+
+        <td>
+            Shift ${item.shift}
+        </td>
+
+    `;
+
+
+    table.appendChild(row);
+
+});
+
+
+</script>
+
+
+</body>
+
+</html>
 
