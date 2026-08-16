@@ -7,10 +7,7 @@
 
     <title>Pengisian Fuel - KPP FMS</title>
 
-    <!-- QR Scanner -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-
-    <!-- Supabase -->
+    <!-- SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -69,70 +66,12 @@
             font-size: 13px;
         }
 
-        .scan-box {
-            background: #f3f4f6;
-            padding: 20px;
-            text-align: center;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .scan-icon {
-            font-size: 45px;
-            margin-bottom: 10px;
-        }
-
-        .scan-btn {
-            background: #16a34a;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 7px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .data-box {
+        .unit-box {
             background: #f8fafc;
             border: 1px solid #e5e7eb;
             border-radius: 10px;
-            padding: 15px;
+            padding: 18px;
             margin-bottom: 20px;
-        }
-
-        .data-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-        }
-
-        .data-label {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .data-value {
-            font-weight: bold;
-        }
-
-        .previous-hm {
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .previous-hm small {
-            display: block;
-            color: #777;
-            margin-bottom: 5px;
-        }
-
-        .previous-hm strong {
-            font-size: 25px;
-            color: #ea580c;
         }
 
         .form-group {
@@ -159,6 +98,65 @@
         select:focus {
             outline: none;
             border-color: #2563eb;
+        }
+
+        #unitInput {
+            text-transform: uppercase;
+        }
+
+        .check-btn {
+            width: 100%;
+            background: #16a34a;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .check-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .unit-result {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .unit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .unit-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .previous-hm {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .previous-hm small {
+            display: block;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .previous-hm strong {
+            font-size: 25px;
+            color: #ea580c;
         }
 
         .hm-result {
@@ -237,40 +235,61 @@
         <h2>⛽ Pengisian Fuel</h2>
 
         <div class="info">
-            Scan QR unit terlebih dahulu. HM terakhir akan diambil dari database KPP-FMS.
+            Masukkan nomor unit lalu tekan <b>CEK UNIT</b>.
+            Sistem akan mengambil HM terakhir dari database.
         </div>
 
-        <div class="scan-box" id="scanBox">
+        <!-- INPUT UNIT -->
+        <div class="unit-box">
 
-            <div class="scan-icon">📷</div>
+            <div class="form-group">
 
-            <p style="margin-bottom:12px;">
-                Scan QR Code Unit
-            </p>
+                <label>Unit</label>
 
-            <button class="scan-btn" id="scanButton">
-                Scan QR
+                <input
+                    type="text"
+                    id="unitInput"
+                    placeholder="Contoh: DT7441"
+                    autocomplete="off"
+                >
+
+            </div>
+
+            <button
+                class="check-btn"
+                id="checkUnitButton">
+
+                CEK UNIT / AMBIL HM
+
             </button>
 
         </div>
 
-        <div class="data-box hidden" id="unitData">
+        <!-- HASIL UNIT -->
+        <div
+            class="unit-result hidden"
+            id="unitResult">
 
-            <div class="data-row">
+            <div class="unit-row">
 
-                <span class="data-label">
-                    Unit
-                </span>
+                <span>Unit Terpilih</span>
 
-                <span class="data-value" id="unitDisplay">
+                <span
+                    class="unit-name"
+                    id="unitDisplay">
+
                     -
+
                 </span>
 
             </div>
 
         </div>
 
-        <div class="previous-hm hidden" id="previousHmBox">
+        <!-- HM SEBELUMNYA -->
+        <div
+            class="previous-hm hidden"
+            id="previousHmBox">
 
             <small>
                 HM SEBELUMNYA
@@ -282,7 +301,10 @@
 
         </div>
 
-        <div id="formArea" class="hidden">
+        <!-- FORM PENGISIAN -->
+        <div
+            id="formArea"
+            class="hidden">
 
             <div class="form-group">
 
@@ -311,7 +333,9 @@
 
             </div>
 
-            <div class="warning" id="warning">
+            <div
+                class="warning"
+                id="warning">
 
                 ⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.
 
@@ -371,14 +395,22 @@
 
             </div>
 
-            <button class="save-btn" id="saveButton">
+            <button
+                class="save-btn"
+                id="saveButton">
+
                 SIMPAN DATA
+
             </button>
 
         </div>
 
-        <a href="index.html" class="back">
+        <a
+            href="index.html"
+            class="back">
+
             ← Kembali ke Dashboard
+
         </a>
 
     </div>
@@ -387,9 +419,9 @@
 
 <script>
 
-    // =========================================
+    // =====================================
     // SUPABASE
-    // =========================================
+    // =====================================
 
     const SUPABASE_URL =
         "https://pwowtyfybfqsveuvqrsb.supabase.co";
@@ -404,47 +436,110 @@
         );
 
 
-    // =========================================
+    // =====================================
     // VARIABEL
-    // =========================================
+    // =====================================
 
     let currentUnit = "";
     let previousHM = 0;
-    let scanner = null;
+    let checkedUnit = "";
 
 
-    // =========================================
-    // AMBIL HM TERAKHIR DARI SUPABASE
-    // =========================================
+    // =====================================
+    // NORMALISASI UNIT
+    // =====================================
+
+    function normalisasiUnit(unit) {
+
+        return unit
+            .trim()
+            .toUpperCase();
+
+    }
+
+
+    // Otomatis huruf kapital
+    document
+        .getElementById("unitInput")
+        .addEventListener(
+            "input",
+            function() {
+
+                this.value =
+                    this.value.toUpperCase();
+
+            }
+        );
+
+
+    // Tekan Enter = cek unit
+    document
+        .getElementById("unitInput")
+        .addEventListener(
+            "keydown",
+            function(event) {
+
+                if (event.key === "Enter") {
+
+                    event.preventDefault();
+
+                    document
+                        .getElementById(
+                            "checkUnitButton"
+                        )
+                        .click();
+
+                }
+
+            }
+        );
+
+
+    // =====================================
+    // AMBIL HM TERAKHIR
+    // =====================================
 
     async function ambilHmTerakhir(unit) {
 
         const { data, error } =
             await supabaseClient
+
                 .from("fuel_history")
-                .select("hm_akhir,tanggal,jam")
-                .eq("unit", unit)
-                .order("tanggal", {
-                    ascending: false
-                })
-                .order("jam", {
-                    ascending: false
-                })
+
+                .select(
+                    "hm_akhir,id"
+                )
+
+                .eq(
+                    "unit",
+                    unit
+                )
+
+                .order(
+                    "id",
+                    {
+                        ascending: false
+                    }
+                )
+
                 .limit(1);
 
 
         if (error) {
-
-            console.error(error);
 
             throw error;
 
         }
 
 
-        if (data && data.length > 0) {
+        if (
+            data &&
+            data.length > 0
+        ) {
 
-            return Number(data[0].hm_akhir) || 0;
+            return Number(
+                data[0].hm_akhir
+            ) || 0;
 
         }
 
@@ -454,180 +549,210 @@
     }
 
 
-    // =========================================
-    // SCAN QR
-    // =========================================
+    // =====================================
+    // CEK UNIT
+    // =====================================
 
     document
-        .getElementById("scanButton")
+        .getElementById(
+            "checkUnitButton"
+        )
         .addEventListener(
             "click",
-            function () {
-
-                const scanBox =
-                    document.getElementById("scanBox");
+            async function() {
 
 
-                scanBox.innerHTML = `
-                    <div id="reader" style="width:100%;"></div>
-                `;
+                const button =
+                    document.getElementById(
+                        "checkUnitButton"
+                    );
 
 
-                scanner =
-                    new Html5Qrcode("reader");
+                const inputUnit =
+                    normalisasiUnit(
+                        document
+                            .getElementById(
+                                "unitInput"
+                            )
+                            .value
+                    );
 
 
-                scanner.start(
+                if (!inputUnit) {
 
-                    {
-                        facingMode: "environment"
-                    },
+                    alert(
+                        "Masukkan nomor unit terlebih dahulu."
+                    );
 
-                    {
-                        fps: 10,
-                        qrbox: 250
-                    },
+                    return;
 
-                    async function(decodedText) {
+                }
 
 
-                        currentUnit =
-                            decodedText
-                                .trim()
-                                .toUpperCase();
+                button.disabled =
+                    true;
 
 
-                        try {
+                button.textContent =
+                    "MENGAMBIL DATA...";
 
-                            previousHM =
-                                await ambilHmTerakhir(
-                                    currentUnit
-                                );
 
-                        } catch (error) {
+                try {
 
-                            alert(
-                                "Gagal mengambil HM terakhir dari database.\nPeriksa koneksi internet."
-                            );
+                    previousHM =
+                        await ambilHmTerakhir(
+                            inputUnit
+                        );
 
-                            return;
 
-                        }
+                    currentUnit =
+                        inputUnit;
 
+
+                    checkedUnit =
+                        inputUnit;
+
+
+                    document
+                        .getElementById(
+                            "unitInput"
+                        )
+                        .value =
+                        currentUnit;
+
+
+                    document
+                        .getElementById(
+                            "unitDisplay"
+                        )
+                        .textContent =
+                        currentUnit;
+
+
+                    document
+                        .getElementById(
+                            "unitResult"
+                        )
+                        .classList
+                        .remove(
+                            "hidden"
+                        );
+
+
+                    document
+                        .getElementById(
+                            "previousHmBox"
+                        )
+                        .classList
+                        .remove(
+                            "hidden"
+                        );
+
+
+                    document
+                        .getElementById(
+                            "formArea"
+                        )
+                        .classList
+                        .remove(
+                            "hidden"
+                        );
+
+
+                    if (
+                        previousHM > 0
+                    ) {
 
                         document
-                            .getElementById("unitDisplay")
+                            .getElementById(
+                                "previousHm"
+                            )
                             .textContent =
-                            currentUnit;
-
-
-                        document
-                            .getElementById("unitData")
-                            .classList
-                            .remove("hidden");
-
-
-                        document
-                            .getElementById("previousHmBox")
-                            .classList
-                            .remove("hidden");
-
-
-                        if (previousHM > 0) {
-
-                            document
-                                .getElementById("previousHm")
-                                .textContent =
-                                previousHM.toLocaleString(
+                            previousHM
+                                .toLocaleString(
                                     "id-ID"
                                 );
 
-                        } else {
-
-                            document
-                                .getElementById("previousHm")
-                                .textContent =
-                                "Belum ada data";
-
-                        }
-
+                    } else {
 
                         document
-                            .getElementById("formArea")
-                            .classList
-                            .remove("hidden");
-
-
-                        try {
-
-                            await scanner.stop();
-
-                        } catch (error) {
-
-                            console.log(error);
-
-                        }
-
-
-                        scanBox.innerHTML = `
-                            <div class="scan-icon">✅</div>
-                            <p>QR berhasil dibaca</p>
-                            <p
-                                id="scanUnitText"
-                                style="margin-top:8px;font-weight:bold;">
-                            </p>
-                        `;
-
-
-                        document
-                            .getElementById("scanUnitText")
+                            .getElementById(
+                                "previousHm"
+                            )
                             .textContent =
-                            currentUnit;
-
-                    },
-
-                    function(errorMessage) {
-
-                        // QR belum terbaca
+                            "Belum ada data";
 
                     }
 
-                ).catch(
-                    function(error) {
 
-                        console.error(error);
+                    document
+                        .getElementById(
+                            "currentHm"
+                        )
+                        .value =
+                        "";
 
-                        scanBox.innerHTML = `
 
-                            <p style="color:red;">
-                                ❌ Kamera tidak dapat dibuka.
-                            </p>
+                    document
+                        .getElementById(
+                            "hmDifference"
+                        )
+                        .textContent =
+                        "0 HM";
 
-                            <p style="margin-top:8px;">
-                                Pastikan izin kamera diberikan.
-                            </p>
 
-                        `;
+                    document
+                        .getElementById(
+                            "warning"
+                        )
+                        .style
+                        .display =
+                        "none";
 
-                    }
-                );
+
+                } catch (error) {
+
+                    console.error(
+                        error
+                    );
+
+
+                    alert(
+                        "❌ Gagal mengambil data unit.\n\n" +
+                        error.message
+                    );
+
+                }
+
+
+                button.disabled =
+                    false;
+
+
+                button.textContent =
+                    "CEK UNIT / AMBIL HM";
 
             }
         );
 
 
-    // =========================================
+    // =====================================
     // HITUNG HM JALAN
-    // =========================================
+    // =====================================
 
     document
-        .getElementById("currentHm")
+        .getElementById(
+            "currentHm"
+        )
         .addEventListener(
             "input",
             function() {
 
+
                 const currentHM =
-                    parseFloat(this.value);
+                    parseFloat(
+                        this.value
+                    );
 
 
                 const warning =
@@ -642,13 +767,19 @@
                     );
 
 
-                if (isNaN(currentHM)) {
+                if (
+                    isNaN(
+                        currentHM
+                    )
+                ) {
 
                     result.textContent =
                         "0 HM";
 
+
                     warning.style.display =
                         "none";
+
 
                     return;
 
@@ -663,8 +794,10 @@
                     warning.style.display =
                         "block";
 
+
                     result.textContent =
                         "HM TIDAK VALID";
+
 
                     return;
 
@@ -675,16 +808,21 @@
                     "none";
 
 
-                if (previousHM > 0) {
+                if (
+                    previousHM > 0
+                ) {
 
                     const difference =
-                        currentHM - previousHM;
+                        currentHM -
+                        previousHM;
 
 
                     result.textContent =
-                        difference.toLocaleString(
-                            "id-ID"
-                        ) + " HM";
+                        difference
+                            .toLocaleString(
+                                "id-ID"
+                            ) +
+                        " HM";
 
                 } else {
 
@@ -697,9 +835,9 @@
         );
 
 
-    // =========================================
-    // TANGGAL & JAM LOKAL PERANGKAT
-    // =========================================
+    // =====================================
+    // TANGGAL & JAM LOKAL
+    // =====================================
 
     function getLocalDateTime() {
 
@@ -707,59 +845,76 @@
             new Date();
 
 
-        const tahun =
+        const year =
             now.getFullYear();
 
 
-        const bulan =
+        const month =
             String(
                 now.getMonth() + 1
-            ).padStart(2, "0");
+            ).padStart(
+                2,
+                "0"
+            );
 
 
-        const tanggal =
+        const day =
             String(
                 now.getDate()
-            ).padStart(2, "0");
+            ).padStart(
+                2,
+                "0"
+            );
 
 
-        const jam =
+        const hour =
             String(
                 now.getHours()
-            ).padStart(2, "0");
+            ).padStart(
+                2,
+                "0"
+            );
 
 
-        const menit =
+        const minute =
             String(
                 now.getMinutes()
-            ).padStart(2, "0");
+            ).padStart(
+                2,
+                "0"
+            );
 
 
-        const detik =
+        const second =
             String(
                 now.getSeconds()
-            ).padStart(2, "0");
+            ).padStart(
+                2,
+                "0"
+            );
 
 
         return {
 
             tanggal:
-                `${tahun}-${bulan}-${tanggal}`,
+                `${year}-${month}-${day}`,
 
             jam:
-                `${jam}:${menit}:${detik}`
+                `${hour}:${minute}:${second}`
 
         };
 
     }
 
 
-    // =========================================
-    // SIMPAN KE SUPABASE
-    // =========================================
+    // =====================================
+    // SIMPAN DATA
+    // =====================================
 
     document
-        .getElementById("saveButton")
+        .getElementById(
+            "saveButton"
+        )
         .addEventListener(
             "click",
             async function() {
@@ -769,6 +924,30 @@
                     document.getElementById(
                         "saveButton"
                     );
+
+
+                const unitSekarang =
+                    normalisasiUnit(
+                        document
+                            .getElementById(
+                                "unitInput"
+                            )
+                            .value
+                    );
+
+
+                if (
+                    !checkedUnit ||
+                    unitSekarang !== checkedUnit
+                ) {
+
+                    alert(
+                        "Nomor unit berubah.\nSilakan tekan CEK UNIT lagi sebelum menyimpan."
+                    );
+
+                    return;
+
+                }
 
 
                 const currentHM =
@@ -808,22 +987,13 @@
                         .value;
 
 
-                // =============================
                 // VALIDASI
-                // =============================
 
-                if (!currentUnit) {
-
-                    alert(
-                        "Silakan scan QR unit terlebih dahulu."
-                    );
-
-                    return;
-
-                }
-
-
-                if (isNaN(currentHM)) {
+                if (
+                    isNaN(
+                        currentHM
+                    )
+                ) {
 
                     alert(
                         "Masukkan HM sekarang."
@@ -890,7 +1060,8 @@
 
                 const hmJalan =
                     previousHM > 0
-                    ? currentHM - previousHM
+                    ? currentHM -
+                      previousHM
                     : 0;
 
 
@@ -902,12 +1073,15 @@
                     "MENYIMPAN...";
 
 
-                // Supabase INSERT
-                // inserted row tidak perlu dikembalikan
+                // SIMPAN KE SUPABASE
 
                 const { error } =
                     await supabaseClient
-                        .from("fuel_history")
+
+                        .from(
+                            "fuel_history"
+                        )
+
                         .insert({
 
                             tanggal:
@@ -935,17 +1109,22 @@
                                 fuel,
 
                             shift:
-                                Number(shift)
+                                Number(
+                                    shift
+                                )
 
                         });
 
 
                 if (error) {
 
-                    console.error(error);
+                    console.error(
+                        error
+                    );
+
 
                     alert(
-                        "❌ Data gagal disimpan ke database.\n\n" +
+                        "❌ Data gagal disimpan.\n\n" +
                         error.message
                     );
 
@@ -957,6 +1136,7 @@
                     saveButton.textContent =
                         "SIMPAN DATA";
 
+
                     return;
 
                 }
@@ -964,7 +1144,7 @@
 
                 alert(
 
-                    "✅ Data berhasil masuk ke database KPP-FMS!\n\n" +
+                    "✅ Data berhasil disimpan!\n\n" +
 
                     "Unit: " +
                     currentUnit +
@@ -1008,5 +1188,4 @@
 </script>
 
 </body>
-
 </html>
