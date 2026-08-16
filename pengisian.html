@@ -6,6 +6,8 @@
 
     <title>Pengisian Fuel - KPP FMS</title>
 
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -50,8 +52,87 @@
         }
 
         .form-box h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #eff6ff;
+            padding: 12px;
+            border-radius: 7px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .scan-box {
+            background: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .scan-icon {
+            font-size: 45px;
+            margin-bottom: 10px;
+        }
+
+        .scan-btn {
+            background: #16a34a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 7px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .data-box {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .data-value {
+            font-weight: bold;
+        }
+
+        .previous-hm {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            padding: 15px;
+            border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
+        }
+
+        .previous-hm small {
+            display: block;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .previous-hm strong {
+            font-size: 25px;
+            color: #ea580c;
         }
 
         .form-group {
@@ -74,27 +155,40 @@
             font-size: 15px;
         }
 
-        .scan-box {
-            background: #f3f4f6;
-            padding: 20px;
-            text-align: center;
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .hm-result {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
+            text-align: center;
         }
 
-        .scan-icon {
-            font-size: 45px;
-            margin-bottom: 10px;
+        .hm-result small {
+            display: block;
+            color: #666;
+            margin-bottom: 5px;
         }
 
-        .scan-btn {
-            display: inline-block;
-            background: #16a34a;
-            color: white;
-            padding: 12px 20px;
+        .hm-result strong {
+            font-size: 24px;
+            color: #16a34a;
+        }
+
+        .warning {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
             border-radius: 7px;
-            border: none;
-            cursor: pointer;
+            margin-bottom: 18px;
             font-size: 14px;
         }
 
@@ -109,6 +203,10 @@
             cursor: pointer;
         }
 
+        .save-btn:hover {
+            background: #1d4ed8;
+        }
+
         .back {
             display: block;
             text-align: center;
@@ -118,132 +216,409 @@
             font-size: 14px;
         }
 
-        .info {
-            background: #eff6ff;
-            padding: 12px;
-            border-radius: 7px;
-            margin-bottom: 20px;
-            font-size: 13px;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="header">
-        <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-        <p>PT KPP - Pengisian Fuel</p>
-    </div>
+<div class="header">
+    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+    <p>PT KPP - Pengisian Fuel</p>
+</div>
 
-    <div class="container">
+<div class="container">
 
-        <div class="form-box">
+    <div class="form-box">
 
-            <h2>⛽ Pengisian Fuel</h2>
+        <h2>⛽ Pengisian Fuel</h2>
 
-            <div class="info">
-                Silakan scan QR unit kemudian isi HM dan jumlah fuel.
+        <div class="info">
+            Scan QR unit terlebih dahulu. Sistem akan menampilkan HM terakhir unit.
+        </div>
+
+        <!-- SCANNER -->
+        <div class="scan-box" id="scanBox">
+
+            <div class="scan-icon">📷</div>
+
+            <p style="margin-bottom: 12px;">
+                Scan QR Code Unit
+            </p>
+
+            <button class="scan-btn" id="scanButton">
+                Scan QR
+            </button>
+
+        </div>
+
+        <!-- DATA UNIT -->
+        <div class="data-box hidden" id="unitData">
+
+            <div class="data-row">
+                <span class="data-label">Unit</span>
+                <span class="data-value" id="unitDisplay">-</span>
             </div>
 
-            <div class="scan-box">
+        </div>
 
-                <div class="scan-icon">📷</div>
+        <!-- HM SEBELUMNYA -->
+        <div class="previous-hm hidden" id="previousHmBox">
 
-                <p style="margin-bottom: 12px;">
-                    Scan QR Code Unit
-                </p>
+            <small>HM SEBELUMNYA</small>
 
-                <button class="scan-btn">
-                    Scan QR
-                </button>
+            <strong id="previousHm">-</strong>
 
+        </div>
+
+        <!-- FORM -->
+        <div id="formArea" class="hidden">
+
+            <div class="form-group">
+
+                <label>HM Sekarang</label>
+
+                <input
+                    type="number"
+                    id="currentHm"
+                    placeholder="Masukkan HM sekarang"
+                    step="0.1"
+                >
+
+            </div>
+
+            <!-- HASIL HM -->
+            <div class="hm-result">
+
+                <small>HM JALAN</small>
+
+                <strong id="hmDifference">0 HM</strong>
+
+            </div>
+
+            <!-- WARNING -->
+            <div class="warning" id="warning">
+                ⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.
             </div>
 
             <div class="form-group">
-                <label>Unit</label>
-               <input type="text" id="unit" placeholder="Unit akan muncul setelah scan QR" readonly>
-            </div>
 
-            <div class="form-group">
-                <label>HM</label>
-                <input type="number" placeholder="Masukkan HM">
-            </div>
-
-            <div class="form-group">
                 <label>Jumlah Fuel (Liter)</label>
-                <input type="number" step="0.01" placeholder="Masukkan jumlah liter">
+
+                <input
+                    type="number"
+                    id="fuelQty"
+                    placeholder="Masukkan jumlah liter"
+                    step="0.01"
+                    min="0"
+                >
+
             </div>
 
             <div class="form-group">
+
                 <label>Shift</label>
 
-                <select>
-                    <option value="">-- Pilih Shift --</option>
-                    <option value="1">Shift 1</option>
-                    <option value="2">Shift 2</option>
+                <select id="shift">
+
+                    <option value="">
+                        -- Pilih Shift --
+                    </option>
+
+                    <option value="1">
+                        Shift 1
+                    </option>
+
+                    <option value="2">
+                        Shift 2
+                    </option>
+
                 </select>
 
             </div>
 
-            <button class="save-btn">
+            <button class="save-btn" id="saveButton">
                 SIMPAN DATA
             </button>
 
-            <a href="index.html" class="back">
-                ← Kembali ke Dashboard
-            </a>
-
         </div>
 
+        <a href="index.html" class="back">
+            ← Kembali ke Dashboard
+        </a>
+
     </div>
-<script src="https://unpkg.com/html5-qrcode"></script>
+
+</div>
+
 
 <script>
-    const scanButton = document.querySelector(".scan-btn");
 
-    scanButton.addEventListener("click", function () {
+    let currentUnit = "";
+    let previousHM = 0;
+    let scanner = null;
 
-        const scannerBox = document.querySelector(".scan-box");
 
-        scannerBox.innerHTML = `
+    // ================================
+    // SCAN QR
+    // ================================
+
+    document.getElementById("scanButton").addEventListener("click", function () {
+
+        const scanBox = document.getElementById("scanBox");
+
+        scanBox.innerHTML = `
             <div id="reader" style="width:100%;"></div>
         `;
 
-        const scanner = new Html5Qrcode("reader");
+        scanner = new Html5Qrcode("reader");
 
         scanner.start(
-            { facingMode: "environment" },
+            {
+                facingMode: "environment"
+            },
             {
                 fps: 10,
                 qrbox: 250
             },
-            (decodedText) => {
+            function(decodedText) {
 
-                document.getElementById("unit").value = decodedText;
+                currentUnit = decodedText.trim();
 
+                // Ambil HM terakhir dari browser
+                const savedHM = localStorage.getItem(
+                    "hm_" + currentUnit
+                );
+
+                if (savedHM) {
+
+                    previousHM = parseFloat(savedHM);
+
+                } else {
+
+                    previousHM = 0;
+
+                }
+
+                document.getElementById("unitDisplay").textContent =
+                    currentUnit;
+
+                document.getElementById("unitData")
+                    .classList.remove("hidden");
+
+                document.getElementById("previousHmBox")
+                    .classList.remove("hidden");
+
+                if (previousHM > 0) {
+
+                    document.getElementById("previousHm")
+                        .textContent = previousHM.toLocaleString("id-ID");
+
+                } else {
+
+                    document.getElementById("previousHm")
+                        .textContent = "Belum ada data";
+
+                }
+
+                document.getElementById("formArea")
+                    .classList.remove("hidden");
+
+                // Stop scanner
                 scanner.stop();
 
-                scannerBox.innerHTML = `
+                scanBox.innerHTML = `
                     <div class="scan-icon">✅</div>
-                    <p>QR berhasil dibaca</p>
-                    <p><strong>${decodedText}</strong></p>
+
+                    <p>
+                        QR berhasil dibaca
+                    </p>
+
+                    <p style="margin-top:8px;">
+                        <strong>${currentUnit}</strong>
+                    </p>
                 `;
+
             },
-            (errorMessage) => {
+            function(errorMessage) {
+
                 // Scanner sedang mencari QR
+
             }
-        ).catch((err) => {
-            scannerBox.innerHTML = `
+        ).catch(function(error) {
+
+            scanBox.innerHTML = `
                 <p style="color:red;">
-                    Kamera tidak dapat dibuka.
+                    ❌ Kamera tidak dapat dibuka.
                 </p>
-                <p>
-                    Pastikan izin kamera sudah diberikan.
+
+                <p style="margin-top:8px;">
+                    Pastikan izin kamera diberikan.
                 </p>
             `;
+
         });
 
     });
+
+
+    // ================================
+    // HITUNG HM
+    // ================================
+
+    document.getElementById("currentHm").addEventListener(
+        "input",
+        function() {
+
+            const currentHM =
+                parseFloat(this.value);
+
+            const warning =
+                document.getElementById("warning");
+
+            const result =
+                document.getElementById("hmDifference");
+
+
+            if (isNaN(currentHM)) {
+
+                result.textContent = "0 HM";
+
+                warning.style.display = "none";
+
+                return;
+
+            }
+
+
+            if (previousHM > 0 && currentHM < previousHM) {
+
+                warning.style.display = "block";
+
+                result.textContent = "HM TIDAK VALID";
+
+                return;
+
+            }
+
+
+            warning.style.display = "none";
+
+
+            if (previousHM > 0) {
+
+                const difference =
+                    currentHM - previousHM;
+
+                result.textContent =
+                    difference.toLocaleString("id-ID")
+                    + " HM";
+
+            } else {
+
+                result.textContent =
+                    "Data awal";
+
+            }
+
+        }
+    );
+
+
+    // ================================
+    // SIMPAN DATA
+    // ================================
+
+    document.getElementById("saveButton").addEventListener(
+        "click",
+        function() {
+
+            const currentHM =
+                parseFloat(
+                    document.getElementById("currentHm").value
+                );
+
+            const fuel =
+                parseFloat(
+                    document.getElementById("fuelQty").value
+                );
+
+            const shift =
+                document.getElementById("shift").value;
+
+
+            if (!currentUnit) {
+
+                alert("Silakan scan QR unit terlebih dahulu.");
+
+                return;
+
+            }
+
+
+            if (isNaN(currentHM)) {
+
+                alert("Masukkan HM sekarang.");
+
+                return;
+
+            }
+
+
+            if (previousHM > 0 && currentHM < previousHM) {
+
+                alert(
+                    "HM sekarang tidak boleh lebih kecil dari HM sebelumnya."
+                );
+
+                return;
+
+            }
+
+
+            if (isNaN(fuel) || fuel <= 0) {
+
+                alert("Masukkan jumlah fuel.");
+
+                return;
+
+            }
+
+
+            if (!shift) {
+
+                alert("Silakan pilih shift.");
+
+                return;
+
+            }
+
+
+            // Simpan HM terakhir
+            localStorage.setItem(
+                "hm_" + currentUnit,
+                currentHM
+            );
+
+
+            alert(
+                "Data pengisian berhasil disimpan!\n\n" +
+                "Unit: " + currentUnit + "\n" +
+                "HM: " + currentHM + "\n" +
+                "Fuel: " + fuel + " L\n" +
+                "Shift: " + shift
+            );
+
+
+            // Reset form
+            location.reload();
+
+        }
+    );
+
 </script>
+
 </body>
 </html>
