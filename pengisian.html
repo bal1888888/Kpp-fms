@@ -256,6 +256,7 @@
             display: none !important;
         }
     
+
 /* ===== KPP-FMS GLOBAL NAV ===== */
 .app-nav{
     background:#111827;
@@ -270,7 +271,8 @@
     max-width:1250px;
     margin:0 auto;
     display:flex;
-    gap:8px;
+    justify-content:center;
+    gap:12px;
     align-items:center;
     overflow-x:auto;
     scrollbar-width:thin;
@@ -278,21 +280,18 @@
 .app-nav a{
     color:#e5e7eb;
     text-decoration:none;
-    padding:9px 13px;
+    padding:10px 16px;
     border-radius:7px;
     white-space:nowrap;
     font-size:13px;
     font-weight:bold;
     border:1px solid transparent;
 }
-.app-nav a:hover{
-    background:#374151;
-    color:#fff;
-}
-.app-nav a.active{
-    background:#2563eb;
-    color:#fff;
-    border-color:#60a5fa;
+.app-nav a:hover{background:#374151;color:#fff}
+.app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}
+@media(max-width:700px){
+    .app-nav-inner{justify-content:flex-start}
+    .app-nav a{padding:9px 12px;font-size:12px}
 }
 
 </style>
@@ -305,7 +304,7 @@
     <p>PT KPP - Pengisian Fuel</p>
 </div>
 
-<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html" class="active">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a></div></nav>
+<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html" class="active">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html">⚙️ HM Master</a></div></nav>
 <div class="container">
     <div class="form-box">
 
@@ -313,8 +312,8 @@
 
         <div class="info">
             Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT.
-            Sistem akan mengambil HM terakhir dari database online.
-            Jika unit belum pernah masuk ke database, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
+            Sistem akan memakai HM terbaru berdasarkan tanggal/jam operasional: transaksi online atau HM Master/Koreksi aktual.
+            Jika keduanya belum ada, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
         </div>
 
         <div class="section-box">
@@ -984,60 +983,91 @@ document
         }
     );
 
+function hmOperationalKey(row) {
+    if (!row) return "0000-00-00T00:00:00";
+    const tanggal = String(row.tanggal || "0000-00-00");
+    let jam = String(row.jam || "00:00:00");
+    jam = jam.slice(0, 8);
+    return `${tanggal}T${jam}`;
+}
+
 async function ambilHmTerakhir(unit) {
-    const { data, error } =
-        await supabaseClient
+    const [fuelResult, correctionResult] = await Promise.all([
+        supabaseClient
             .from("fuel_history")
-            .select("id,tanggal,hm_akhir")
+            .select("id,tanggal,jam,hm_akhir")
             .eq("unit", unit)
             .not("hm_akhir", "is", null)
-            .order(
-                "tanggal",
-                {
-                    ascending: false
-                }
-            )
-            .order(
-                "id",
-                {
-                    ascending: false
-                }
-            )
-            .limit(1);
+            .order("tanggal", { ascending: false })
+            .order("jam", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(1),
 
-    if (error) {
-        throw error;
+        supabaseClient
+            .from("hm_corrections")
+            .select("id,tanggal,jam,hm,operator,note")
+            .eq("unit", unit)
+            .order("tanggal", { ascending: false })
+            .order("jam", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(1)
+    ]);
+
+    if (fuelResult.error) {
+        throw fuelResult.error;
     }
 
-    // Prioritas 1: database online
-    if (
-        data &&
-        data.length > 0
-    ) {
+    // Kalau tabel HM Master belum dibuat, pengisian tetap bisa jalan memakai data lama.
+    if (correctionResult.error) {
+        console.warn("HM Master belum tersedia:", correctionResult.error.message);
+    }
+
+    const fuelRow = fuelResult.data && fuelResult.data.length
+        ? fuelResult.data[0]
+        : null;
+
+    const correctionRow = !correctionResult.error && correctionResult.data && correctionResult.data.length
+        ? correctionResult.data[0]
+        : null;
+
+    // Bila ada keduanya, pakai yang waktu operasionalnya paling baru.
+    // Jika waktu sama persis, koreksi HM menang karena memang dibuat sebagai override aktual.
+    if (fuelRow && correctionRow) {
+        const fuelKey = hmOperationalKey(fuelRow);
+        const correctionKey = hmOperationalKey(correctionRow);
+
+        if (correctionKey >= fuelKey) {
+            return {
+                hm: Number(correctionRow.hm) || 0,
+                source: `HM Master / Koreksi Aktual (${correctionRow.tanggal} ${String(correctionRow.jam).slice(0,5)})`
+            };
+        }
+
         return {
-            hm:
-                Number(
-                    data[0].hm_akhir
-                ) || 0,
-            source:
-                "Database online (Supabase)"
+            hm: Number(fuelRow.hm_akhir) || 0,
+            source: `Transaksi online terakhir (${fuelRow.tanggal} ${String(fuelRow.jam || "").slice(0,5)})`
         };
     }
 
-    // Prioritas 2: baseline HM dari logsheet Excel
-    if (
-        Object.prototype.hasOwnProperty.call(
-            MASTER_LAST_HM,
-            unit
-        )
-    ) {
+    if (correctionRow) {
         return {
-            hm:
-                Number(
-                    MASTER_LAST_HM[unit]
-                ) || 0,
-            source:
-                "Baseline logsheet Excel"
+            hm: Number(correctionRow.hm) || 0,
+            source: `HM Master / Koreksi Aktual (${correctionRow.tanggal} ${String(correctionRow.jam).slice(0,5)})`
+        };
+    }
+
+    if (fuelRow) {
+        return {
+            hm: Number(fuelRow.hm_akhir) || 0,
+            source: `Transaksi online terakhir (${fuelRow.tanggal} ${String(fuelRow.jam || "").slice(0,5)})`
+        };
+    }
+
+    // Fallback terakhir: HM dari logsheet Excel lama.
+    if (Object.prototype.hasOwnProperty.call(MASTER_LAST_HM, unit)) {
+        return {
+            hm: Number(MASTER_LAST_HM[unit]) || 0,
+            source: "Baseline logsheet Excel"
         };
     }
 
