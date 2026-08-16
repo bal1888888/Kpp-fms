@@ -1,1 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Fuel - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:20px}
+.container{max-width:1200px;margin:20px auto;padding:12px}
+.panel{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px}
+button,.btn{border:0;border-radius:7px;padding:11px 14px;cursor:pointer;font-weight:bold;text-decoration:none;display:inline-block}
+.primary{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.orange{background:#ea580c;color:#fff}.gray{background:#475569;color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}.card small{color:#64748b}.card strong{display:block;font-size:22px;margin-top:5px}
+.total{background:#ecfdf5;border-color:#a7f3d0}.total strong{color:#15803d}
+table{width:100%;border-collapse:collapse;min-width:800px}th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}th{background:#e5e7eb}.table-wrap{overflow-x:auto}
+.note{font-size:12px;color:#64748b;line-height:1.5}.status{margin-top:10px;font-size:13px;font-weight:bold}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Stock Fuel</div></div>
+<div class="container">
 
+<div class="panel">
+  <h3>Periode Stock</h3>
+  <div class="grid">
+    <div><label>Tanggal</label><input type="date" id="tanggal"></div>
+    <div><label>Shift</label><select id="shift"><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
+    <div style="align-self:end"><button class="primary" onclick="loadStock()">REFRESH STOCK</button></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Stock Saat Ini</h3>
+  <div class="cards" id="stockCards"></div>
+  <div class="note" style="margin-top:12px">Rumus: Stock Closing = Stock Opening + Fuel Masuk + Transfer Masuk − Transfer Keluar − Pengisian Unit.</div>
+</div>
+
+<div class="panel">
+  <h3>1. Stock Opening Awal Shift</h3>
+  <div class="grid">
+    <div><label>Storage</label><select id="openingStorage"></select></div>
+    <div><label>Qty Opening (Liter)</label><input type="number" id="openingQty" min="0" step="0.1"></div>
+    <div><label>Fuelman / Operator</label><input id="openingOperator" placeholder="Nama fuelman"></div>
+    <div style="align-self:end"><button class="green" onclick="saveOpening()">SIMPAN OPENING</button></div>
+  </div>
+  <div class="status" id="openingStatus"></div>
+</div>
+
+<div class="panel">
+  <h3>2. Penerimaan Solar</h3>
+  <div class="grid">
+    <div><label>Masuk ke</label><select id="receiptDestination"><option>MT01</option><option>MT02</option><option>MT03</option><option>MT04</option></select></div>
+    <div><label>Qty Diterima (Liter)</label><input type="number" id="receiptQty" min="0" step="0.1"></div>
+    <div><label>Transportir</label><input id="receiptTransporter" placeholder="Contoh: PT SHA"></div>
+    <div><label>Operator</label><input id="receiptOperator" placeholder="Nama fuelman"></div>
+    <div style="align-self:end"><button class="orange" onclick="saveReceipt()">SIMPAN PENERIMAAN</button></div>
+  </div>
+  <div class="status" id="receiptStatus"></div>
+</div>
+
+<div class="panel">
+  <h3>3. Transfer MT → FT</h3>
+  <div class="grid">
+    <div><label>Dari MT</label><select id="transferSource"><option>MT01</option><option>MT02</option><option>MT03</option><option>MT04</option></select></div>
+    <div><label>Ke Fuel Truck</label><select id="transferDestination"><option value="FT0073">FT0073 (WH FT02)</option><option value="FT0075">FT0075 (WH FT01)</option></select></div>
+    <div><label>Qty Transfer (Liter)</label><input type="number" id="transferQty" min="0" step="0.1"></div>
+    <div><label>Operator</label><input id="transferOperator" placeholder="Nama fuelman"></div>
+    <div style="align-self:end"><button class="primary" onclick="saveTransfer()">SIMPAN TRANSFER</button></div>
+  </div>
+  <div class="status" id="transferStatus"></div>
+</div>
+
+<div class="panel">
+  <h3>Pergerakan Fuel Shift Ini</h3>
+  <div class="table-wrap"><table><thead><tr><th>Jam</th><th>Jenis</th><th>Dari</th><th>Ke</th><th>Qty</th><th>Operator</th><th>Keterangan</th></tr></thead><tbody id="movementBody"></tbody></table></div>
+</div>
+
+<div class="panel actions">
+<a href="pengisian.html" class="btn green">⛽ Pengisian Fuel</a>
+<a href="dashboard.html" class="btn primary">📊 Dashboard</a>
+<a href="logsheet.html" class="btn gray">📋 Logsheet</a>
+<a href="index.html" class="btn gray">🏠 Menu Utama</a>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
+const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
+
+function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function localTime(){const d=new Date();return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`}
+function n(v){return Number(v||0)}
+function fmt(v){return n(v).toLocaleString('id-ID',{maximumFractionDigits:1})+' L'}
+function getPeriod(){return {tanggal:document.getElementById('tanggal').value,shift:Number(document.getElementById('shift').value)}}
+function sourceFromFuel(row){
+ const ft=String(row.fuel_truck||'').toUpperCase(); if(ft==='FT0073'||ft==='FT0075') return ft;
+ const wh=String(row.wh||'').toUpperCase(); if(wh==='FT02') return 'FT0073'; if(wh==='FT01') return 'FT0075'; return '';
+}
+
+async function loadStock(){
+ const {tanggal,shift}=getPeriod();
+ if(!tanggal)return;
+ const [o,m,f]=await Promise.all([
+   db.from('stock_opening').select('*').eq('tanggal',tanggal).eq('shift',shift),
+   db.from('stock_movements').select('*').eq('tanggal',tanggal).eq('shift',shift).order('id',{ascending:true}),
+   db.from('fuel_history').select('id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator').eq('tanggal',tanggal).eq('shift',shift)
+ ]);
+ if(o.error||m.error||f.error){alert('Gagal mengambil stock: '+(o.error?.message||m.error?.message||f.error?.message));return}
+ const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
+ (o.data||[]).forEach(x=>stock[x.storage]=n(x.qty));
+ (m.data||[]).forEach(x=>{
+   if(x.jenis==='RECEIPT' && x.destination_storage) stock[x.destination_storage]+=n(x.qty);
+   if(x.jenis==='TRANSFER'){
+     if(x.source_storage) stock[x.source_storage]-=n(x.qty);
+     if(x.destination_storage) stock[x.destination_storage]+=n(x.qty);
+   }
+ });
+ (f.data||[]).forEach(x=>{const src=sourceFromFuel(x);if(src)stock[src]-=n(x.fuel)});
+ const total=Object.values(stock).reduce((a,b)=>a+b,0);
+ const cards=document.getElementById('stockCards');cards.innerHTML='';
+ STORAGES.forEach(s=>{cards.innerHTML+=`<div class="card"><small>${s}${s==='FT0073'?' / WH FT02':s==='FT0075'?' / WH FT01':''}</small><strong>${fmt(stock[s])}</strong></div>`});
+ cards.innerHTML+=`<div class="card total"><small>TOTAL STOCK ALL WHS</small><strong>${fmt(total)}</strong></div>`;
+ const body=document.getElementById('movementBody');body.innerHTML='';
+ const rows=[];
+ (m.data||[]).forEach(x=>rows.push({jam:x.jam||'-',jenis:x.jenis,dari:x.source_storage||'-',ke:x.destination_storage||'-',qty:n(x.qty),operator:x.operator||'-',note:x.transporter||x.note||'-'}));
+ (f.data||[]).forEach(x=>rows.push({jam:x.jam||'-',jenis:'PENGISIAN',dari:sourceFromFuel(x)||'-',ke:x.unit||'-',qty:n(x.fuel),operator:x.operator||'-',note:'Fuel keluar ke unit'}));
+ rows.sort((a,b)=>String(a.jam).localeCompare(String(b.jam)));
+ rows.forEach(x=>body.innerHTML+=`<tr><td>${x.jam}</td><td>${x.jenis}</td><td>${x.dari}</td><td>${x.ke}</td><td>${fmt(x.qty)}</td><td>${x.operator}</td><td>${x.note}</td></tr>`);
+ if(!rows.length)body.innerHTML='<tr><td colspan="7">Belum ada pergerakan fuel pada shift ini.</td></tr>';
+}
+
+async function saveOpening(){
+ const {tanggal,shift}=getPeriod(),storage=document.getElementById('openingStorage').value,qty=n(document.getElementById('openingQty').value),operator=document.getElementById('openingOperator').value.trim();
+ if(!tanggal||!storage||qty<0){alert('Lengkapi stock opening.');return}
+ const {error}=await db.from('stock_opening').upsert({tanggal,shift,storage,qty,operator},{onConflict:'tanggal,shift,storage'});
+ document.getElementById('openingStatus').textContent=error?'❌ '+error.message:'✅ Stock opening tersimpan.'; if(!error)loadStock();
+}
+async function saveReceipt(){
+ const {tanggal,shift}=getPeriod(),destination_storage=document.getElementById('receiptDestination').value,qty=n(document.getElementById('receiptQty').value),transporter=document.getElementById('receiptTransporter').value.trim(),operator=document.getElementById('receiptOperator').value.trim();
+ if(qty<=0){alert('Qty penerimaan harus lebih dari 0.');return}
+ const {error}=await db.from('stock_movements').insert({tanggal,jam:localTime(),shift,jenis:'RECEIPT',source_storage:null,destination_storage,qty,operator,transporter});
+ document.getElementById('receiptStatus').textContent=error?'❌ '+error.message:'✅ Penerimaan tersimpan dan stock bertambah.'; if(!error)loadStock();
+}
+async function saveTransfer(){
+ const {tanggal,shift}=getPeriod(),source_storage=document.getElementById('transferSource').value,destination_storage=document.getElementById('transferDestination').value,qty=n(document.getElementById('transferQty').value),operator=document.getElementById('transferOperator').value.trim();
+ if(qty<=0){alert('Qty transfer harus lebih dari 0.');return}
+ const {error}=await db.from('stock_movements').insert({tanggal,jam:localTime(),shift,jenis:'TRANSFER',source_storage,destination_storage,qty,operator});
+ document.getElementById('transferStatus').textContent=error?'❌ '+error.message:'✅ Transfer tersimpan. Total WHS tidak berubah.'; if(!error)loadStock();
+}
+
+const os=document.getElementById('openingStorage');STORAGES.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s+(s==='FT0073'?' (WH FT02)':s==='FT0075'?' (WH FT01)':'');os.appendChild(o)});
+document.getElementById('tanggal').value=localDate();
+document.getElementById('tanggal').addEventListener('change',loadStock);document.getElementById('shift').addEventListener('change',loadStock);
+loadStock();
+</script>
+</body>
+</html>
