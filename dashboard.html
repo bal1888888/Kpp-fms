@@ -7,6 +7,9 @@
 
     <title>Dashboard Admin - KPP FMS</title>
 
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
 
         * {
@@ -44,11 +47,26 @@
             padding: 20px;
         }
 
+        .top-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        .refresh-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
         .cards {
             display: grid;
             grid-template-columns:
                 repeat(auto-fit, minmax(220px, 1fr));
-
             gap: 15px;
             margin-bottom: 25px;
         }
@@ -57,9 +75,7 @@
             background: white;
             padding: 22px;
             border-radius: 12px;
-
-            box-shadow:
-                0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         .card-icon {
@@ -82,10 +98,7 @@
             background: white;
             padding: 25px;
             border-radius: 12px;
-
-            box-shadow:
-                0 2px 8px rgba(0,0,0,0.08);
-
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 20px;
         }
 
@@ -96,10 +109,8 @@
 
         .shift-container {
             display: grid;
-
             grid-template-columns:
                 repeat(auto-fit, minmax(200px, 1fr));
-
             gap: 15px;
         }
 
@@ -107,7 +118,6 @@
             background: #f8fafc;
             padding: 18px;
             border-radius: 10px;
-
             border: 1px solid #e5e7eb;
         }
 
@@ -127,7 +137,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 900px;
+            min-width: 950px;
         }
 
         th {
@@ -135,6 +145,7 @@
             color: white;
             padding: 12px;
             font-size: 13px;
+            white-space: nowrap;
         }
 
         td {
@@ -149,10 +160,20 @@
             background: #f8fafc;
         }
 
-        .empty {
+        .status {
             text-align: center;
             color: #777;
             padding: 30px;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
         }
 
         .buttons {
@@ -163,24 +184,16 @@
             display: inline-block;
             background: #2563eb;
             color: white;
-
             padding: 10px 16px;
             border-radius: 7px;
-
             text-decoration: none;
             font-size: 14px;
-
             margin-right: 8px;
+            margin-bottom: 8px;
         }
 
         .btn-green {
             background: #16a34a;
-        }
-
-        .btn-red {
-            background: #dc2626;
-            border: none;
-            cursor: pointer;
         }
 
         @media (max-width: 600px) {
@@ -206,13 +219,9 @@
 
 <div class="header">
 
-    <h1>
-        KPP FUEL MANAGEMENT SYSTEM
-    </h1>
+    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
 
-    <p>
-        PT KPP - Dashboard Admin
-    </p>
+    <p>PT KPP - Dashboard Admin</p>
 
 </div>
 
@@ -220,9 +229,26 @@
 <div class="container">
 
 
-    <!-- ========================= -->
-    <!-- SUMMARY CARDS -->
-    <!-- ========================= -->
+    <div class="top-bar">
+
+        <button
+            class="refresh-btn"
+            onclick="loadDashboard()">
+
+            ↻ Refresh Data
+
+        </button>
+
+    </div>
+
+
+    <div
+        id="errorBox"
+        class="error">
+    </div>
+
+
+    <!-- SUMMARY -->
 
     <div class="cards">
 
@@ -314,9 +340,7 @@
     </div>
 
 
-    <!-- ========================= -->
     <!-- SHIFT -->
-    <!-- ========================= -->
 
     <div class="section">
 
@@ -367,14 +391,12 @@
     </div>
 
 
-    <!-- ========================= -->
-    <!-- TRANSAKSI TERBARU -->
-    <!-- ========================= -->
+    <!-- TRANSAKSI -->
 
     <div class="section">
 
         <h2>
-            📋 Transaksi Pengisian
+            📋 Transaksi Pengisian Terbaru
         </h2>
 
 
@@ -404,7 +426,6 @@
 
                 <tbody
                     id="transactionTable">
-
                 </tbody>
 
             </table>
@@ -413,11 +434,10 @@
 
 
         <div
-            id="emptyData"
-            class="empty"
-            style="display:none;">
+            id="statusData"
+            class="status">
 
-            Belum ada transaksi.
+            Mengambil data dari database...
 
         </div>
 
@@ -461,241 +481,508 @@
 <script>
 
 
-// =================================
-// AMBIL DATA
-// =================================
+// ==========================================
+// SUPABASE
+// ==========================================
 
-const data =
-    JSON.parse(
-        localStorage.getItem(
-            "fuelHistory"
-        )
-    ) || [];
+const SUPABASE_URL =
+    "https://pwowtyfybfqsveuvqrsb.supabase.co";
 
-
-// =================================
-// TOTAL FUEL
-// =================================
-
-let totalFuel = 0;
+const SUPABASE_KEY =
+    "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 
 
-data.forEach(function(item) {
-
-    totalFuel +=
-        Number(item.fuel) || 0;
-
-});
-
-
-document
-    .getElementById("totalFuel")
-    .textContent =
-    totalFuel.toLocaleString(
-        "id-ID"
-    ) + " L";
-
-
-// =================================
-// TOTAL TRANSAKSI
-// =================================
-
-document
-    .getElementById("totalTransaction")
-    .textContent =
-    data.length;
-
-
-// =================================
-// TOTAL UNIT
-// =================================
-
-const units = [
-
-    ...new Set(
-
-        data.map(function(item) {
-
-            return item.unit;
-
-        })
-
-    )
-
-];
-
-
-document
-    .getElementById("totalUnit")
-    .textContent =
-    units.length;
-
-
-// =================================
-// TOTAL OPERATOR
-// =================================
-
-const operators = [
-
-    ...new Set(
-
-        data
-
-            .map(function(item) {
-
-                return item.operator;
-
-            })
-
-            .filter(Boolean)
-
-    )
-
-];
-
-
-document
-    .getElementById("totalOperator")
-    .textContent =
-    operators.length;
-
-
-// =================================
-// FUEL PER SHIFT
-// =================================
-
-let shift1 = 0;
-
-let shift2 = 0;
-
-
-data.forEach(function(item) {
-
-    const fuel =
-        Number(item.fuel) || 0;
-
-
-    if (item.shift === "1") {
-
-        shift1 += fuel;
-
-    }
-
-
-    if (item.shift === "2") {
-
-        shift2 += fuel;
-
-    }
-
-});
-
-
-document
-    .getElementById("shift1Fuel")
-    .textContent =
-    shift1.toLocaleString(
-        "id-ID"
-    ) + " L";
-
-
-document
-    .getElementById("shift2Fuel")
-    .textContent =
-    shift2.toLocaleString(
-        "id-ID"
-    ) + " L";
-
-
-// =================================
-// TABEL TRANSAKSI
-// =================================
-
-const table =
-    document.getElementById(
-        "transactionTable"
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
     );
 
 
-if (data.length === 0) {
+// ==========================================
+// FORMAT ANGKA
+// ==========================================
 
-    document
-        .getElementById("emptyData")
-        .style.display =
-        "block";
+function formatAngka(angka) {
+
+    return Number(angka || 0)
+        .toLocaleString("id-ID");
 
 }
 
 
-data.forEach(function(item, index) {
+// ==========================================
+// FORMAT TANGGAL
+// ==========================================
+
+function formatTanggal(tanggal) {
+
+    if (!tanggal) {
+        return "-";
+    }
+
+    const bagian =
+        tanggal.split("-");
+
+    if (bagian.length !== 3) {
+        return tanggal;
+    }
+
+    return (
+        bagian[2] +
+        "/" +
+        bagian[1] +
+        "/" +
+        bagian[0]
+    );
+
+}
 
 
-    const row =
-        document.createElement(
-            "tr"
+// ==========================================
+// BUAT CELL AMAN
+// ==========================================
+
+function buatCell(text) {
+
+    const td =
+        document.createElement("td");
+
+    td.textContent =
+        text;
+
+    return td;
+
+}
+
+
+// ==========================================
+// LOAD DASHBOARD
+// ==========================================
+
+async function loadDashboard() {
+
+
+    const errorBox =
+        document.getElementById(
+            "errorBox"
         );
 
 
-    row.innerHTML = `
+    const status =
+        document.getElementById(
+            "statusData"
+        );
 
-        <td>
-            ${index + 1}
-        </td>
 
-        <td>
-            ${item.tanggal}
-        </td>
+    const table =
+        document.getElementById(
+            "transactionTable"
+        );
 
-        <td>
-            ${item.jam}
-        </td>
 
-        <td>
-            <strong>
-                ${item.unit}
-            </strong>
-        </td>
+    errorBox.style.display =
+        "none";
 
-        <td>
-            ${item.operator || "-"}
-        </td>
 
-        <td>
-            ${
-                item.hmAwal > 0
-                ? item.hmAwal
-                : "-"
+    table.innerHTML =
+        "";
+
+
+    status.style.display =
+        "block";
+
+
+    status.textContent =
+        "Mengambil data dari database...";
+
+
+    // ======================================
+    // AMBIL DATA
+    // ======================================
+
+    const { data, error } =
+        await supabaseClient
+
+            .from("fuel_history")
+
+            .select(`
+                id,
+                tanggal,
+                jam,
+                unit,
+                operator,
+                hm_awal,
+                hm_akhir,
+                hm_jalan,
+                fuel,
+                shift
+            `)
+
+            .order(
+                "tanggal",
+                {
+                    ascending: false
+                }
+            )
+
+            .order(
+                "jam",
+                {
+                    ascending: false
+                }
+            );
+
+
+    // ======================================
+    // ERROR
+    // ======================================
+
+    if (error) {
+
+
+        console.error(error);
+
+
+        errorBox.style.display =
+            "block";
+
+
+        errorBox.textContent =
+            "❌ Gagal mengambil data: " +
+            error.message;
+
+
+        status.style.display =
+            "none";
+
+
+        return;
+
+    }
+
+
+    // ======================================
+    // TOTAL FUEL
+    // ======================================
+
+    let totalFuel = 0;
+
+
+    data.forEach(
+        function(item) {
+
+            totalFuel +=
+                Number(item.fuel) || 0;
+
+        }
+    );
+
+
+    document
+        .getElementById(
+            "totalFuel"
+        )
+        .textContent =
+
+        formatAngka(
+            totalFuel
+        ) + " L";
+
+
+
+    // ======================================
+    // TOTAL TRANSAKSI
+    // ======================================
+
+    document
+        .getElementById(
+            "totalTransaction"
+        )
+        .textContent =
+        data.length;
+
+
+
+    // ======================================
+    // TOTAL UNIT UNIK
+    // ======================================
+
+    const unitSet =
+        new Set();
+
+
+    data.forEach(
+        function(item) {
+
+            if (item.unit) {
+
+                unitSet.add(
+                    item.unit
+                        .trim()
+                        .toUpperCase()
+                );
+
             }
-        </td>
 
-        <td>
-            ${item.hmAkhir}
-        </td>
+        }
+    );
 
-        <td>
-            ${
-                item.hmJalan > 0
-                ? item.hmJalan + " HM"
-                : "-"
+
+    document
+        .getElementById(
+            "totalUnit"
+        )
+        .textContent =
+        unitSet.size;
+
+
+
+    // ======================================
+    // TOTAL OPERATOR UNIK
+    // ======================================
+
+    const operatorSet =
+        new Set();
+
+
+    data.forEach(
+        function(item) {
+
+            if (item.operator) {
+
+                operatorSet.add(
+                    item.operator
+                        .trim()
+                        .toLowerCase()
+                );
+
             }
-        </td>
 
-        <td>
-            <strong>
-                ${item.fuel} L
-            </strong>
-        </td>
-
-        <td>
-            Shift ${item.shift}
-        </td>
-
-    `;
+        }
+    );
 
 
-    table.appendChild(row);
+    document
+        .getElementById(
+            "totalOperator"
+        )
+        .textContent =
+        operatorSet.size;
 
-});
+
+
+    // ======================================
+    // FUEL PER SHIFT
+    // ======================================
+
+    let shift1 =
+        0;
+
+
+    let shift2 =
+        0;
+
+
+    data.forEach(
+        function(item) {
+
+
+            const fuel =
+                Number(item.fuel) || 0;
+
+
+            if (
+                Number(item.shift) === 1
+            ) {
+
+                shift1 += fuel;
+
+            }
+
+
+            if (
+                Number(item.shift) === 2
+            ) {
+
+                shift2 += fuel;
+
+            }
+
+
+        }
+    );
+
+
+    document
+        .getElementById(
+            "shift1Fuel"
+        )
+        .textContent =
+
+        formatAngka(
+            shift1
+        ) + " L";
+
+
+    document
+        .getElementById(
+            "shift2Fuel"
+        )
+        .textContent =
+
+        formatAngka(
+            shift2
+        ) + " L";
+
+
+
+    // ======================================
+    // TABEL
+    // ======================================
+
+    if (
+        data.length === 0
+    ) {
+
+        status.style.display =
+            "block";
+
+
+        status.textContent =
+            "Belum ada transaksi.";
+
+
+        return;
+
+    }
+
+
+    status.style.display =
+        "none";
+
+
+    data.forEach(
+        function(item, index) {
+
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            row.appendChild(
+                buatCell(
+                    index + 1
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    formatTanggal(
+                        item.tanggal
+                    )
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    item.jam
+                        ? item.jam.substring(
+                            0,
+                            8
+                          )
+                        : "-"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    item.unit || "-"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    item.operator || "-"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    Number(
+                        item.hm_awal
+                    ) > 0
+                    ? formatAngka(
+                        item.hm_awal
+                      )
+                    : "-"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    formatAngka(
+                        item.hm_akhir
+                    )
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    Number(
+                        item.hm_jalan
+                    ) > 0
+                    ? formatAngka(
+                        item.hm_jalan
+                      ) + " HM"
+                    : "-"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    formatAngka(
+                        item.fuel
+                    ) + " L"
+                )
+            );
+
+
+            row.appendChild(
+                buatCell(
+                    "Shift " +
+                    item.shift
+                )
+            );
+
+
+            table.appendChild(
+                row
+            );
+
+
+        }
+    );
+
+
+}
+
+
+// ==========================================
+// JALANKAN
+// ==========================================
+
+loadDashboard();
 
 
 </script>
@@ -704,4 +991,3 @@ data.forEach(function(item, index) {
 </body>
 
 </html>
-
