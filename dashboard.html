@@ -23,13 +23,103 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px
 .status{text-align:center;color:#777;padding:30px}.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:8px;margin-bottom:20px;display:none}
 .buttons{margin-top:20px}.btn{display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:7px;text-decoration:none;font-size:14px;margin-right:8px;margin-bottom:8px}.btn-green{background:#16a34a}
 @media(max-width:600px){.container{padding:10px;margin:15px auto}}
+
+/* ===== KPP-FMS GLOBAL NAV ===== */
+.app-nav{
+    background:#111827;
+    border-top:1px solid rgba(255,255,255,.08);
+    border-bottom:1px solid #374151;
+    padding:9px 12px;
+    position:sticky;
+    top:0;
+    z-index:999;
+}
+.app-nav-inner{
+    max-width:1250px;
+    margin:0 auto;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    overflow-x:auto;
+    scrollbar-width:thin;
+}
+.app-nav a{
+    color:#e5e7eb;
+    text-decoration:none;
+    padding:9px 13px;
+    border-radius:7px;
+    white-space:nowrap;
+    font-size:13px;
+    font-weight:bold;
+    border:1px solid transparent;
+}
+.app-nav a:hover{
+    background:#374151;
+    color:#fff;
+}
+.app-nav a.active{
+    background:#2563eb;
+    color:#fff;
+    border-color:#60a5fa;
+}
+
+
+.module-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:12px;
+    margin-bottom:22px;
+}
+.module-link{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    padding:18px;
+    text-decoration:none;
+    color:#111827;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+    transition:.15s ease;
+}
+.module-link:hover{
+    transform:translateY(-2px);
+    box-shadow:0 5px 15px rgba(0,0,0,.10);
+}
+.module-link .icon{font-size:27px;margin-bottom:8px}
+.module-link strong{display:block;margin-bottom:4px}
+.module-link span{font-size:12px;color:#64748b;line-height:1.4}
+
 </style>
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Dashboard Admin</p></div>
+<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html" class="active">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a></div></nav>
 <div class="container">
 <div class="top-bar"><button class="refresh-btn" id="refreshBtn">↻ Refresh Data</button></div>
 <div id="errorBox" class="error"></div>
+
+
+<div class="module-grid">
+    <a class="module-link" href="pengisian.html">
+        <div class="icon">⛽</div>
+        <strong>Pengisian Fuel</strong>
+        <span>Input unit, HM, operator, Qty, Shift dan Fuel Truck.</span>
+    </a>
+    <a class="module-link" href="stock.html">
+        <div class="icon">🛢️</div>
+        <strong>Stock Fuel</strong>
+        <span>Opening, penerimaan, transfer, pengeluaran dan stock closing.</span>
+    </a>
+    <a class="module-link" href="logsheet.html">
+        <div class="icon">📄</div>
+        <strong>Logsheet</strong>
+        <span>Filter histori, cek double/error dan download Excel.</span>
+    </a>
+    <a class="module-link" href="riwayat.html">
+        <div class="icon">📋</div>
+        <strong>Riwayat</strong>
+        <span>Lihat seluruh transaksi pengisian yang tersimpan.</span>
+    </a>
+</div>
 
 <div class="cards">
 <div class="card"><div class="card-icon">⛽</div><div class="card-title">TOTAL FUEL</div><div class="card-value" id="totalFuel">0 L</div></div>
@@ -53,9 +143,10 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px
 
 <div class="buttons">
 <a class="btn btn-green" href="pengisian.html">⛽ Pengisian</a>
+<a class="btn" href="stock.html">🛢️ Stock</a>
 <a class="btn" href="logsheet.html">📄 Logsheet</a>
 <a class="btn" href="riwayat.html">📋 Riwayat</a>
-<a class="btn" href="index.html">🏠 Menu Utama</a>
+
 </div>
 </div>
 
