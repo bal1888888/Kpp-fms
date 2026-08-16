@@ -1,1 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Riwayat Pengisian - KPP FMS</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .title h2 {
+            font-size: 20px;
+        }
+
+        .total {
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            background: #1f2937;
+            color: white;
+            padding: 12px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .fuel {
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .clear-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+                margin: 15px auto;
+            }
+
+            .box {
+                padding: 15px;
+            }
+
+            .title {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+        <p>PT KPP - Riwayat Pengisian Fuel</p>
+    </div>
+
+    <div class="container">
+
+        <div class="box">
+
+            <div class="title">
+
+                <h2>📋 Riwayat Pengisian</h2>
+
+                <div class="total">
+                    Total Transaksi:
+                    <span id="totalData">0</span>
+                </div>
+
+            </div>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Jam</th>
+                            <th>Unit</th>
+                            <th>HM Awal</th>
+                            <th>HM Akhir</th>
+                            <th>HM Jalan</th>
+                            <th>Fuel (L)</th>
+                            <th>Shift</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="historyTable"></tbody>
+
+                </table>
+
+            </div>
+
+            <div id="emptyData" class="empty" style="display:none;">
+                Belum ada data pengisian fuel.
+            </div>
+
+            <button class="clear-btn" onclick="hapusRiwayat()">
+                Hapus Semua Riwayat
+            </button>
+
+            <br>
+
+            <a href="index.html" class="back">
+                ← Kembali ke Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        function tampilkanRiwayat() {
+
+            const data =
+                JSON.parse(
+                    localStorage.getItem("fuelHistory")
+                ) || [];
+
+            const table =
+                document.getElementById("historyTable");
+
+            const empty =
+                document.getElementById("emptyData");
+
+            const total =
+                document.getElementById("totalData");
+
+            table.innerHTML = "";
+
+            total.textContent = data.length;
+
+            if (data.length === 0) {
+
+                empty.style.display = "block";
+
+                return;
+            }
+
+            empty.style.display = "none";
+
+
+            data.forEach(function(item, index) {
+
+                const row =
+                    document.createElement("tr");
+
+                row.innerHTML = `
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        ${item.tanggal}
+                    </td>
+
+                    <td>
+                        ${item.jam}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${item.unit}
+                        </strong>
+                    </td>
+
+                    <td>
+                        ${
+                            item.hmAwal > 0
+                            ? item.hmAwal
+                            : "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${item.hmAkhir}
+                    </td>
+
+                    <td>
+                        ${
+                            item.hmJalan > 0
+                            ? item.hmJalan + " HM"
+                            : "-"
+                        }
+                    </td>
+
+                    <td class="fuel">
+                        ${item.fuel} L
+                    </td>
+
+                    <td>
+                        Shift ${item.shift}
+                    </td>
+
+                `;
+
+                table.appendChild(row);
+
+            });
+
+        }
+
+
+        function hapusRiwayat() {
+
+            const yakin =
+                confirm(
+                    "Yakin ingin menghapus semua riwayat?"
+                );
+
+            if (!yakin) {
+                return;
+            }
+
+            localStorage.removeItem("fuelHistory");
+
+            alert("Semua riwayat telah dihapus.");
+
+            tampilkanRiwayat();
+        }
+
+
+        tampilkanRiwayat();
+
+    </script>
+
+</body>
+
+</html>
