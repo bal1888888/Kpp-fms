@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Pengisian Fuel - KPP FMS</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -112,10 +111,12 @@
             margin-top: 12px;
         }
 
-        .wh-display small {
+        .wh-display small,
+        .previous-hm small,
+        .hm-result small {
             display: block;
             color: #64748b;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
         .wh-display strong {
@@ -195,16 +196,15 @@
             text-align: center;
         }
 
-        .previous-hm small,
-        .hm-result small {
-            display: block;
-            color: #777;
-            margin-bottom: 5px;
-        }
-
         .previous-hm strong {
             font-size: 25px;
             color: #ea580c;
+        }
+
+        .hm-source {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #64748b;
         }
 
         .hm-result {
@@ -266,45 +266,35 @@
 </div>
 
 <div class="container">
-
     <div class="form-box">
 
         <h2>⛽ Pengisian Fuel</h2>
 
         <div class="info">
-            Pilih Fuel Truck terlebih dahulu. WH akan ditentukan otomatis.
-            Kemudian cari CODE UNIT dan sistem akan mengambil HM terakhir dari database.
+            Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT.
+            Sistem akan mengambil HM terakhir dari database online.
+            Jika unit belum pernah masuk ke database, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
         </div>
 
-        <!-- FUEL TRUCK -->
         <div class="section-box">
-
             <div class="form-group">
-
                 <label>Fuel Truck / Sumber Pengisian</label>
-
                 <select id="fuelTruck">
                     <option value="">-- Pilih Fuel Truck --</option>
                     <option value="FT0073">FT0073</option>
                     <option value="FT0075">FT0075</option>
                 </select>
-
             </div>
 
             <div id="whBox" class="wh-display hidden">
                 <small>WAREHOUSE / WH</small>
                 <strong id="whDisplay">-</strong>
             </div>
-
         </div>
 
-        <!-- UNIT -->
         <div class="section-box">
-
             <div class="form-group">
-
                 <label>CODE UNIT</label>
-
                 <input
                     type="text"
                     id="unitInput"
@@ -312,118 +302,64 @@
                     placeholder="Ketik / cari unit..."
                     autocomplete="off"
                 >
-
                 <datalist id="unitOptions"></datalist>
-
             </div>
 
-            <button
-                id="checkUnitButton"
-                class="check-btn">
+            <button id="checkUnitButton" class="check-btn">
                 CEK UNIT / AMBIL HM
             </button>
 
-            <div
-                id="suggestionBox"
-                class="suggestion-box hidden">
-
+            <div id="suggestionBox" class="suggestion-box hidden">
                 <div class="suggestion-title">
                     🔎 Mungkin yang kamu maksud:
                 </div>
-
-                <div
-                    id="suggestionList"
-                    class="suggestion-list">
-                </div>
-
+                <div id="suggestionList" class="suggestion-list"></div>
             </div>
-
         </div>
 
-
-        <div
-            id="unitResult"
-            class="unit-result hidden">
-
+        <div id="unitResult" class="unit-result hidden">
             <span>Unit Terpilih</span>
-
-            <strong id="unitDisplay">
-                -
-            </strong>
-
+            <strong id="unitDisplay">-</strong>
         </div>
 
-
-        <!-- HM SEBELUMNYA -->
-        <div
-            id="previousHmBox"
-            class="previous-hm hidden">
-
+        <div id="previousHmBox" class="previous-hm hidden">
             <small>HM SEBELUMNYA</small>
-
-            <strong id="previousHm">
-                -
-            </strong>
-
+            <strong id="previousHm">-</strong>
+            <div class="hm-source" id="hmSource"></div>
         </div>
 
-
-        <!-- FORM -->
-        <div
-            id="formArea"
-            class="hidden">
+        <div id="formArea" class="hidden">
 
             <div class="form-group">
-
                 <label>HM Sekarang</label>
-
                 <input
                     type="number"
                     id="currentHm"
                     placeholder="Masukkan HM sekarang"
                     step="0.1"
                 >
-
             </div>
-
 
             <div class="hm-result">
-
                 <small>HM JALAN</small>
-
-                <strong id="hmDifference">
-                    0 HM
-                </strong>
-
+                <strong id="hmDifference">0 HM</strong>
             </div>
 
-
-            <div
-                id="warning"
-                class="warning">
-
+            <div id="warning" class="warning">
                 ⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.
-
             </div>
-
 
             <div class="form-group">
-
                 <label>Nama Operator</label>
-
                 <input
                     type="text"
                     id="operator"
                     placeholder="Masukkan nama operator"
                 >
-
             </div>
 
-
             <div class="form-group">
-
                 <label>Jumlah Fuel (Liter)</label>
-
                 <input
                     type="number"
                     id="fuelQty"
@@ -431,59 +367,30 @@
                     step="0.01"
                     min="0"
                 >
-
             </div>
-
 
             <div class="form-group">
-
                 <label>Shift</label>
-
                 <select id="shift">
-
-                    <option value="">
-                        -- Pilih Shift --
-                    </option>
-
-                    <option value="1">
-                        Shift 1
-                    </option>
-
-                    <option value="2">
-                        Shift 2
-                    </option>
-
+                    <option value="">-- Pilih Shift --</option>
+                    <option value="1">Shift 1</option>
+                    <option value="2">Shift 2</option>
                 </select>
-
             </div>
 
-
-            <button
-                id="saveButton"
-                class="save-btn">
-
+            <button id="saveButton" class="save-btn">
                 SIMPAN DATA
-
             </button>
-
         </div>
 
-
-        <a
-            href="index.html"
-            class="back">
-
+        <a href="index.html" class="back">
             ← Kembali ke Dashboard
-
         </a>
 
     </div>
-
 </div>
 
-
 <script>
-
 const SUPABASE_URL =
     "https://pwowtyfybfqsveuvqrsb.supabase.co";
 
@@ -496,397 +403,346 @@ const supabaseClient =
         SUPABASE_KEY
     );
 
-
-// ==========================================
-// FUEL TRUCK → WH
-// ==========================================
-
 const FUEL_TRUCK_MAP = {
-
     "FT0073": "FT02",
     "FT0075": "FT01"
-
 };
 
-
-// ==========================================
-// POPULASI UNIT RESMI
-// DARI SHEET POPULASI UNIT → CODE.UNIT
-// ==========================================
-
+// 124 CODE UNIT resmi dari sheet POPULASI UNIT
 const MASTER_UNITS = [
-
-    "CB1019",
-    "CM0108",
-    "CP118",
-    "CP119",
-    "CRAJ001",
-    "CRAJ002",
-    "CRSI001",
-    "CRSI002",
-    "CT0042",
-    "CT0054",
-    "CT0058",
-    "DL0051",
-
-    "DT7049",
-    "DT7081",
-    "DT7102",
-    "DT7122",
-    "DT7127",
-    "DT7220",
-    "DT7441",
-    "DT7442",
-    "DT7443",
-    "DT7444",
-    "DT7445",
-    "DT7446",
-    "DT7447",
-    "DT7448",
-    "DT7449",
-    "DT7450",
-    "DT7451",
-    "DT7452",
-    "DT7453",
-    "DT7454",
-    "DT7455",
-    "DT7456",
-    "DT7457",
-
-    "DZ1034",
-    "DZ1050",
-    "DZ124",
-    "DZ129",
-    "DZ3041",
-    "DZ3043",
-    "DZ3044",
-
-    "EX1028",
-    "EX1045",
-    "EX1050",
-    "EX1051",
-    "EX2056",
-    "EX2057",
-    "EX2058",
-    "EX238",
-    "EX239",
-    "EX240",
-    "EX241",
-    "EX432",
-    "EX433",
-    "EX501",
-
-    "FT0020",
-    "FT0073",
-    "FT0075",
-
-    "GR2060",
-    "GR2061",
-    "GR2062",
-
-    "GS0186",
-    "GS0192",
-
-    "JH01",
-
-    "LBAJ001",
-    "LBAJ002",
-    "LBAJ003",
-    "LBAJ004",
-
-    "LBSI001",
-    "LBSI002",
-
-    "LD0487",
-    "LD0488",
-    "LD0489",
-    "LD0498",
-
-    "LO0019",
-    "LO0054",
-
-    "PM5017",
-
-    "SD4098",
-    "SD4099",
-
-    "TH0006",
-
-    "TL0007",
-    "TL0050",
-    "TL0074",
-    "TL0076",
-    "TL0121",
-    "TL0123",
-    "TL0131",
-    "TL0146",
-    "TL0147",
-    "TL0156",
-    "TL0157",
-    "TL0158",
-    "TL0201",
-    "TL0222",
-    "TL0247",
-    "TL0248",
-    "TL0249",
-    "TL0250",
-    "TL0251",
-    "TL0274",
-
-    "TMAJ001",
-
-    "TR-B01",
-    "TR-B03",
-    "TR-D01",
-    "TR-D02",
-    "TR-D03",
-    "TR-F01",
-    "TR-F02",
-    "TR-F03",
-    "TR-F04",
-    "TR-F05",
-    "TR-F06",
-    "TR-J01",
-    "TR-KP01",
-
-    "WE0049",
-
-    "WP0121",
-    "WP0141",
-    "WP0162",
-
-    "WT0050",
-    "WT0097",
-    "WT0099",
-    "WT0101",
-
-    "TR-B04"
-
+        "CB1019",
+        "CM0108",
+        "CP118",
+        "CP119",
+        "CRAJ001",
+        "CRAJ002",
+        "CRSI001",
+        "CRSI002",
+        "CT0042",
+        "CT0054",
+        "CT0058",
+        "DL0051",
+        "DT7049",
+        "DT7081",
+        "DT7102",
+        "DT7122",
+        "DT7127",
+        "DT7220",
+        "DT7441",
+        "DT7442",
+        "DT7443",
+        "DT7444",
+        "DT7445",
+        "DT7446",
+        "DT7447",
+        "DT7448",
+        "DT7449",
+        "DT7450",
+        "DT7451",
+        "DT7452",
+        "DT7453",
+        "DT7454",
+        "DT7455",
+        "DT7456",
+        "DT7457",
+        "DZ1034",
+        "DZ1050",
+        "DZ124",
+        "DZ129",
+        "DZ3041",
+        "DZ3043",
+        "DZ3044",
+        "EX1028",
+        "EX1045",
+        "EX1050",
+        "EX1051",
+        "EX2056",
+        "EX2057",
+        "EX2058",
+        "EX238",
+        "EX239",
+        "EX240",
+        "EX241",
+        "EX432",
+        "EX433",
+        "EX501",
+        "FT0020",
+        "FT0073",
+        "FT0075",
+        "GR2060",
+        "GR2061",
+        "GR2062",
+        "GS0186",
+        "GS0192",
+        "JH01",
+        "LBAJ001",
+        "LBAJ002",
+        "LBAJ003",
+        "LBAJ004",
+        "LBSI001",
+        "LBSI002",
+        "LD0487",
+        "LD0488",
+        "LD0489",
+        "LD0498",
+        "LO0019",
+        "LO0054",
+        "PM5017",
+        "SD4098",
+        "SD4099",
+        "TH0006",
+        "TL0007",
+        "TL0050",
+        "TL0074",
+        "TL0076",
+        "TL0121",
+        "TL0123",
+        "TL0131",
+        "TL0146",
+        "TL0147",
+        "TL0156",
+        "TL0157",
+        "TL0158",
+        "TL0201",
+        "TL0222",
+        "TL0247",
+        "TL0248",
+        "TL0249",
+        "TL0250",
+        "TL0251",
+        "TL0274",
+        "TMAJ001",
+        "TR-B01",
+        "TR-B03",
+        "TR-D01",
+        "TR-D02",
+        "TR-D03",
+        "TR-F01",
+        "TR-F02",
+        "TR-F03",
+        "TR-F04",
+        "TR-F05",
+        "TR-F06",
+        "TR-J01",
+        "TR-KP01",
+        "WE0049",
+        "WP0121",
+        "WP0141",
+        "WP0162",
+        "WT0050",
+        "WT0097",
+        "WT0099",
+        "WT0101",
+        "TR-B04"
 ];
 
-
-// ==========================================
-// VARIABEL
-// ==========================================
+// HM terakhir dari ISSUED_BY_DAY.
+// Hanya dipakai kalau unit belum punya transaksi di Supabase.
+const MASTER_LAST_HM = {
+        "CB1019": 587,
+        "CM0108": 545,
+        "CP118": 1820,
+        "CP119": 1907,
+        "CT0042": 4508,
+        "CT0054": 1033,
+        "CT0058": 530,
+        "DT7049": 41515,
+        "DT7081": 39478,
+        "DT7102": 30655,
+        "DT7122": 25854,
+        "DT7127": 27624,
+        "DT7441": 2463,
+        "DT7442": 2218,
+        "DT7443": 2406,
+        "DT7444": 2158,
+        "DT7445": 2511,
+        "DT7446": 2304,
+        "DT7447": 2327,
+        "DT7448": 2317,
+        "DT7449": 2339,
+        "DT7450": 2380,
+        "DT7451": 2474,
+        "DT7452": 2151,
+        "DT7453": 1826,
+        "DT7454": 2021,
+        "DT7455": 1693,
+        "DT7456": 1322,
+        "DT7457": 1642,
+        "DZ1034": 13455,
+        "DZ1050": 3311,
+        "DZ124": 11570,
+        "DZ129": 3322,
+        "DZ3041": 905,
+        "DZ3043": 2744,
+        "EX1028": 2913,
+        "EX1045": 3961,
+        "EX1051": 4220,
+        "EX2056": 2429,
+        "EX2057": 2244,
+        "EX2058": 1738,
+        "EX238": 3214,
+        "EX239": 2067,
+        "EX240": 2430,
+        "EX241": 2428,
+        "EX432": 2682,
+        "EX433": 2803,
+        "EX501": 15045,
+        "FT0073": 5035,
+        "FT0075": 1646,
+        "GR2060": 3195,
+        "GR2061": 2919,
+        "GR2062": 158,
+        "GS0186": 5203,
+        "GS0192": 11937,
+        "JH01": 98261,
+        "LD0487": 6675,
+        "LD0488": 6092,
+        "LD0489": 7399,
+        "LD0498": 9165,
+        "LO0054": 2017,
+        "TL0007": 5816,
+        "TL0050": 74957,
+        "TL0074": 2261,
+        "TL0076": 56528,
+        "TL0121": 27977,
+        "TL0123": 6773,
+        "TL0146": 19690,
+        "TL0147": 20186,
+        "TL0156": 12431,
+        "TL0157": 1499,
+        "TL0222": 7449,
+        "TL0247": 495,
+        "TL0248": 479,
+        "TL0249": 2021,
+        "TL0250": 93405,
+        "TL0251": 2567,
+        "TR-B01": 27663,
+        "TR-B03": 24098,
+        "TR-D01": 21261,
+        "TR-D02": 88880,
+        "TR-D03": 28158,
+        "TR-F01": 30308,
+        "TR-F02": 26617,
+        "TR-F03": 18712,
+        "TR-F04": 17650,
+        "TR-F05": 25039,
+        "TR-F06": 22454,
+        "TR-J01": 27913,
+        "WE0049": 39190,
+        "WP0141": 118583,
+        "WT0050": 40348,
+        "WT0097": 453,
+        "WT0099": 899,
+        "WT0101": 734,
+        "TR-B04": 27963
+};
 
 let currentUnit = "";
 let previousHM = 0;
 let checkedUnit = "";
 let selectedFuelTruck = "";
 let selectedWH = "";
-
-
-// ==========================================
-// DATALIST UNIT
-// ==========================================
+let currentHmSource = "";
 
 const unitOptions =
-    document.getElementById(
-        "unitOptions"
-    );
+    document.getElementById("unitOptions");
 
 MASTER_UNITS.forEach(function(unit) {
-
     const option =
-        document.createElement(
-            "option"
-        );
+        document.createElement("option");
 
-    option.value =
-        unit;
+    option.value = unit;
 
-    unitOptions.appendChild(
-        option
-    );
-
+    unitOptions.appendChild(option);
 });
-
-
-// ==========================================
-// FUEL TRUCK
-// ==========================================
 
 document
     .getElementById("fuelTruck")
     .addEventListener(
         "change",
         function() {
-
             selectedFuelTruck =
                 this.value;
 
             selectedWH =
-                FUEL_TRUCK_MAP[
-                    selectedFuelTruck
-                ] || "";
+                FUEL_TRUCK_MAP[selectedFuelTruck] || "";
 
             const whBox =
-                document.getElementById(
-                    "whBox"
-                );
+                document.getElementById("whBox");
 
             if (selectedWH) {
-
                 document
-                    .getElementById(
-                        "whDisplay"
-                    )
+                    .getElementById("whDisplay")
                     .textContent =
                     selectedWH;
 
-                whBox.classList.remove(
-                    "hidden"
-                );
-
+                whBox.classList.remove("hidden");
             } else {
-
-                whBox.classList.add(
-                    "hidden"
-                );
-
+                whBox.classList.add("hidden");
             }
-
         }
     );
 
-
-// ==========================================
-// NORMALISASI
-// ==========================================
-
 function normalisasiUnit(value) {
-
     return String(value || "")
         .trim()
         .toUpperCase();
-
 }
-
 
 function normalisasiCari(value) {
-
     return normalisasiUnit(value)
-        .replace(
-            /[^A-Z0-9]/g,
-            ""
-        );
-
+        .replace(/[^A-Z0-9]/g, "");
 }
 
-
 function unitTerdaftar(unit) {
-
     return MASTER_UNITS.includes(
         normalisasiUnit(unit)
     );
-
 }
 
-
-// ==========================================
-// LEVENSHTEIN
-// ==========================================
-
 function levenshtein(a, b) {
-
-    a =
-        normalisasiCari(a);
-
-    b =
-        normalisasiCari(b);
-
+    a = normalisasiCari(a);
+    b = normalisasiCari(b);
 
     const matrix = [];
 
-
-    for (
-        let i = 0;
-        i <= b.length;
-        i++
-    ) {
-
+    for (let i = 0; i <= b.length; i++) {
         matrix[i] = [i];
-
     }
 
-
-    for (
-        let j = 0;
-        j <= a.length;
-        j++
-    ) {
-
+    for (let j = 0; j <= a.length; j++) {
         matrix[0][j] = j;
-
     }
 
-
-    for (
-        let i = 1;
-        i <= b.length;
-        i++
-    ) {
-
-        for (
-            let j = 1;
-            j <= a.length;
-            j++
-        ) {
-
-            if (
-                b[i - 1] ===
-                a[j - 1]
-            ) {
-
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b[i - 1] === a[j - 1]) {
                 matrix[i][j] =
                     matrix[i - 1][j - 1];
-
             } else {
-
                 matrix[i][j] =
                     Math.min(
-
                         matrix[i - 1][j - 1] + 1,
-
                         matrix[i][j - 1] + 1,
-
                         matrix[i - 1][j] + 1
-
                     );
-
             }
-
         }
-
     }
 
-
     return matrix[b.length][a.length];
-
 }
 
-
-// ==========================================
-// SARAN UNIT
-// ==========================================
-
 function cariUnitTerdekat(input) {
-
     const query =
         normalisasiCari(input);
 
-
     if (!query) {
-
         return [];
-
     }
 
-
     return MASTER_UNITS
-
         .map(function(unit) {
-
             const candidate =
                 normalisasiCari(unit);
 
@@ -896,68 +752,62 @@ function cariUnitTerdekat(input) {
                     candidate
                 );
 
-
             if (
-                candidate.startsWith(
-                    query
-                )
+                candidate.startsWith(query)
             ) {
-
                 score -= 2;
-
             }
-
 
             if (
-                query.startsWith(
-                    candidate
-                )
+                query.startsWith(candidate)
             ) {
-
                 score -= 1;
-
             }
 
+            let prefix = 0;
+            const maxPrefix =
+                Math.min(
+                    query.length,
+                    candidate.length
+                );
+
+            for (
+                let i = 0;
+                i < maxPrefix;
+                i++
+            ) {
+                if (
+                    query[i] === candidate[i]
+                ) {
+                    prefix++;
+                } else {
+                    break;
+                }
+            }
+
+            score -= prefix * 0.15;
 
             return {
-
                 unit: unit,
                 score: score
-
             };
-
         })
-
         .sort(function(a, b) {
-
-            if (
-                a.score === b.score
-            ) {
-
-                return a.unit
-                    .localeCompare(
-                        b.unit
-                    );
-
+            if (a.score === b.score) {
+                return a.unit.localeCompare(
+                    b.unit
+                );
             }
 
             return a.score - b.score;
-
         })
-
         .slice(0, 5)
-
         .map(function(item) {
-
             return item.unit;
-
         });
-
 }
 
-
 function tampilkanSaran(input) {
-
     const box =
         document.getElementById(
             "suggestionBox"
@@ -971,51 +821,38 @@ function tampilkanSaran(input) {
     const unit =
         normalisasiUnit(input);
 
-
-    list.innerHTML =
-        "";
-
+    list.innerHTML = "";
 
     if (
         !unit ||
         unitTerdaftar(unit)
     ) {
-
-        box.classList.add(
-            "hidden"
-        );
-
+        box.classList.add("hidden");
         return;
-
     }
 
-
     const saran =
-        cariUnitTerdekat(
-            unit
-        );
+        cariUnitTerdekat(unit);
 
+    if (saran.length === 0) {
+        box.classList.add("hidden");
+        return;
+    }
 
     saran.forEach(function(kode) {
-
         const button =
             document.createElement(
                 "button"
             );
 
-        button.type =
-            "button";
-
+        button.type = "button";
         button.className =
             "suggestion-btn";
+        button.textContent = kode;
 
-        button.textContent =
-            kode;
-
-
-        button.onclick =
+        button.addEventListener(
+            "click",
             async function() {
-
                 document
                     .getElementById(
                         "unitInput"
@@ -1028,34 +865,20 @@ function tampilkanSaran(input) {
                 );
 
                 await cekUnit();
-
-            };
-
-
-        list.appendChild(
-            button
+            }
         );
 
+        list.appendChild(button);
     });
 
-
-    box.classList.remove(
-        "hidden"
-    );
-
+    box.classList.remove("hidden");
 }
-
-
-// ==========================================
-// INPUT UNIT
-// ==========================================
 
 document
     .getElementById("unitInput")
     .addEventListener(
         "input",
         function() {
-
             this.value =
                 this.value.toUpperCase();
 
@@ -1064,15 +887,14 @@ document
                     this.value
                 );
 
-
             if (
                 checkedUnit &&
                 value !== checkedUnit
             ) {
-
                 currentUnit = "";
                 checkedUnit = "";
                 previousHM = 0;
+                currentHmSource = "";
 
                 document
                     .getElementById(
@@ -1094,125 +916,96 @@ document
                     )
                     .classList
                     .add("hidden");
-
             }
 
-
-            if (
-                value.length >= 2
-            ) {
-
-                tampilkanSaran(
-                    value
-                );
-
+            if (value.length >= 2) {
+                tampilkanSaran(value);
             } else {
-
                 document
                     .getElementById(
                         "suggestionBox"
                     )
                     .classList
                     .add("hidden");
-
             }
-
         }
     );
-
 
 document
     .getElementById("unitInput")
     .addEventListener(
         "keydown",
         function(event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
+            if (event.key === "Enter") {
                 event.preventDefault();
-
                 cekUnit();
-
             }
-
         }
     );
 
-
-// ==========================================
-// HM TERAKHIR
-// ==========================================
-
 async function ambilHmTerakhir(unit) {
-
     const { data, error } =
         await supabaseClient
-
-            .from(
-                "fuel_history"
-            )
-
-            .select(
-                "id,hm_akhir"
-            )
-
-            .eq(
-                "unit",
-                unit
-            )
-
+            .from("fuel_history")
+            .select("id,hm_akhir")
+            .eq("unit", unit)
             .order(
                 "id",
                 {
                     ascending: false
                 }
             )
-
             .limit(1);
 
-
     if (error) {
-
         throw error;
-
     }
 
-
+    // Prioritas 1: database online
     if (
         data &&
         data.length > 0
     ) {
-
-        return Number(
-            data[0].hm_akhir
-        ) || 0;
-
+        return {
+            hm:
+                Number(
+                    data[0].hm_akhir
+                ) || 0,
+            source:
+                "Database online (Supabase)"
+        };
     }
 
+    // Prioritas 2: baseline HM dari logsheet Excel
+    if (
+        Object.prototype.hasOwnProperty.call(
+            MASTER_LAST_HM,
+            unit
+        )
+    ) {
+        return {
+            hm:
+                Number(
+                    MASTER_LAST_HM[unit]
+                ) || 0,
+            source:
+                "Baseline logsheet Excel"
+        };
+    }
 
-    return 0;
-
+    return {
+        hm: 0,
+        source: "Belum ada HM sebelumnya"
+    };
 }
 
-
-// ==========================================
-// CEK UNIT
-// ==========================================
-
 async function cekUnit() {
-
     if (!selectedFuelTruck) {
-
         alert(
             "Pilih Fuel Truck terlebih dahulu."
         );
-
         return;
-
     }
-
 
     const inputUnit =
         normalisasiUnit(
@@ -1223,88 +1016,72 @@ async function cekUnit() {
                 .value
         );
 
-
     if (!inputUnit) {
-
         alert(
             "Masukkan CODE UNIT terlebih dahulu."
         );
-
         return;
-
     }
-
 
     if (
         !unitTerdaftar(
             inputUnit
         )
     ) {
-
         tampilkanSaran(
             inputUnit
         );
-
 
         const saran =
             cariUnitTerdekat(
                 inputUnit
             );
 
-
-        alert(
-
+        let pesan =
             "❌ CODE UNIT " +
             inputUnit +
-            " tidak terdaftar.\n\n" +
+            " tidak terdaftar.";
 
-            "Mungkin yang kamu maksud:\n" +
-
-            saran
-                .map(
-                    function(unit) {
-
+        if (saran.length > 0) {
+            pesan +=
+                "\n\nMungkin yang kamu maksud:\n" +
+                saran
+                    .map(function(unit) {
                         return "• " + unit;
+                    })
+                    .join("\n");
+        }
 
-                    }
-                )
-                .join("\n")
-
-        );
-
-
+        alert(pesan);
         return;
-
     }
-
 
     const button =
         document.getElementById(
             "checkUnitButton"
         );
 
-
-    button.disabled =
-        true;
-
+    button.disabled = true;
     button.textContent =
         "MENGAMBIL HM...";
 
-
     try {
-
-        previousHM =
+        const hmData =
             await ambilHmTerakhir(
                 inputUnit
             );
 
+        previousHM =
+            hmData.hm;
+
+        currentHmSource =
+            hmData.source;
 
         currentUnit =
             inputUnit;
 
         checkedUnit =
             inputUnit;
-
 
         document
             .getElementById(
@@ -1313,14 +1090,12 @@ async function cekUnit() {
             .value =
             currentUnit;
 
-
         document
             .getElementById(
                 "unitDisplay"
             )
             .textContent =
             currentUnit;
-
 
         document
             .getElementById(
@@ -1329,14 +1104,12 @@ async function cekUnit() {
             .classList
             .remove("hidden");
 
-
         document
             .getElementById(
                 "previousHmBox"
             )
             .classList
             .remove("hidden");
-
 
         document
             .getElementById(
@@ -1345,7 +1118,6 @@ async function cekUnit() {
             .classList
             .remove("hidden");
 
-
         document
             .getElementById(
                 "suggestionBox"
@@ -1353,32 +1125,31 @@ async function cekUnit() {
             .classList
             .add("hidden");
 
-
-        if (
-            previousHM > 0
-        ) {
-
+        if (previousHM > 0) {
             document
                 .getElementById(
                     "previousHm"
                 )
                 .textContent =
-                previousHM
-                    .toLocaleString(
-                        "id-ID"
-                    );
-
+                previousHM.toLocaleString(
+                    "id-ID"
+                );
         } else {
-
             document
                 .getElementById(
                     "previousHm"
                 )
                 .textContent =
                 "Belum ada data";
-
         }
 
+        document
+            .getElementById(
+                "hmSource"
+            )
+            .textContent =
+            "Sumber HM: " +
+            currentHmSource;
 
         document
             .getElementById(
@@ -1387,7 +1158,6 @@ async function cekUnit() {
             .value =
             "";
 
-
         document
             .getElementById(
                 "hmDifference"
@@ -1395,41 +1165,27 @@ async function cekUnit() {
             .textContent =
             "0 HM";
 
-
         document
             .getElementById(
                 "warning"
             )
-            .style.display =
+            .style
+            .display =
             "none";
 
-
     } catch (error) {
-
-        console.error(
-            error
-        );
-
+        console.error(error);
 
         alert(
-
             "❌ Gagal mengambil HM terakhir.\n\n" +
-
             error.message
-
         );
-
     }
 
-
-    button.disabled =
-        false;
-
+    button.disabled = false;
     button.textContent =
         "CEK UNIT / AMBIL HM";
-
 }
-
 
 document
     .getElementById(
@@ -1440,17 +1196,11 @@ document
         cekUnit
     );
 
-
-// ==========================================
-// HM JALAN
-// ==========================================
-
 document
     .getElementById("currentHm")
     .addEventListener(
         "input",
         function() {
-
             const currentHM =
                 parseFloat(
                     this.value
@@ -1466,11 +1216,7 @@ document
                     "warning"
                 );
 
-
-            if (
-                isNaN(currentHM)
-            ) {
-
+            if (isNaN(currentHM)) {
                 result.textContent =
                     "0 HM";
 
@@ -1478,15 +1224,12 @@ document
                     "none";
 
                 return;
-
             }
-
 
             if (
                 previousHM > 0 &&
                 currentHM < previousHM
             ) {
-
                 result.textContent =
                     "HM TIDAK VALID";
 
@@ -1494,50 +1237,31 @@ document
                     "block";
 
                 return;
-
             }
-
 
             warning.style.display =
                 "none";
 
-
-            if (
-                previousHM > 0
-            ) {
-
+            if (previousHM > 0) {
                 const hmJalan =
                     currentHM -
                     previousHM;
 
-
                 result.textContent =
-                    hmJalan
-                        .toLocaleString(
-                            "id-ID"
-                        ) +
+                    hmJalan.toLocaleString(
+                        "id-ID"
+                    ) +
                     " HM";
-
             } else {
-
                 result.textContent =
                     "Data awal";
-
             }
-
         }
     );
 
-
-// ==========================================
-// WAKTU LOKAL
-// ==========================================
-
 function getLocalDateTime() {
-
     const now =
         new Date();
-
 
     const y =
         now.getFullYear();
@@ -1582,49 +1306,33 @@ function getLocalDateTime() {
             "0"
         );
 
-
     return {
-
         tanggal:
             `${y}-${m}-${d}`,
-
         jam:
             `${h}:${min}:${s}`
-
     };
-
 }
-
-
-// ==========================================
-// SIMPAN
-// ==========================================
 
 document
     .getElementById("saveButton")
     .addEventListener(
         "click",
         async function() {
-
             const saveButton =
                 document.getElementById(
                     "saveButton"
                 );
 
-
             if (
                 !selectedFuelTruck ||
                 !selectedWH
             ) {
-
                 alert(
                     "Pilih Fuel Truck terlebih dahulu."
                 );
-
                 return;
-
             }
-
 
             const unitSekarang =
                 normalisasiUnit(
@@ -1635,35 +1343,30 @@ document
                         .value
                 );
 
-
             if (
                 !unitTerdaftar(
                     unitSekarang
                 )
             ) {
-
-                alert(
-                    "CODE UNIT tidak terdaftar."
+                tampilkanSaran(
+                    unitSekarang
                 );
 
+                alert(
+                    "❌ CODE UNIT tidak terdaftar."
+                );
                 return;
-
             }
-
 
             if (
                 !checkedUnit ||
                 unitSekarang !== checkedUnit
             ) {
-
                 alert(
                     "Silakan tekan CEK UNIT / AMBIL HM terlebih dahulu."
                 );
-
                 return;
-
             }
-
 
             const currentHM =
                 parseFloat(
@@ -1674,7 +1377,6 @@ document
                         .value
                 );
 
-
             const operator =
                 document
                     .getElementById(
@@ -1682,7 +1384,6 @@ document
                     )
                     .value
                     .trim();
-
 
             const fuel =
                 parseFloat(
@@ -1693,7 +1394,6 @@ document
                         .value
                 );
 
-
             const shift =
                 document
                     .getElementById(
@@ -1701,96 +1401,65 @@ document
                     )
                     .value;
 
-
-            if (
-                isNaN(currentHM)
-            ) {
-
+            if (isNaN(currentHM)) {
                 alert(
                     "Masukkan HM sekarang."
                 );
-
                 return;
-
             }
-
 
             if (
                 previousHM > 0 &&
                 currentHM < previousHM
             ) {
-
                 alert(
                     "HM sekarang tidak boleh lebih kecil dari HM sebelumnya."
                 );
-
                 return;
-
             }
 
-
             if (!operator) {
-
                 alert(
                     "Masukkan nama operator."
                 );
-
                 return;
-
             }
-
 
             if (
                 isNaN(fuel) ||
                 fuel <= 0
             ) {
-
                 alert(
                     "Masukkan jumlah fuel."
                 );
-
                 return;
-
             }
 
-
             if (!shift) {
-
                 alert(
                     "Pilih shift."
                 );
-
                 return;
-
             }
-
 
             const waktu =
                 getLocalDateTime();
-
 
             const hmJalan =
                 previousHM > 0
                 ? currentHM - previousHM
                 : 0;
 
-
-            saveButton.disabled =
-                true;
-
+            saveButton.disabled = true;
             saveButton.textContent =
                 "MENYIMPAN...";
 
-
             const { error } =
                 await supabaseClient
-
                     .from(
                         "fuel_history"
                     )
-
                     .insert({
-
                         tanggal:
                             waktu.tanggal,
 
@@ -1822,61 +1491,38 @@ document
                             fuel,
 
                         shift:
-                            Number(
-                                shift
-                            )
-
+                            Number(shift)
                     });
 
-
             if (error) {
-
-                console.error(
-                    error
-                );
-
+                console.error(error);
 
                 alert(
-
                     "❌ Data gagal disimpan.\n\n" +
-
                     error.message
-
                 );
 
-
-                saveButton.disabled =
-                    false;
-
+                saveButton.disabled = false;
                 saveButton.textContent =
                     "SIMPAN DATA";
 
-
                 return;
-
             }
 
-
             alert(
-
                 "✅ DATA BERHASIL DISIMPAN!\n\n" +
-
                 "Fuel Truck: " +
                 selectedFuelTruck +
                 "\n" +
-
                 "WH: " +
                 selectedWH +
                 "\n" +
-
                 "Unit: " +
                 currentUnit +
                 "\n" +
-
                 "Operator: " +
                 operator +
                 "\n" +
-
                 "HM Sebelumnya: " +
                 (
                     previousHM > 0
@@ -1884,30 +1530,22 @@ document
                     : "-"
                 ) +
                 "\n" +
-
                 "HM Sekarang: " +
                 currentHM +
                 "\n" +
-
                 "HM Jalan: " +
                 hmJalan +
                 "\n" +
-
                 "Fuel: " +
                 fuel +
                 " L\n" +
-
                 "Shift: " +
                 shift
-
             );
 
-
             location.reload();
-
         }
     );
-
 </script>
 
 </body>
