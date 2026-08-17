@@ -470,7 +470,7 @@ async function downloadExcel(){
     const totalFuel=data.reduce((sum,item)=>sum+(Number(item.fuel)||0),0);
     const totalCell=ws.getCell("I7");
     totalCell.value=totalFuel;
-    totalCell.numFmt='#,##0.##';
+    totalCell.numFmt="0";
     totalCell.font={name:"Calibri",size:16,bold:true,color:{argb:"FF000000"}};
     totalCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFF00"}};
     totalCell.alignment={vertical:"middle",horizontal:"center"};
@@ -548,7 +548,10 @@ async function downloadExcel(){
 
       const row=ws.addRow([
         item.id||index+1,
-        item.tanggal ? new Date(item.tanggal+"T00:00:00") : "",
+        item.tanggal ? (() => {
+          const [y,m,d]=String(item.tanggal).split("-").map(Number);
+          return new Date(Date.UTC(y,m-1,d));
+        })() : "",
         item.shift||"",
         getWH(item),
         unit,
@@ -583,8 +586,8 @@ async function downloadExcel(){
 
       // Format tanggal, HM, dan Qty.
       row.getCell(2).numFmt="dd/mm/yyyy";
-      row.getCell(8).numFmt='#,##0.##';
-      row.getCell(9).numFmt='#,##0.##';
+      row.getCell(8).numFmt="0";
+      row.getCell(9).numFmt="0";
 
       // Kolom EGI dibuat tetap rapi walau nama panjang.
       row.getCell(6).alignment={
