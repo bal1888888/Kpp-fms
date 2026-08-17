@@ -96,6 +96,7 @@ window.KPP = {
     if (profile.role === "fuelman") {
       const blocked = [
         "dashboard.html",
+        "daily-report.html",
         "admin.html",
         "gl.html",
         "logsheet.html",
@@ -128,6 +129,7 @@ window.KPP = {
       items = [
         ["gl", "gl.html", "🏠 Menu GL"],
         ["dashboard", "dashboard.html", "📊 Dashboard"],
+        ["daily-report", "daily-report.html", "📈 Daily Report"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
@@ -138,6 +140,7 @@ window.KPP = {
       items = [
         ["admin", "admin.html", "🏠 Menu Admin"],
         ["dashboard", "dashboard.html", "📊 Dashboard"],
+        ["daily-report", "daily-report.html", "📈 Daily Report"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
