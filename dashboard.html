@@ -26,7 +26,37 @@ body{background:#f4f6f8;color:#222}.header{background:#1f2937;color:#fff;padding
 th{background:#1f2937;color:#fff;padding:12px;font-size:13px;white-space:nowrap;position:sticky;top:0}
 td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px;white-space:nowrap}tr:hover{background:#f8fafc}
 .status{text-align:center;color:#777;padding:30px}.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:8px;margin-bottom:20px;display:none}
-@media(max-width:600px){.container{padding:10px;margin:15px auto}}
+@media(max-width:900px){
+  .container{padding:10px;margin:12px auto}
+  .header{padding:15px 10px}
+  .header h1{font-size:18px}
+  .header p{font-size:12px}
+  .top-bar{justify-content:stretch}
+  .refresh-btn{width:100%;min-height:44px;font-size:14px}
+  .module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .module-link{padding:14px}
+  .module-link .icon{font-size:24px}
+  .module-link strong{font-size:14px}
+  .module-link span{font-size:11px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .card,.section{padding:15px}
+  .card-icon{font-size:24px}
+  .card-title{font-size:11px}
+  .card-value{font-size:20px}
+  .shift-container{grid-template-columns:1fr 1fr;gap:9px}
+  .shift-card{padding:13px}
+  .shift-fuel{font-size:18px}
+  .table-container{-webkit-overflow-scrolling:touch}
+  table{min-width:1250px}
+  th,td{font-size:10px;padding:7px 6px}
+  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .module-grid{grid-template-columns:1fr 1fr}
+  .module-link span{display:none}
+  .cards{grid-template-columns:1fr 1fr}
+  .shift-container{grid-template-columns:1fr}
+}
 
 /* ===== KPP-FMS GLOBAL NAV ===== */
 .app-nav{
@@ -154,6 +184,7 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px
 <div class="card"><div class="card-icon">🧾</div><div class="card-title">TOTAL TRANSAKSI</div><div class="card-value" id="totalTransaction">0</div></div>
 <div class="card"><div class="card-icon">🚜</div><div class="card-title">TOTAL UNIT</div><div class="card-value" id="totalUnit">0</div></div>
 <div class="card"><div class="card-icon">👷</div><div class="card-title">TOTAL OPERATOR</div><div class="card-value" id="totalOperator">0</div></div>
+<div class="card"><div class="card-icon">🟢</div><div class="card-title">FUELMAN ACTIVE</div><div class="card-value" id="activeFuelmanCount">0</div></div>
 </div>
 
 <div class="section"><h2>📊 Penggunaan Fuel per Shift</h2>
@@ -162,29 +193,54 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px
 <div class="shift-card"><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
 </div></div>
 
+<div class="section">
+<h2>👷 Fuelman Sedang Bertugas</h2>
+<div id="activeSessions" class="session-grid">
+  <div class="session-empty">Memuat session aktif...</div>
+</div>
+</div>
+
 <div class="section"><h2>📋 Transaksi Pengisian Terbaru</h2>
 <div class="table-container"><table>
-<thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>Shift</th></tr></thead>
+<thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>Shift</th></tr></thead>
 <tbody id="transactionTable"></tbody></table></div>
 <div id="statusData" class="status">Mengambil seluruh data dari database...</div>
 </div>
 </div>
 
 <script>
-const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
-const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
 function formatAngka(v){return Number(v||0).toLocaleString("id-ID")}
 function formatTanggal(v){if(!v)return "-";const p=String(v).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
 function cell(t){const x=document.createElement("td");x.textContent=t;return x}
 
+function getFuelTruck(item){
+  const ft=String(item.fuel_truck||"").trim().toUpperCase();
+  if(ft)return ft;
+  const wh=String(item.wh||"").trim().toUpperCase();
+  if(wh==="FT02")return "FT0073";
+  if(wh==="FT01")return "FT0075";
+  return "-";
+}
+
+function getWH(item){
+  const wh=String(item.wh||"").trim().toUpperCase();
+  if(wh)return wh;
+  const ft=getFuelTruck(item);
+  if(ft==="FT0073")return "FT02";
+  if(ft==="FT0075")return "FT01";
+  return "-";
+}
+
+function getFuelman(item){
+  return String(item.fuelman_name||item.fuelman_username||"").trim()||"-";
+}
+
 async function fetchAll(){
   let all=[],from=0,size=1000;
   while(true){
-    const {data,error}=await supabaseClient
+    const {data,error}=await KPP.db
       .from("fuel_history")
-      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift")
+      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
       .order("tanggal",{ascending:true})
       .order("id",{ascending:true})
       .range(from,from+size-1);
@@ -197,6 +253,41 @@ async function fetchAll(){
   return all;
 }
 
+async function loadActiveSessions(){
+  const host=document.getElementById("activeSessions");
+
+  const {data,error}=await KPP.db
+    .from("fuelman_sessions")
+    .select("id,fuelman_name,username,tanggal,shift,fuel_truck,jam_mulai,status")
+    .eq("status","ACTIVE")
+    .order("created_at",{ascending:true});
+
+  if(error){
+    host.innerHTML='<div class="session-empty">❌ Gagal membaca session: '+error.message+'</div>';
+    document.getElementById("activeFuelmanCount").textContent="0";
+    return;
+  }
+
+  const rows=data||[];
+  document.getElementById("activeFuelmanCount").textContent=formatAngka(rows.length);
+
+  if(!rows.length){
+    host.innerHTML='<div class="session-empty">Tidak ada Fuelman yang sedang ACTIVE.</div>';
+    return;
+  }
+
+  host.innerHTML=rows.map(row=>`
+    <div class="session-card active">
+      <div class="name">🟢 ${row.fuelman_name||row.username||"-"}</div>
+      <div class="meta">
+        ${row.shift||"-"}<br>
+        ${row.fuel_truck||"-"}<br>
+        Mulai: ${row.jam_mulai?String(row.jam_mulai).slice(0,8):"-"}
+      </div>
+    </div>
+  `).join("");
+}
+
 async function loadDashboard(){
   const errorBox=document.getElementById("errorBox");
   const status=document.getElementById("statusData");
@@ -207,6 +298,7 @@ async function loadDashboard(){
   table.innerHTML="";
 
   try{
+    await loadActiveSessions();
     const data=await fetchAll();
 
     let total=0,shift1=0,shift2=0;
@@ -243,11 +335,15 @@ async function loadDashboard(){
       r.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
       r.appendChild(cell(item.unit||"(KOSONG)"));
       r.appendChild(cell(item.operator||"-"));
+      r.appendChild(cell(getFuelman(item)));
+      r.appendChild(cell(getFuelTruck(item)));
+      r.appendChild(cell(getWH(item)));
       r.appendChild(cell(Number(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
       r.appendChild(cell(item.hm_akhir!==null&&item.hm_akhir!==undefined&&item.hm_akhir!==""?formatAngka(item.hm_akhir):"-"));
       r.appendChild(cell(Number(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
       r.appendChild(cell(formatAngka(item.fuel)+" L"));
-      r.appendChild(cell("Shift "+item.shift));
+      const shiftText=String(item.shift||"");
+      r.appendChild(cell(shiftText.toLowerCase().startsWith("shift")?shiftText:"Shift "+shiftText));
       table.appendChild(r);
     });
 
@@ -262,7 +358,10 @@ async function loadDashboard(){
 }
 
 document.getElementById("refreshBtn").addEventListener("click",loadDashboard);
-loadDashboard();
+
+document.addEventListener("kpp-auth-ready",()=>{
+  loadDashboard();
+});
 </script>
 </body>
 </html>
