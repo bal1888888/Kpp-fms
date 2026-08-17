@@ -42,7 +42,7 @@ th{background:#1f2937;color:#fff}
 <div class="container">
   <div class="panel">
     <div class="note">
-      Halaman ini hanya bisa dibuka role <b>GL</b>. Password dibuat saat akun baru ditambahkan. Admin dan Fuelman tidak diberi akses membuat akun.
+      Halaman ini hanya bisa dibuka role <b>GL</b>. Password lama tidak dapat dilihat kembali. Jika anggota lupa password, GL dapat membuat <b>password baru</b> dari halaman ini.
     </div>
   </div>
 
@@ -77,14 +77,37 @@ th{background:#1f2937;color:#fff}
     <div id="status" class="status"></div>
   </div>
 
+
+  <div class="panel">
+    <h3>🔑 Reset Password Anggota</h3>
+    <div class="note" style="margin-bottom:14px">
+      Password lama tidak ditampilkan demi keamanan. Pilih akun lalu masukkan password baru minimal 8 karakter.
+    </div>
+    <div class="grid">
+      <div>
+        <label>Username</label>
+        <input id="resetUsername" placeholder="Contoh: tegar" readonly>
+      </div>
+      <div>
+        <label>Password Baru</label>
+        <input id="resetPassword" type="password" minlength="8" placeholder="Minimal 8 karakter">
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+      <button id="resetBtn" style="background:#2563eb">GANTI PASSWORD</button>
+      <button id="showResetPasswordBtn" type="button" style="background:#64748b">👁 Lihat / Sembunyikan</button>
+    </div>
+    <div id="resetStatus" class="status"></div>
+  </div>
+
   <div class="panel">
     <h3>Daftar Anggota</h3>
     <div class="wrap">
       <table>
         <thead>
-          <tr><th>Username</th><th>Nama</th><th>Jabatan</th><th>Role</th><th>Status</th></tr>
+          <tr><th>Username</th><th>Nama</th><th>Jabatan</th><th>Role</th><th>Status</th><th>Aksi</th></tr>
         </thead>
-        <tbody id="body"><tr><td colspan="5">Mengambil data...</td></tr></tbody>
+        <tbody id="body"><tr><td colspan="6">Mengambil data...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -108,7 +131,7 @@ async function loadStaff(){
     .order("display_name",{ascending:true});
 
   if(error){
-    body.innerHTML='<tr><td colspan="5">❌ '+esc(error.message)+'</td></tr>';
+    body.innerHTML='<tr><td colspan="6">❌ '+esc(error.message)+'</td></tr>';
     return;
   }
 
@@ -119,8 +142,28 @@ async function loadStaff(){
       <td>${esc(row.jabatan)}</td>
       <td>${esc(String(row.role).toUpperCase())}</td>
       <td>${row.active?"AKTIF":"TIDAK AKTIF"}</td>
+      <td>
+        <button type="button"
+          class="resetPickBtn"
+          data-username="${esc(row.username)}"
+          data-name="${esc(row.display_name)}"
+          style="background:#2563eb;padding:7px 10px;font-size:11px">
+          🔑 Reset
+        </button>
+      </td>
     </tr>
-  `).join("") || '<tr><td colspan="5">Belum ada anggota.</td></tr>';
+  `).join("") || '<tr><td colspan="6">Belum ada anggota.</td></tr>';
+
+  document.querySelectorAll(".resetPickBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.getElementById("resetUsername").value=btn.dataset.username||"";
+      document.getElementById("resetPassword").value="";
+      document.getElementById("resetStatus").textContent=
+        "Akun dipilih: "+(btn.dataset.name||btn.dataset.username||"");
+      document.getElementById("resetPassword").focus();
+      window.scrollTo({top:document.getElementById("resetUsername").getBoundingClientRect().top+window.scrollY-120,behavior:"smooth"});
+    });
+  });
 }
 
 async function createStaff(){
@@ -192,6 +235,58 @@ document.getElementById("username").addEventListener("input",e=>{
 
 document.getElementById("createBtn").addEventListener("click",createStaff);
 document.addEventListener("kpp-auth-ready",loadStaff);
+
+async function resetStaffPassword(){
+  const username=document.getElementById("resetUsername").value.trim().toLowerCase();
+  const password=document.getElementById("resetPassword").value;
+  const status=document.getElementById("resetStatus");
+  const btn=document.getElementById("resetBtn");
+
+  if(!username){
+    status.textContent="❌ Pilih akun dari tombol Reset pada daftar anggota.";
+    return;
+  }
+
+  if(password.length<8){
+    status.textContent="❌ Password baru minimal 8 karakter.";
+    return;
+  }
+
+  const ok=confirm(
+    "Ganti password akun "+username+"?\\n\\n"+
+    "Password lama tidak bisa dilihat kembali. Setelah proses ini, akun harus memakai password baru."
+  );
+
+  if(!ok)return;
+
+  btn.disabled=true;
+  btn.textContent="MENGGANTI...";
+  status.textContent="";
+
+  try{
+    const {data,error}=await KPP.db.functions.invoke("reset-staff-password",{
+      body:{username,password}
+    });
+
+    if(error)throw error;
+    if(data?.error)throw new Error(data.error);
+
+    status.textContent="✅ "+(data?.message||"Password berhasil diganti.");
+    document.getElementById("resetPassword").value="";
+  }catch(error){
+    status.textContent="❌ "+error.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent="GANTI PASSWORD";
+  }
+}
+
+document.getElementById("resetBtn").addEventListener("click",resetStaffPassword);
+document.getElementById("showResetPasswordBtn").addEventListener("click",()=>{
+  const el=document.getElementById("resetPassword");
+  el.type=el.type==="password"?"text":"password";
+});
+
 </script>
 </body>
 </html>
