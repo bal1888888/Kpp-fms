@@ -4,24 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Fuelman - KPP FMS</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
 window.KPP_ALLOWED_ROLES=["fuelman"];
 window.KPP_ACTIVE_PAGE="fuelman";
 </script>
+
 <script src="auth.js"></script>
+
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
 body{margin:0;background:#f3f4f6;color:#111827}
 .header{background:#1f2937;color:#fff;text-align:center;padding:21px}
 .header h1{margin:0 0 5px;font-size:23px}
-.container{max-width:1050px;margin:28px auto;padding:15px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
-.card{display:block;text-decoration:none;color:#111827;background:#fff;border:1px solid #e5e7eb;border-radius:13px;padding:22px;box-shadow:0 3px 11px rgba(0,0,0,.07)}
-.card:hover{transform:translateY(-2px)}
-.icon{font-size:34px;margin-bottom:10px}
-.card strong{display:block;font-size:18px;margin-bottom:6px}
-.card span{font-size:12px;color:#64748b;line-height:1.5}
+.container{max-width:900px;margin:28px auto;padding:15px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:22px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:18px}
+h2,h3{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:block;font-size:13px;font-weight:bold;margin-bottom:7px}
+select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;background:#fff}
+button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block}
+.btn-green{background:#16a34a;color:#fff}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+.btn-gray{background:#64748b;color:#fff}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.status{margin-top:14px;font-size:13px;font-weight:bold}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:13px;line-height:1.5;margin-bottom:18px}
+.session-box{background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:18px}
+.session-row{display:grid;grid-template-columns:160px 1fr;gap:10px;padding:7px 0;border-bottom:1px dashed #d1d5db}
+.session-row:last-child{border-bottom:0}
+.tag{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:bold}
+.tag-active{background:#dcfce7;color:#166534}
 .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
 .app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
 .app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
@@ -30,32 +46,301 @@ body{margin:0;background:#f3f4f6;color:#111827}
 .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
-@media(max-width:700px){.app-nav-inner{justify-content:flex-start}}
+.hidden{display:none!important}
+@media(max-width:650px){
+  .grid{grid-template-columns:1fr}
+  .session-row{grid-template-columns:1fr}
+  .app-nav-inner{justify-content:flex-start}
+}
 </style>
 </head>
+
 <body>
+
 <div class="header">
   <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-  <div>Display Fuelman</div>
+  <div>Menu Fuelman</div>
 </div>
 
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
 
 <div class="container">
-  <div class="grid">
-    <a class="card" href="pengisian.html">
-      <div class="icon">⛽</div>
-      <strong>Pengisian Fuel</strong>
-      <span>Input pengisian fuel unit.</span>
-    </a>
 
-    <a class="card" href="stock.html">
-      <div class="icon">🛢️</div>
-      <strong>Stock Fuel</strong>
-      <span>Opening, penerimaan, transfer, dan closing stock.</span>
-    </a>
+  <div class="info">
+    <b>Alur Fuelman:</b><br>
+    Start Shift → pilih Shift & Fuel Truck → Pengisian / Stock → Closing Stock → End Shift.
   </div>
+
+  <div id="loadingPanel" class="panel">
+    Memeriksa session Fuelman...
+  </div>
+
+  <div id="startPanel" class="panel hidden">
+    <h2>▶️ Start Shift</h2>
+
+    <div class="grid">
+      <div>
+        <label>Shift</label>
+        <select id="shift">
+          <option value="">-- Pilih Shift --</option>
+          <option value="Shift 1">Shift 1</option>
+          <option value="Shift 2">Shift 2</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Fuel Truck</label>
+        <select id="fuelTruck">
+          <option value="">-- Pilih Fuel Truck --</option>
+          <option value="FT0073">FT0073</option>
+          <option value="FT0075">FT0075</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="startBtn" class="btn-green">START SHIFT</button>
+    </div>
+
+    <div id="startStatus" class="status"></div>
+  </div>
+
+  <div id="activePanel" class="panel hidden">
+    <h2>🟢 Shift Sedang Aktif</h2>
+
+    <div class="session-box">
+      <div class="session-row">
+        <b>Fuelman</b>
+        <span id="sFuelman">-</span>
+      </div>
+      <div class="session-row">
+        <b>Tanggal</b>
+        <span id="sTanggal">-</span>
+      </div>
+      <div class="session-row">
+        <b>Shift</b>
+        <span id="sShift">-</span>
+      </div>
+      <div class="session-row">
+        <b>Fuel Truck</b>
+        <span id="sTruck">-</span>
+      </div>
+      <div class="session-row">
+        <b>Jam Mulai</b>
+        <span id="sMulai">-</span>
+      </div>
+      <div class="session-row">
+        <b>Status</b>
+        <span><span class="tag tag-active">ACTIVE</span></span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
+      <a class="btn btn-gray" href="stock.html">🛢️ Stock</a>
+      <button id="endBtn" class="btn-red">END SHIFT</button>
+    </div>
+
+    <div id="endStatus" class="status"></div>
+  </div>
+
 </div>
+
+<script>
+let currentProfile=null;
+let currentSession=null;
+
+function pad(n){return String(n).padStart(2,"0")}
+
+function localDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function localTime(){
+  const d=new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function fmtDate(v){
+  if(!v)return "-";
+  const [y,m,d]=v.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function fmtTime(v){
+  if(!v)return "-";
+  return String(v).slice(0,8);
+}
+
+function show(id){
+  document.getElementById(id)?.classList.remove("hidden");
+}
+
+function hide(id){
+  document.getElementById(id)?.classList.add("hidden");
+}
+
+async function loadActiveSession(){
+  hide("startPanel");
+  hide("activePanel");
+  show("loadingPanel");
+
+  const {data,error}=await KPP.db
+    .from("fuelman_sessions")
+    .select("*")
+    .eq("user_id",KPP_SESSION.user.id)
+    .eq("status","ACTIVE")
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  hide("loadingPanel");
+
+  if(error){
+    show("startPanel");
+    document.getElementById("startStatus").textContent="❌ "+error.message;
+    return;
+  }
+
+  currentSession=(data&&data.length)?data[0]:null;
+
+  if(!currentSession){
+    show("startPanel");
+    return;
+  }
+
+  renderActive();
+}
+
+function renderActive(){
+  if(!currentSession)return;
+
+  document.getElementById("sFuelman").textContent=currentSession.fuelman_name||"-";
+  document.getElementById("sTanggal").textContent=fmtDate(currentSession.tanggal);
+  document.getElementById("sShift").textContent=currentSession.shift||"-";
+  document.getElementById("sTruck").textContent=currentSession.fuel_truck||"-";
+  document.getElementById("sMulai").textContent=fmtTime(currentSession.jam_mulai);
+
+  hide("startPanel");
+  show("activePanel");
+}
+
+async function startShift(){
+  const shift=document.getElementById("shift").value;
+  const fuelTruck=document.getElementById("fuelTruck").value;
+  const status=document.getElementById("startStatus");
+  const btn=document.getElementById("startBtn");
+
+  status.textContent="";
+
+  if(!shift){
+    status.textContent="❌ Pilih Shift.";
+    return;
+  }
+
+  if(!fuelTruck){
+    status.textContent="❌ Pilih Fuel Truck.";
+    return;
+  }
+
+  const ok=confirm(
+    `Mulai shift?\n\nFuelman: ${currentProfile.display_name}\nShift: ${shift}\nFuel Truck: ${fuelTruck}`
+  );
+
+  if(!ok)return;
+
+  btn.disabled=true;
+  btn.textContent="MEMULAI...";
+
+  const row={
+    user_id:KPP_SESSION.user.id,
+    username:currentProfile.username,
+    fuelman_name:currentProfile.display_name,
+    tanggal:localDate(),
+    shift,
+    fuel_truck:fuelTruck,
+    jam_mulai:localTime(),
+    status:"ACTIVE"
+  };
+
+  const {data,error}=await KPP.db
+    .from("fuelman_sessions")
+    .insert(row)
+    .select()
+    .single();
+
+  btn.disabled=false;
+  btn.textContent="START SHIFT";
+
+  if(error){
+    let msg=error.message;
+
+    if(msg.includes("fuelman_sessions_one_active_user")){
+      msg="Akun ini masih punya shift aktif.";
+    }else if(msg.includes("fuelman_sessions_one_active_truck")){
+      msg=`${fuelTruck} sedang dipakai Fuelman lain yang masih ACTIVE.`;
+    }
+
+    status.textContent="❌ "+msg;
+    return;
+  }
+
+  currentSession=data;
+  renderActive();
+}
+
+async function endShift(){
+  if(!currentSession)return;
+
+  const ok=confirm(
+    `Akhiri shift?\n\n${currentSession.shift} • ${currentSession.fuel_truck}\n\nPastikan Closing Stock sudah dilakukan.`
+  );
+
+  if(!ok)return;
+
+  const btn=document.getElementById("endBtn");
+  const status=document.getElementById("endStatus");
+
+  btn.disabled=true;
+  btn.textContent="MENGAKHIRI...";
+  status.textContent="";
+
+  const {error}=await KPP.db
+    .from("fuelman_sessions")
+    .update({
+      jam_selesai:localTime(),
+      status:"ENDED",
+      ended_at:new Date().toISOString()
+    })
+    .eq("id",currentSession.id)
+    .eq("user_id",KPP_SESSION.user.id);
+
+  btn.disabled=false;
+  btn.textContent="END SHIFT";
+
+  if(error){
+    status.textContent="❌ "+error.message;
+    return;
+  }
+
+  currentSession=null;
+  document.getElementById("shift").value="";
+  document.getElementById("fuelTruck").value="";
+  document.getElementById("startStatus").textContent="✅ Shift sebelumnya sudah diakhiri.";
+
+  hide("activePanel");
+  show("startPanel");
+}
+
+document.getElementById("startBtn").addEventListener("click",startShift);
+document.getElementById("endBtn").addEventListener("click",endShift);
+
+document.addEventListener("kpp-auth-ready",async(e)=>{
+  currentProfile=e.detail.profile;
+  await loadActiveSession();
+});
+</script>
+
 </body>
 </html>
