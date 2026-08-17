@@ -53,6 +53,11 @@ window.KPP = {
     window.location.replace("index.html");
   },
 
+  async switchAccount() {
+    await kppDb.auth.signOut();
+    window.location.replace("index.html");
+  },
+
   roleLabel(role) {
     if (role === "gl") return "GL";
     if (role === "admin") return "ADMIN";
@@ -69,9 +74,16 @@ window.KPP = {
           👤 <b>${profile.display_name}</b>
           <span>• ${profile.jabatan || this.roleLabel(profile.role)}</span>
         </div>
-        <button type="button" id="kppLogoutBtn">🚪 Keluar</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" id="kppSwitchBtn" style="background:#2563eb">🔄 Ganti Akun</button>
+          <button type="button" id="kppLogoutBtn">🚪 Keluar</button>
+        </div>
       </div>
     `;
+
+    document.getElementById("kppSwitchBtn")?.addEventListener("click", () => {
+      this.switchAccount();
+    });
 
     document.getElementById("kppLogoutBtn")?.addEventListener("click", () => {
       this.logout();
