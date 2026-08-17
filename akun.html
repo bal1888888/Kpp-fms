@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kelola Akun - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.KPP_ALLOWED_ROLES=["gl"];window.KPP_ACTIVE_PAGE="akun";</script>
+<script src="auth.js"></script>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:21px}
+.container{max-width:1000px;margin:25px auto;padding:14px}
+.panel{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
+input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px}
+button{border:0;border-radius:7px;padding:11px 15px;background:#16a34a;color:#fff;font-weight:bold;cursor:pointer}
+.status{margin-top:12px;font-size:13px;font-weight:bold}
+.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:12px;font-size:13px;line-height:1.5}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{border:1px solid #d1d5db;padding:9px;font-size:12px;text-align:center}
+th{background:#1f2937;color:#fff}
+.wrap{overflow:auto}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+
+</style>
+</head>
+<body>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Kelola Akun — Khusus GL</div></div>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
+
+<div class="container">
+  <div class="panel">
+    <div class="note">
+      Halaman ini hanya bisa dibuka role <b>GL</b>. Password dibuat saat akun baru ditambahkan. Admin dan Fuelman tidak diberi akses membuat akun.
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Tambah Anggota / Akun Baru</h3>
+    <div class="grid">
+      <div>
+        <label>Username Login</label>
+        <input id="username" placeholder="Contoh: tegar">
+      </div>
+      <div>
+        <label>Nama Anggota</label>
+        <input id="displayName" placeholder="Contoh: Tegar">
+      </div>
+      <div>
+        <label>Jabatan / Akses</label>
+        <select id="role">
+          <option value="fuelman">FUELMAN</option>
+          <option value="admin">ADMIN</option>
+          <option value="gl">GL</option>
+        </select>
+      </div>
+      <div>
+        <label>Password Awal</label>
+        <input id="password" type="password" minlength="8" placeholder="Minimal 8 karakter">
+      </div>
+    </div>
+
+    <div style="margin-top:14px">
+      <button id="createBtn">BUAT AKUN</button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Daftar Anggota</h3>
+    <div class="wrap">
+      <table>
+        <thead>
+          <tr><th>Username</th><th>Nama</th><th>Jabatan</th><th>Role</th><th>Status</th></tr>
+        </thead>
+        <tbody id="body"><tr><td colspan="5">Mengambil data...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(v){
+  return String(v??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+async function loadStaff(){
+  const body=document.getElementById("body");
+
+  const {data,error}=await KPP.db
+    .from("staff_profiles")
+    .select("username,display_name,jabatan,role,active")
+    .order("display_name",{ascending:true});
+
+  if(error){
+    body.innerHTML='<tr><td colspan="5">❌ '+esc(error.message)+'</td></tr>';
+    return;
+  }
+
+  body.innerHTML=(data||[]).map(row=>`
+    <tr>
+      <td>${esc(row.username)}</td>
+      <td><b>${esc(row.display_name)}</b></td>
+      <td>${esc(row.jabatan)}</td>
+      <td>${esc(String(row.role).toUpperCase())}</td>
+      <td>${row.active?"AKTIF":"TIDAK AKTIF"}</td>
+    </tr>
+  `).join("") || '<tr><td colspan="5">Belum ada anggota.</td></tr>';
+}
+
+async function createStaff(){
+  const username=document.getElementById("username").value.trim().toLowerCase();
+  const displayName=document.getElementById("displayName").value.trim();
+  const role=document.getElementById("role").value;
+  const password=document.getElementById("password").value;
+  const status=document.getElementById("status");
+  const btn=document.getElementById("createBtn");
+
+  if(!username||!displayName||!password){
+    status.textContent="❌ Lengkapi username, nama, dan password.";
+    return;
+  }
+
+  if(password.length<8){
+    status.textContent="❌ Password minimal 8 karakter.";
+    return;
+  }
+
+  const jabatan=role==="gl"?"GL":role==="admin"?"ADMIN":"FUELMAN";
+
+  const ok=confirm(
+    "Buat akun baru?\n\n"+
+    "Nama: "+displayName+"\n"+
+    "Username: "+username+"\n"+
+    "Jabatan: "+jabatan
+  );
+
+  if(!ok)return;
+
+  btn.disabled=true;
+  btn.textContent="MEMBUAT...";
+  status.textContent="";
+
+  try{
+    const {data,error}=await KPP.db.functions.invoke("create-staff",{
+      body:{
+        username,
+        display_name:displayName,
+        role,
+        jabatan,
+        password
+      }
+    });
+
+    if(error)throw error;
+    if(data?.error)throw new Error(data.error);
+
+    status.textContent="✅ "+(data?.message||"Akun berhasil dibuat.");
+
+    document.getElementById("username").value="";
+    document.getElementById("displayName").value="";
+    document.getElementById("password").value="";
+    document.getElementById("role").value="fuelman";
+
+    await loadStaff();
+  }catch(error){
+    status.textContent="❌ "+error.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent="BUAT AKUN";
+  }
+}
+
+document.getElementById("username").addEventListener("input",e=>{
+  e.target.value=e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g,"");
+});
+
+document.getElementById("createBtn").addEventListener("click",createStaff);
+document.addEventListener("kpp-auth-ready",loadStaff);
+</script>
+</body>
+</html>
