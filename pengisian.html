@@ -311,7 +311,7 @@
         <h2>⛽ Pengisian Fuel</h2>
 
         <div class="info">
-            Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT.
+            Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT. Daftar unit dibaca dari Master Unit online.
             Sistem akan memakai HM terbaru berdasarkan tanggal/jam operasional: transaksi online atau HM Master/Koreksi aktual.
             Jika keduanya belum ada, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
         </div>
@@ -448,8 +448,8 @@ const FUEL_TRUCK_MAP = {
     "FT0075": "FT01"
 };
 
-// 124 CODE UNIT resmi dari sheet POPULASI UNIT
-const MASTER_UNITS = [
+// 124 CODE UNIT awal dari sheet POPULASI UNIT (fallback bila Unit Master online gagal dibaca)
+const BASE_MASTER_UNITS = [
         "CB1019",
         "CM0108",
         "CP118",
@@ -576,6 +576,9 @@ const MASTER_UNITS = [
         "TR-B04"
 ];
 
+let MASTER_UNITS=[...BASE_MASTER_UNITS];
+let UNIT_MASTER_ONLINE=[];
+
 // HM terakhir dari ISSUED_BY_DAY.
 // Hanya dipakai kalau unit belum punya transaksi di Supabase.
 const MASTER_LAST_HM = {
@@ -687,14 +690,87 @@ let currentHmSource = "";
 const unitOptions =
     document.getElementById("unitOptions");
 
-MASTER_UNITS.forEach(function(unit) {
-    const option =
-        document.createElement("option");
+function renderUnitOptions() {
+    unitOptions.innerHTML = "";
 
-    option.value = unit;
+    MASTER_UNITS
+        .slice()
+        .sort(function(a,b){ return a.localeCompare(b); })
+        .forEach(function(unit) {
+            const option =
+                document.createElement("option");
 
-    unitOptions.appendChild(option);
-});
+            option.value = unit;
+
+            unitOptions.appendChild(option);
+        });
+}
+
+async function loadUnitMasterOnline() {
+    try {
+        const { data, error } =
+            await supabaseClient
+                .from("unit_master")
+                .select("code_unit,active")
+                .order("code_unit",{ascending:true});
+
+        if (error) {
+            throw error;
+        }
+
+        UNIT_MASTER_ONLINE = data || [];
+
+        const state = new Map(
+            BASE_MASTER_UNITS.map(function(code) {
+                return [
+                    code,
+                    true
+                ];
+            })
+        );
+
+        UNIT_MASTER_ONLINE.forEach(function(row) {
+            const code =
+                normalisasiUnit(
+                    row.code_unit
+                );
+
+            if (!code) return;
+
+            state.set(
+                code,
+                row.active !== false
+            );
+        });
+
+        MASTER_UNITS =
+            Array.from(
+                state.entries()
+            )
+            .filter(function(pair) {
+                return pair[1];
+            })
+            .map(function(pair) {
+                return pair[0];
+            });
+
+        renderUnitOptions();
+
+    } catch (error) {
+        console.warn(
+            "Unit Master online belum terbaca, memakai master bawaan:",
+            error.message
+        );
+
+        MASTER_UNITS =
+            [...BASE_MASTER_UNITS];
+
+        renderUnitOptions();
+    }
+}
+
+renderUnitOptions();
+loadUnitMasterOnline();
 
 document
     .getElementById("fuelTruck")
