@@ -115,6 +115,14 @@ th{background:#e5e7eb}
 <div id="kppRoleNav"></div>
 <div class="container">
 
+<div id="fuelmanSessionInfo" class="session-info hidden">
+    <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
+    Fuelman: <span id="sessionFuelman">-</span><br>
+    Shift: <span id="sessionShift">-</span><br>
+    Fuel Truck: <span id="sessionTruck">-</span><br>
+    <span>Untuk akun Fuelman, tanggal/shift mengikuti session dan Stock Closing hanya untuk Fuel Truck yang sedang dipakai.</span>
+</div>
+
 <div class="panel">
     <h3>Periode Stock</h3>
     <div class="grid">
@@ -351,6 +359,9 @@ const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
 let CURRENT_SYSTEM_STOCK=
     Object.fromEntries(STORAGES.map(storage=>[storage,0]));
 
+let CURRENT_PROFILE=null;
+let ACTIVE_FUELMAN_SESSION=null;
+
 function localDate(){
     const d=new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -391,6 +402,95 @@ function getNextPeriod(tanggal,shift){
         tanggal:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,
         shift:1
     };
+}
+
+
+function sessionShiftNumber(value){
+    if(String(value)==="Shift 1") return 1;
+    if(String(value)==="Shift 2") return 2;
+    return Number(value)||0;
+}
+
+function setFieldLocked(id,locked){
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.disabled=!!locked;
+    el.classList.toggle("locked-field",!!locked);
+}
+
+function applyFuelmanIdentity(){
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION){
+        return;
+    }
+
+    const name=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||"";
+
+    ["openingOperator","receiptOperator","transferOperator","closingOperator"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){
+            el.value=name;
+            el.readOnly=true;
+            el.classList.add("locked-field");
+        }
+    });
+
+    const openingStorage=document.getElementById("openingStorage");
+    if(openingStorage){
+        openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck;
+        openingStorage.disabled=true;
+        openingStorage.classList.add("locked-field");
+    }
+
+    document.getElementById("sessionFuelman").textContent=name||"-";
+    document.getElementById("sessionShift").textContent=ACTIVE_FUELMAN_SESSION.shift||"-";
+    document.getElementById("sessionTruck").textContent=ACTIVE_FUELMAN_SESSION.fuel_truck||"-";
+    document.getElementById("fuelmanSessionInfo").classList.remove("hidden");
+}
+
+async function loadFuelmanSession(){
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman"){
+        return true;
+    }
+
+    const session=window.KPP_SESSION;
+
+    if(!session){
+        window.location.replace("index.html");
+        return false;
+    }
+
+    const {data,error}=await KPP.db
+        .from("fuelman_sessions")
+        .select("*")
+        .eq("user_id",session.user.id)
+        .eq("status","ACTIVE")
+        .order("created_at",{ascending:false})
+        .limit(1);
+
+    if(error){
+        alert("❌ Gagal membaca shift Fuelman.\\n\\n"+error.message);
+        window.location.replace("fuelman.html");
+        return false;
+    }
+
+    if(!data || !data.length){
+        alert("⚠️ Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
+        window.location.replace("fuelman.html");
+        return false;
+    }
+
+    ACTIVE_FUELMAN_SESSION=data[0];
+
+    document.getElementById("tanggal").value=ACTIVE_FUELMAN_SESSION.tanggal;
+    document.getElementById("shift").value=String(
+        sessionShiftNumber(ACTIVE_FUELMAN_SESSION.shift)
+    );
+
+    setFieldLocked("tanggal",true);
+    setFieldLocked("shift",true);
+
+    applyFuelmanIdentity();
+    return true;
 }
 
 function sourceFromFuel(row){
@@ -484,7 +584,14 @@ function renderClosing(stock,savedClosing){
     const body=document.getElementById("closingBody");
     body.innerHTML="";
 
-    STORAGES.forEach(storage=>{
+    const closingStorages=
+        CURRENT_PROFILE &&
+        CURRENT_PROFILE.role==="fuelman" &&
+        ACTIVE_FUELMAN_SESSION
+            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
+            : STORAGES;
+
+    closingStorages.forEach(storage=>{
         const saved=savedMap[storage];
         const actualValue=saved?saved.actual_qty:"";
 
@@ -510,16 +617,21 @@ function renderClosing(stock,savedClosing){
     const firstSaved=savedClosing.length?savedClosing[0]:null;
 
     if(firstSaved){
-        document.getElementById("closingOperator").value=firstSaved.operator||"";
+        if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman")){
+            document.getElementById("closingOperator").value=firstSaved.operator||"";
+        }
         document.getElementById("closingNote").value=firstSaved.note||"";
         document.getElementById("closingStatus").textContent=
             "✅ Stock closing periode ini sudah pernah disimpan. Bisa diperbarui bila perlu.";
     }else{
-        document.getElementById("closingOperator").value="";
+        if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman")){
+            document.getElementById("closingOperator").value="";
+        }
         document.getElementById("closingNote").value="";
         document.getElementById("closingStatus").textContent="";
     }
 
+    applyFuelmanIdentity();
     updateClosingDifference();
 }
 
@@ -528,7 +640,14 @@ function updateClosingDifference(){
     let actualTotal=0;
     let hasAllActual=true;
 
-    STORAGES.forEach(storage=>{
+    const closingStorages=
+        CURRENT_PROFILE &&
+        CURRENT_PROFILE.role==="fuelman" &&
+        ACTIVE_FUELMAN_SESSION
+            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
+            : STORAGES;
+
+    closingStorages.forEach(storage=>{
         const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
         systemTotal+=systemQty;
 
@@ -628,9 +747,18 @@ function renderMovement(movementData,fuelData){
 
 async function saveOpening(){
     const {tanggal,shift}=getPeriod();
-    const storage=document.getElementById("openingStorage").value;
+    let storage=document.getElementById("openingStorage").value;
     const qty=n(document.getElementById("openingQty").value);
-    const operator=document.getElementById("openingOperator").value.trim();
+    let operator=document.getElementById("openingOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        storage=ACTIVE_FUELMAN_SESSION.fuel_truck;
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
 
     if(!tanggal||!storage||qty<0){
         alert("Lengkapi stock opening.");
@@ -653,7 +781,15 @@ async function saveReceipt(){
     const destination_storage=document.getElementById("receiptDestination").value;
     const qty=n(document.getElementById("receiptQty").value);
     const transporter=document.getElementById("receiptTransporter").value.trim();
-    const operator=document.getElementById("receiptOperator").value.trim();
+    let operator=document.getElementById("receiptOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
 
     if(qty<=0){
         alert("Qty penerimaan harus lebih dari 0.");
@@ -701,7 +837,15 @@ async function saveTransfer(){
     const source_storage=document.getElementById("transferSource").value;
     const destination_storage=document.getElementById("transferDestination").value;
     const qty=n(document.getElementById("transferQty").value);
-    const operator=document.getElementById("transferOperator").value.trim();
+    let operator=document.getElementById("transferOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
 
     if(qty<=0){
         alert("Qty transfer harus lebih dari 0.");
@@ -742,21 +886,47 @@ async function saveTransfer(){
 
 async function saveClosing(){
     const {tanggal,shift}=getPeriod();
-    const operator=document.getElementById("closingOperator").value.trim();
+    let operator=document.getElementById("closingOperator").value.trim();
     const note=document.getElementById("closingNote").value.trim();
+
+    const isFuelman=
+        CURRENT_PROFILE &&
+        CURRENT_PROFILE.role==="fuelman";
+
+    if(isFuelman){
+        if(!ACTIVE_FUELMAN_SESSION){
+            alert("Shift Fuelman belum aktif.");
+            window.location.replace("fuelman.html");
+            return;
+        }
+
+        operator=
+            ACTIVE_FUELMAN_SESSION.fuelman_name ||
+            CURRENT_PROFILE.display_name ||
+            operator;
+    }
 
     if(!operator){
         alert("Masukkan nama Fuelman / Operator Closing.");
         return;
     }
 
+    const closingStorages=
+        isFuelman
+            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
+            : STORAGES;
+
     const closingRows=[];
 
-    for(const storage of STORAGES){
+    for(const storage of closingStorages){
         const input=document.getElementById(`actual-${storage}`);
 
         if(!input || input.value===""){
-            alert("Isi Stock Fisik / Sonding untuk semua storage terlebih dahulu.");
+            alert(
+                isFuelman
+                    ? "Isi Stock Fisik / Sonding "+storage+" terlebih dahulu."
+                    : "Isi Stock Fisik / Sonding untuk semua storage terlebih dahulu."
+            );
             return;
         }
 
@@ -777,7 +947,22 @@ async function saveClosing(){
             actual_qty:actualQty,
             difference_qty:actualQty-systemQty,
             operator,
-            note
+            note,
+
+            session_id:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.id
+                    : null,
+
+            fuelman_user_id:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.user_id
+                    : null,
+
+            fuelman_name:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.fuelman_name
+                    : null
         });
     }
 
@@ -815,11 +1000,17 @@ async function saveClosing(){
         }
 
         document.getElementById("closingStatus").textContent=
-            "✅ Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
-            nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
+            isFuelman
+                ? "✅ Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                  " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
+                : "✅ Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
+                  nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
     }else{
         document.getElementById("closingStatus").textContent=
-            "✅ Stock closing tersimpan.";
+            isFuelman
+                ? "✅ Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                  " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
+                : "✅ Stock closing tersimpan.";
     }
 
     loadStock();
@@ -842,7 +1033,18 @@ document.getElementById("tanggal").addEventListener("change",loadStock);
 document.getElementById("shift").addEventListener("change",loadStock);
 
 syncTransferDestination();
-loadStock();
+
+document.addEventListener("kpp-auth-ready",async(event)=>{
+    CURRENT_PROFILE=event.detail.profile;
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        const ok=await loadFuelmanSession();
+        if(!ok)return;
+    }
+
+    applyFuelmanIdentity();
+    await loadStock();
+});
 
 </script>
 </body>
