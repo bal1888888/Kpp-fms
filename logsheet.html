@@ -6,6 +6,7 @@
 <title>Logsheet Fuel - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#e5e7eb;color:#111827}
@@ -39,51 +40,10 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 .status-error{background:#ffedd5!important;color:#c2410c;font-weight:bold}
 .hidden{display:none!important}
 @media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
-
-/* ===== KPP-FMS GLOBAL NAV ===== */
-.app-nav{
-    background:#111827;
-    border-top:1px solid rgba(255,255,255,.08);
-    border-bottom:1px solid #374151;
-    padding:9px 12px;
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-.app-nav-inner{
-    max-width:1250px;
-    margin:0 auto;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    overflow-x:auto;
-    scrollbar-width:thin;
-}
-.app-nav a{
-    color:#e5e7eb;
-    text-decoration:none;
-    padding:9px 13px;
-    border-radius:7px;
-    white-space:nowrap;
-    font-size:13px;
-    font-weight:bold;
-    border:1px solid transparent;
-}
-.app-nav a:hover{
-    background:#374151;
-    color:#fff;
-}
-.app-nav a.active{
-    background:#2563eb;
-    color:#fff;
-    border-color:#60a5fa;
-}
-
 </style>
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Daily Fuel Logsheet</p></div>
-<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html" class="active">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a></div></nav>
 <div class="container"><div class="sheet">
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
@@ -133,6 +93,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <a href="pengisian.html" class="btn btn-green">⛽ Pengisian Fuel</a>
 <a href="dashboard.html" class="btn">📊 Dashboard</a>
 <a href="riwayat.html" class="btn">📋 Riwayat</a>
+<a href="index.html" class="btn">🏠 Menu Utama</a>
 </div>
 </div></div>
 
@@ -405,7 +366,7 @@ async function loadData(){
   }
 }
 
-function downloadExcel(){
+async function downloadExcel(){
   const data=renderFiltered();
 
   if(data.length===0){
@@ -413,46 +374,321 @@ function downloadExcel(){
     return;
   }
 
-  const exportRows=data.map((item,index)=>{
-    const unit=String(item.unit||"").trim().toUpperCase();
-    const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
+  const btn=document.getElementById("downloadBtn");
+  const originalText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="⏳ MEMBUAT EXCEL...";
 
-    return {
-      "LOG NO": item.id||index+1,
-      "TANGGAL": formatTanggal(item.tanggal),
-      "SHIF": item.shift||"",
-      "WH": getWH(item),
-      "CODE UNIT": unit,
-      "EGI": m.egi||"",
-      "CODE ELLIPS": m.ellipse||unit,
-      "HM": item.hm_akhir ?? "",
-      "QTY ISSUED": Number(item.fuel)||0,
-      "OPERATOR NAME": item.operator||"",
-      "STD + Fuelman": item.fuelman||"",
-      "COST": item.cost||"",
-      "ALOKASI": item.alokasi||"",
-      "Cek": getRowStatus(item,index).text
+  try{
+    const workbook=new ExcelJS.Workbook();
+    workbook.creator="KPP Fuel Management System";
+    workbook.company="PT. KALIMANTAN PRIMA PERSADA";
+    workbook.subject="Daily Fuel By Logsheet";
+    workbook.created=new Date();
+
+    const ws=workbook.addWorksheet("LOGSHEET FUEL",{
+      views:[{state:"frozen",ySplit:9}]
+    });
+
+    const headers=[
+      "LOG NO",
+      "TANGGAL",
+      "SHIF",
+      "WH",
+      "CODE UNIT",
+      "EGI",
+      "CODE ELLIPS",
+      "HM",
+      "QTY ISSUED",
+      "OPERATOR NAME",
+      "STD + Fuelman",
+      "COST",
+      "ALOKASI",
+      "Cek"
+    ];
+
+    // Lebar kolom mengikuti bentuk logsheet lama supaya nyaman saat dibuka.
+    const widths=[11,13,7,9,13,34,16,12,14,22,17,12,15,24];
+    widths.forEach((width,index)=>{
+      ws.getColumn(index+1).width=width;
+    });
+
+    // ===== IDENTITAS / JUDUL - mengikuti gaya logsheet lama =====
+    ws.mergeCells("A2:N2");
+    const companyCell=ws.getCell("A2");
+    companyCell.value="PT. KALIMANTAN PRIMA PERSADA";
+    companyCell.font={
+      name:"Times New Roman",
+      size:20,
+      bold:true,
+      color:{argb:"FF00B050"}
     };
-  });
+    companyCell.alignment={vertical:"middle",horizontal:"left"};
 
-  const ws=XLSX.utils.json_to_sheet(exportRows);
-  ws["!cols"]=[
-    {wch:10},{wch:13},{wch:7},{wch:8},{wch:13},{wch:34},{wch:15},
-    {wch:12},{wch:14},{wch:22},{wch:16},{wch:12},{wch:14},{wch:14}
-  ];
+    ws.mergeCells("A3:N3");
+    const subtitleCell=ws.getCell("A3");
+    subtitleCell.value="Integreated Mining Services";
+    subtitleCell.font={
+      name:"Times New Roman",
+      size:16,
+      italic:true,
+      color:{argb:"FF000000"}
+    };
+    subtitleCell.alignment={vertical:"middle",horizontal:"left"};
 
-  const book=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(book,ws,"LOGSHEET FUEL");
+    ws.mergeCells("A5:N5");
+    const titleCell=ws.getCell("A5");
 
-  const mode=document.getElementById("dateMode").value;
-  let suffix="SEMUA_TANGGAL";
-  if(mode==="single") suffix=document.getElementById("filterTanggal").value||"TANGGAL";
-  if(mode==="range"){
-    suffix=(document.getElementById("filterTanggalAwal").value||"AWAL")+
-      "_sd_"+(document.getElementById("filterTanggalAkhir").value||"AKHIR");
+    const mode=document.getElementById("dateMode").value;
+    let periodText="SEMUA PERIODE";
+
+    if(mode==="single"){
+      const d=document.getElementById("filterTanggal").value;
+      periodText=d ? formatTanggal(d) : "TANGGAL TERPILIH";
+    }
+
+    if(mode==="range"){
+      const awal=document.getElementById("filterTanggalAwal").value;
+      const akhir=document.getElementById("filterTanggalAkhir").value;
+      periodText=
+        (awal ? formatTanggal(awal) : "AWAL")+
+        " - "+
+        (akhir ? formatTanggal(akhir) : "AKHIR");
+    }
+
+    titleCell.value="DAILY FUEL BY LOGSHEET PERIODE "+periodText;
+    titleCell.font={
+      name:"Algerian",
+      size:24,
+      bold:true,
+      italic:true,
+      color:{argb:"FF00B050"}
+    };
+    titleCell.alignment={vertical:"middle",horizontal:"center"};
+
+    // Total Qty Issued diletakkan tepat di kolom QTY ISSUED seperti logsheet lama.
+    const totalFuel=data.reduce((sum,item)=>sum+(Number(item.fuel)||0),0);
+    const totalCell=ws.getCell("I7");
+    totalCell.value=totalFuel;
+    totalCell.numFmt='#,##0.##';
+    totalCell.font={name:"Calibri",size:16,bold:true,color:{argb:"FF000000"}};
+    totalCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFF00"}};
+    totalCell.alignment={vertical:"middle",horizontal:"center"};
+
+    // ===== KETERANGAN STATUS =====
+    ws.getCell("A8").value="KETERANGAN";
+    ws.mergeCells("B8:F8");
+    ws.getCell("B8").value="JINGGA = ERROR / BELUM DIKETAHUI";
+    ws.mergeCells("G8:J8");
+    ws.getCell("G8").value="MERAH = DOUBLE POSTING";
+    ws.mergeCells("K8:N8");
+    ws.getCell("K8").value="PUTIH = DATA NORMAL";
+
+    const gold="FFBF9000";
+    const legendRanges=["A8:A8","B8:F8","G8:J8","K8:N8"];
+
+    legendRanges.forEach(range=>{
+      const r=ws.getCell(range.split(":")[0]);
+      r.font={name:"Calibri",size:12,bold:true,color:{argb:"FF000000"}};
+      r.alignment={vertical:"middle",horizontal:"center"};
+    });
+
+    // Beri border emas pada seluruh baris keterangan.
+    for(let col=1;col<=14;col++){
+      const c=ws.getCell(8,col);
+      c.border={
+        top:{style:"medium",color:{argb:gold}},
+        left:{style:"medium",color:{argb:gold}},
+        bottom:{style:"medium",color:{argb:gold}},
+        right:{style:"medium",color:{argb:gold}}
+      };
+    }
+
+    ws.getCell("B8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF4B183"}};
+    ws.getCell("G8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF0000"}};
+    ws.getCell("G8").font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
+    ws.getCell("K8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
+
+    // ===== HEADER KOLOM =====
+    const headerRow=ws.getRow(9);
+    headers.forEach((header,index)=>{
+      const cell=headerRow.getCell(index+1);
+      cell.value=header;
+      cell.font={
+        name:"Calibri",
+        size:11,
+        bold:false,
+        color:{argb:"FFFFFFFF"}
+      };
+      cell.fill={
+        type:"pattern",
+        pattern:"solid",
+        fgColor:{argb:"FF000000"}
+      };
+      cell.alignment={
+        vertical:"middle",
+        horizontal:"center",
+        wrapText:false
+      };
+      cell.border={
+        top:{style:"medium",color:{argb:gold}},
+        left:{style:"medium",color:{argb:gold}},
+        bottom:{style:"medium",color:{argb:gold}},
+        right:{style:"medium",color:{argb:gold}}
+      };
+    });
+
+    headerRow.height=22;
+
+    // ===== DATA =====
+    data.forEach((item,index)=>{
+      const unit=String(item.unit||"").trim().toUpperCase();
+      const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
+      const status=getRowStatus(item,index).text;
+
+      const row=ws.addRow([
+        item.id||index+1,
+        item.tanggal ? new Date(item.tanggal+"T00:00:00") : "",
+        item.shift||"",
+        getWH(item),
+        unit,
+        m.egi||"",
+        m.ellipse||unit,
+        item.hm_akhir ?? "",
+        Number(item.fuel)||0,
+        item.operator||"",
+        item.fuelman||"",
+        item.cost||"",
+        item.alokasi||"",
+        status
+      ]);
+
+      row.height=20;
+
+      row.eachCell({includeEmpty:true},cell=>{
+        cell.font={
+          name:"Calibri",
+          size:11,
+          color:{argb:"FF000000"}
+        };
+        cell.alignment={
+          vertical:"middle",
+          horizontal:"center",
+          wrapText:false
+        };
+        cell.border={
+          bottom:{style:"hair",color:{argb:"FFD9D9D9"}}
+        };
+      });
+
+      // Format tanggal, HM, dan Qty.
+      row.getCell(2).numFmt="dd/mm/yyyy";
+      row.getCell(8).numFmt='#,##0.##';
+      row.getCell(9).numFmt='#,##0.##';
+
+      // Kolom EGI dibuat tetap rapi walau nama panjang.
+      row.getCell(6).alignment={
+        vertical:"middle",
+        horizontal:"center",
+        wrapText:true
+      };
+
+      // Status sesuai aturan KPP-FMS sekarang.
+      const statusCell=row.getCell(14);
+
+      if(status==="DOUBLE POSTING"){
+        statusCell.fill={
+          type:"pattern",
+          pattern:"solid",
+          fgColor:{argb:"FFFF0000"}
+        };
+        statusCell.font={
+          name:"Calibri",
+          size:11,
+          bold:true,
+          color:{argb:"FFFFFFFF"}
+        };
+      }else if(status==="ERROR / BELUM DIKETAHUI"){
+        statusCell.fill={
+          type:"pattern",
+          pattern:"solid",
+          fgColor:{argb:"FFF4B183"}
+        };
+        statusCell.font={
+          name:"Calibri",
+          size:11,
+          bold:true,
+          color:{argb:"FF000000"}
+        };
+      }else{
+        statusCell.value="";
+        statusCell.fill={
+          type:"pattern",
+          pattern:"solid",
+          fgColor:{argb:"FFFFFFFF"}
+        };
+      }
+    });
+
+    // Filter seperti Excel biasa.
+    ws.autoFilter={
+      from:{row:9,column:1},
+      to:{row:9,column:14}
+    };
+
+    // Print / tampilan Excel lebih enak.
+    ws.pageSetup={
+      orientation:"landscape",
+      fitToPage:true,
+      fitToWidth:1,
+      fitToHeight:0,
+      paperSize:9,
+      margins:{
+        left:0.25,
+        right:0.25,
+        top:0.5,
+        bottom:0.5,
+        header:0.2,
+        footer:0.2
+      }
+    };
+
+    ws.pageSetup.printTitlesRow="1:9";
+    ws.properties.defaultRowHeight=20;
+
+    let suffix="SEMUA_TANGGAL";
+    if(mode==="single"){
+      suffix=document.getElementById("filterTanggal").value||"TANGGAL";
+    }
+    if(mode==="range"){
+      suffix=
+        (document.getElementById("filterTanggalAwal").value||"AWAL")+
+        "_sd_"+
+        (document.getElementById("filterTanggalAkhir").value||"AKHIR");
+    }
+
+    const buffer=await workbook.xlsx.writeBuffer();
+    const blob=new Blob(
+      [buffer],
+      {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+    );
+
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;
+    link.download="KPP_Fuel_Logsheet_"+suffix+".xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+  }catch(error){
+    console.error(error);
+    alert("Gagal membuat Excel: "+error.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=originalText;
   }
-
-  XLSX.writeFile(book,"KPP_Fuel_Logsheet_"+suffix+".xlsx");
 }
 
 ["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift","filterWH"]
