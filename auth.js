@@ -90,6 +90,29 @@ window.KPP = {
     });
   },
 
+  applyRolePageRules(profile) {
+    if (!profile) return;
+
+    if (profile.role === "fuelman") {
+      const blocked = [
+        "dashboard.html",
+        "admin.html",
+        "gl.html",
+        "logsheet.html",
+        "riwayat.html",
+        "hm-master.html",
+        "akun.html"
+      ];
+
+      document.querySelectorAll("a[href]").forEach(link => {
+        const href = (link.getAttribute("href") || "").split("?")[0];
+        if (blocked.includes(href)) {
+          link.style.display = "none";
+        }
+      });
+    }
+  },
+
   renderNav(profile, active) {
     const host = document.getElementById("kppRoleNav");
     if (!host || !profile) return;
@@ -152,6 +175,7 @@ if (window.KPP_ALLOWED_ROLES) {
 
       window.KPP.renderUserBar(access.profile);
       window.KPP.renderNav(access.profile, window.KPP_ACTIVE_PAGE || "");
+      window.KPP.applyRolePageRules(access.profile);
 
       document.documentElement.style.visibility = "visible";
 
