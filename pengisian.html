@@ -257,6 +257,25 @@ window.KPP_ACTIVE_PAGE="pengisian";
             font-size: 14px;
         }
 
+        .session-info {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .session-info strong {
+            color: #166534;
+        }
+
+        .locked-field {
+            background: #f1f5f9 !important;
+            color: #475569;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -326,6 +345,13 @@ window.KPP_ACTIVE_PAGE="pengisian";
             Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT. Daftar unit dibaca dari Master Unit online.
             Sistem akan memakai HM terbaru berdasarkan tanggal/jam operasional: transaksi online atau HM Master/Koreksi aktual.
             Jika keduanya belum ada, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
+        </div>
+
+        <div id="fuelmanSessionInfo" class="session-info hidden">
+            <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
+            Fuelman: <span id="sessionFuelman">-</span><br>
+            Shift: <span id="sessionShift">-</span><br>
+            Fuel Truck: <span id="sessionTruck">-</span>
         </div>
 
         <div class="section-box">
@@ -698,6 +724,8 @@ let checkedUnit = "";
 let selectedFuelTruck = "";
 let selectedWH = "";
 let currentHmSource = "";
+let activeFuelmanSession = null;
+let currentStaffProfile = null;
 
 const unitOptions =
     document.getElementById("unitOptions");
@@ -783,6 +811,98 @@ async function loadUnitMasterOnline() {
 
 renderUnitOptions();
 loadUnitMasterOnline();
+
+
+function shiftSessionToNumber(value) {
+    if (String(value) === "Shift 1") return 1;
+    if (String(value) === "Shift 2") return 2;
+    return Number(value) || 0;
+}
+
+function applyFuelTruckSelection(value, lockField) {
+    const select = document.getElementById("fuelTruck");
+    select.value = value || "";
+    selectedFuelTruck = select.value;
+    selectedWH = FUEL_TRUCK_MAP[selectedFuelTruck] || "";
+
+    const whBox = document.getElementById("whBox");
+
+    if (selectedWH) {
+        document.getElementById("whDisplay").textContent = selectedWH;
+        whBox.classList.remove("hidden");
+    } else {
+        whBox.classList.add("hidden");
+    }
+
+    select.disabled = !!lockField;
+    select.classList.toggle("locked-field", !!lockField);
+}
+
+function applyShiftSelection(value, lockField) {
+    const select = document.getElementById("shift");
+    select.value = String(value || "");
+    select.disabled = !!lockField;
+    select.classList.toggle("locked-field", !!lockField);
+}
+
+async function loadActiveFuelmanSession() {
+    const profile = window.KPP_PROFILE;
+
+    if (!profile || profile.role !== "fuelman") {
+        return;
+    }
+
+    const session = window.KPP_SESSION;
+
+    if (!session) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    const { data, error } = await KPP.db
+        .from("fuelman_sessions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("status", "ACTIVE")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+    if (error) {
+        alert("❌ Gagal membaca shift Fuelman.\\n\\n" + error.message);
+        window.location.replace("fuelman.html");
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        alert("⚠️ Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
+        window.location.replace("fuelman.html");
+        return;
+    }
+
+    activeFuelmanSession = data[0];
+
+    const shiftNumber = shiftSessionToNumber(activeFuelmanSession.shift);
+
+    applyFuelTruckSelection(activeFuelmanSession.fuel_truck, true);
+    applyShiftSelection(shiftNumber, true);
+
+    document.getElementById("sessionFuelman").textContent =
+        activeFuelmanSession.fuelman_name || profile.display_name || "-";
+
+    document.getElementById("sessionShift").textContent =
+        activeFuelmanSession.shift || "-";
+
+    document.getElementById("sessionTruck").textContent =
+        activeFuelmanSession.fuel_truck || "-";
+
+    document.getElementById("fuelmanSessionInfo")
+        .classList.remove("hidden");
+}
+
+document.addEventListener("kpp-auth-ready", async function(event) {
+    currentStaffProfile = event.detail.profile;
+    await loadActiveFuelmanSession();
+});
 
 document
     .getElementById("fuelTruck")
@@ -1567,6 +1687,18 @@ document
                     )
                     .value;
 
+            if (
+                currentStaffProfile &&
+                currentStaffProfile.role === "fuelman" &&
+                !activeFuelmanSession
+            ) {
+                alert(
+                    "Shift Fuelman belum aktif. Kembali ke Menu Fuelman lalu START SHIFT."
+                );
+                window.location.replace("fuelman.html");
+                return;
+            }
+
             if (isNaN(currentHM)) {
                 alert(
                     "Masukkan HM sekarang."
@@ -1657,7 +1789,27 @@ document
                             fuel,
 
                         shift:
-                            Number(shift)
+                            Number(shift),
+
+                        session_id:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.id
+                                : null,
+
+                        fuelman_user_id:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.user_id
+                                : null,
+
+                        fuelman_username:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.username
+                                : null,
+
+                        fuelman_name:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.fuelman_name
+                                : null
                     });
 
             if (error) {
@@ -1706,7 +1858,12 @@ document
                 fuel +
                 " L\n" +
                 "Shift: " +
-                shift
+                shift +
+                (
+                    activeFuelmanSession
+                    ? "\nFuelman: " + activeFuelmanSession.fuelman_name
+                    : ""
+                )
             );
 
             location.reload();
