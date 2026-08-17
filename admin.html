@@ -30,7 +30,23 @@ body{margin:0;background:#f3f4f6;color:#111827}
 .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
-@media(max-width:700px){.app-nav-inner{justify-content:flex-start}}
+@media(max-width:900px){
+  .container{margin:12px auto;padding:10px}
+  .header{padding:15px 10px}
+  .header h1{font-size:18px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .card{padding:15px}
+  .icon{font-size:27px}
+  .card strong{font-size:14px}
+  .card span{font-size:11px}
+  .app-nav-inner{justify-content:flex-start}
+  .app-nav a{padding:9px 12px;font-size:12px}
+  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .grid{grid-template-columns:1fr 1fr}
+  .card span{display:none}
+}
 </style>
 </head>
 <body>
@@ -48,6 +64,12 @@ body{margin:0;background:#f3f4f6;color:#111827}
       <div class="icon">📊</div>
       <strong>Dashboard</strong>
       <span>Monitoring dan ringkasan data KPP-FMS.</span>
+    </a>
+
+    <a class="card" href="daily-report.html">
+      <div class="icon">📈</div>
+      <strong>Daily Report</strong>
+      <span>Stock, Usage Yesterday, Usage MTD, AVG dan ITO otomatis.</span>
     </a>
 
     <a class="card" href="pengisian.html">
