@@ -35,12 +35,12 @@ window.KPP = {
     }
 
     if (!roles.includes(profile.role)) {
-      if (profile.role === "fuelman") {
-        window.location.replace("fuelman.html");
-      } else if (profile.role === "gl") {
+      if (profile.role === "gl") {
         window.location.replace("gl.html");
+      } else if (profile.role === "admin") {
+        window.location.replace("admin.html");
       } else {
-        window.location.replace("dashboard.html");
+        window.location.replace("fuelman.html");
       }
       return null;
     }
@@ -101,25 +101,30 @@ window.KPP = {
 
     let items = [];
 
-    if (profile.role === "fuelman") {
+    if (profile.role === "gl") {
       items = [
-        ["fuelman", "fuelman.html", "🏠 Menu Fuelman"],
-        ...commonOps
+        ["gl", "gl.html", "🏠 Menu GL"],
+        ["dashboard", "dashboard.html", "📊 Dashboard"],
+        ...commonOps,
+        ["logsheet", "logsheet.html", "📄 Logsheet"],
+        ["riwayat", "riwayat.html", "📋 Riwayat"],
+        ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
+        ["akun", "akun.html", "👥 Kelola Akun"],
       ];
-    } else {
+    } else if (profile.role === "admin") {
       items = [
-        [profile.role === "gl" ? "gl" : "dashboard",
-         profile.role === "gl" ? "gl.html" : "dashboard.html",
-         "📊 Dashboard"],
+        ["admin", "admin.html", "🏠 Menu Admin"],
+        ["dashboard", "dashboard.html", "📊 Dashboard"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
       ];
-
-      if (profile.role === "gl") {
-        items.push(["akun", "akun.html", "👥 Kelola Akun"]);
-      }
+    } else {
+      items = [
+        ["fuelman", "fuelman.html", "🏠 Menu Fuelman"],
+        ...commonOps,
+      ];
     }
 
     host.innerHTML = `
