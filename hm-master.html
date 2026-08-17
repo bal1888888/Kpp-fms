@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HM Master - KPP FMS</title>
+<title>Master Unit & HM - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -68,65 +68,171 @@ th{background:#e5e7eb}
     .app-nav a{padding:9px 12px;font-size:12px}
 }
 
+
+.tab-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.tab-btn{background:#e5e7eb;color:#111827}
+.tab-btn.active{background:#2563eb;color:#fff}
+.tab-page{display:none}
+.tab-page.active{display:block}
+select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;background:#fff}
+.secondary{background:#64748b;color:#fff}
+.small-btn{padding:7px 10px;font-size:11px;background:#2563eb;color:#fff}
+.badge-active{font-weight:bold;color:#15803d}
+.badge-off{font-weight:bold;color:#dc2626}
+.master-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.master-toolbar>div{flex:1;min-width:180px}
+.table-scroll{max-height:430px;overflow:auto}
+
 </style>
 </head>
 <body>
-<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>HM Master / Koreksi HM Aktual</div></div>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Master Unit & HM Aktual</div></div>
 <nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html" class="active">⚙️ HM Master</a></div></nav>
 <div class="container">
-    <div class="panel">
-        <div class="info">
-            HM Master dipakai untuk memasukkan <b>HM aktual yang benar-benar terbaca di unit</b> saat mulai go-live atau saat HM lama diketahui salah.
-            Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
-        </div>
-        <div class="warning">
-            Setelah ada pengisian yang waktunya lebih baru dari koreksi ini, HM transaksi pengisian tersebut otomatis menjadi HM sebelumnya berikutnya.
-        </div>
+    <div class="tab-bar">
+        <button id="tabUnitBtn" class="tab-btn active" onclick="showTab('unit')">🚜 MASTER UNIT</button>
+        <button id="tabHmBtn" class="tab-btn" onclick="showTab('hm')">⚙️ HM MASTER</button>
     </div>
 
-    <div class="panel">
-        <h3>1. Pilih Unit</h3>
-        <div class="grid">
-            <div>
-                <label>CODE UNIT</label>
-                <input id="unitInput" list="unitOptions" placeholder="Contoh: DT7441" autocomplete="off">
-                <datalist id="unitOptions"></datalist>
+    <div id="tabUnit" class="tab-page active">
+        <div class="panel">
+            <div class="info">
+                Master Unit dipakai supaya kalau ada <b>unit baru</b>, kamu tidak perlu edit source code lagi.
+                Setelah unit disimpan dan statusnya <b>Aktif</b>, unit otomatis bisa dipilih di halaman Pengisian Fuel.
             </div>
-            <div style="align-self:end">
-                <button class="primary" onclick="checkUnit()">CEK HM UNIT</button>
+            <div class="warning">
+                Jangan hapus unit lama yang sudah punya histori. Kalau unit sudah tidak operasi, ubah saja statusnya menjadi <b>Tidak Aktif</b>.
             </div>
         </div>
-        <div class="cards">
-            <div class="card"><small>HM YANG DIPAKAI SEKARANG</small><strong id="currentHm">-</strong><small id="currentSource" style="margin-top:6px">-</small></div>
-            <div class="card"><small>BASELINE LOGSHEET LAMA</small><strong id="baselineHm">-</strong></div>
-            <div class="card"><small>KOREKSI TERAKHIR</small><strong id="lastCorrection">-</strong><small id="lastCorrectionTime" style="margin-top:6px">-</small></div>
+
+        <div class="panel">
+            <h3>1. Tambah / Update Unit</h3>
+            <div class="grid">
+                <div>
+                    <label>CODE UNIT</label>
+                    <input id="masterCode" placeholder="Contoh: DT7500" autocomplete="off">
+                </div>
+                <div>
+                    <label>EGI / Tipe Unit</label>
+                    <input id="masterEgi" placeholder="Contoh: KOMATSU DUMP TRUCK MODEL HD785-7">
+                </div>
+                <div>
+                    <label>CODE ELLIPS</label>
+                    <input id="masterEllipse" placeholder="Biasanya sama dengan CODE UNIT">
+                </div>
+                <div>
+                    <label>Status Unit</label>
+                    <select id="masterActive">
+                        <option value="true">AKTIF</option>
+                        <option value="false">TIDAK AKTIF</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:12px">
+                <label>Keterangan</label>
+                <textarea id="masterNote" placeholder="Contoh: Unit baru masuk site Agustus 2026"></textarea>
+            </div>
+
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="green" onclick="saveUnitMaster()">SIMPAN / UPDATE UNIT</button>
+                <button class="secondary" onclick="resetUnitForm()">RESET FORM</button>
+            </div>
+            <div class="status" id="unitSaveStatus"></div>
         </div>
-        <div class="status" id="checkStatus"></div>
+
+        <div class="panel">
+            <h3>Daftar Master Unit</h3>
+            <div class="master-toolbar">
+                <div>
+                    <label>Cari Unit / EGI</label>
+                    <input id="unitSearch" placeholder="Ketik DT, EX, HD785..." oninput="renderUnitTable()">
+                </div>
+                <div class="card">
+                    <small>TOTAL UNIT</small>
+                    <strong id="totalMasterUnit">0</strong>
+                </div>
+                <div class="card">
+                    <small>UNIT AKTIF</small>
+                    <strong id="totalActiveUnit">0</strong>
+                </div>
+            </div>
+
+            <div class="table-wrap table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CODE UNIT</th>
+                            <th>EGI</th>
+                            <th>CODE ELLIPS</th>
+                            <th>STATUS</th>
+                            <th>KETERANGAN</th>
+                            <th>AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unitMasterBody">
+                        <tr><td colspan="6">Mengambil master unit...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="panel">
-        <h3>2. Masukkan HM Aktual</h3>
-        <div class="grid">
-            <div><label>HM Aktual Unit</label><input type="number" id="actualHm" min="0" step="0.1" placeholder="HM sesuai display unit"></div>
-            <div><label>Tanggal Efektif</label><input type="date" id="effectiveDate"></div>
-            <div><label>Jam Efektif</label><input type="time" id="effectiveTime" step="1"></div>
-            <div><label>Fuelman / Operator</label><input id="operator" placeholder="Nama yang input koreksi"></div>
+    <div id="tabHm" class="tab-page">
+        <div class="panel">
+            <div class="info">
+                HM Master dipakai untuk memasukkan <b>HM aktual yang benar-benar terbaca di unit</b> saat mulai go-live atau saat HM lama diketahui salah.
+                Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
+            </div>
+            <div class="warning">
+                Untuk <b>unit baru</b>: simpan unit terlebih dahulu di tab MASTER UNIT, lalu masuk ke tab HM MASTER untuk memasukkan HM aktual awalnya.
+            </div>
         </div>
-        <div style="margin-top:12px">
-            <label>Keterangan</label>
-            <textarea id="note" placeholder="Contoh: HM aktual dicek langsung dari display unit sebelum go-live"></textarea>
-        </div>
-        <div style="margin-top:14px"><button class="green" onclick="saveCorrection()">SIMPAN HM AKTUAL</button></div>
-        <div class="status" id="saveStatus"></div>
-    </div>
 
-    <div class="panel">
-        <h3>Riwayat Koreksi Unit Terpilih</h3>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Tanggal</th><th>Jam</th><th>Unit</th><th>HM</th><th>Operator</th><th>Keterangan</th></tr></thead>
-                <tbody id="historyBody"><tr><td colspan="6">Pilih unit terlebih dahulu.</td></tr></tbody>
-            </table>
+        <div class="panel">
+            <h3>2. Pilih Unit</h3>
+            <div class="grid">
+                <div>
+                    <label>CODE UNIT</label>
+                    <input id="unitInput" list="unitOptions" placeholder="Contoh: DT7441" autocomplete="off">
+                    <datalist id="unitOptions"></datalist>
+                </div>
+                <div style="align-self:end">
+                    <button class="primary" onclick="checkUnit()">CEK HM UNIT</button>
+                </div>
+            </div>
+            <div class="cards">
+                <div class="card"><small>HM YANG DIPAKAI SEKARANG</small><strong id="currentHm">-</strong><small id="currentSource" style="margin-top:6px">-</small></div>
+                <div class="card"><small>BASELINE LOGSHEET LAMA</small><strong id="baselineHm">-</strong></div>
+                <div class="card"><small>KOREKSI TERAKHIR</small><strong id="lastCorrection">-</strong><small id="lastCorrectionTime" style="margin-top:6px">-</small></div>
+            </div>
+            <div class="status" id="checkStatus"></div>
+        </div>
+
+        <div class="panel">
+            <h3>3. Masukkan HM Aktual</h3>
+            <div class="grid">
+                <div><label>HM Aktual Unit</label><input type="number" id="actualHm" min="0" step="0.1" placeholder="HM sesuai display unit"></div>
+                <div><label>Tanggal Efektif</label><input type="date" id="effectiveDate"></div>
+                <div><label>Jam Efektif</label><input type="time" id="effectiveTime" step="1"></div>
+                <div><label>Fuelman / Operator</label><input id="operator" placeholder="Nama yang input koreksi"></div>
+            </div>
+            <div style="margin-top:12px">
+                <label>Keterangan</label>
+                <textarea id="note" placeholder="Contoh: HM aktual dicek langsung dari display unit sebelum go-live"></textarea>
+            </div>
+            <div style="margin-top:14px"><button class="green" onclick="saveCorrection()">SIMPAN HM AKTUAL</button></div>
+            <div class="status" id="saveStatus"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Riwayat Koreksi Unit Terpilih</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Tanggal</th><th>Jam</th><th>Unit</th><th>HM</th><th>Operator</th><th>Keterangan</th></tr></thead>
+                    <tbody id="historyBody"><tr><td colspan="6">Pilih unit terlebih dahulu.</td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -134,7 +240,7 @@ th{background:#e5e7eb}
 const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
 const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const MASTER_UNITS = [
+const BASE_MASTER_UNITS = [
         "CB1019",
         "CM0108",
         "CP118",
@@ -359,6 +465,8 @@ const MASTER_LAST_HM = {
         "TR-B04": 27963
 };
 let selectedUnit="";
+let MASTER_UNITS=[...BASE_MASTER_UNITS];
+let UNIT_MASTER_ROWS=[];
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
@@ -368,11 +476,182 @@ function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1
 function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
 function operationalKey(row){if(!row)return "0000-00-00T00:00:00";return `${row.tanggal||"0000-00-00"}T${String(row.jam||"00:00:00").slice(0,8)}`}
 
-const opts=document.getElementById("unitOptions");
-MASTER_UNITS.forEach(u=>{const o=document.createElement("option");o.value=u;opts.appendChild(o)});
+function showTab(tab){
+    document.getElementById("tabUnit").classList.toggle("active",tab==="unit");
+    document.getElementById("tabHm").classList.toggle("active",tab==="hm");
+    document.getElementById("tabUnitBtn").classList.toggle("active",tab==="unit");
+    document.getElementById("tabHmBtn").classList.toggle("active",tab==="hm");
+}
+
+function renderUnitOptions(){
+    const opts=document.getElementById("unitOptions");
+    opts.innerHTML="";
+    MASTER_UNITS
+        .slice()
+        .sort((a,b)=>a.localeCompare(b))
+        .forEach(u=>{
+            const o=document.createElement("option");
+            o.value=u;
+            opts.appendChild(o);
+        });
+}
+
+function mergeUnitMasterRows(rows){
+    const map=new Map(BASE_MASTER_UNITS.map(code=>[
+        code,
+        {code_unit:code,egi:"",code_ellips:code,active:true,note:""}
+    ]));
+
+    (rows||[]).forEach(row=>{
+        const code=normalizeUnit(row.code_unit);
+        if(!code)return;
+        map.set(code,{
+            code_unit:code,
+            egi:row.egi||"",
+            code_ellips:row.code_ellips||code,
+            active:row.active!==false,
+            note:row.note||""
+        });
+    });
+
+    UNIT_MASTER_ROWS=Array.from(map.values())
+        .sort((a,b)=>a.code_unit.localeCompare(b.code_unit));
+
+    MASTER_UNITS=UNIT_MASTER_ROWS
+        .filter(r=>r.active)
+        .map(r=>r.code_unit);
+
+    renderUnitOptions();
+    renderUnitTable();
+}
+
+async function loadUnitMaster(){
+    const {data,error}=await db
+        .from("unit_master")
+        .select("code_unit,egi,code_ellips,active,note")
+        .order("code_unit",{ascending:true});
+
+    if(error){
+        console.warn("Unit Master online belum tersedia:",error.message);
+        mergeUnitMasterRows([]);
+        document.getElementById("unitSaveStatus").textContent=
+            "⚠️ Unit Master online belum tersedia. Jalankan unit_master_setup.sql terlebih dahulu.";
+        return;
+    }
+
+    mergeUnitMasterRows(data||[]);
+}
+
+function renderUnitTable(){
+    const q=normalizeUnit(document.getElementById("unitSearch")?.value||"");
+    const body=document.getElementById("unitMasterBody");
+    if(!body)return;
+
+    const filtered=UNIT_MASTER_ROWS.filter(row=>{
+        const hay=[
+            row.code_unit,
+            row.egi,
+            row.code_ellips,
+            row.note
+        ].join(" ").toUpperCase();
+        return !q || hay.includes(q);
+    });
+
+    document.getElementById("totalMasterUnit").textContent=UNIT_MASTER_ROWS.length;
+    document.getElementById("totalActiveUnit").textContent=
+        UNIT_MASTER_ROWS.filter(r=>r.active).length;
+
+    if(!filtered.length){
+        body.innerHTML='<tr><td colspan="6">Unit tidak ditemukan.</td></tr>';
+        return;
+    }
+
+    body.innerHTML=filtered.map(row=>`
+        <tr>
+            <td><b>${row.code_unit}</b></td>
+            <td>${row.egi||"-"}</td>
+            <td>${row.code_ellips||row.code_unit}</td>
+            <td class="${row.active?"badge-active":"badge-off"}">${row.active?"AKTIF":"TIDAK AKTIF"}</td>
+            <td>${row.note||"-"}</td>
+            <td><button class="small-btn" onclick="editUnitMaster('${row.code_unit}')">EDIT</button></td>
+        </tr>
+    `).join("");
+}
+
+function editUnitMaster(code){
+    const row=UNIT_MASTER_ROWS.find(r=>r.code_unit===code);
+    if(!row)return;
+
+    document.getElementById("masterCode").value=row.code_unit;
+    document.getElementById("masterEgi").value=row.egi||"";
+    document.getElementById("masterEllipse").value=row.code_ellips||row.code_unit;
+    document.getElementById("masterActive").value=row.active?"true":"false";
+    document.getElementById("masterNote").value=row.note||"";
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function resetUnitForm(){
+    document.getElementById("masterCode").value="";
+    document.getElementById("masterEgi").value="";
+    document.getElementById("masterEllipse").value="";
+    document.getElementById("masterActive").value="true";
+    document.getElementById("masterNote").value="";
+    document.getElementById("unitSaveStatus").textContent="";
+}
+
+async function saveUnitMaster(){
+    const code=normalizeUnit(document.getElementById("masterCode").value);
+    const egi=document.getElementById("masterEgi").value.trim().toUpperCase();
+    const ellipse=normalizeUnit(document.getElementById("masterEllipse").value)||code;
+    const active=document.getElementById("masterActive").value==="true";
+    const note=document.getElementById("masterNote").value.trim();
+    const status=document.getElementById("unitSaveStatus");
+
+    if(!code){
+        alert("Masukkan CODE UNIT.");
+        return;
+    }
+
+    if(!/^[A-Z0-9-]+$/.test(code)){
+        alert("CODE UNIT hanya boleh huruf, angka, dan tanda minus (-).");
+        return;
+    }
+
+    const {error}=await db
+        .from("unit_master")
+        .upsert({
+            code_unit:code,
+            egi,
+            code_ellips:ellipse,
+            active,
+            note
+        },{onConflict:"code_unit"});
+
+    if(error){
+        status.textContent="❌ "+error.message;
+        return;
+    }
+
+    status.textContent=`✅ ${code} berhasil disimpan ke Master Unit.`;
+    await loadUnitMaster();
+
+    // Supaya unit baru langsung bisa dikoreksi HM-nya.
+    document.getElementById("unitInput").value=code;
+}
+
+document.getElementById("masterCode").addEventListener("input",e=>{
+    e.target.value=e.target.value.toUpperCase();
+    if(!document.getElementById("masterEllipse").value.trim()){
+        document.getElementById("masterEllipse").value=e.target.value;
+    }
+});
+document.getElementById("masterEllipse").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
+
 document.getElementById("effectiveDate").value=localDate();
 document.getElementById("effectiveTime").value=localTime();
 document.getElementById("unitInput").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
+
+loadUnitMaster();
 
 async function getLatest(unit){
     const [fuelRes,corrRes]=await Promise.all([
