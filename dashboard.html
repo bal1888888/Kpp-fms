@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Admin - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl", "admin"];
+window.KPP_ACTIVE_PAGE="dashboard";
+</script>
+<script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#f4f6f8;color:#222}.header{background:#1f2937;color:#fff;padding:20px;text-align:center}
@@ -98,11 +103,18 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px
         font-size:12px;
     }
 }
+
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+
 </style>
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Dashboard Admin</p></div>
-<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html" class="active">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html">⚙️ HM Master</a></div></nav>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
 <div class="container">
 <div class="top-bar"><button class="refresh-btn" id="refreshBtn">↻ Refresh Data</button></div>
 <div id="errorBox" class="error"></div>
