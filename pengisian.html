@@ -6,6 +6,11 @@
     <title>Pengisian Fuel - KPP FMS</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl", "admin", "fuelman"];
+window.KPP_ACTIVE_PAGE="pengisian";
+</script>
+<script src="auth.js"></script>
 
     <style>
         * {
@@ -294,6 +299,12 @@
     .app-nav a{padding:9px 12px;font-size:12px}
 }
 
+
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+
 </style>
 </head>
 
@@ -304,7 +315,8 @@
     <p>PT KPP - Pengisian Fuel</p>
 </div>
 
-<nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html" class="active">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html">⚙️ HM Master</a></div></nav>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
 <div class="container">
     <div class="form-box">
 
