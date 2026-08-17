@@ -56,7 +56,44 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 
-@media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
+@media(max-width:900px){
+  .container{padding:8px;margin:10px auto}
+  .sheet{padding:12px;border-radius:10px}
+  .header{padding:14px 10px}
+  .header h1{font-size:18px}
+  .header p{font-size:12px}
+  .company{margin-bottom:16px}
+  .company h2{font-size:17px}
+  .company p{font-size:12px}
+  .period{font-size:14px}
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .summary-card{padding:10px}
+  .summary-value{font-size:18px}
+  .filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:8px}
+  .filter-group input,.filter-group select{font-size:16px;min-height:42px}
+  .button-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .button-row button{width:100%;min-height:44px}
+  .table-wrapper{
+    max-height:62vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:6px;
+  }
+  table{min-width:1450px}
+  th,td{font-size:10px;padding:7px 6px}
+  .actions{display:none}
+  .app-nav-inner{justify-content:flex-start}
+  .app-nav a{padding:9px 12px;font-size:12px}
+  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters{grid-template-columns:1fr}
+  .button-row{grid-column:auto;grid-template-columns:1fr}
+  .notice{font-size:11px;line-height:1.45}
+  .summary-title{font-size:10px}
+  .summary-value{font-size:17px}
+}
 </style>
 </head>
 <body>
@@ -110,12 +147,6 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 
 <div id="loading" class="loading">Mengambil data dari database...</div>
 
-<div class="actions">
-<a href="pengisian.html" class="btn btn-green">⛽ Pengisian Fuel</a>
-<a href="dashboard.html" class="btn">📊 Dashboard</a>
-<a href="riwayat.html" class="btn">📋 Riwayat</a>
-<a href="index.html" class="btn">🏠 Menu Utama</a>
-</div>
 </div></div>
 
 <script>
@@ -466,26 +497,27 @@ async function downloadExcel(){
       "TANGGAL",
       "SHIF",
       "WH",
+      "FUEL TRUCK",
       "CODE UNIT",
       "EGI",
       "CODE ELLIPS",
       "HM",
       "QTY ISSUED",
-      "OPERATOR NAME",
+      "OPERATOR UNIT",
       "STD + Fuelman",
       "COST",
       "ALOKASI",
       "Cek"
     ];
 
-    // Lebar kolom mengikuti bentuk logsheet lama supaya nyaman saat dibuka.
-    const widths=[11,13,7,9,13,34,16,12,14,22,17,12,15,24];
+    // Lebar kolom tetap mengikuti bentuk logsheet lama, dengan Fuel Truck ditambahkan.
+    const widths=[11,13,7,9,12,13,34,16,12,14,22,17,12,15,24];
     widths.forEach((width,index)=>{
       ws.getColumn(index+1).width=width;
     });
 
     // ===== IDENTITAS / JUDUL - mengikuti gaya logsheet lama =====
-    ws.mergeCells("A2:N2");
+    ws.mergeCells("A2:O2");
     const companyCell=ws.getCell("A2");
     companyCell.value="PT. KALIMANTAN PRIMA PERSADA";
     companyCell.font={
@@ -496,7 +528,7 @@ async function downloadExcel(){
     };
     companyCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A3:N3");
+    ws.mergeCells("A3:O3");
     const subtitleCell=ws.getCell("A3");
     subtitleCell.value="Integreated Mining Services";
     subtitleCell.font={
@@ -507,7 +539,7 @@ async function downloadExcel(){
     };
     subtitleCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A5:N5");
+    ws.mergeCells("A5:O5");
     const titleCell=ws.getCell("A5");
 
     const mode=document.getElementById("dateMode").value;
@@ -539,7 +571,7 @@ async function downloadExcel(){
 
     // Total Qty Issued diletakkan tepat di kolom QTY ISSUED seperti logsheet lama.
     const totalFuel=data.reduce((sum,item)=>sum+(Number(item.fuel)||0),0);
-    const totalCell=ws.getCell("I7");
+    const totalCell=ws.getCell("J7");
     totalCell.value=totalFuel;
     totalCell.numFmt="0";
     totalCell.font={name:"Calibri",size:16,bold:true,color:{argb:"FF000000"}};
@@ -550,13 +582,13 @@ async function downloadExcel(){
     ws.getCell("A8").value="KETERANGAN";
     ws.mergeCells("B8:F8");
     ws.getCell("B8").value="JINGGA = ERROR / BELUM DIKETAHUI";
-    ws.mergeCells("G8:J8");
+    ws.mergeCells("G8:K8");
     ws.getCell("G8").value="MERAH = DOUBLE POSTING";
-    ws.mergeCells("K8:N8");
-    ws.getCell("K8").value="PUTIH = DATA NORMAL";
+    ws.mergeCells("L8:O8");
+    ws.getCell("L8").value="PUTIH = DATA NORMAL";
 
     const gold="FFBF9000";
-    const legendRanges=["A8:A8","B8:F8","G8:J8","K8:N8"];
+    const legendRanges=["A8:A8","B8:F8","G8:K8","L8:O8"];
 
     legendRanges.forEach(range=>{
       const r=ws.getCell(range.split(":")[0]);
@@ -565,7 +597,7 @@ async function downloadExcel(){
     });
 
     // Beri border emas pada seluruh baris keterangan.
-    for(let col=1;col<=14;col++){
+    for(let col=1;col<=15;col++){
       const c=ws.getCell(8,col);
       c.border={
         top:{style:"medium",color:{argb:gold}},
@@ -578,7 +610,7 @@ async function downloadExcel(){
     ws.getCell("B8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF4B183"}};
     ws.getCell("G8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF0000"}};
     ws.getCell("G8").font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
-    ws.getCell("K8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
+    ws.getCell("L8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
 
     // ===== HEADER KOLOM =====
     const headerRow=ws.getRow(9);
@@ -625,6 +657,7 @@ async function downloadExcel(){
         })() : "",
         item.shift||"",
         getWH(item),
+        getFuelTruck(item)==="-" ? "" : getFuelTruck(item),
         unit,
         m.egi||"",
         m.ellipse||unit,
@@ -657,18 +690,18 @@ async function downloadExcel(){
 
       // Format tanggal, HM, dan Qty.
       row.getCell(2).numFmt="dd/mm/yyyy";
-      row.getCell(8).numFmt="0";
       row.getCell(9).numFmt="0";
+      row.getCell(10).numFmt="0";
 
       // Kolom EGI dibuat tetap rapi walau nama panjang.
-      row.getCell(6).alignment={
+      row.getCell(7).alignment={
         vertical:"middle",
         horizontal:"center",
         wrapText:true
       };
 
       // Status sesuai aturan KPP-FMS sekarang.
-      const statusCell=row.getCell(14);
+      const statusCell=row.getCell(15);
 
       if(status==="DOUBLE POSTING"){
         statusCell.fill={
@@ -707,7 +740,7 @@ async function downloadExcel(){
     // Filter seperti Excel biasa.
     ws.autoFilter={
       from:{row:9,column:1},
-      to:{row:9,column:14}
+      to:{row:9,column:15}
     };
 
     // Print / tampilan Excel lebih enak.
