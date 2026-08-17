@@ -7,6 +7,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+<script>
+window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ACTIVE_PAGE="logsheet";
+</script>
+<script src="auth.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#e5e7eb;color:#111827}
@@ -27,7 +34,7 @@ body{background:#e5e7eb;color:#111827}
 button{border:none;padding:10px 12px;border-radius:6px;cursor:pointer;font-weight:bold}
 .refresh-btn{background:#16a34a;color:#fff}.download-btn{background:#2563eb;color:#fff}
 .table-wrapper{overflow:auto;border:1px solid #9ca3af;max-height:68vh}
-table{width:100%;border-collapse:collapse;min-width:1450px}
+table{width:100%;border-collapse:collapse;min-width:1600px}
 th,td{border:1px solid #9ca3af;padding:7px 8px;font-size:11px;text-align:center;white-space:nowrap}
 thead th{background:#d1d5db;font-weight:bold;position:sticky;top:0;z-index:2}
 tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
@@ -39,15 +46,27 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 .status-double{background:#fee2e2!important;color:#b91c1c;font-weight:bold}
 .status-error{background:#ffedd5!important;color:#c2410c;font-weight:bold}
 .hidden{display:none!important}
+
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+
 @media(max-width:700px){.container{padding:6px}.sheet{padding:10px}.company h2{font-size:17px}}
 </style>
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Daily Fuel Logsheet</p></div>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
 <div class="container"><div class="sheet">
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
-<div class="notice" id="dataNotice">Memuat seluruh histori dari database... CEK hanya menampilkan DOUBLE POSTING dan ERROR / BELUM DIKETAHUI.</div>
+<div class="notice" id="dataNotice">Memuat seluruh histori dari database... Operator Unit dan Fuelman ditampilkan terpisah. Data lama sebelum sistem session mungkin belum memiliki nama Fuelman.</div>
 
 <div class="summary">
   <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
@@ -72,7 +91,9 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
   <div class="filter-group hidden" id="endDateBox"><label>Sampai Tanggal</label><input type="date" id="filterTanggalAkhir"></div>
   <div class="filter-group"><label>Shift</label><select id="filterShift"><option value="">Semua Shift</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
   <div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option><option value="FT01">FT01</option><option value="FT02">FT02</option></select></div>
+  <div class="filter-group"><label>Fuel Truck</label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
   <div class="filter-group"><label>Code Unit</label><input type="text" id="filterUnit" placeholder="Contoh: DT7441"></div>
+  <div class="filter-group"><label>Fuelman</label><input type="text" id="filterFuelman" placeholder="Contoh: Tegar"></div>
   <div class="button-row"><button class="refresh-btn" id="refreshBtn">↻ REFRESH</button><button class="download-btn" id="downloadBtn">📥 DOWNLOAD EXCEL</button></div>
 </div>
 
@@ -81,7 +102,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <div class="table-wrapper">
 <table>
 <thead><tr>
-<th>LOG NO</th><th>TANGGAL</th><th>SHIF</th><th>WH</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR NAME</th><th>STD + Fuelman</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
+<th>LOG NO</th><th>TANGGAL</th><th>SHIF</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
 </tr></thead>
 <tbody id="logsheetBody"></tbody>
 </table>
@@ -145,6 +166,24 @@ function getWH(item){
   if(ft==="FT0073") return "FT02";
   if(ft==="FT0075") return "FT01";
   return "-";
+}
+
+function getFuelTruck(item){
+  const ft=String(item.fuel_truck||"").trim().toUpperCase();
+  if(ft) return ft;
+
+  const wh=getWH(item);
+  if(wh==="FT02") return "FT0073";
+  if(wh==="FT01") return "FT0075";
+  return "-";
+}
+
+function getFuelman(item){
+  return String(
+    item.fuelman_name ||
+    item.fuelman ||
+    ""
+  ).trim() || "-";
 }
 
 function duplicateSignature(item){
@@ -274,7 +313,9 @@ function applyFilter(data){
   const end=document.getElementById("filterTanggalAkhir").value;
   const shift=document.getElementById("filterShift").value;
   const wh=document.getElementById("filterWH").value;
+  const fuelTruck=document.getElementById("filterFuelTruck").value;
   const unit=document.getElementById("filterUnit").value.trim().toUpperCase();
+  const fuelman=document.getElementById("filterFuelman").value.trim().toUpperCase();
 
   return data.filter(item=>{
     const t=item.tanggal||"";
@@ -283,7 +324,9 @@ function applyFilter(data){
     if(mode==="range" && end && t>end) return false;
     if(shift && String(item.shift)!==shift) return false;
     if(wh && getWH(item)!==wh) return false;
+    if(fuelTruck && getFuelTruck(item)!==fuelTruck) return false;
     if(unit && !String(item.unit||"").toUpperCase().includes(unit)) return false;
+    if(fuelman && !getFuelman(item).toUpperCase().includes(fuelman)) return false;
     return true;
   });
 }
@@ -329,13 +372,14 @@ function renderTable(data){
     row.appendChild(td(formatTanggal(item.tanggal)));
     row.appendChild(td(item.shift||"-"));
     row.appendChild(td(getWH(item)));
+    row.appendChild(td(getFuelTruck(item)));
     row.appendChild(td(unit||"(KOSONG)"));
     row.appendChild(td(m.egi||"-","egi-cell"));
     row.appendChild(td(m.ellipse||unit||"-"));
     row.appendChild(td(item.hm_akhir!==null && item.hm_akhir!==undefined && item.hm_akhir!=="" ? formatAngka(item.hm_akhir) : "-"));
     row.appendChild(td(formatAngka(item.fuel),"qty"));
     row.appendChild(td(item.operator||"-"));
-    row.appendChild(td(item.fuelman||"-"));
+    row.appendChild(td(getFuelman(item)));
     row.appendChild(td(item.cost||"-"));
     row.appendChild(td(item.alokasi||"-"));
 
@@ -587,7 +631,7 @@ async function downloadExcel(){
         item.hm_akhir ?? "",
         Number(item.fuel)||0,
         item.operator||"",
-        item.fuelman||"",
+        getFuelman(item)==="-" ? "" : getFuelman(item),
         item.cost||"",
         item.alokasi||"",
         status
@@ -721,15 +765,18 @@ async function downloadExcel(){
   }
 }
 
-["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift","filterWH"]
+["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift","filterWH","filterFuelTruck"]
   .forEach(id=>document.getElementById(id).addEventListener("change",renderFiltered));
 
 document.getElementById("filterUnit").addEventListener("input",renderFiltered);
+document.getElementById("filterFuelman").addEventListener("input",renderFiltered);
 document.getElementById("dateMode").addEventListener("change",updateDateMode);
 document.getElementById("refreshBtn").addEventListener("click",loadData);
 document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
 
-loadData();
+document.addEventListener("kpp-auth-ready",()=>{
+  loadData();
+});
 </script>
 </body>
 </html>
