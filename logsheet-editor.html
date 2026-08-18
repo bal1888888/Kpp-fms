@@ -211,6 +211,9 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
       Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
       Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>.
+      <b>HM kosong tetap boleh di-import dan disimpan.</b>
+      Baris tersebut tidak akan menjadi sumber HM berikutnya; sistem akan mencari HM valid terbaru sebelumnya.
+      Contoh: 15/08 HM 21 → 16/08 HM kosong → 17/08 HM 31, maka HM Awal tanggal 17 tetap 21 dan HM Jalan = 10.
       Mapping storage otomatis: <b>FT0073 → WH FT02</b> dan <b>FT0075 → WH FT01</b>.
       Jadi Admin cukup pilih Fuel Truck; kolom WH akan terisi otomatis dan terkunci.
       Jika file lama hanya punya kolom WH, sistem juga otomatis mengubahnya kembali menjadi Fuel Truck yang sesuai.
@@ -703,6 +706,7 @@ function showImportPreview(meta){
     ["Total SUDAH ADA",meta.totalDuplicate],
     ["Tanggal ditemukan",meta.dateCount],
     ["Unit belum master",meta.unknownUnit],
+    ["HM kosong (boleh save)",meta.blankHM],
     ["Jam otomatis",meta.generatedJam]
   ];
 
@@ -885,6 +889,7 @@ async function importExcelFile(file){
     const autoCountersByDate={};
     let generatedJam=0;
     let unknownUnit=0;
+    let blankHM=0;
 
     const parsed=[];
 
@@ -897,6 +902,14 @@ async function importExcelFile(file){
       const unit=cleanText(raw[idx.unit]).toUpperCase();
 
       if(!unit)continue;
+
+      const hmValue=num(raw[idx.hm]);
+
+      // HM kosong tetap boleh disimpan.
+      // Ia tidak menjadi sumber HM berikutnya; chaining HM hanya memakai HM valid.
+      if(hmValue===null){
+        blankHM++;
+      }
 
       const shift=idx.shift>=0?normalizeShift(raw[idx.shift]):"";
 
@@ -922,7 +935,7 @@ async function importExcelFile(file){
         jam,
         unit,
         operator:idx.operator>=0?cleanText(raw[idx.operator]):"",
-        hm_akhir:num(raw[idx.hm]),
+        hm_akhir:hmValue,
         fuel:num(raw[idx.qty]),
         shift,
         fuel_truck:ft,
@@ -1033,6 +1046,7 @@ async function importExcelFile(file){
       totalDuplicate,
       dateCount:dates.length,
       unknownUnit,
+      blankHM,
       generatedJam,
       targetDate
     });
@@ -1041,7 +1055,8 @@ async function importExcelFile(file){
 
     status.textContent=
       `✅ File terbaca: ${parsed.length} transaksi, ${dates.length} tanggal. `+
-      `${totalNew} BARU, ${totalDuplicate} SUDAH ADA/DUPLIKAT. `+
+      `${totalNew} BARU, ${totalDuplicate} SUDAH ADA/DUPLIKAT, `+
+      `${blankHM} baris HM kosong tetap boleh disimpan. `+
       `Yang SUDAH ADA tidak dimasukkan lagi.`;
 
   }catch(e){
@@ -1230,6 +1245,7 @@ async function getBaseline(unit,tanggal){
       .select("tanggal,jam,hm_akhir,id")
       .eq("unit",unit)
       .lt("tanggal",tanggal)
+      .not("hm_akhir","is",null)
       .order("tanggal",{ascending:false})
       .order("jam",{ascending:false})
       .order("id",{ascending:false})
@@ -1384,7 +1400,12 @@ function render(){
       <td><input class="grid-input col-unit" data-col="1" list="unitList" value="${esc(r.unit)}" placeholder="CB1019"></td>
       <td><input class="grid-input col-operator" data-col="2" value="${esc(r.operator)}" placeholder="Operator"></td>
       <td class="calc hm-awal">${r.hm_awal===null?"-":esc(r.hm_awal)}</td>
-      <td><input class="grid-input col-hm" data-col="3" type="number" step="0.1" value="${r.hm_akhir===null?"":esc(r.hm_akhir)}" placeholder="HM"></td>
+      <td>
+        <input class="grid-input col-hm" data-col="3" type="number" step="0.1"
+          value="${r.hm_akhir===null?"":esc(r.hm_akhir)}"
+          placeholder="HM boleh kosong"
+          title="${r.hm_akhir===null?"HM kosong: transaksi tetap boleh disimpan dan tidak dipakai sebagai HM terbaru.":"HM Saat Isi"}">
+      </td>
       <td class="calc hm-jalan">${r.hm_jalan===null?"-":esc(r.hm_jalan)}</td>
       <td><input class="grid-input col-qty" data-col="4" type="number" step="0.1" value="${r.fuel===null?"":esc(r.fuel)}" placeholder="Liter"></td>
       <td>
@@ -1543,12 +1564,15 @@ function validateRow(r,index){
 
   if(!normalizeTime(r.jam))return `Baris ${index+1}: Jam wajib diisi.`;
   if(!cleanText(r.unit))return `Baris ${index+1}: Unit wajib diisi.`;
-  if(num(r.hm_akhir)===null)return `Baris ${index+1}: HM Saat Isi wajib diisi.`;
   if(num(r.fuel)===null || num(r.fuel)<=0)return `Baris ${index+1}: Qty harus lebih dari 0.`;
   if(!normalizeShift(r.shift))return `Baris ${index+1}: Shift wajib 1 atau 2.`;
   if(!normalizeFT(r.fuel_truck))return `Baris ${index+1}: Fuel Truck wajib FT0073 / FT0075.`;
 
-  if(r.hm_awal!==null && num(r.hm_akhir)<num(r.hm_awal)){
+  if(
+    num(r.hm_akhir)!==null &&
+    r.hm_awal!==null &&
+    num(r.hm_akhir)<num(r.hm_awal)
+  ){
     return `Baris ${index+1}: HM Saat Isi lebih kecil dari HM Awal.`;
   }
 
