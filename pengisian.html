@@ -6,6 +6,7 @@
     <title>Pengisian Fuel - KPP FMS</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 window.KPP_ALLOWED_ROLES=["gl", "admin", "fuelman"];
 window.KPP_ACTIVE_PAGE="pengisian";
@@ -324,6 +325,69 @@ window.KPP_ACTIVE_PAGE="pengisian";
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 
+
+        .scan-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .scan-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .scan-stop-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #334155;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #qrScannerBox {
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            border-radius: 10px;
+        }
+
+        #qrReader {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #111827;
+        }
+
+        #qrReader video {
+            border-radius: 8px;
+        }
+
+        .scan-status {
+            margin-top: 8px;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        @media (max-width: 520px) {
+            .scan-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
 </style>
 </head>
 
@@ -373,20 +437,38 @@ window.KPP_ACTIVE_PAGE="pengisian";
 
         <div class="section-box">
             <div class="form-group">
-                <label>CODE UNIT</label>
+                <label>CODE UNIT / QR UNIT</label>
                 <input
                     type="text"
                     id="unitInput"
                     list="unitOptions"
-                    placeholder="Ketik / cari unit..."
+                    placeholder="Ketik unit atau scan QR..."
                     autocomplete="off"
                 >
                 <datalist id="unitOptions"></datalist>
             </div>
 
-            <button id="checkUnitButton" class="check-btn">
-                CEK UNIT / AMBIL HM
-            </button>
+            <div class="scan-actions">
+                <button id="scanQrButton" type="button" class="scan-btn">
+                    📷 SCAN QR UNIT
+                </button>
+
+                <button id="checkUnitButton" class="check-btn">
+                    CEK UNIT / AMBIL HM
+                </button>
+            </div>
+
+            <div id="qrScannerBox" class="hidden">
+                <div id="qrReader"></div>
+                <div id="qrScanStatus" class="scan-status">
+                    Arahkan kamera ke QR yang ditempel di unit.
+                </div>
+                <div style="margin-top:10px">
+                    <button id="stopQrButton" type="button" class="scan-stop-btn">
+                        ✖ TUTUP KAMERA
+                    </button>
+                </div>
+            </div>
 
             <div id="suggestionBox" class="suggestion-box hidden">
                 <div class="suggestion-title">
@@ -720,6 +802,10 @@ const MASTER_LAST_HM = {
 };
 
 let currentUnit = "";
+let qrScanner = null;
+let qrScannerRunning = false;
+let qrScanLocked = false;
+
 let previousHM = 0;
 let checkedUnit = "";
 let selectedFuelTruck = "";
@@ -899,6 +985,20 @@ async function loadActiveFuelmanSession() {
     document.getElementById("fuelmanSessionInfo")
         .classList.remove("hidden");
 }
+
+document
+    .getElementById("scanQrButton")
+    .addEventListener("click", startQrScanner);
+
+document
+    .getElementById("stopQrButton")
+    .addEventListener("click", stopQrScanner);
+
+window.addEventListener("pagehide", function() {
+    if (qrScannerRunning) {
+        stopQrScanner();
+    }
+});
 
 document.addEventListener("kpp-auth-ready", async function(event) {
     currentStaffProfile = event.detail.profile;
@@ -1205,6 +1305,157 @@ function hmOperationalKey(tanggal,jam,id){
     const t=jam ? String(jam).slice(0,8) : "00:00:00";
     const i=String(id??"").padStart(20,"0");
     return `${d} ${t} ${i}`;
+}
+
+
+async function stopQrScanner() {
+    const box = document.getElementById("qrScannerBox");
+    const status = document.getElementById("qrScanStatus");
+
+    try {
+        if (qrScanner && qrScannerRunning) {
+            await qrScanner.stop();
+        }
+
+        if (qrScanner) {
+            try {
+                await qrScanner.clear();
+            } catch (_) {}
+        }
+    } catch (error) {
+        console.warn("Stop scanner:", error);
+    }
+
+    qrScannerRunning = false;
+    qrScanLocked = false;
+    qrScanner = null;
+
+    if (box) {
+        box.classList.add("hidden");
+    }
+
+    if (status) {
+        status.textContent = "Kamera ditutup.";
+    }
+}
+
+async function startQrScanner() {
+    const box = document.getElementById("qrScannerBox");
+    const status = document.getElementById("qrScanStatus");
+    const button = document.getElementById("scanQrButton");
+
+    if (typeof Html5Qrcode === "undefined") {
+        alert("Scanner QR belum termuat. Coba Ctrl+F5 lalu buka ulang halaman.");
+        return;
+    }
+
+    if (qrScannerRunning) {
+        box.classList.remove("hidden");
+        return;
+    }
+
+    box.classList.remove("hidden");
+    status.textContent = "Meminta izin kamera...";
+    button.disabled = true;
+
+    try {
+        qrScanner = new Html5Qrcode(
+            "qrReader",
+            {
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.QR_CODE
+                ]
+            }
+        );
+
+        qrScanLocked = false;
+
+        await qrScanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const size = Math.floor(
+                        Math.min(viewfinderWidth, viewfinderHeight) * 0.72
+                    );
+
+                    return {
+                        width: size,
+                        height: size
+                    };
+                },
+                aspectRatio: 1.333333
+            },
+            async function(decodedText) {
+                if (qrScanLocked) {
+                    return;
+                }
+
+                qrScanLocked = true;
+
+                const unit = normalisasiUnit(decodedText);
+
+                status.textContent = "QR terbaca: " + unit;
+
+                document
+                    .getElementById("unitInput")
+                    .value = unit;
+
+                await stopQrScanner();
+
+                if (!unitTerdaftar(unit)) {
+                    tampilkanSaran(unit);
+
+                    alert(
+                        "❌ QR terbaca: " +
+                        unit +
+                        "\n\nTapi CODE UNIT tidak terdaftar di Master Unit."
+                    );
+
+                    return;
+                }
+
+                if (!selectedFuelTruck) {
+                    alert(
+                        "✅ QR terbaca: " +
+                        unit +
+                        "\n\nSekarang pilih Fuel Truck lalu tekan CEK UNIT / AMBIL HM."
+                    );
+
+                    return;
+                }
+
+                // Kalau Fuel Truck sudah dipilih, langsung lanjut seperti
+                // user menekan tombol CEK UNIT / AMBIL HM.
+                await cekUnit();
+            },
+            function() {
+                // Ignore frame-by-frame scan failures.
+            }
+        );
+
+        qrScannerRunning = true;
+        status.textContent =
+            "📷 Kamera aktif. Arahkan ke QR unit.";
+
+    } catch (error) {
+        console.error("QR scanner error:", error);
+
+        qrScannerRunning = false;
+        qrScanLocked = false;
+        qrScanner = null;
+
+        status.textContent =
+            "❌ Kamera tidak bisa dibuka: " +
+            (error?.message || error);
+
+        alert(
+            "Kamera tidak bisa dibuka.\n\n" +
+            "Pastikan izin Camera untuk website KPP-FMS sudah diizinkan."
+        );
+    } finally {
+        button.disabled = false;
+    }
 }
 
 async function ambilHmTerakhir(unit) {
