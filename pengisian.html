@@ -343,8 +343,9 @@ window.KPP_ACTIVE_PAGE="pengisian";
 
         <div class="info">
             Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT. Daftar unit dibaca dari Master Unit online.
-            Sistem akan memakai HM terbaru berdasarkan tanggal/jam operasional: transaksi online atau HM Master/Koreksi aktual.
-            Jika keduanya belum ada, sistem memakai HM terakhir dari logsheet Excel sebagai baseline.
+            Sistem akan memakai HM valid tertinggi yang pernah tercatat untuk unit tersebut
+            dari transaksi, HM Master/Koreksi, atau baseline logsheet. Data historis yang HM-nya kosong
+            atau lebih kecil tidak akan menurunkan HM acuan.
         </div>
 
         <div id="fuelmanSessionInfo" class="session-info hidden">
@@ -1206,8 +1207,8 @@ async function ambilHmTerakhir(unit) {
             .select("id,tanggal,jam,hm_akhir")
             .eq("unit", unit)
             .not("hm_akhir", "is", null)
+            .order("hm_akhir", { ascending: false })
             .order("tanggal", { ascending: false })
-            .order("jam", { ascending: false })
             .order("id", { ascending: false })
             .limit(1),
 
@@ -1215,8 +1216,9 @@ async function ambilHmTerakhir(unit) {
             .from("hm_corrections")
             .select("id,tanggal,jam,hm,operator,note")
             .eq("unit", unit)
+            .not("hm", "is", null)
+            .order("hm", { ascending: false })
             .order("tanggal", { ascending: false })
-            .order("jam", { ascending: false })
             .order("id", { ascending: false })
             .limit(1)
     ]);
@@ -1225,66 +1227,72 @@ async function ambilHmTerakhir(unit) {
         throw fuelResult.error;
     }
 
-    // Kalau tabel HM Master belum dibuat, pengisian tetap bisa jalan memakai data lama.
     if (correctionResult.error) {
-        console.warn("HM Master belum tersedia:", correctionResult.error.message);
+        console.warn(
+            "HM Master belum tersedia:",
+            correctionResult.error.message
+        );
     }
 
-    const fuelRow = fuelResult.data && fuelResult.data.length
-        ? fuelResult.data[0]
-        : null;
+    const candidates = [];
 
-    const correctionRow = !correctionResult.error && correctionResult.data && correctionResult.data.length
-        ? correctionResult.data[0]
-        : null;
+    const fuelRow =
+        fuelResult.data && fuelResult.data.length
+            ? fuelResult.data[0]
+            : null;
 
-    // Bila ada keduanya, pakai yang waktu operasionalnya paling baru.
-    // Jika waktu sama persis, koreksi HM menang karena memang dibuat sebagai override aktual.
-    if (fuelRow && correctionRow) {
-        const fuelKey = hmOperationalKey(fuelRow);
-        const correctionKey = hmOperationalKey(correctionRow);
-
-        if (correctionKey >= fuelKey) {
-            return {
-                hm: Number(correctionRow.hm) || 0,
-                source: `HM Master / Koreksi Aktual (${correctionRow.tanggal} ${String(correctionRow.jam).slice(0,5)})`
-            };
-        }
-
-        return {
-            hm: Number(fuelRow.hm_akhir) || 0,
-            source: `Transaksi online terakhir (${fuelRow.tanggal} ${String(fuelRow.jam || "").slice(0,5)})`
-        };
+    if (fuelRow && Number.isFinite(Number(fuelRow.hm_akhir))) {
+        candidates.push({
+            hm: Number(fuelRow.hm_akhir),
+            source:
+                `HM tertinggi transaksi (${fuelRow.tanggal}` +
+                `${fuelRow.jam ? " " + String(fuelRow.jam).slice(0,5) : ""})`
+        });
     }
 
-    if (correctionRow) {
-        return {
-            hm: Number(correctionRow.hm) || 0,
-            source: `HM Master / Koreksi Aktual (${correctionRow.tanggal} ${String(correctionRow.jam).slice(0,5)})`
-        };
+    const correctionRow =
+        !correctionResult.error &&
+        correctionResult.data &&
+        correctionResult.data.length
+            ? correctionResult.data[0]
+            : null;
+
+    if (
+        correctionRow &&
+        Number.isFinite(Number(correctionRow.hm))
+    ) {
+        candidates.push({
+            hm: Number(correctionRow.hm),
+            source:
+                `HM tertinggi Master/Koreksi (${correctionRow.tanggal}` +
+                `${correctionRow.jam ? " " + String(correctionRow.jam).slice(0,5) : ""})`
+        });
     }
 
-    if (fuelRow) {
-        return {
-            hm: Number(fuelRow.hm_akhir) || 0,
-            source: `Transaksi online terakhir (${fuelRow.tanggal} ${String(fuelRow.jam || "").slice(0,5)})`
-        };
-    }
-
-    // Fallback terakhir: HM dari logsheet Excel lama.
-    if (Object.prototype.hasOwnProperty.call(MASTER_LAST_HM, unit)) {
-        return {
-            hm: Number(MASTER_LAST_HM[unit]) || 0,
+    if (
+        Object.prototype.hasOwnProperty.call(
+            MASTER_LAST_HM,
+            unit
+        ) &&
+        Number.isFinite(Number(MASTER_LAST_HM[unit]))
+    ) {
+        candidates.push({
+            hm: Number(MASTER_LAST_HM[unit]),
             source: "Baseline logsheet Excel"
+        });
+    }
+
+    if (!candidates.length) {
+        return {
+            hm: 0,
+            source: "Belum ada HM sebelumnya"
         };
     }
 
-    return {
-        hm: 0,
-        source: "Belum ada HM sebelumnya"
-    };
-}
+    candidates.sort((a, b) => b.hm - a.hm);
 
+    return candidates[0];
+}
 async function cekUnit() {
     if (!selectedFuelTruck) {
         alert(
