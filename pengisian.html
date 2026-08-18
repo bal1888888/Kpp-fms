@@ -467,6 +467,28 @@ window.KPP_ACTIVE_PAGE="pengisian";
             }
         }
 
+
+        .fueling-mode-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        .fueling-mode-ccr {
+            background: #eff6ff;
+            border: 1px solid #93c5fd;
+            color: #1e40af;
+        }
+
+        .fueling-mode-manual {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+        }
+
 </style>
 </head>
 
@@ -533,14 +555,14 @@ window.KPP_ACTIVE_PAGE="pengisian";
                 </button>
 
                 <button id="checkUnitButton" class="check-btn">
-                    CEK UNIT / AMBIL JATAH CCR
+                    CEK UNIT / AMBIL DATA
                 </button>
             </div>
 
             <div id="qrScannerBox" class="hidden">
                 <div id="qrReader"></div>
                 <div id="qrScanStatus" class="scan-status">
-                    Arahkan kamera ke QR yang ditempel di unit.
+                    QR hanya wajib untuk unit yang sedang punya jatah CCR.
                 </div>
                 <div style="margin-top:10px">
                     <button id="stopQrButton" type="button" class="scan-stop-btn">
@@ -568,6 +590,8 @@ window.KPP_ACTIVE_PAGE="pengisian";
             <div class="hm-source" id="hmSource"></div>
         </div>
 
+
+        <div id="fuelingModeBox" class="fueling-mode-box fueling-mode-manual hidden"></div>
 
         <div id="ccrAllocationBox" class="ccr-allocation-box hidden">
             <h3>✅ JATAH CCR ACTIVE DITEMUKAN</h3>
@@ -952,6 +976,8 @@ let qrScanLocked = false;
 
 let previousHM = 0;
 let checkedUnit = "";
+let fuelingMode = "manual";
+let unitScannedByQr = false;
 let currentCCRAllocation = null;
 let currentCCRLimit = 0;
 
@@ -1157,6 +1183,10 @@ document
     .addEventListener(
         "input",
         function() {
+            // Kalau user mengetik/mengubah Code Unit sendiri,
+            // status "hasil scan QR" harus hilang.
+            unitScannedByQr = false;
+
             const value = normalisasiUnit(this.value);
 
             if (checkedUnit && value !== checkedUnit) {
@@ -1164,6 +1194,10 @@ document
                 currentUnit = "";
                 currentCCRAllocation = null;
                 currentCCRLimit = 0;
+                fuelingMode = "manual";
+
+                document.getElementById("fuelingModeBox")
+                    .classList.add("hidden");
 
                 document.getElementById("ccrAllocationBox")
                     .classList.add("hidden");
@@ -1576,6 +1610,11 @@ async function startQrScanner() {
                     .getElementById("unitInput")
                     .value = unit;
 
+                // Penanda penting:
+                // unit ini benar-benar berasal dari hasil SCAN QR,
+                // bukan hanya diketik manual.
+                unitScannedByQr = true;
+
                 await stopQrScanner();
 
                 if (!unitTerdaftar(unit)) {
@@ -1594,14 +1633,14 @@ async function startQrScanner() {
                     alert(
                         "✅ QR terbaca: " +
                         unit +
-                        "\n\nSekarang pilih Fuel Truck lalu tekan CEK UNIT / AMBIL JATAH CCR."
+                        "\n\nSekarang pilih Fuel Truck lalu tekan CEK UNIT / AMBIL DATA."
                     );
 
                     return;
                 }
 
                 // Kalau Fuel Truck sudah dipilih, langsung lanjut seperti
-                // user menekan tombol CEK UNIT / AMBIL JATAH CCR.
+                // user menekan tombol CEK UNIT / AMBIL DATA.
                 await cekUnit();
             },
             function() {
@@ -1788,6 +1827,31 @@ async function ambilHmTerakhir(unit) {
     return candidates[0];
 }
 
+
+function setFuelingMode(mode, message) {
+    fuelingMode = mode;
+
+    const box = document.getElementById("fuelingModeBox");
+
+    box.classList.remove(
+        "hidden",
+        "fueling-mode-ccr",
+        "fueling-mode-manual"
+    );
+
+    if (mode === "ccr") {
+        box.classList.add("fueling-mode-ccr");
+        box.textContent =
+            message ||
+            "🔒 MODE CCR — QR wajib, data Operator/HM/Jatah mengikuti CCR.";
+    } else {
+        box.classList.add("fueling-mode-manual");
+        box.textContent =
+            message ||
+            "✍️ MODE MANUAL — unit tidak sedang dikontrol CCR, QR tidak wajib.";
+    }
+}
+
 function setCcrError(message) {
     const box = document.getElementById("ccrErrorBox");
     const okBox = document.getElementById("ccrAllocationBox");
@@ -1818,24 +1882,114 @@ function ccrShiftToNumber(value) {
     return 0;
 }
 
-async function ambilJatahCcrAktif(unit) {
-    const result = await supabaseClient
+function numberShiftToCcr(value) {
+    if (Number(value) === 1) return "Shift 1";
+    if (Number(value) === 2) return "Shift 2";
+    return "";
+}
+
+async function ambilKontrolCcrHariIni(unit) {
+    const now = getLocalDateTime();
+    const selectedShift =
+        Number(document.getElementById("shift").value || 0);
+
+    let q = supabaseClient
         .from("ccr_allocations")
         .select(
             "id,tanggal,shift,unit,nrp,operator_unit,hm_ccr,max_qty,tolerance_qty,filling_no,status,request_reason"
         )
         .eq("unit", unit)
-        .eq("status", "ACTIVE")
-        .order("id", { ascending: false })
-        .limit(1);
+        .eq("tanggal", now.tanggal)
+        .in("status", ["ACTIVE", "PENDING_GL", "USED"])
+        .order("id", { ascending: false });
+
+    if (selectedShift > 0) {
+        q = q.eq(
+            "shift",
+            numberShiftToCcr(selectedShift)
+        );
+    }
+
+    const result = await q.limit(20);
 
     if (result.error) {
         throw result.error;
     }
 
-    return result.data && result.data.length
-        ? result.data[0]
-        : null;
+    const rows = result.data || [];
+
+    return {
+        active:
+            rows.find(r => r.status === "ACTIVE") || null,
+
+        pending:
+            rows.find(r => r.status === "PENDING_GL") || null,
+
+        used:
+            rows.find(r => r.status === "USED") || null,
+
+        rows
+    };
+}
+
+function siapkanFormManual() {
+    currentCCRAllocation = null;
+    currentCCRLimit = 0;
+
+    document.getElementById("ccrAllocationBox")
+        .classList.add("hidden");
+
+    document.getElementById("ccrErrorBox")
+        .classList.add("hidden");
+
+    document.getElementById("operatorNrp").value = "";
+    document.getElementById("operatorNrp")
+        .closest(".form-group")
+        .classList.add("hidden");
+
+    const operatorInput =
+        document.getElementById("operator");
+
+    operatorInput.value = "";
+    operatorInput.readOnly = false;
+    operatorInput.classList.remove("ccr-locked");
+    operatorInput.placeholder = "Masukkan nama operator";
+
+    const hmInput =
+        document.getElementById("currentHm");
+
+    hmInput.value = "";
+    hmInput.readOnly = false;
+    hmInput.classList.remove("ccr-locked");
+    hmInput.placeholder = "Masukkan HM sekarang";
+
+    const hmLabel =
+        hmInput.closest(".form-group")
+            .querySelector("label");
+
+    if (hmLabel) {
+        hmLabel.textContent = "HM Sekarang";
+    }
+
+    const fuelInput =
+        document.getElementById("fuelQty");
+
+    fuelInput.value = "";
+    fuelInput.removeAttribute("max");
+
+    document.getElementById("hmDifference")
+        .textContent = "0 HM";
+
+    document.getElementById("warning")
+        .style.display = "none";
+
+    document.getElementById("formArea")
+        .classList.remove("hidden");
+
+    setFuelingMode(
+        "manual",
+        "✍️ MODE MANUAL — unit ini tidak punya kontrol/jatah CCR pada shift ini. QR tidak wajib."
+    );
 }
 
 function tampilkanJatahCcr(row) {
@@ -1871,20 +2025,40 @@ function tampilkanJatahCcr(row) {
     document.getElementById("ccrFinalLimit").textContent =
         currentCCRLimit.toLocaleString("id-ID") + " L";
 
+    document.getElementById("operatorNrp")
+        .closest(".form-group")
+        .classList.remove("hidden");
+
     document.getElementById("operatorNrp").value =
         row.nrp || "";
 
-    document.getElementById("operator").value =
+    const operatorInput =
+        document.getElementById("operator");
+
+    operatorInput.value =
         row.operator_unit || "";
 
-    document.getElementById("currentHm").value =
+    operatorInput.readOnly = true;
+    operatorInput.classList.add("ccr-locked");
+    operatorInput.placeholder = "Otomatis dari CCR";
+
+    const hmInput =
+        document.getElementById("currentHm");
+
+    hmInput.value =
         row.hm_ccr ?? "";
 
-    document.getElementById("operator").readOnly = true;
-    document.getElementById("operator").classList.add("ccr-locked");
+    hmInput.readOnly = true;
+    hmInput.classList.add("ccr-locked");
+    hmInput.placeholder = "Otomatis dari CCR";
 
-    document.getElementById("currentHm").readOnly = true;
-    document.getElementById("currentHm").classList.add("ccr-locked");
+    const hmLabel =
+        hmInput.closest(".form-group")
+            .querySelector("label");
+
+    if (hmLabel) {
+        hmLabel.textContent = "HM CCR";
+    }
 
     const fuel = document.getElementById("fuelQty");
     fuel.value = "";
@@ -1898,6 +2072,11 @@ function tampilkanJatahCcr(row) {
 
     document.getElementById("formArea")
         .classList.remove("hidden");
+
+    setFuelingMode(
+        "ccr",
+        "🔒 MODE CCR — unit ini punya jatah CCR. QR wajib dan Operator/HM/Jatah dikunci dari CCR."
+    );
 }
 
 async function cekUnit() {
@@ -1941,60 +2120,169 @@ async function cekUnit() {
         document.getElementById("checkUnitButton");
 
     button.disabled = true;
-    button.textContent = "MEMBACA JATAH CCR...";
+    button.textContent = "MEMERIKSA UNIT...";
 
     try {
         clearCcrMessage();
 
-        // 1. Cari jatah ACTIVE berdasarkan UNIT yang dibaca QR.
-        const allocation =
-            await ambilJatahCcrAktif(inputUnit);
+        // Cek dulu apakah unit ini sedang dikontrol CCR
+        // untuk tanggal + shift sekarang.
+        const control =
+            await ambilKontrolCcrHariIni(inputUnit);
 
-        if (!allocation) {
+        // ----------------------------------------------------
+        // A. ADA JATAH CCR ACTIVE
+        //    -> WAJIB berasal dari scan QR
+        // ----------------------------------------------------
+        if (control.active) {
+            if (!unitScannedByQr) {
+                const msg =
+                    `🔒 ${inputUnit} punya jatah CCR ACTIVE. ` +
+                    `Unit ini wajib menggunakan SCAN QR UNIT.`;
+
+                setFuelingMode("ccr", msg);
+                setCcrError(msg);
+                alert(msg);
+                return;
+            }
+
+            const allocation = control.active;
+
+            const allocationShift =
+                ccrShiftToNumber(allocation.shift);
+
+            const selectedShift =
+                Number(document.getElementById("shift").value || 0);
+
+            if (
+                selectedShift > 0 &&
+                allocationShift > 0 &&
+                selectedShift !== allocationShift
+            ) {
+                const msg =
+                    `❌ Jatah ${inputUnit} dibuat untuk ${allocation.shift}, ` +
+                    `sedangkan Fuelman sedang di Shift ${selectedShift}.`;
+
+                setCcrError(msg);
+                alert(msg);
+                return;
+            }
+
+            const hmData =
+                await ambilHmTerakhir(inputUnit);
+
+            previousHM = hmData.hm;
+            currentHmSource = hmData.source;
+
+            currentUnit = inputUnit;
+            checkedUnit = inputUnit;
+
+            document.getElementById("unitInput").value =
+                currentUnit;
+
+            document.getElementById("unitDisplay").textContent =
+                currentUnit;
+
+            document.getElementById("unitResult")
+                .classList.remove("hidden");
+
+            document.getElementById("previousHmBox")
+                .classList.remove("hidden");
+
+            document.getElementById("suggestionBox")
+                .classList.add("hidden");
+
+            if (previousHM > 0) {
+                document.getElementById("previousHm").textContent =
+                    previousHM.toLocaleString("id-ID");
+            } else {
+                document.getElementById("previousHm").textContent =
+                    "Belum ada data";
+            }
+
+            document.getElementById("hmSource").textContent =
+                "Sumber HM sebelumnya: " + currentHmSource;
+
+            tampilkanJatahCcr(allocation);
+
+            if (!document.getElementById("shift").value) {
+                applyShiftSelection(allocationShift, true);
+            }
+
+            const ccrHm = Number(allocation.hm_ccr);
+
+            if (
+                previousHM > 0 &&
+                Number.isFinite(ccrHm) &&
+                ccrHm >= previousHM
+            ) {
+                document.getElementById("hmDifference").textContent =
+                    (ccrHm - previousHM).toLocaleString("id-ID") +
+                    " HM";
+
+                document.getElementById("warning").style.display =
+                    "none";
+            } else if (
+                previousHM > 0 &&
+                Number.isFinite(ccrHm) &&
+                ccrHm < previousHM
+            ) {
+                document.getElementById("hmDifference").textContent =
+                    "HM CCR < HM REFERENSI";
+
+                document.getElementById("warning").textContent =
+                    "⚠️ HM CCR lebih kecil dari HM referensi. HM Jalan akan dikosongkan.";
+
+                document.getElementById("warning").style.display =
+                    "block";
+            } else {
+                document.getElementById("hmDifference").textContent =
+                    "Data awal";
+
+                document.getElementById("warning").style.display =
+                    "none";
+            }
+
+            return;
+        }
+
+        // ----------------------------------------------------
+        // B. TIDAK ACTIVE, TAPI ADA PENDING_GL
+        //    -> DILARANG bypass lewat mode manual
+        // ----------------------------------------------------
+        if (control.pending) {
             const msg =
-                `❌ ${inputUnit} belum memiliki jatah CCR ACTIVE. ` +
-                `CCR harus membuat jatah terlebih dahulu.`;
+                `⏳ ${inputUnit} punya pengajuan CCR ` +
+                `pengisian ke-${control.pending.filling_no} yang masih PENDING_GL. ` +
+                `Pengisian belum boleh dilakukan sampai GL menyetujui.`;
 
+            setFuelingMode("ccr", msg);
             setCcrError(msg);
             alert(msg);
             return;
         }
 
-        // 2. Pastikan tanggal jatah sama dengan tanggal lokal perangkat.
-        const now = getLocalDateTime();
-
-        if (String(allocation.tanggal) !== String(now.tanggal)) {
+        // ----------------------------------------------------
+        // C. SUDAH PERNAH USED DI SHIFT INI
+        //    -> tambahan berikutnya harus dibuat CCR agar
+        //       aturan approval ke-2 tidak bisa dilewati.
+        // ----------------------------------------------------
+        if (control.used) {
             const msg =
-                `❌ Ada jatah ACTIVE untuk ${inputUnit}, tetapi tanggalnya ` +
-                `${allocation.tanggal}. Hari ini ${now.tanggal}.`;
+                `🔒 ${inputUnit} sudah memakai jatah CCR ` +
+                `pengisian ke-${control.used.filling_no} pada shift ini. ` +
+                `Jika perlu pengisian lagi, CCR harus membuat jatah berikutnya.`;
 
+            setFuelingMode("ccr", msg);
             setCcrError(msg);
             alert(msg);
             return;
         }
 
-        // 3. Pastikan shift Fuelman/form cocok dengan shift CCR.
-        const allocationShift =
-            ccrShiftToNumber(allocation.shift);
-
-        const selectedShift =
-            Number(document.getElementById("shift").value || 0);
-
-        if (
-            selectedShift > 0 &&
-            allocationShift > 0 &&
-            selectedShift !== allocationShift
-        ) {
-            const msg =
-                `❌ Jatah ${inputUnit} dibuat untuk ${allocation.shift}, ` +
-                `sedangkan Fuelman sedang di Shift ${selectedShift}.`;
-
-            setCcrError(msg);
-            alert(msg);
-            return;
-        }
-
-        // 4. Tetap hitung HM sebelumnya dari logic HM Master/koreksi.
+        // ----------------------------------------------------
+        // D. TIDAK ADA KONTROL CCR
+        //    -> MODE MANUAL, QR TIDAK WAJIB
+        // ----------------------------------------------------
         const hmData =
             await ambilHmTerakhir(inputUnit);
 
@@ -2028,68 +2316,26 @@ async function cekUnit() {
         }
 
         document.getElementById("hmSource").textContent =
-            "Sumber HM sebelumnya: " + currentHmSource;
+            "Sumber HM: " + currentHmSource;
 
-        // 5. Isi data CCR dan kunci Operator + HM.
-        tampilkanJatahCcr(allocation);
-
-        if (!document.getElementById("shift").value) {
-            applyShiftSelection(allocationShift, true);
-        }
-
-        // HM jalan dari HM CCR terhadap HM sebelumnya.
-        const ccrHm = Number(allocation.hm_ccr);
-
-        if (
-            previousHM > 0 &&
-            Number.isFinite(ccrHm) &&
-            ccrHm >= previousHM
-        ) {
-            document.getElementById("hmDifference").textContent =
-                (ccrHm - previousHM).toLocaleString("id-ID") +
-                " HM";
-
-            document.getElementById("warning").style.display =
-                "none";
-        } else if (
-            previousHM > 0 &&
-            Number.isFinite(ccrHm) &&
-            ccrHm < previousHM
-        ) {
-            // HM CCR tetap dipakai karena CCR adalah sumber input untuk transaksi ini,
-            // tetapi ditampilkan sebagai warning agar tidak diam-diam negatif.
-            document.getElementById("hmDifference").textContent =
-                "HM CCR < HM REFERENSI";
-
-            document.getElementById("warning").textContent =
-                "⚠️ HM dari CCR lebih kecil dari HM referensi. Data tetap terkunci sesuai jatah CCR; HM Jalan akan dikosongkan.";
-
-            document.getElementById("warning").style.display =
-                "block";
-        } else {
-            document.getElementById("hmDifference").textContent =
-                "Data awal";
-
-            document.getElementById("warning").style.display =
-                "none";
-        }
+        siapkanFormManual();
 
     } catch (error) {
         console.error(error);
 
         setCcrError(
-            "❌ Gagal membaca jatah CCR: " +
+            "❌ Gagal memeriksa unit: " +
             error.message
         );
 
         alert(
-            "❌ Gagal membaca jatah CCR.\n\n" +
+            "❌ Gagal memeriksa unit.\n\n" +
             error.message
         );
     } finally {
         button.disabled = false;
         button.textContent =
-            "CEK UNIT / AMBIL JATAH CCR";
+            "CEK UNIT / AMBIL DATA";
     }
 }
 
@@ -2249,37 +2495,10 @@ document
                 unitSekarang !== checkedUnit
             ) {
                 alert(
-                    "Silakan scan/cek unit dan ambil jatah CCR terlebih dahulu."
+                    "Silakan tekan CEK UNIT / AMBIL DATA terlebih dahulu."
                 );
                 return;
             }
-
-            if (
-                !currentCCRAllocation ||
-                currentCCRAllocation.status !== "ACTIVE"
-            ) {
-                alert(
-                    "❌ Tidak ada jatah CCR ACTIVE untuk unit ini."
-                );
-                return;
-            }
-
-            const currentHM =
-                Number(currentCCRAllocation.hm_ccr);
-
-            const operator =
-                String(currentCCRAllocation.operator_unit || "").trim();
-
-            const nrp =
-                String(currentCCRAllocation.nrp || "").trim();
-
-            const fuel =
-                parseFloat(
-                    document.getElementById("fuelQty").value
-                );
-
-            const shift =
-                document.getElementById("shift").value;
 
             if (
                 currentStaffProfile &&
@@ -2293,119 +2512,291 @@ document
                 return;
             }
 
-            if (!Number.isFinite(currentHM)) {
-                alert("HM CCR tidak valid.");
-                return;
-            }
+            const fuel =
+                parseFloat(
+                    document.getElementById("fuelQty").value
+                );
 
-            if (!operator || !nrp) {
-                alert("Data Operator/NRP CCR tidak lengkap.");
-                return;
-            }
+            const shift =
+                document.getElementById("shift").value;
 
             if (isNaN(fuel) || fuel <= 0) {
                 alert("Masukkan jumlah fuel aktual.");
                 return;
             }
 
-            if (fuel > currentCCRLimit) {
+            if (!shift) {
+                alert("Pilih shift.");
+                return;
+            }
+
+            const waktu = getLocalDateTime();
+
+            // =================================================
+            // MODE CCR
+            // =================================================
+            if (fuelingMode === "ccr") {
+                if (
+                    !currentCCRAllocation ||
+                    currentCCRAllocation.status !== "ACTIVE"
+                ) {
+                    alert(
+                        "❌ Tidak ada jatah CCR ACTIVE untuk unit ini."
+                    );
+                    return;
+                }
+
+                if (!unitScannedByQr) {
+                    alert(
+                        "🔒 Unit yang punya jatah CCR wajib diproses melalui SCAN QR."
+                    );
+                    return;
+                }
+
+                const currentHM =
+                    Number(currentCCRAllocation.hm_ccr);
+
+                const operator =
+                    String(
+                        currentCCRAllocation.operator_unit || ""
+                    ).trim();
+
+                const nrp =
+                    String(
+                        currentCCRAllocation.nrp || ""
+                    ).trim();
+
+                if (!Number.isFinite(currentHM)) {
+                    alert("HM CCR tidak valid.");
+                    return;
+                }
+
+                if (!operator || !nrp) {
+                    alert("Data Operator/NRP CCR tidak lengkap.");
+                    return;
+                }
+
+                if (fuel > currentCCRLimit) {
+                    alert(
+                        "❌ JUMLAH FUEL MELEBIHI BATAS CCR.\n\n" +
+                        "Jatah: " +
+                        Number(currentCCRAllocation.max_qty || 0)
+                            .toLocaleString("id-ID") +
+                        " L\n" +
+                        "Toleransi: " +
+                        Number(currentCCRAllocation.tolerance_qty || 0)
+                            .toLocaleString("id-ID") +
+                        " L\n" +
+                        "Batas Final: " +
+                        currentCCRLimit.toLocaleString("id-ID") +
+                        " L\n\n" +
+                        "Qty Aktual: " +
+                        fuel.toLocaleString("id-ID") +
+                        " L"
+                    );
+                    return;
+                }
+
+                saveButton.disabled = true;
+                saveButton.textContent =
+                    "MENYIMPAN & MENUTUP JATAH...";
+
+                try {
+                    const { data, error } =
+                        await supabaseClient.rpc(
+                            "submit_ccr_fueling",
+                            {
+                                p_allocation_id:
+                                    currentCCRAllocation.id,
+
+                                p_tanggal:
+                                    waktu.tanggal,
+
+                                p_jam:
+                                    waktu.jam,
+
+                                p_fuel:
+                                    fuel,
+
+                                p_fuel_truck:
+                                    selectedFuelTruck,
+
+                                p_previous_hm:
+                                    previousHM > 0
+                                        ? previousHM
+                                        : null,
+
+                                p_session_id:
+                                    activeFuelmanSession
+                                        ? activeFuelmanSession.id
+                                        : null
+                            }
+                        );
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    alert(
+                        "✅ PENGISIAN CCR BERHASIL!\n\n" +
+                        "Unit: " +
+                        currentUnit +
+                        "\n" +
+                        "NRP: " +
+                        nrp +
+                        "\n" +
+                        "Operator: " +
+                        operator +
+                        "\n" +
+                        "HM CCR: " +
+                        currentHM +
+                        "\n" +
+                        "Pengisian Ke: " +
+                        currentCCRAllocation.filling_no +
+                        "\n" +
+                        "Fuel Aktual: " +
+                        fuel +
+                        " L\n" +
+                        "Batas CCR: " +
+                        currentCCRLimit +
+                        " L\n\n" +
+                        "Jatah berubah menjadi USED ✅"
+                    );
+
+                    location.reload();
+
+                } catch (error) {
+                    console.error(error);
+
+                    alert(
+                        "❌ Data CCR gagal disimpan.\n\n" +
+                        error.message
+                    );
+
+                    saveButton.disabled = false;
+                    saveButton.textContent =
+                        "SIMPAN DATA";
+                }
+
+                return;
+            }
+
+            // =================================================
+            // MODE MANUAL — UNIT TIDAK DIJATAH CCR
+            // =================================================
+            const currentHM =
+                parseFloat(
+                    document.getElementById("currentHm").value
+                );
+
+            const operator =
+                document.getElementById("operator")
+                    .value
+                    .trim();
+
+            if (isNaN(currentHM)) {
+                alert("Masukkan HM sekarang.");
+                return;
+            }
+
+            if (
+                previousHM > 0 &&
+                currentHM < previousHM
+            ) {
                 alert(
-                    "❌ JUMLAH FUEL MELEBIHI BATAS CCR.\n\n" +
-                    "Jatah: " +
-                    Number(currentCCRAllocation.max_qty || 0)
-                        .toLocaleString("id-ID") +
-                    " L\n" +
-                    "Toleransi: " +
-                    Number(currentCCRAllocation.tolerance_qty || 0)
-                        .toLocaleString("id-ID") +
-                    " L\n" +
-                    "Batas Final: " +
-                    currentCCRLimit.toLocaleString("id-ID") +
-                    " L\n\n" +
-                    "Qty yang dimasukkan: " +
-                    fuel.toLocaleString("id-ID") +
-                    " L"
+                    "HM sekarang tidak boleh lebih kecil dari HM sebelumnya."
                 );
                 return;
             }
 
-            if (!shift) {
-                alert("Shift belum tersedia.");
+            if (!operator) {
+                alert("Masukkan nama operator.");
                 return;
             }
 
-            const waktu =
-                getLocalDateTime();
+            const hmJalan =
+                previousHM > 0
+                    ? currentHM - previousHM
+                    : 0;
 
             saveButton.disabled = true;
             saveButton.textContent =
-                "MENYIMPAN & MENUTUP JATAH...";
+                "MENYIMPAN MANUAL...";
 
-            try {
-                const { data, error } =
-                    await supabaseClient.rpc(
-                        "submit_ccr_fueling",
-                        {
-                            p_allocation_id:
-                                currentCCRAllocation.id,
+            const { error } =
+                await supabaseClient
+                    .from("fuel_history")
+                    .insert({
+                        tanggal:
+                            waktu.tanggal,
 
-                            p_tanggal:
-                                waktu.tanggal,
+                        jam:
+                            waktu.jam,
 
-                            p_jam:
-                                waktu.jam,
+                        fuel_truck:
+                            selectedFuelTruck,
 
-                            p_fuel:
-                                fuel,
+                        wh:
+                            selectedWH,
 
-                            p_fuel_truck:
-                                selectedFuelTruck,
+                        unit:
+                            currentUnit,
 
-                            p_previous_hm:
-                                previousHM > 0
-                                    ? previousHM
-                                    : null,
+                        operator:
+                            operator,
 
-                            p_session_id:
-                                activeFuelmanSession
-                                    ? activeFuelmanSession.id
-                                    : null
-                        }
-                    );
+                        hm_awal:
+                            previousHM,
 
-                if (error) {
-                    throw error;
-                }
+                        hm_akhir:
+                            currentHM,
 
-                alert(
-                    "✅ DATA BERHASIL DISIMPAN!\n\n" +
-                    "Unit: " +
-                    currentUnit +
-                    "\n" +
-                    "NRP: " +
-                    nrp +
-                    "\n" +
-                    "Operator: " +
-                    operator +
-                    "\n" +
-                    "HM CCR: " +
-                    currentHM +
-                    "\n" +
-                    "Pengisian Ke: " +
-                    currentCCRAllocation.filling_no +
-                    "\n" +
-                    "Fuel Aktual: " +
-                    fuel +
-                    " L\n" +
-                    "Batas CCR: " +
-                    currentCCRLimit +
-                    " L\n\n" +
-                    "Status jatah sekarang: USED ✅"
-                );
+                        hm_jalan:
+                            hmJalan,
 
-                location.reload();
+                        fuel:
+                            fuel,
 
-            } catch (error) {
+                        shift:
+                            Number(shift),
+
+                        session_id:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.id
+                                : null,
+
+                        fuelman_user_id:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.user_id
+                                : null,
+
+                        fuelman_username:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.username
+                                : null,
+
+                        fuelman_name:
+                            activeFuelmanSession
+                                ? activeFuelmanSession.fuelman_name
+                                : null,
+
+                        ccr_allocation_id:
+                            null,
+
+                        operator_nrp:
+                            null,
+
+                        ccr_filling_no:
+                            null,
+
+                        ccr_max_qty:
+                            null,
+
+                        ccr_tolerance_qty:
+                            null
+                    });
+
+            if (error) {
                 console.error(error);
 
                 alert(
@@ -2416,7 +2807,35 @@ document
                 saveButton.disabled = false;
                 saveButton.textContent =
                     "SIMPAN DATA";
+
+                return;
             }
+
+            alert(
+                "✅ DATA MANUAL BERHASIL DISIMPAN!\n\n" +
+                "Unit: " +
+                currentUnit +
+                "\n" +
+                "Operator: " +
+                operator +
+                "\n" +
+                "HM Sebelumnya: " +
+                (previousHM > 0 ? previousHM : "-") +
+                "\n" +
+                "HM Sekarang: " +
+                currentHM +
+                "\n" +
+                "HM Jalan: " +
+                hmJalan +
+                "\n" +
+                "Fuel: " +
+                fuel +
+                " L\n" +
+                "Shift: " +
+                shift
+            );
+
+            location.reload();
         }
     );
 
