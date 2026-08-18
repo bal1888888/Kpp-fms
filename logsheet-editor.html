@@ -211,9 +211,11 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
       Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
       <b>JAM boleh kosong.</b> Jika file punya JAM, jam asli dipakai. Jika file tidak punya JAM atau sel JAM kosong, sistem <b>tidak membuat jam palsu</b> dan transaksi tetap boleh disimpan.
-      <b>HM kosong juga tetap boleh di-import dan disimpan.</b>
-      Baris HM kosong tidak akan menjadi sumber HM berikutnya; sistem akan mencari HM valid terbaru sebelumnya.
-      Contoh: 15/08 HM 21 → 16/08 HM kosong → 17/08 HM 31, maka HM Awal tanggal 17 tetap 21 dan HM Jalan = 10.
+      <b>HM kosong atau HM yang lebih kecil tetap boleh di-import dan disimpan.</b>
+      Acuan HM berikutnya memakai <b>HM VALID TERTINGGI</b> yang pernah tercatat untuk unit tersebut.
+      Jadi HM kosong / HM lebih kecil tidak menurunkan acuan HM.
+      Contoh: 15/08 HM 21 → 16/08 HM kosong atau 18 → 17/08 HM 31,
+      maka acuan tetap 21 sampai HM 31 tersimpan; setelah itu pengisian berikutnya memakai 31.
       Mapping storage otomatis: <b>FT0073 → WH FT02</b> dan <b>FT0075 → WH FT01</b>.
       Jadi Admin cukup pilih Fuel Truck; kolom WH akan terisi otomatis dan terkunci.
       Jika file lama hanya punya kolom WH, sistem juga otomatis mengubahnya kembali menjadi Fuel Truck yang sesuai.
@@ -1229,8 +1231,8 @@ async function getBaseline(unit,tanggal){
       .eq("unit",unit)
       .lt("tanggal",tanggal)
       .not("hm_akhir","is",null)
+      .order("hm_akhir",{ascending:false})
       .order("tanggal",{ascending:false})
-      .order("jam",{ascending:false})
       .order("id",{ascending:false})
       .limit(1),
 
@@ -1238,8 +1240,9 @@ async function getBaseline(unit,tanggal){
       .select("tanggal,jam,hm,id")
       .eq("unit",unit)
       .lt("tanggal",tanggal)
+      .not("hm","is",null)
+      .order("hm",{ascending:false})
       .order("tanggal",{ascending:false})
-      .order("jam",{ascending:false})
       .order("id",{ascending:false})
       .limit(1)
   ]);
@@ -1250,15 +1253,13 @@ async function getBaseline(unit,tanggal){
   const f=(fuelRes.data||[])[0]||null;
   const c=(corRes.data||[])[0]||null;
 
-  let chosen=null;
+  const candidates=[
+    f?num(f.hm_akhir):null,
+    c?num(c.hm):null
+  ].filter(v=>v!==null);
 
-  if(f)chosen={dt:`${f.tanggal} ${f.jam||"00:00:00"}`,hm:num(f.hm_akhir)};
-  if(c){
-    const cc={dt:`${c.tanggal} ${c.jam||"00:00:00"}`,hm:num(c.hm)};
-    if(!chosen || cc.dt>chosen.dt)chosen=cc;
-  }
+  const value=candidates.length?Math.max(...candidates):null;
 
-  const value=chosen?.hm ?? null;
   baselineCache.set(key,value);
   return value;
 }
@@ -1286,21 +1287,26 @@ async function recalcAllHM(){
   }
 
   for(const [unit,list] of byUnit.entries()){
-    let prev=await getBaseline(unit,tanggal);
+    // HM acuan adalah high-water mark: nilai HM valid tertinggi.
+    // HM kosong / lebih kecil tetap boleh disimpan, tetapi tidak menurunkan acuan.
+    let highest=await getBaseline(unit,tanggal);
 
     for(const item of list){
       const r=item.r;
-      r.hm_awal=prev;
+      r.hm_awal=highest;
 
       const akhir=num(r.hm_akhir);
 
-      if(prev!==null && akhir!==null){
-        r.hm_jalan=akhir-prev;
+      if(highest!==null && akhir!==null && akhir>=highest){
+        r.hm_jalan=akhir-highest;
       }else{
+        // Jangan buat HM Jalan negatif dari data historis yang lebih kecil.
         r.hm_jalan=null;
       }
 
-      if(akhir!==null)prev=akhir;
+      if(akhir!==null && (highest===null || akhir>highest)){
+        highest=akhir;
+      }
     }
   }
 
@@ -1550,14 +1556,8 @@ function validateRow(r,index){
   if(!normalizeShift(r.shift))return `Baris ${index+1}: Shift wajib 1 atau 2.`;
   if(!normalizeFT(r.fuel_truck))return `Baris ${index+1}: Fuel Truck wajib FT0073 / FT0075.`;
 
-  if(
-    num(r.hm_akhir)!==null &&
-    r.hm_awal!==null &&
-    num(r.hm_akhir)<num(r.hm_awal)
-  ){
-    return `Baris ${index+1}: HM Saat Isi lebih kecil dari HM Awal.`;
-  }
-
+  // HM historis yang lebih kecil dari acuan tetap boleh disimpan.
+  // Nilai tersebut tidak akan menggantikan HM acuan tertinggi.
   return null;
 }
 
