@@ -146,7 +146,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   <div class="panel">
     <div class="notice">
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
-      Untuk input massal dari Excel, bisa langsung klik <b>IMPORT EXCEL</b> atau paste manual.
+      Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
       Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>:
       Shift 1 mulai 07:30 dan Shift 2 mulai 19:30, dengan interval yang bisa diubah sebelum import.
       Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
@@ -509,38 +509,74 @@ async function importExcelFile(file){
   try{
     const buffer=await file.arrayBuffer();
     const workbook=XLSX.read(buffer,{type:"array",cellDates:false});
-    const firstSheet=workbook.SheetNames[0];
 
-    if(!firstSheet)throw new Error("Sheet Excel tidak ditemukan.");
+    if(!workbook.SheetNames?.length){
+      throw new Error("Sheet Excel tidak ditemukan.");
+    }
 
-    const sheet=workbook.Sheets[firstSheet];
-    const matrix=XLSX.utils.sheet_to_json(sheet,{
-      header:1,
-      raw:true,
-      defval:""
-    });
-
-    if(!matrix.length)throw new Error("File Excel kosong.");
-
+    // Cari sheet logsheet secara otomatis.
+    // Jangan hanya baca sheet pertama, karena workbook lapangan bisa punya
+    // FLOWMETER / pivot / POPULASI UNIT sebelum sheet logsheet.
+    let selectedSheetName="";
+    let matrix=[];
     let headerRow=-1;
 
-    for(let i=0;i<Math.min(matrix.length,50);i++){
-      const hs=(matrix[i]||[]).map(normalizeHeader);
-      const hasUnit=hs.some(x=>["CODE UNIT","UNIT","UNIT CODE"].includes(x));
-      const hasHM=hs.some(x=>["HM","HM AKHIR","HM SAAT ISI","HM ISSUED"].includes(x));
-      const hasQty=hs.some(x=>["QTY ISSUED","QTY","FUEL","LITER","QTY LITER"].includes(x));
+    for(const sheetName of workbook.SheetNames){
+      const candidateSheet=workbook.Sheets[sheetName];
+      if(!candidateSheet)continue;
 
-      if(hasUnit && hasHM && hasQty){
-        headerRow=i;
+      const candidateMatrix=XLSX.utils.sheet_to_json(candidateSheet,{
+        header:1,
+        raw:true,
+        defval:""
+      });
+
+      if(!candidateMatrix.length)continue;
+
+      let candidateHeader=-1;
+
+      for(let i=0;i<Math.min(candidateMatrix.length,80);i++){
+        const hs=(candidateMatrix[i]||[]).map(normalizeHeader);
+
+        const hasUnit=hs.some(x=>
+          ["CODE UNIT","UNIT","UNIT CODE","CODE.UNIT"].includes(x)
+        );
+
+        const hasHM=hs.some(x=>
+          ["HM","HM AKHIR","HM SAAT ISI","HM ISSUED"].includes(x)
+        );
+
+        const hasQty=hs.some(x=>
+          ["QTY ISSUED","QTY","FUEL","LITER","QTY LITER"].includes(x)
+        );
+
+        const hasDate=hs.some(x=>
+          ["TANGGAL","DATE"].includes(x)
+        );
+
+        if(hasUnit && hasHM && hasQty && hasDate){
+          candidateHeader=i;
+          break;
+        }
+      }
+
+      if(candidateHeader>=0){
+        selectedSheetName=sheetName;
+        matrix=candidateMatrix;
+        headerRow=candidateHeader;
         break;
       }
     }
 
-    if(headerRow<0){
+    if(headerRow<0 || !selectedSheetName){
       throw new Error(
-        "Header Logsheet tidak dikenali. Minimal harus ada kolom Unit, HM, dan Qty."
+        "Sheet Logsheet tidak ditemukan. Sistem sudah memeriksa semua sheet, tetapi belum menemukan header TANGGAL + CODE UNIT + HM + QTY ISSUED."
       );
     }
+
+    status.textContent=
+      "✅ File terbaca. Sheet Logsheet ditemukan: "+selectedSheetName+
+      ". Menyiapkan preview...";
 
     const headers=matrix[headerRow]||[];
 
@@ -685,7 +721,7 @@ async function importExcelFile(file){
 
     showImportPreview({
       fileName:file.name,
-      sheetName:firstSheet,
+      sheetName:selectedSheetName,
       targetDate,
       sourceCount:sourceRows.length,
       importedCount,
@@ -729,8 +765,29 @@ async function importExcelFile(file){
 
   }catch(e){
     console.error(e);
+
+    const box=document.getElementById("importPreview");
+    const textEl=document.getElementById("importPreviewText");
+    const grid=document.getElementById("importPreviewGrid");
+
+    textEl.textContent=
+      "File: "+file.name+" • Import gagal sebelum preview dibuat.";
+
+    grid.innerHTML=`
+      <div class="import-preview-item" style="grid-column:1/-1">
+        <div style="font-size:10px;color:#64748b">Penyebab</div>
+        <div style="font-size:13px;font-weight:bold;margin-top:4px;color:#b91c1c">
+          ${esc(e.message)}
+        </div>
+      </div>
+    `;
+
+    box.classList.add("show");
     status.textContent="❌ Import gagal: "+e.message;
+
   }finally{
+    // Reset file picker supaya file yang sama boleh dipilih lagi.
+    // Nama file + error/preview tetap terlihat di panel Import Preview.
     document.getElementById("excelFile").value="";
   }
 }
