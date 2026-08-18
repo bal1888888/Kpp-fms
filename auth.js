@@ -100,6 +100,7 @@ window.KPP = {
         "admin.html",
         "gl.html",
         "logsheet.html",
+        "logsheet-editor.html",
         "riwayat.html",
         "hm-master.html",
         "akun.html"
@@ -132,6 +133,7 @@ window.KPP = {
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
+        ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
         ["akun", "akun.html", "👥 Kelola Akun"],
@@ -143,6 +145,7 @@ window.KPP = {
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
+        ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
       ];
