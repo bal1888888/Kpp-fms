@@ -74,6 +74,32 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:bold}
 .badge-old{background:#dcfce7;color:#166534}
 .badge-new{background:#dbeafe;color:#1d4ed8}
+.badge-import{background:#fef3c7;color:#92400e}
+.import-preview{
+  display:none;
+  margin-top:12px;
+  padding:12px;
+  border:1px solid #f59e0b;
+  background:#fffbeb;
+  border-radius:9px;
+  font-size:12px;
+  line-height:1.55;
+}
+.import-preview.show{display:block}
+.import-preview strong{color:#92400e}
+.import-preview-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+.import-preview-item{
+  background:#fff;
+  border:1px solid #fde68a;
+  border-radius:7px;
+  padding:8px;
+}
+.row-import td.row-no{background:#fef3c7;color:#92400e}
 
 .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
 .app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
@@ -163,7 +189,18 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     <div class="help">
       <span class="badge badge-old">HIJAU</span> data yang sudah ada di database •
       <span class="badge badge-new">BIRU</span> baris baru •
-      kuning = ada perubahan belum disimpan.
+      <span class="badge badge-import">KUNING</span> hasil Import Excel •
+      kuning = belum masuk database sampai klik SIMPAN SEMUA.
+    </div>
+
+    <div id="importPreview" class="import-preview">
+      <strong>📂 IMPORT PREVIEW</strong>
+      <div id="importPreviewText" style="margin-top:5px"></div>
+      <div id="importPreviewGrid" class="import-preview-grid"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="showImportBtn" type="button" class="btn-blue">⬇ LIHAT BARIS IMPORT</button>
+        <button id="cancelImportBtn" type="button" class="btn-outline">BATALKAN IMPORT</button>
+      </div>
     </div>
   </div>
 
@@ -208,6 +245,8 @@ let unitMaster=[];
 let baselineCache=new Map();
 let recalcTimer=null;
 let isDirty=false;
+let lastImportIndexes=[];
+let lastImportMeta=null;
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){
@@ -367,6 +406,87 @@ function rowSignature(r){
   ].join("|");
 }
 
+
+function hideImportPreview(){
+  document.getElementById("importPreview")?.classList.remove("show");
+  lastImportIndexes=[];
+  lastImportMeta=null;
+}
+
+function showImportPreview(meta){
+  lastImportMeta=meta;
+
+  const box=document.getElementById("importPreview");
+  const textEl=document.getElementById("importPreviewText");
+  const grid=document.getElementById("importPreviewGrid");
+
+  textEl.textContent=
+    `${meta.fileName} • Sheet: ${meta.sheetName} • Tanggal preview: ${meta.targetDate}`;
+
+  const items=[
+    ["Baris file terbaca",meta.sourceCount],
+    ["Masuk preview",meta.importedCount],
+    ["Jam otomatis",meta.generatedJam],
+    ["Duplikat dilewati",meta.duplicateCount],
+    ["Tanggal lain dilewati",meta.skippedOtherDate],
+    ["Unit belum master",meta.unknownUnit]
+  ];
+
+  grid.innerHTML=items.map(([label,value])=>`
+    <div class="import-preview-item">
+      <div style="font-size:10px;color:#64748b">${label}</div>
+      <div style="font-size:18px;font-weight:bold;margin-top:3px">${value}</div>
+    </div>
+  `).join("");
+
+  box.classList.add("show");
+}
+
+function scrollToFirstImport(){
+  const idx=rows.findIndex(r=>r.imported);
+
+  if(idx<0){
+    alert(
+      "Tidak ada baris baru untuk ditampilkan.\\n\\n"+
+      "Kemungkinan semua transaksi pada tanggal ini sudah ada di database atau tanggal file berbeda."
+    );
+    return;
+  }
+
+  const tr=document.querySelector(`tr[data-index="${idx}"]`);
+  tr?.scrollIntoView({behavior:"smooth",block:"center",inline:"start"});
+}
+
+function cancelCurrentImport(){
+  if(!rows.some(r=>r.imported)){
+    hideImportPreview();
+    return;
+  }
+
+  if(!confirm("Batalkan semua baris hasil Import Excel yang belum disimpan?"))return;
+
+  rows=rows.filter(r=>!r.imported);
+
+  while(rows.filter(r=>!r.existing).length<10){
+    rows.push(newBlankRow());
+  }
+
+  isDirty=rows.some(r=>r.dirty);
+  baselineCache.clear();
+
+  recalcAllHM()
+    .then(()=>{
+      render();
+      hideImportPreview();
+      document.getElementById("status").textContent="✅ Import dibatalkan. Database tidak berubah.";
+    })
+    .catch(e=>{
+      render();
+      hideImportPreview();
+      document.getElementById("status").textContent="❌ "+e.message;
+    });
+}
+
 async function importExcelFile(file){
   const status=document.getElementById("status");
 
@@ -383,6 +503,7 @@ async function importExcelFile(file){
     }
   }
 
+  hideImportPreview();
   status.textContent="Membaca file Excel...";
 
   try{
@@ -526,6 +647,7 @@ async function importExcelFile(file){
         wh:FT_WH[ft]||"",
         fuelman_name:idx.fuelman>=0?cleanText(raw[idx.fuelman]):"",
         dirty:true,
+        imported:true,
         import_generated_time:idx.jam<0 || !excelTimeToHHMM(raw[idx.jam])
       };
 
@@ -548,13 +670,30 @@ async function importExcelFile(file){
       ...imported
     ];
 
-    addBlankRows(10);
+    // Tambah baris kosong tanpa menghilangkan hasil import.
+    for(let i=0;i<10;i++)rows.push(newBlankRow());
 
     isDirty=imported.length>0;
 
     baselineCache.clear();
     await recalcAllHM();
     render();
+
+    lastImportIndexes=rows
+      .map((r,i)=>r.imported?i:-1)
+      .filter(i=>i>=0);
+
+    showImportPreview({
+      fileName:file.name,
+      sheetName:firstSheet,
+      targetDate,
+      sourceCount:sourceRows.length,
+      importedCount,
+      generatedJam,
+      duplicateCount,
+      skippedOtherDate,
+      unknownUnit
+    });
 
     let msg=`✅ Import preview: ${importedCount} baris masuk.`;
 
@@ -578,7 +717,15 @@ async function importExcelFile(file){
       msg+=` File punya ${uniqueDates.length} tanggal; editor saat ini menampilkan ${targetDate}.`;
     }
 
-    status.textContent=msg+" Belum masuk database sampai klik SIMPAN SEMUA.";
+    if(importedCount===0){
+      msg+=" Tidak ada baris baru untuk preview.";
+    }
+
+    status.textContent=msg+" Belum ada perubahan database sampai klik SIMPAN SEMUA.";
+
+    if(importedCount>0){
+      setTimeout(scrollToFirstImport,150);
+    }
 
   }catch(e){
     console.error(e);
@@ -603,7 +750,8 @@ function newBlankRow(){
     fuelman_name:"",
     wh:"",
     existing:false,
-    dirty:false
+    dirty:false,
+    imported:false
   };
 }
 
@@ -626,6 +774,7 @@ async function loadUnitMaster(){
 }
 
 async function loadDate(){
+  hideImportPreview();
   const tanggal=document.getElementById("editorDate").value;
   const status=document.getElementById("status");
 
@@ -661,7 +810,8 @@ async function loadDate(){
     fuelman_name:r.fuelman_name||"",
     wh:r.wh||"",
     existing:true,
-    dirty:false
+    dirty:false,
+    imported:false
   }));
 
   addBlankRows(10);
@@ -806,10 +956,13 @@ function render(){
   rows.forEach((r,index)=>{
     const tr=document.createElement("tr");
     tr.dataset.index=index;
-    tr.className=(r.existing?"row-existing":"row-new")+(r.dirty?" dirty":"");
+    tr.className=
+      (r.existing?"row-existing":"row-new")+
+      (r.imported?" row-import":"")+
+      (r.dirty?" dirty":"");
 
     tr.innerHTML=`
-      <td class="row-no">${index+1}</td>
+      <td class="row-no">${index+1}${r.imported?'<div style="font-size:8px;margin-top:2px">IMP</div>':""}</td>
       <td><input class="grid-input col-jam" data-col="0" value="${esc(displayTime(r.jam))}" placeholder="07:30"></td>
       <td><input class="grid-input col-unit" data-col="1" list="unitList" value="${esc(r.unit)}" placeholder="CB1019"></td>
       <td><input class="grid-input col-operator" data-col="2" value="${esc(r.operator)}" placeholder="Operator"></td>
@@ -1045,6 +1198,7 @@ async function saveAll(){
     }
 
     isDirty=false;
+    hideImportPreview();
     status.textContent=`✅ ${filled.length} baris berhasil disimpan. Audit otomatis mencatat edit data lama.`;
     await loadDate();
 
@@ -1113,6 +1267,9 @@ document.getElementById("excelFile").addEventListener("change",e=>{
   const file=e.target.files?.[0];
   if(file)importExcelFile(file);
 });
+
+document.getElementById("showImportBtn").addEventListener("click",scrollToFirstImport);
+document.getElementById("cancelImportBtn").addEventListener("click",cancelCurrentImport);
 
 document.getElementById("add10Btn").addEventListener("click",()=>addBlankRows(10));
 document.getElementById("saveBtn").addEventListener("click",saveAll);
