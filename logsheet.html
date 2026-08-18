@@ -139,7 +139,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <div class="table-wrapper">
 <table>
 <thead><tr>
-<th>LOG NO</th><th>TANGGAL</th><th>SHIF</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
+<th>LOG NO</th><th>TANGGAL</th><th>JAM</th><th>SHIF</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
 </tr></thead>
 <tbody id="logsheetBody"></tbody>
 </table>
@@ -401,6 +401,7 @@ function renderTable(data){
 
     row.appendChild(td(item.id||index+1));
     row.appendChild(td(formatTanggal(item.tanggal)));
+    row.appendChild(td(item.jam ? String(item.jam).slice(0,8) : "-"));
     row.appendChild(td(item.shift||"-"));
     row.appendChild(td(getWH(item)));
     row.appendChild(td(getFuelTruck(item)));
@@ -495,6 +496,7 @@ async function downloadExcel(){
     const headers=[
       "LOG NO",
       "TANGGAL",
+      "JAM",
       "SHIF",
       "WH",
       "FUEL TRUCK",
@@ -511,13 +513,13 @@ async function downloadExcel(){
     ];
 
     // Lebar kolom tetap mengikuti bentuk logsheet lama, dengan Fuel Truck ditambahkan.
-    const widths=[11,13,7,9,12,13,34,16,12,14,22,17,12,15,24];
+    const widths=[11,13,10,7,9,12,13,34,16,12,14,22,17,12,15,24];
     widths.forEach((width,index)=>{
       ws.getColumn(index+1).width=width;
     });
 
     // ===== IDENTITAS / JUDUL - mengikuti gaya logsheet lama =====
-    ws.mergeCells("A2:O2");
+    ws.mergeCells("A2:P2");
     const companyCell=ws.getCell("A2");
     companyCell.value="PT. KALIMANTAN PRIMA PERSADA";
     companyCell.font={
@@ -528,7 +530,7 @@ async function downloadExcel(){
     };
     companyCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A3:O3");
+    ws.mergeCells("A3:P3");
     const subtitleCell=ws.getCell("A3");
     subtitleCell.value="Integreated Mining Services";
     subtitleCell.font={
@@ -539,7 +541,7 @@ async function downloadExcel(){
     };
     subtitleCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A5:O5");
+    ws.mergeCells("A5:P5");
     const titleCell=ws.getCell("A5");
 
     const mode=document.getElementById("dateMode").value;
@@ -571,7 +573,7 @@ async function downloadExcel(){
 
     // Total Qty Issued diletakkan tepat di kolom QTY ISSUED seperti logsheet lama.
     const totalFuel=data.reduce((sum,item)=>sum+(Number(item.fuel)||0),0);
-    const totalCell=ws.getCell("J7");
+    const totalCell=ws.getCell("K7");
     totalCell.value=totalFuel;
     totalCell.numFmt="0";
     totalCell.font={name:"Calibri",size:16,bold:true,color:{argb:"FF000000"}};
@@ -582,13 +584,13 @@ async function downloadExcel(){
     ws.getCell("A8").value="KETERANGAN";
     ws.mergeCells("B8:F8");
     ws.getCell("B8").value="JINGGA = ERROR / BELUM DIKETAHUI";
-    ws.mergeCells("G8:K8");
+    ws.mergeCells("G8:L8");
     ws.getCell("G8").value="MERAH = DOUBLE POSTING";
-    ws.mergeCells("L8:O8");
-    ws.getCell("L8").value="PUTIH = DATA NORMAL";
+    ws.mergeCells("M8:P8");
+    ws.getCell("M8").value="PUTIH = DATA NORMAL";
 
     const gold="FFBF9000";
-    const legendRanges=["A8:A8","B8:F8","G8:K8","L8:O8"];
+    const legendRanges=["A8:A8","B8:F8","G8:L8","M8:P8"];
 
     legendRanges.forEach(range=>{
       const r=ws.getCell(range.split(":")[0]);
@@ -597,7 +599,7 @@ async function downloadExcel(){
     });
 
     // Beri border emas pada seluruh baris keterangan.
-    for(let col=1;col<=15;col++){
+    for(let col=1;col<=16;col++){
       const c=ws.getCell(8,col);
       c.border={
         top:{style:"medium",color:{argb:gold}},
@@ -610,7 +612,7 @@ async function downloadExcel(){
     ws.getCell("B8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF4B183"}};
     ws.getCell("G8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF0000"}};
     ws.getCell("G8").font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
-    ws.getCell("L8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
+    ws.getCell("M8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
 
     // ===== HEADER KOLOM =====
     const headerRow=ws.getRow(9);
@@ -655,6 +657,7 @@ async function downloadExcel(){
           const [y,m,d]=String(item.tanggal).split("-").map(Number);
           return new Date(Date.UTC(y,m-1,d));
         })() : "",
+        item.jam ? String(item.jam).slice(0,8) : "",
         item.shift||"",
         getWH(item),
         getFuelTruck(item)==="-" ? "" : getFuelTruck(item),
@@ -690,18 +693,18 @@ async function downloadExcel(){
 
       // Format tanggal, HM, dan Qty.
       row.getCell(2).numFmt="dd/mm/yyyy";
-      row.getCell(9).numFmt="0";
       row.getCell(10).numFmt="0";
+      row.getCell(11).numFmt="0";
 
       // Kolom EGI dibuat tetap rapi walau nama panjang.
-      row.getCell(7).alignment={
+      row.getCell(8).alignment={
         vertical:"middle",
         horizontal:"center",
         wrapText:true
       };
 
       // Status sesuai aturan KPP-FMS sekarang.
-      const statusCell=row.getCell(15);
+      const statusCell=row.getCell(16);
 
       if(status==="DOUBLE POSTING"){
         statusCell.fill={
@@ -740,7 +743,7 @@ async function downloadExcel(){
     // Filter seperti Excel biasa.
     ws.autoFilter={
       from:{row:9,column:1},
-      to:{row:9,column:15}
+      to:{row:9,column:16}
     };
 
     // Print / tampilan Excel lebih enak.
