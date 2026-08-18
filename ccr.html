@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CCR - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+window.KPP_ALLOWED_ROLES=["ccr","gl"];
+window.KPP_ACTIVE_PAGE="ccr";
+</script>
+<script src="auth.js"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:21px}
+.header h1{margin:0 0 5px;font-size:23px}
+.container{max-width:1180px;margin:24px auto;padding:14px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:18px}
+h2{margin-top:0}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:13px;line-height:1.6;margin-bottom:18px;font-size:13px}
+.qr-box{background:#111827;color:#fff;border-radius:12px;padding:15px;margin-bottom:16px}
+.qr-box b{color:#93c5fd}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px;color:#374151}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;background:#fff;color:#111827}
+input[readonly]{background:#f8fafc;color:#475569;font-weight:bold}
+textarea{min-height:78px;resize:vertical}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
+button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:pointer}
+.btn-green{background:#16a34a;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+.btn-outline{background:#fff;color:#334155;border:1px solid #cbd5e1}
+.ritasi{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:13px;margin-top:13px}
+.ritasi .num{font-size:25px;font-weight:bold;color:#9a3412}
+.formula{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:13px;margin-top:13px}
+.formula .big{font-size:25px;font-weight:bold;color:#166534}
+.pending-box{background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-top:12px}
+.status{margin-top:12px;font-size:13px;font-weight:bold;line-height:1.55}
+.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #e5e7eb;border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:1200px}
+th,td{padding:9px;border-bottom:1px solid #e5e7eb;border-right:1px solid #eef2f7;font-size:12px;text-align:center}
+th{background:#1f2937;color:#fff;position:sticky;top:0;z-index:2}
+td.left{text-align:left}
+.tag{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:bold}
+.tag-active{background:#dcfce7;color:#166534}
+.tag-pending{background:#fef3c7;color:#92400e}
+.tag-used{background:#dbeafe;color:#1d4ed8}
+.tag-rejected,.tag-cancelled{background:#fee2e2;color:#991b1b}
+.hidden{display:none!important}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.app-nav-inner{justify-content:flex-start}}
+@media(max-width:560px){.container{margin:10px auto;padding:9px}.panel{padding:14px}.grid{grid-template-columns:1fr}.header{padding:15px 10px}.header h1{font-size:18px}.actions{display:grid;grid-template-columns:1fr}.actions button{width:100%}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+  <div>Display CCR — Jatah Pengisian</div>
+</div>
+
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
+
+<div class="container">
+
+  <div class="qr-box">
+    <b>QR = CODE UNIT.</b><br>
+    Contoh QR ditempel di HD7441 dan isinya hanya <b>HD7441</b>.
+    CCR yang menentukan siapa operator yang membawa unit tersebut, NRP, HM, jatah dan toleransinya.
+  </div>
+
+  <div class="info">
+    <b>1 jatah = 1 kali pengisian.</b>
+    Pengisian ke-1 langsung ACTIVE.
+    Pengisian ke-2 dan seterusnya otomatis PENDING_GL dan belum bisa dibaca Fuelman sampai GL menyetujui.
+  </div>
+
+  <div class="panel">
+    <h2>🎯 Input Jatah Unit</h2>
+
+    <div class="grid">
+      <div>
+        <label>Tanggal</label>
+        <input type="date" id="tanggal">
+      </div>
+
+      <div>
+        <label>Shift</label>
+        <select id="shift">
+          <option value="">-- Pilih Shift --</option>
+          <option value="Shift 1">Shift 1</option>
+          <option value="Shift 2">Shift 2</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Unit / ID QR</label>
+        <input id="unit" list="unitList" placeholder="Contoh: HD7441">
+        <datalist id="unitList"></datalist>
+      </div>
+
+      <div>
+        <label>QR yang Akan Dibaca</label>
+        <input id="qrDisplay" readonly placeholder="Otomatis = Unit">
+      </div>
+
+      <div>
+        <label>NRP Operator</label>
+        <input id="nrp" placeholder="Contoh: KL1234">
+      </div>
+
+      <div>
+        <label>Nama Operator</label>
+        <input id="operator" placeholder="Contoh: Rado">
+      </div>
+
+      <div>
+        <label>HM dari CCR</label>
+        <input type="number" step="0.1" id="hm" placeholder="Contoh: 2950">
+      </div>
+
+      <div>
+        <label>Qty Jatah (L)</label>
+        <input type="number" step="1" min="1" id="maxQty" placeholder="Contoh: 300">
+      </div>
+
+      <div>
+        <label>Toleransi Lebih (L)</label>
+        <input type="number" step="1" min="0" id="toleranceQty" value="0">
+      </div>
+    </div>
+
+    <div class="ritasi">
+      Ritasi/Pengisian berikutnya untuk UNIT + tanggal + shift ini:
+      <div class="num">Ke-<span id="nextFillNo">1</span></div>
+      <div id="approvalHint" style="font-size:12px;color:#7c2d12">
+        Pengisian ke-1 langsung ACTIVE.
+      </div>
+    </div>
+
+    <div class="formula">
+      Batas final yang boleh diisi Fuelman:
+      <div class="big"><span id="finalLimit">0</span> L</div>
+      <div style="font-size:12px;color:#475569">Qty Jatah + Toleransi</div>
+    </div>
+
+    <div id="reasonBox" class="pending-box hidden">
+      <label>Alasan Pengisian Tambahan</label>
+      <textarea id="requestReason" placeholder="Wajib untuk pengisian ke-2 dan seterusnya"></textarea>
+      <div style="font-size:12px;color:#92400e;margin-top:5px">
+        Setelah disimpan, statusnya PENDING_GL.
+      </div>
+    </div>
+
+    <div style="margin-top:13px">
+      <label>Catatan CCR</label>
+      <textarea id="note" placeholder="Opsional"></textarea>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn" class="btn-green">💾 SIMPAN JATAH</button>
+      <button id="refreshNoBtn" class="btn-outline">↻ CEK RITASI</button>
+    </div>
+
+    <div id="formStatus" class="status"></div>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+      <h2 style="margin:0">📋 Riwayat Jatah CCR</h2>
+      <div class="actions" style="margin:0">
+        <select id="statusFilter" style="width:auto">
+          <option value="ALL">SEMUA</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="PENDING_GL">PENDING GL</option>
+          <option value="USED">USED</option>
+          <option value="REJECTED">REJECTED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+        <button id="refreshBtn" class="btn-outline">↻ REFRESH</button>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:14px">
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Shift</th>
+            <th>Ke-</th>
+            <th>Unit / QR</th>
+            <th>NRP</th>
+            <th>Nama</th>
+            <th>HM</th>
+            <th>Jatah</th>
+            <th>Tol.</th>
+            <th>Batas</th>
+            <th>Status</th>
+            <th>Alasan</th>
+            <th>Input By</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+
+    <div id="tableStatus" class="status"></div>
+  </div>
+
+</div>
+
+<script>
+const db=window.KPP.db;
+let PROFILE=null;
+let ROWS=[];
+
+function pad(n){return String(n).padStart(2,"0")}
+function today(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function clean(v){return String(v??"").trim()}
+function upper(v){return clean(v).toUpperCase()}
+function num(v){
+  if(v===null||v===undefined||v==="")return null;
+  const x=Number(v);
+  return Number.isFinite(x)?x:null;
+}
+function fmt(v){
+  const x=Number(v);
+  return Number.isFinite(x)
+    ? new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(x)
+    : "-";
+}
+function dateID(v){
+  if(!v)return "-";
+  const [y,m,d]=String(v).split("-");
+  return `${d}/${m}/${y}`;
+}
+function esc(v){
+  return String(v??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function tag(s){
+  const map={
+    ACTIVE:"tag-active",
+    PENDING_GL:"tag-pending",
+    USED:"tag-used",
+    REJECTED:"tag-rejected",
+    CANCELLED:"tag-cancelled"
+  };
+  return `<span class="tag ${map[s]||"tag-cancelled"}">${esc(s)}</span>`;
+}
+
+function updateLimit(){
+  const qty=num(document.getElementById("maxQty").value)||0;
+  const tol=num(document.getElementById("toleranceQty").value)||0;
+  document.getElementById("finalLimit").textContent=fmt(qty+tol);
+}
+
+function updateQrDisplay(){
+  document.getElementById("qrDisplay").value=
+    upper(document.getElementById("unit").value);
+}
+
+async function loadUnits(){
+  const {data,error}=await db
+    .from("unit_master")
+    .select("code_unit,egi")
+    .order("code_unit",{ascending:true});
+
+  if(error)throw error;
+
+  document.getElementById("unitList").innerHTML=
+    (data||[]).map(x=>
+      `<option value="${esc(x.code_unit)}">${esc(x.egi||"")}</option>`
+    ).join("");
+}
+
+async function refreshFillingNo(){
+  const unit=upper(document.getElementById("unit").value);
+  const tanggal=document.getElementById("tanggal").value;
+  const shift=document.getElementById("shift").value;
+
+  let next=1;
+
+  if(unit && tanggal && shift){
+    const {data,error}=await db
+      .from("ccr_allocations")
+      .select("filling_no,status")
+      .eq("tanggal",tanggal)
+      .eq("shift",shift)
+      .eq("unit",unit)
+      .not("status","in",'("CANCELLED","REJECTED")');
+
+    if(!error && data?.length){
+      next=Math.max(...data.map(x=>Number(x.filling_no)||0))+1;
+    }
+  }
+
+  document.getElementById("nextFillNo").textContent=next;
+
+  const box=document.getElementById("reasonBox");
+  const hint=document.getElementById("approvalHint");
+
+  if(next>=2){
+    box.classList.remove("hidden");
+    hint.innerHTML=
+      `Pengisian ke-${next} akan <b>PENDING_GL</b> sampai disetujui GL.`;
+  }else{
+    box.classList.add("hidden");
+    hint.textContent="Pengisian ke-1 langsung ACTIVE.";
+  }
+
+  return next;
+}
+
+function validate(next){
+  const tanggal=document.getElementById("tanggal").value;
+  const shift=document.getElementById("shift").value;
+  const unit=upper(document.getElementById("unit").value);
+  const nrp=upper(document.getElementById("nrp").value);
+  const operator=clean(document.getElementById("operator").value);
+  const hm=num(document.getElementById("hm").value);
+  const qty=num(document.getElementById("maxQty").value);
+  const tol=num(document.getElementById("toleranceQty").value);
+
+  if(!tanggal)return "Tanggal wajib.";
+  if(!["Shift 1","Shift 2"].includes(shift))return "Shift wajib.";
+  if(!unit)return "Unit wajib.";
+  if(!nrp)return "NRP Operator wajib.";
+  if(!operator)return "Nama Operator wajib.";
+  if(hm===null)return "HM CCR wajib.";
+  if(qty===null||qty<=0)return "Qty Jatah harus lebih dari 0 L.";
+  if(tol===null||tol<0)return "Toleransi tidak boleh minus.";
+
+  if(next>=2 && !clean(document.getElementById("requestReason").value)){
+    return `Pengisian ke-${next} wajib memiliki alasan untuk approval GL.`;
+  }
+
+  return "";
+}
+
+async function save(){
+  const btn=document.getElementById("saveBtn");
+  const status=document.getElementById("formStatus");
+
+  btn.disabled=true;
+  btn.textContent="MENYIMPAN...";
+  status.textContent="Memeriksa ritasi...";
+
+  try{
+    const next=await refreshFillingNo();
+    const err=validate(next);
+    if(err)throw new Error(err);
+
+    const unit=upper(document.getElementById("unit").value);
+
+    const payload={
+      tanggal:document.getElementById("tanggal").value,
+      shift:document.getElementById("shift").value,
+      unit,
+      barcode_code:unit,
+      nrp:upper(document.getElementById("nrp").value),
+      operator_unit:clean(document.getElementById("operator").value),
+      hm_ccr:num(document.getElementById("hm").value),
+      max_qty:num(document.getElementById("maxQty").value),
+      tolerance_qty:num(document.getElementById("toleranceQty").value)||0,
+      request_reason:
+        next>=2
+          ? clean(document.getElementById("requestReason").value)
+          : null,
+      note:clean(document.getElementById("note").value)||null,
+      created_by:window.KPP_SESSION?.user?.id||null,
+      created_by_name:PROFILE?.display_name||null,
+      created_by_role:PROFILE?.role||null
+    };
+
+    const {data,error}=await db
+      .from("ccr_allocations")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if(error){
+      const m=String(error.message||"");
+
+      if(m.includes("ccr_one_pending_per_unit")){
+        throw new Error(
+          `${unit} masih punya pengajuan PENDING GL. Selesaikan pengajuan itu dulu.`
+        );
+      }
+
+      if(m.includes("ccr_one_active_per_unit")){
+        throw new Error(
+          `${unit} masih punya jatah ACTIVE. Jika ini pengisian tambahan, buat sebagai ritasi berikutnya setelah data ter-refresh.`
+        );
+      }
+
+      throw error;
+    }
+
+    const limit=
+      Number(data.max_qty||0)+
+      Number(data.tolerance_qty||0);
+
+    if(data.status==="ACTIVE"){
+      status.innerHTML=
+        `✅ <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} ACTIVE.</b> `+
+        `${esc(data.operator_unit)} / ${esc(data.nrp)} • Batas ${fmt(limit)} L.`;
+    }else{
+      status.innerHTML=
+        `🟡 <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} PENDING GL.</b> `+
+        `Belum bisa dipakai Fuelman.`;
+    }
+
+    await loadRows();
+
+    document.getElementById("nrp").value="";
+    document.getElementById("operator").value="";
+    document.getElementById("hm").value="";
+    document.getElementById("maxQty").value="";
+    document.getElementById("toleranceQty").value="0";
+    document.getElementById("requestReason").value="";
+    document.getElementById("note").value="";
+
+    await refreshFillingNo();
+    updateLimit();
+
+  }catch(e){
+    console.error(e);
+    status.textContent="❌ "+e.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent="💾 SIMPAN JATAH";
+  }
+}
+
+async function cancelRow(id){
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
+  if(!confirm(
+    `Batalkan jatah ${r.unit} pengisian ke-${r.filling_no}?`
+  ))return;
+
+  const {error}=await db
+    .from("ccr_allocations")
+    .update({status:"CANCELLED"})
+    .eq("id",id)
+    .in("status",["ACTIVE","PENDING_GL"]);
+
+  if(error){
+    alert("Gagal membatalkan: "+error.message);
+    return;
+  }
+
+  await loadRows();
+  await refreshFillingNo();
+}
+
+async function loadRows(){
+  const filter=document.getElementById("statusFilter").value;
+
+  let q=db
+    .from("ccr_allocations")
+    .select("*")
+    .order("tanggal",{ascending:false})
+    .order("id",{ascending:false})
+    .limit(500);
+
+  if(filter!=="ALL"){
+    q=q.eq("status",filter);
+  }
+
+  const {data,error}=await q;
+
+  if(error){
+    document.getElementById("tableStatus").textContent=
+      "❌ "+error.message;
+    return;
+  }
+
+  ROWS=data||[];
+
+  const body=document.getElementById("body");
+
+  body.innerHTML=ROWS.length
+    ? ROWS.map(r=>{
+        const limit=
+          Number(r.max_qty||0)+
+          Number(r.tolerance_qty||0);
+
+        const canCancel=
+          ["ACTIVE","PENDING_GL"].includes(r.status) &&
+          (
+            PROFILE?.role==="gl" ||
+            String(r.created_by||"")===String(window.KPP_SESSION?.user?.id||"")
+          );
+
+        return `
+          <tr>
+            <td>${dateID(r.tanggal)}</td>
+            <td>${esc(r.shift)}</td>
+            <td><b>${r.filling_no??"-"}</b></td>
+            <td><b>${esc(r.unit)}</b></td>
+            <td>${esc(r.nrp||"-")}</td>
+            <td class="left">${esc(r.operator_unit||"-")}</td>
+            <td>${fmt(r.hm_ccr)}</td>
+            <td>${fmt(r.max_qty)} L</td>
+            <td>${fmt(r.tolerance_qty)} L</td>
+            <td><b>${fmt(limit)} L</b></td>
+            <td>${tag(r.status)}</td>
+            <td class="left">${esc(r.request_reason||"-")}</td>
+            <td>${esc(r.created_by_name||"-")}</td>
+            <td>
+              ${
+                canCancel
+                  ? `<button class="btn-red cancel-btn" data-id="${r.id}" style="padding:7px 9px">Batalkan</button>`
+                  : "-"
+              }
+            </td>
+          </tr>
+        `;
+      }).join("")
+    : '<tr><td colspan="14">Belum ada data.</td></tr>';
+
+  body.querySelectorAll(".cancel-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>cancelRow(btn.dataset.id));
+  });
+
+  document.getElementById("tableStatus").textContent=
+    `✅ ${ROWS.length} data CCR terbaca.`;
+}
+
+document.getElementById("unit").addEventListener("input",()=>{
+  updateQrDisplay();
+});
+document.getElementById("unit").addEventListener("change",async()=>{
+  updateQrDisplay();
+  await refreshFillingNo();
+});
+document.getElementById("tanggal").addEventListener("change",refreshFillingNo);
+document.getElementById("shift").addEventListener("change",refreshFillingNo);
+document.getElementById("maxQty").addEventListener("input",updateLimit);
+document.getElementById("toleranceQty").addEventListener("input",updateLimit);
+document.getElementById("refreshNoBtn").addEventListener("click",refreshFillingNo);
+document.getElementById("saveBtn").addEventListener("click",save);
+document.getElementById("refreshBtn").addEventListener("click",loadRows);
+document.getElementById("statusFilter").addEventListener("change",loadRows);
+
+document.addEventListener("kpp-auth-ready",async e=>{
+  PROFILE=e.detail.profile;
+  document.getElementById("tanggal").value=today();
+
+  try{
+    await loadUnits();
+    await loadRows();
+    await refreshFillingNo();
+    updateLimit();
+  }catch(err){
+    document.getElementById("formStatus").textContent=
+      "❌ "+err.message;
+  }
+});
+</script>
+</body>
+</html>
