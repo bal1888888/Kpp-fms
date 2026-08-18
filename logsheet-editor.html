@@ -210,15 +210,13 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     <div class="notice">
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
       Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
-      Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>.
-      <b>HM kosong tetap boleh di-import dan disimpan.</b>
-      Baris tersebut tidak akan menjadi sumber HM berikutnya; sistem akan mencari HM valid terbaru sebelumnya.
+      <b>JAM boleh kosong.</b> Jika file punya JAM, jam asli dipakai. Jika file tidak punya JAM atau sel JAM kosong, sistem <b>tidak membuat jam palsu</b> dan transaksi tetap boleh disimpan.
+      <b>HM kosong juga tetap boleh di-import dan disimpan.</b>
+      Baris HM kosong tidak akan menjadi sumber HM berikutnya; sistem akan mencari HM valid terbaru sebelumnya.
       Contoh: 15/08 HM 21 → 16/08 HM kosong → 17/08 HM 31, maka HM Awal tanggal 17 tetap 21 dan HM Jalan = 10.
       Mapping storage otomatis: <b>FT0073 → WH FT02</b> dan <b>FT0075 → WH FT01</b>.
       Jadi Admin cukup pilih Fuel Truck; kolom WH akan terisi otomatis dan terkunci.
       Jika file lama hanya punya kolom WH, sistem juga otomatis mengubahnya kembali menjadi Fuel Truck yang sesuai.
-      <br><br>Jam otomatis:
-      Shift 1 mulai 07:30 dan Shift 2 mulai 19:30, dengan interval yang bisa diubah sebelum import.
       Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
       Tombol hijau menyimpan <b>tanggal yang sedang ditampilkan saja</b>. Setelah berhasil, status baris berubah menjadi
       <b>TERSIMPAN BARU / EDIT TERSIMPAN / SUDAH ADA</b>.
@@ -237,19 +235,8 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 
     <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
 
-    <div class="import-settings">
-      <div>
-        <label>Jam Otomatis Shift 1</label>
-        <input type="time" id="autoJamS1" value="07:30">
-      </div>
-      <div>
-        <label>Jam Otomatis Shift 2</label>
-        <input type="time" id="autoJamS2" value="19:30">
-      </div>
-      <div>
-        <label>Interval Antar Baris (menit)</label>
-        <input type="number" id="autoInterval" min="1" max="60" value="1">
-      </div>
+    <div class="help" style="margin-top:10px">
+      ⏱️ <b>Jam bersifat opsional.</b> Kosong tetap aman disimpan. Kalau ada jam asli di Excel, jam tersebut tetap dipakai.
     </div>
 
     <div class="actions-top">
@@ -707,7 +694,7 @@ function showImportPreview(meta){
     ["Tanggal ditemukan",meta.dateCount],
     ["Unit belum master",meta.unknownUnit],
     ["HM kosong (boleh save)",meta.blankHM],
-    ["Jam otomatis",meta.generatedJam]
+    ["Jam kosong (boleh save)",meta.blankJam]
   ];
 
   grid.innerHTML=items.map(([label,value])=>`
@@ -884,10 +871,10 @@ async function importExcelFile(file){
       throw new Error("Tidak ada transaksi bertanggal yang terbaca dari sheet Logsheet.");
     }
 
-    // Parse file first. JAM is generated deterministically by each date + shift
-    // only for preview/order; it is NOT part of duplicate matching.
-    const autoCountersByDate={};
-    let generatedJam=0;
+    // Parse file first.
+    // JAM kosong tetap kosong dan tetap boleh disimpan.
+    // JAM juga bukan bagian dari duplicate matching.
+    let blankJam=0;
     let unknownUnit=0;
     let blankHM=0;
 
@@ -913,15 +900,11 @@ async function importExcelFile(file){
 
       const shift=idx.shift>=0?normalizeShift(raw[idx.shift]):"";
 
-      if(!autoCountersByDate[tanggal]){
-        autoCountersByDate[tanggal]={1:0,2:0};
-      }
-
+      // Pakai jam asli jika ada; bila kosong biarkan kosong.
       let jam=idx.jam>=0?excelTimeToHHMM(raw[idx.jam]):"";
 
       if(!jam){
-        jam=makeAutoTime(shift,autoCountersByDate[tanggal]);
-        generatedJam++;
+        blankJam++;
       }
 
       let ft=idx.ft>=0?normalizeFT(raw[idx.ft]):"";
@@ -943,7 +926,7 @@ async function importExcelFile(file){
         fuelman_name:idx.fuelman>=0?cleanText(raw[idx.fuelman]):"",
         dirty:true,
         imported:true,
-        import_generated_time:idx.jam<0 || !excelTimeToHHMM(raw[idx.jam]),
+        import_generated_time:false,
         source_row:item.sourceRow
       };
 
@@ -1047,7 +1030,7 @@ async function importExcelFile(file){
       dateCount:dates.length,
       unknownUnit,
       blankHM,
-      generatedJam,
+      blankJam,
       targetDate
     });
 
@@ -1056,7 +1039,7 @@ async function importExcelFile(file){
     status.textContent=
       `✅ File terbaca: ${parsed.length} transaksi, ${dates.length} tanggal. `+
       `${totalNew} BARU, ${totalDuplicate} SUDAH ADA/DUPLIKAT, `+
-      `${blankHM} baris HM kosong tetap boleh disimpan. `+
+      `${blankHM} baris HM kosong dan ${blankJam} baris JAM kosong tetap boleh disimpan. `+
       `Yang SUDAH ADA tidak dimasukkan lagi.`;
 
   }catch(e){
@@ -1396,7 +1379,7 @@ function render(){
 
     tr.innerHTML=`
       <td class="row-no">${index+1}${r.imported?'<div style="font-size:8px;margin-top:2px">IMP</div>':""}</td>
-      <td><input class="grid-input col-jam" data-col="0" value="${esc(displayTime(r.jam))}" placeholder="07:30"></td>
+      <td><input class="grid-input col-jam" data-col="0" value="${esc(displayTime(r.jam))}" placeholder="Opsional"></td>
       <td><input class="grid-input col-unit" data-col="1" list="unitList" value="${esc(r.unit)}" placeholder="CB1019"></td>
       <td><input class="grid-input col-operator" data-col="2" value="${esc(r.operator)}" placeholder="Operator"></td>
       <td class="calc hm-awal">${r.hm_awal===null?"-":esc(r.hm_awal)}</td>
@@ -1562,7 +1545,6 @@ function isRowEmpty(r){
 function validateRow(r,index){
   if(isRowEmpty(r))return null;
 
-  if(!normalizeTime(r.jam))return `Baris ${index+1}: Jam wajib diisi.`;
   if(!cleanText(r.unit))return `Baris ${index+1}: Unit wajib diisi.`;
   if(num(r.fuel)===null || num(r.fuel)<=0)return `Baris ${index+1}: Qty harus lebih dari 0.`;
   if(!normalizeShift(r.shift))return `Baris ${index+1}: Shift wajib 1 atau 2.`;
@@ -1614,7 +1596,7 @@ async function saveAll(){
     for(const r of existingDirty){
       const payload={
         tanggal,
-        jam:normalizeTime(r.jam),
+        jam:normalizeTime(r.jam)||null,
         unit:cleanText(r.unit).toUpperCase(),
         operator:cleanText(r.operator),
         hm_awal:r.hm_awal,
@@ -1674,7 +1656,7 @@ async function saveAll(){
       if(uniqueFresh.length){
         const payload=uniqueFresh.map(r=>({
           tanggal,
-          jam:normalizeTime(r.jam),
+          jam:normalizeTime(r.jam)||null,
           unit:cleanText(r.unit).toUpperCase(),
           operator:cleanText(r.operator),
           hm_awal:r.hm_awal,
