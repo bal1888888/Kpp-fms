@@ -37,7 +37,7 @@ button{border:0;border-radius:7px;padding:10px 13px;font-weight:bold;cursor:poin
 
 .status{margin-top:10px;font-size:12px;font-weight:bold}
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dbe2ea;border-radius:8px;max-height:68vh}
-table{width:100%;border-collapse:collapse;min-width:1420px}
+table{width:100%;border-collapse:collapse;min-width:1510px}
 th,td{border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:0;text-align:center}
 th{background:#1f2937;color:#fff;font-size:11px;padding:9px 6px;position:sticky;top:0;z-index:3;white-space:nowrap}
 td.row-no{background:#f8fafc;font-size:11px;font-weight:bold;width:42px;min-width:42px}
@@ -54,6 +54,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 .col-qty{min-width:90px}
 .col-shift{min-width:95px}
 .col-ft{min-width:105px}
+.col-wh{min-width:90px}
 .col-fuelman{min-width:130px}
 .row-existing td.row-no{background:#ecfdf5;color:#166534}
 .row-new td.row-no{background:#eff6ff;color:#1d4ed8}
@@ -99,6 +100,53 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   border-radius:7px;
   padding:8px;
 }
+.import-date-control{
+  display:grid;
+  grid-template-columns:minmax(220px,380px) auto;
+  gap:8px;
+  align-items:end;
+  margin-top:12px;
+}
+.import-date-table-wrap,
+.import-detail-wrap{
+  margin-top:10px;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #fde68a;
+  border-radius:8px;
+  max-height:260px;
+  background:#fff;
+}
+.import-date-table,
+.import-detail-table{
+  min-width:620px;
+  width:100%;
+  border-collapse:collapse;
+}
+.import-date-table th,
+.import-date-table td,
+.import-detail-table th,
+.import-detail-table td{
+  padding:7px 8px;
+  border-bottom:1px solid #f1f5f9;
+  border-right:1px solid #f1f5f9;
+  font-size:11px;
+  text-align:center;
+}
+.import-date-table th,
+.import-detail-table th{
+  position:sticky;
+  top:0;
+  background:#fff7ed;
+  color:#7c2d12;
+  z-index:2;
+}
+.import-date-table td:first-child,
+.import-detail-table td:nth-child(2){
+  text-align:left;
+}
+.import-new{background:#dcfce7;color:#166534;font-weight:bold}
+.import-duplicate{background:#fee2e2;color:#991b1b;font-weight:bold}
 .row-import td.row-no{background:#fef3c7;color:#92400e}
 
 .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
@@ -128,6 +176,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   .actions-top{display:grid;grid-template-columns:1fr 1fr}
   .actions-top button{width:100%;min-height:42px}
   .import-settings{grid-template-columns:1fr}
+  .import-date-control{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -147,7 +196,11 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     <div class="notice">
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
       Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
-      Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>:
+      Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>.
+      Mapping storage otomatis: <b>FT0073 → WH FT02</b> dan <b>FT0075 → WH FT01</b>.
+      Jadi Admin cukup pilih Fuel Truck; kolom WH akan terisi otomatis dan terkunci.
+      Jika file lama hanya punya kolom WH, sistem juga otomatis mengubahnya kembali menjadi Fuel Truck yang sesuai.
+      <br><br>Jam otomatis:
       Shift 1 mulai 07:30 dan Shift 2 mulai 19:30, dengan interval yang bisa diubah sebelum import.
       Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
     </div>
@@ -189,16 +242,63 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     <div class="help">
       <span class="badge badge-old">HIJAU</span> data yang sudah ada di database •
       <span class="badge badge-new">BIRU</span> baris baru •
-      <span class="badge badge-import">KUNING</span> hasil Import Excel •
-      kuning = belum masuk database sampai klik SIMPAN SEMUA.
+      <span class="badge badge-import">KUNING</span> baris BARU hasil Import Excel •
+      data yang terdeteksi sama pada tanggal yang sama diberi status <b>SUDAH ADA</b> dan tidak dimasukkan lagi.
     </div>
 
     <div id="importPreview" class="import-preview">
-      <strong>📂 IMPORT PREVIEW</strong>
+      <strong>📂 IMPORT PREVIEW — BELUM MASUK DATABASE</strong>
       <div id="importPreviewText" style="margin-top:5px"></div>
+
       <div id="importPreviewGrid" class="import-preview-grid"></div>
+
+      <div class="import-date-control">
+        <div>
+          <label>Tanggal dari File yang Mau Dilihat / Dimasukkan</label>
+          <select id="importDateSelect"></select>
+        </div>
+        <button id="applyImportDateBtn" type="button" class="btn-blue">TAMPILKAN TANGGAL INI</button>
+      </div>
+
+      <div style="margin-top:12px;font-weight:bold;color:#92400e">
+        Ringkasan Semua Tanggal di File
+      </div>
+      <div class="import-date-table-wrap">
+        <table class="import-date-table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Baris File</th>
+              <th>BARU</th>
+              <th>SUDAH ADA / DUPLIKAT</th>
+            </tr>
+          </thead>
+          <tbody id="importDateSummaryBody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px;font-weight:bold;color:#92400e">
+        Detail Tanggal Terpilih
+      </div>
+      <div class="import-detail-wrap">
+        <table class="import-detail-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Unit</th>
+              <th>HM</th>
+              <th>Qty</th>
+              <th>Shift</th>
+              <th>FT</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="importDetailBody"></tbody>
+        </table>
+      </div>
+
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="showImportBtn" type="button" class="btn-blue">⬇ LIHAT BARIS IMPORT</button>
+        <button id="showImportBtn" type="button" class="btn-blue">⬇ LIHAT BARIS BARU DI EDITOR</button>
         <button id="cancelImportBtn" type="button" class="btn-outline">BATALKAN IMPORT</button>
       </div>
     </div>
@@ -219,6 +319,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
             <th>Qty (L)</th>
             <th>Shift</th>
             <th>Fuel Truck</th>
+            <th>WH 🔒</th>
             <th>Fuelman</th>
             <th>Aksi</th>
           </tr>
@@ -247,6 +348,7 @@ let recalcTimer=null;
 let isDirty=false;
 let lastImportIndexes=[];
 let lastImportMeta=null;
+let importSession=null;
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){
@@ -395,22 +497,171 @@ function inferFTFromWH(v){
   return "";
 }
 
-function rowSignature(r){
+function stableNumber(v){
+  const x=num(v);
+  if(x===null)return "NULL";
+  return Number(x).toFixed(3).replace(/\.0+$/,"").replace(/(\.\d*?)0+$/,"$1");
+}
+
+function duplicateSignature(tanggal,r){
+  const ft=
+    normalizeFT(r.fuel_truck) ||
+    inferFTFromWH(r.wh);
+
   return [
-    displayTime(normalizeTime(r.jam)),
+    String(tanggal||""),
     cleanText(r.unit).toUpperCase(),
-    num(r.hm_akhir),
-    num(r.fuel),
+    stableNumber(r.hm_akhir),
+    stableNumber(r.fuel),
     normalizeShift(r.shift),
-    normalizeFT(r.fuel_truck)
+    ft
   ].join("|");
 }
 
+function rowSignature(r){
+  return duplicateSignature(
+    document.getElementById("editorDate")?.value || "",
+    r
+  );
+}
 
-function hideImportPreview(){
+
+
+async function fetchExistingRange(startDate,endDate){
+  const pageSize=1000;
+  let from=0;
+  let all=[];
+
+  while(true){
+    const {data,error}=await db
+      .from("fuel_history")
+      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name")
+      .gte("tanggal",startDate)
+      .lte("tanggal",endDate)
+      .order("tanggal",{ascending:true})
+      .order("id",{ascending:true})
+      .range(from,from+pageSize-1);
+
+    if(error)throw error;
+
+    const part=data||[];
+    all=all.concat(part);
+
+    if(part.length<pageSize)break;
+    from+=pageSize;
+  }
+
+  return all;
+}
+
+function dbRowToEditor(r){
+  return {
+    id:r.id,
+    jam:displayTime(r.jam),
+    unit:cleanText(r.unit).toUpperCase(),
+    operator:r.operator||"",
+    hm_awal:num(r.hm_awal),
+    hm_akhir:num(r.hm_akhir),
+    hm_jalan:num(r.hm_jalan),
+    fuel:num(r.fuel),
+    shift:normalizeShift(r.shift),
+    fuel_truck:
+      normalizeFT(r.fuel_truck) ||
+      inferFTFromWH(r.wh),
+    fuelman_name:r.fuelman_name||"",
+    wh:r.wh||"",
+    existing:true,
+    dirty:false,
+    imported:false
+  };
+}
+
+function sortISODate(a,b){
+  return String(a).localeCompare(String(b));
+}
+
+function formatDateShort(v){
+  if(!v)return "-";
+  const [y,m,d]=String(v).split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function hideImportPreview(resetSession=false){
   document.getElementById("importPreview")?.classList.remove("show");
   lastImportIndexes=[];
   lastImportMeta=null;
+
+  if(resetSession){
+    importSession=null;
+  }
+}
+
+function renderImportDateSummary(){
+  const body=document.getElementById("importDateSummaryBody");
+  const select=document.getElementById("importDateSelect");
+
+  if(!importSession){
+    body.innerHTML="";
+    select.innerHTML="";
+    return;
+  }
+
+  const dates=Object.keys(importSession.dateStats).sort(sortISODate);
+
+  select.innerHTML=dates.map(date=>{
+    const s=importSession.dateStats[date];
+    return `<option value="${esc(date)}">${formatDateShort(date)} — ${s.newCount} baru / ${s.duplicateCount} sudah ada</option>`;
+  }).join("");
+
+  body.innerHTML=dates.map(date=>{
+    const s=importSession.dateStats[date];
+    return `
+      <tr>
+        <td><b>${formatDateShort(date)}</b></td>
+        <td>${s.total}</td>
+        <td class="import-new">${s.newCount}</td>
+        <td class="import-duplicate">${s.duplicateCount}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderImportDetail(date){
+  const body=document.getElementById("importDetailBody");
+
+  if(!importSession || !date){
+    body.innerHTML="";
+    return;
+  }
+
+  const list=importSession.rowsByDate[date]||[];
+
+  const maxShow=200;
+  const shown=list.slice(0,maxShow);
+
+  body.innerHTML=shown.map((item,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><b>${esc(item.row.unit||"-")}</b></td>
+      <td>${item.row.hm_akhir===null?"-":esc(item.row.hm_akhir)}</td>
+      <td>${item.row.fuel===null?"-":esc(item.row.fuel)}</td>
+      <td>${esc(item.row.shift||"-")}</td>
+      <td>${esc(item.row.fuel_truck||"-")}</td>
+      <td class="${item.status==="NEW"?"import-new":"import-duplicate"}">
+        ${item.status==="NEW"?"BARU":"SUDAH ADA"}
+      </td>
+    </tr>
+  `).join("");
+
+  if(list.length>maxShow){
+    body.innerHTML+=`
+      <tr>
+        <td colspan="7" style="text-align:center;color:#64748b">
+          Menampilkan ${maxShow} dari ${list.length} baris.
+        </td>
+      </tr>
+    `;
+  }
 }
 
 function showImportPreview(meta){
@@ -420,16 +671,18 @@ function showImportPreview(meta){
   const textEl=document.getElementById("importPreviewText");
   const grid=document.getElementById("importPreviewGrid");
 
-  textEl.textContent=
-    `${meta.fileName} • Sheet: ${meta.sheetName} • Tanggal preview: ${meta.targetDate}`;
+  textEl.innerHTML=
+    `<b>File:</b> ${esc(meta.fileName)} • `+
+    `<b>Sheet:</b> ${esc(meta.sheetName)} • `+
+    `<b>${meta.dateCount} tanggal ditemukan</b>`;
 
   const items=[
-    ["Baris file terbaca",meta.sourceCount],
-    ["Masuk preview",meta.importedCount],
-    ["Jam otomatis",meta.generatedJam],
-    ["Duplikat dilewati",meta.duplicateCount],
-    ["Tanggal lain dilewati",meta.skippedOtherDate],
-    ["Unit belum master",meta.unknownUnit]
+    ["Total transaksi file",meta.sourceCount],
+    ["Total BARU",meta.totalNew],
+    ["Total SUDAH ADA",meta.totalDuplicate],
+    ["Tanggal ditemukan",meta.dateCount],
+    ["Unit belum master",meta.unknownUnit],
+    ["Jam otomatis",meta.generatedJam]
   ];
 
   grid.innerHTML=items.map(([label,value])=>`
@@ -438,6 +691,13 @@ function showImportPreview(meta){
       <div style="font-size:18px;font-weight:bold;margin-top:3px">${value}</div>
     </div>
   `).join("");
+
+  renderImportDateSummary();
+
+  if(meta.targetDate){
+    document.getElementById("importDateSelect").value=meta.targetDate;
+    renderImportDetail(meta.targetDate);
+  }
 
   box.classList.add("show");
 }
@@ -457,34 +717,23 @@ function scrollToFirstImport(){
   tr?.scrollIntoView({behavior:"smooth",block:"center",inline:"start"});
 }
 
-function cancelCurrentImport(){
-  if(!rows.some(r=>r.imported)){
-    hideImportPreview();
+async function cancelCurrentImport(){
+  if(!importSession){
+    hideImportPreview(true);
     return;
   }
 
-  if(!confirm("Batalkan semua baris hasil Import Excel yang belum disimpan?"))return;
+  if(!confirm("Batalkan Import Excel? Semua baris preview yang belum disimpan akan dibuang."))return;
 
-  rows=rows.filter(r=>!r.imported);
+  const date=document.getElementById("editorDate").value;
 
-  while(rows.filter(r=>!r.existing).length<10){
-    rows.push(newBlankRow());
-  }
+  hideImportPreview(true);
+  isDirty=false;
 
-  isDirty=rows.some(r=>r.dirty);
-  baselineCache.clear();
+  await loadDate();
 
-  recalcAllHM()
-    .then(()=>{
-      render();
-      hideImportPreview();
-      document.getElementById("status").textContent="✅ Import dibatalkan. Database tidak berubah.";
-    })
-    .catch(e=>{
-      render();
-      hideImportPreview();
-      document.getElementById("status").textContent="❌ "+e.message;
-    });
+  document.getElementById("status").textContent=
+    "✅ Import dibatalkan. Database tidak berubah.";
 }
 
 async function importExcelFile(file){
@@ -495,16 +744,17 @@ async function importExcelFile(file){
   if(isDirty){
     const ok=confirm(
       "Ada perubahan yang belum disimpan.\n\n"+
-      "Import Excel akan memuat ulang data tanggal target dan membuang perubahan yang belum disimpan.\n\nLanjut?"
+      "Import Excel akan mengganti preview yang sedang terbuka.\n\nLanjut?"
     );
+
     if(!ok){
       document.getElementById("excelFile").value="";
       return;
     }
   }
 
-  hideImportPreview();
-  status.textContent="Membaca file Excel...";
+  hideImportPreview(true);
+  status.textContent="Membaca file Excel dan membandingkan dengan database...";
 
   try{
     const buffer=await file.arrayBuffer();
@@ -514,9 +764,6 @@ async function importExcelFile(file){
       throw new Error("Sheet Excel tidak ditemukan.");
     }
 
-    // Cari sheet logsheet secara otomatis.
-    // Jangan hanya baca sheet pertama, karena workbook lapangan bisa punya
-    // FLOWMETER / pivot / POPULASI UNIT sebelum sheet logsheet.
     let selectedSheetName="";
     let matrix=[];
     let headerRow=-1;
@@ -539,7 +786,7 @@ async function importExcelFile(file){
         const hs=(candidateMatrix[i]||[]).map(normalizeHeader);
 
         const hasUnit=hs.some(x=>
-          ["CODE UNIT","UNIT","UNIT CODE","CODE.UNIT"].includes(x)
+          ["CODE UNIT","UNIT","UNIT CODE","CODE UNIT"].includes(x)
         );
 
         const hasHM=hs.some(x=>
@@ -570,13 +817,9 @@ async function importExcelFile(file){
 
     if(headerRow<0 || !selectedSheetName){
       throw new Error(
-        "Sheet Logsheet tidak ditemukan. Sistem sudah memeriksa semua sheet, tetapi belum menemukan header TANGGAL + CODE UNIT + HM + QTY ISSUED."
+        "Sheet Logsheet tidak ditemukan. Sistem mencari header TANGGAL + CODE UNIT + HM + QTY ISSUED di semua sheet."
       );
     }
-
-    status.textContent=
-      "✅ File terbaca. Sheet Logsheet ditemukan: "+selectedSheetName+
-      ". Menyiapkan preview...";
 
     const headers=matrix[headerRow]||[];
 
@@ -593,64 +836,42 @@ async function importExcelFile(file){
       fuelman:findHeaderIndex(headers,["STD + FUELMAN","STD FUELMAN","FUELMAN"])
     };
 
-    if(idx.unit<0 || idx.hm<0 || idx.qty<0){
-      throw new Error("Kolom Unit / HM / Qty belum terbaca dari file.");
+    if(idx.tanggal<0 || idx.unit<0 || idx.hm<0 || idx.qty<0){
+      throw new Error("Kolom Tanggal / Unit / HM / Qty belum terbaca dari file.");
     }
 
     const sourceRows=matrix
       .slice(headerRow+1)
-      .filter(r=>{
+      .map((r,i)=>({raw:r,sourceRow:headerRow+2+i}))
+      .filter(item=>{
+        const r=item.raw;
         if(!Array.isArray(r))return false;
+
+        const tanggal=excelDateToISO(r[idx.tanggal]);
         const unit=cleanText(r[idx.unit]);
-        const hm=idx.hm>=0?r[idx.hm]:"";
-        const qty=idx.qty>=0?r[idx.qty]:"";
-        return unit || hm!=="" || qty!=="";
+        const hm=r[idx.hm];
+        const qty=r[idx.qty];
+
+        return tanggal && (unit || hm!=="" || qty!=="");
       });
 
     if(!sourceRows.length){
-      throw new Error("Tidak ada baris transaksi yang terbaca.");
+      throw new Error("Tidak ada transaksi bertanggal yang terbaca dari sheet Logsheet.");
     }
 
-    const dates=sourceRows
-      .map(r=>idx.tanggal>=0?excelDateToISO(r[idx.tanggal]):"")
-      .filter(Boolean);
-
-    const uniqueDates=[...new Set(dates)];
-
-    let targetDate=document.getElementById("editorDate").value || localDate();
-
-    if(uniqueDates.length===1){
-      targetDate=uniqueDates[0];
-    }else if(uniqueDates.length>1){
-      if(!uniqueDates.includes(targetDate)){
-        targetDate=uniqueDates[0];
-      }
-    }
-
-    document.getElementById("editorDate").value=targetDate;
-
-    await loadDate();
-
-    const existingRows=rows.filter(r=>r.existing);
-    const existingSignatures=new Set(existingRows.map(rowSignature));
-
-    const autoCounters={1:0,2:0};
-
+    // Parse file first. JAM is generated deterministically by each date + shift
+    // only for preview/order; it is NOT part of duplicate matching.
+    const autoCountersByDate={};
     let generatedJam=0;
-    let skippedOtherDate=0;
-    let duplicateCount=0;
     let unknownUnit=0;
-    let importedCount=0;
 
-    const imported=[];
+    const parsed=[];
 
-    for(const raw of sourceRows){
-      const rowDate=idx.tanggal>=0?excelDateToISO(raw[idx.tanggal]):"";
+    for(const item of sourceRows){
+      const raw=item.raw;
+      const tanggal=excelDateToISO(raw[idx.tanggal]);
 
-      if(rowDate && rowDate!==targetDate){
-        skippedOtherDate++;
-        continue;
-      }
+      if(!tanggal)continue;
 
       const unit=cleanText(raw[idx.unit]).toUpperCase();
 
@@ -658,10 +879,14 @@ async function importExcelFile(file){
 
       const shift=idx.shift>=0?normalizeShift(raw[idx.shift]):"";
 
+      if(!autoCountersByDate[tanggal]){
+        autoCountersByDate[tanggal]={1:0,2:0};
+      }
+
       let jam=idx.jam>=0?excelTimeToHHMM(raw[idx.jam]):"";
 
       if(!jam){
-        jam=makeAutoTime(shift,autoCounters);
+        jam=makeAutoTime(shift,autoCountersByDate[tanggal]);
         generatedJam++;
       }
 
@@ -671,7 +896,7 @@ async function importExcelFile(file){
         ft=inferFTFromWH(raw[idx.wh]);
       }
 
-      const r={
+      const row={
         ...newBlankRow(),
         jam,
         unit,
@@ -680,88 +905,123 @@ async function importExcelFile(file){
         fuel:num(raw[idx.qty]),
         shift,
         fuel_truck:ft,
-        wh:FT_WH[ft]||"",
+        wh:FT_WH[ft]||cleanText(idx.wh>=0?raw[idx.wh]:""),
         fuelman_name:idx.fuelman>=0?cleanText(raw[idx.fuelman]):"",
         dirty:true,
         imported:true,
-        import_generated_time:idx.jam<0 || !excelTimeToHHMM(raw[idx.jam])
+        import_generated_time:idx.jam<0 || !excelTimeToHHMM(raw[idx.jam]),
+        source_row:item.sourceRow
       };
 
       if(!unitMaster.includes(unit))unknownUnit++;
 
-      const sig=rowSignature(r);
-
-      if(existingSignatures.has(sig)){
-        duplicateCount++;
-        continue;
-      }
-
-      imported.push(r);
-      existingSignatures.add(sig);
-      importedCount++;
+      parsed.push({tanggal,row});
     }
 
-    rows=[
-      ...existingRows,
-      ...imported
-    ];
+    if(!parsed.length){
+      throw new Error("Tidak ada transaksi valid yang bisa dipreview.");
+    }
 
-    // Tambah baris kosong tanpa menghilangkan hasil import.
-    for(let i=0;i<10;i++)rows.push(newBlankRow());
+    const dates=[...new Set(parsed.map(x=>x.tanggal))].sort(sortISODate);
+    const minDate=dates[0];
+    const maxDate=dates[dates.length-1];
 
-    isDirty=imported.length>0;
+    status.textContent=
+      `File terbaca (${dates.length} tanggal). Membandingkan ${parsed.length} transaksi dengan database...`;
 
-    baselineCache.clear();
-    await recalcAllHM();
-    render();
+    const dbRows=await fetchExistingRange(minDate,maxDate);
 
-    lastImportIndexes=rows
-      .map((r,i)=>r.imported?i:-1)
-      .filter(i=>i>=0);
+    const dbSignatures=new Set(
+      dbRows.map(r=>duplicateSignature(r.tanggal,r))
+    );
+
+    const fileSeen=new Set();
+    const rowsByDate={};
+    const dateStats={};
+
+    let totalNew=0;
+    let totalDuplicate=0;
+
+    for(const item of parsed){
+      const {tanggal,row}=item;
+
+      if(!rowsByDate[tanggal])rowsByDate[tanggal]=[];
+      if(!dateStats[tanggal]){
+        dateStats[tanggal]={
+          total:0,
+          newCount:0,
+          duplicateCount:0
+        };
+      }
+
+      dateStats[tanggal].total++;
+
+      const sig=duplicateSignature(tanggal,row);
+
+      const duplicate=
+        dbSignatures.has(sig) ||
+        fileSeen.has(sig);
+
+      if(duplicate){
+        totalDuplicate++;
+        dateStats[tanggal].duplicateCount++;
+        rowsByDate[tanggal].push({
+          row,
+          status:"DUPLICATE"
+        });
+      }else{
+        totalNew++;
+        dateStats[tanggal].newCount++;
+        rowsByDate[tanggal].push({
+          row,
+          status:"NEW"
+        });
+
+        fileSeen.add(sig);
+      }
+    }
+
+    const existingByDate={};
+
+    dbRows.forEach(r=>{
+      if(!existingByDate[r.tanggal])existingByDate[r.tanggal]=[];
+      existingByDate[r.tanggal].push(dbRowToEditor(r));
+    });
+
+    importSession={
+      fileName:file.name,
+      sheetName:selectedSheetName,
+      rowsByDate,
+      dateStats,
+      existingByDate,
+      dates
+    };
+
+    // Prefer date currently selected if it exists in file.
+    let targetDate=document.getElementById("editorDate").value;
+
+    if(!dates.includes(targetDate)){
+      targetDate=dates[0];
+    }
 
     showImportPreview({
       fileName:file.name,
       sheetName:selectedSheetName,
-      targetDate,
-      sourceCount:sourceRows.length,
-      importedCount,
+      sourceCount:parsed.length,
+      totalNew,
+      totalDuplicate,
+      dateCount:dates.length,
+      unknownUnit,
       generatedJam,
-      duplicateCount,
-      skippedOtherDate,
-      unknownUnit
+      targetDate
     });
 
-    let msg=`✅ Import preview: ${importedCount} baris masuk.`;
+    await applyImportDate(targetDate);
 
-    if(generatedJam){
-      msg+=` ${generatedJam} jam dibuat otomatis berurutan.`;
-    }
-
-    if(duplicateCount){
-      msg+=` ${duplicateCount} duplikat persis dilewati.`;
-    }
-
-    if(skippedOtherDate){
-      msg+=` ${skippedOtherDate} baris tanggal lain dilewati.`;
-    }
-
-    if(unknownUnit){
-      msg+=` ⚠️ ${unknownUnit} unit belum ada di Master Unit; cek sebelum simpan.`;
-    }
-
-    if(uniqueDates.length>1){
-      msg+=` File punya ${uniqueDates.length} tanggal; editor saat ini menampilkan ${targetDate}.`;
-    }
-
-    if(importedCount===0){
-      msg+=" Tidak ada baris baru untuk preview.";
-    }
-
-    status.textContent=msg+" Belum ada perubahan database sampai klik SIMPAN SEMUA.";
-
-    if(importedCount>0){
-      setTimeout(scrollToFirstImport,150);
-    }
+    status.textContent=
+      `✅ File terbaca: ${parsed.length} transaksi, ${dates.length} tanggal. `+
+      `${totalNew} BARU, ${totalDuplicate} SUDAH ADA/DUPLIKAT. `+
+      `Yang SUDAH ADA tidak dimasukkan lagi.`;
 
   }catch(e){
     console.error(e);
@@ -786,9 +1046,62 @@ async function importExcelFile(file){
     status.textContent="❌ Import gagal: "+e.message;
 
   }finally{
-    // Reset file picker supaya file yang sama boleh dipilih lagi.
-    // Nama file + error/preview tetap terlihat di panel Import Preview.
     document.getElementById("excelFile").value="";
+  }
+}
+
+async function applyImportDate(date){
+  if(!importSession || !date)return;
+
+  if(!importSession.rowsByDate[date]){
+    alert("Tanggal tersebut tidak ada di file.");
+    return;
+  }
+
+  document.getElementById("editorDate").value=date;
+  document.getElementById("importDateSelect").value=date;
+
+  const existing=(importSession.existingByDate[date]||[])
+    .map(r=>({...r}));
+
+  const fresh=(importSession.rowsByDate[date]||[])
+    .filter(x=>x.status==="NEW")
+    .map(x=>({
+      ...x.row,
+      id:null,
+      existing:false,
+      dirty:true,
+      imported:true
+    }));
+
+  rows=[
+    ...existing,
+    ...fresh
+  ];
+
+  for(let i=0;i<10;i++)rows.push(newBlankRow());
+
+  isDirty=fresh.length>0;
+  baselineCache.clear();
+
+  await recalcAllHM();
+  render();
+
+  renderImportDetail(date);
+
+  lastImportIndexes=rows
+    .map((r,i)=>r.imported?i:-1)
+    .filter(i=>i>=0);
+
+  const stats=importSession.dateStats[date];
+
+  document.getElementById("status").textContent=
+    `📅 ${formatDateShort(date)}: ${stats.newCount} BARU ditampilkan di editor, `+
+    `${stats.duplicateCount} SUDAH ADA tidak dimasukkan. `+
+    `Belum masuk database sampai klik SIMPAN SEMUA.`;
+
+  if(fresh.length){
+    setTimeout(scrollToFirstImport,120);
   }
 }
 
@@ -804,8 +1117,8 @@ function newBlankRow(){
     fuel:null,
     shift:"",
     fuel_truck:"",
-    fuelman_name:"",
     wh:"",
+    fuelman_name:"",
     existing:false,
     dirty:false,
     imported:false
@@ -999,7 +1312,13 @@ function setValue(index,field,value){
   if(field==="fuel_truck")value=normalizeFT(value);
 
   r[field]=value;
-  if(field==="fuel_truck")r.wh=FT_WH[value]||"";
+
+  if(field==="fuel_truck"){
+    r.wh=FT_WH[value]||"";
+    const tr=document.querySelector(`tr[data-index="${index}"]`);
+    const whCell=tr?.querySelector(".wh-auto");
+    if(whCell) whCell.textContent=r.wh||"-";
+  }
 
   markDirty(index);
 
@@ -1041,6 +1360,7 @@ function render(){
           <option value="FT0075"${r.fuel_truck==="FT0075"?" selected":""}>FT0075</option>
         </select>
       </td>
+      <td class="calc wh-auto col-wh">${esc(r.wh || FT_WH[r.fuel_truck] || "-")}</td>
       <td><input class="grid-input col-fuelman" data-col="7" value="${esc(r.fuelman_name)}" placeholder="Opsional"></td>
       <td class="action">
         ${r.existing
@@ -1216,7 +1536,7 @@ async function saveAll(){
         fuel:num(r.fuel),
         shift:normalizeShift(r.shift),
         fuel_truck:normalizeFT(r.fuel_truck),
-        wh:FT_WH[normalizeFT(r.fuel_truck)]||null,
+        wh:FT_WH[normalizeFT(r.fuel_truck)]||cleanText(r.wh)||null,
         fuelman_name:cleanText(r.fuelman_name)||null
       };
 
@@ -1228,35 +1548,68 @@ async function saveAll(){
       if(error)throw error;
     }
 
+    let insertedCount=0;
+    let skippedDuplicateAtSave=0;
+
     if(fresh.length){
-      const payload=fresh.map(r=>({
-        tanggal,
-        jam:normalizeTime(r.jam),
-        unit:cleanText(r.unit).toUpperCase(),
-        operator:cleanText(r.operator),
-        hm_awal:r.hm_awal,
-        hm_akhir:num(r.hm_akhir),
-        hm_jalan:r.hm_jalan,
-        fuel:num(r.fuel),
-        shift:normalizeShift(r.shift),
-        fuel_truck:normalizeFT(r.fuel_truck),
-        wh:FT_WH[normalizeFT(r.fuel_truck)]||null,
-        fuelman_name:cleanText(r.fuelman_name)||null,
-        session_id:null,
-        fuelman_user_id:null,
-        fuelman_username:null
-      }));
+      // Safety check AGAIN right before INSERT.
+      // Duplicate match intentionally excludes JAM because legacy Excel has no JAM.
+      const latestDbRows=await fetchExistingRange(tanggal,tanggal);
+      const signatures=new Set(
+        latestDbRows.map(r=>duplicateSignature(tanggal,r))
+      );
 
-      const {error}=await db
-        .from("fuel_history")
-        .insert(payload);
+      const uniqueFresh=[];
 
-      if(error)throw error;
+      for(const r of fresh){
+        const sig=duplicateSignature(tanggal,r);
+
+        if(signatures.has(sig)){
+          skippedDuplicateAtSave++;
+          continue;
+        }
+
+        signatures.add(sig);
+        uniqueFresh.push(r);
+      }
+
+      if(uniqueFresh.length){
+        const payload=uniqueFresh.map(r=>({
+          tanggal,
+          jam:normalizeTime(r.jam),
+          unit:cleanText(r.unit).toUpperCase(),
+          operator:cleanText(r.operator),
+          hm_awal:r.hm_awal,
+          hm_akhir:num(r.hm_akhir),
+          hm_jalan:r.hm_jalan,
+          fuel:num(r.fuel),
+          shift:normalizeShift(r.shift),
+          fuel_truck:normalizeFT(r.fuel_truck),
+          wh:FT_WH[normalizeFT(r.fuel_truck)]||cleanText(r.wh)||null,
+          fuelman_name:cleanText(r.fuelman_name)||null,
+          session_id:null,
+          fuelman_user_id:null,
+          fuelman_username:null
+        }));
+
+        const {error}=await db
+          .from("fuel_history")
+          .insert(payload);
+
+        if(error)throw error;
+
+        insertedCount=payload.length;
+      }
     }
 
     isDirty=false;
-    hideImportPreview();
-    status.textContent=`✅ ${filled.length} baris berhasil disimpan. Audit otomatis mencatat edit data lama.`;
+    hideImportPreview(true);
+
+    status.textContent=
+      `✅ Simpan selesai. Edit data lama: ${existing.length}. `+
+      `Data baru masuk: ${insertedCount}. `+
+      `Duplikat dilewati: ${skippedDuplicateAtSave}.`;
+
     await loadDate();
 
   }catch(e){
@@ -1299,6 +1652,7 @@ async function deleteExisting(index){
   }
 
   document.getElementById("status").textContent="✅ Transaksi dihapus dan tercatat di Audit Log.";
+  hideImportPreview(true);
   await loadDate();
 }
 
@@ -1313,6 +1667,8 @@ document.getElementById("loadBtn").addEventListener("click",()=>{
   if(isDirty){
     if(!confirm("Ada perubahan belum disimpan. Tetap load ulang data?"))return;
   }
+
+  hideImportPreview(true);
   loadDate();
 });
 
@@ -1327,6 +1683,15 @@ document.getElementById("excelFile").addEventListener("change",e=>{
 
 document.getElementById("showImportBtn").addEventListener("click",scrollToFirstImport);
 document.getElementById("cancelImportBtn").addEventListener("click",cancelCurrentImport);
+
+document.getElementById("applyImportDateBtn").addEventListener("click",async()=>{
+  const date=document.getElementById("importDateSelect").value;
+  await applyImportDate(date);
+});
+
+document.getElementById("importDateSelect").addEventListener("change",e=>{
+  renderImportDetail(e.target.value);
+});
 
 document.getElementById("add10Btn").addEventListener("click",()=>addBlankRows(10));
 document.getElementById("saveBtn").addEventListener("click",saveAll);
