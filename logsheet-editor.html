@@ -37,7 +37,7 @@ button{border:0;border-radius:7px;padding:10px 13px;font-weight:bold;cursor:poin
 
 .status{margin-top:10px;font-size:12px;font-weight:bold}
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dbe2ea;border-radius:8px;max-height:68vh}
-table{width:100%;border-collapse:collapse;min-width:1510px}
+table{width:100%;border-collapse:collapse;min-width:1620px}
 th,td{border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:0;text-align:center}
 th{background:#1f2937;color:#fff;font-size:11px;padding:9px 6px;position:sticky;top:0;z-index:3;white-space:nowrap}
 td.row-no{background:#f8fafc;font-size:11px;font-weight:bold;width:42px;min-width:42px}
@@ -148,6 +148,20 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 .import-new{background:#dcfce7;color:#166534;font-weight:bold}
 .import-duplicate{background:#fee2e2;color:#991b1b;font-weight:bold}
 .row-import td.row-no{background:#fef3c7;color:#92400e}
+.row-status{padding:6px!important;min-width:135px}
+.status-pill{
+  display:inline-block;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:9px;
+  font-weight:bold;
+  white-space:nowrap;
+}
+.st-db{background:#dcfce7;color:#166534}
+.st-new{background:#fef3c7;color:#92400e}
+.st-saved{background:#dbeafe;color:#1d4ed8}
+.st-edit{background:#ede9fe;color:#6d28d9}
+.st-empty{background:#f1f5f9;color:#64748b}
 
 .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
 .app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
@@ -203,6 +217,8 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
       <br><br>Jam otomatis:
       Shift 1 mulai 07:30 dan Shift 2 mulai 19:30, dengan interval yang bisa diubah sebelum import.
       Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
+      Tombol hijau menyimpan <b>tanggal yang sedang ditampilkan saja</b>. Setelah berhasil, status baris berubah menjadi
+      <b>TERSIMPAN BARU / EDIT TERSIMPAN / SUDAH ADA</b>.
     </div>
 
     <div class="controls" style="margin-top:12px">
@@ -213,7 +229,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
       <button id="loadBtn" class="btn-blue">LOAD DATA</button>
       <button id="importBtn" class="btn-blue">📂 IMPORT EXCEL</button>
       <button id="add10Btn" class="btn-gray">+ 10 BARIS</button>
-      <button id="saveBtn" class="btn-green">💾 SIMPAN SEMUA</button>
+      <button id="saveBtn" class="btn-green">💾 SIMPAN TANGGAL INI</button>
     </div>
 
     <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
@@ -236,6 +252,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     <div class="actions-top">
       <button id="recalcBtn" class="btn-outline">↻ HITUNG ULANG HM</button>
       <button id="clearNewBtn" class="btn-outline">BERSIHKAN BARIS BARU</button>
+      <button id="checkLogsheetBtn" class="btn-blue">📄 CEK DI LOGSHEET</button>
     </div>
 
     <div id="status" class="status"></div>
@@ -321,6 +338,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
             <th>Fuel Truck</th>
             <th>WH 🔒</th>
             <th>Fuelman</th>
+            <th>Status</th>
             <th>Aksi</th>
           </tr>
         </thead>
@@ -349,6 +367,8 @@ let isDirty=false;
 let lastImportIndexes=[];
 let lastImportMeta=null;
 let importSession=null;
+let recentSavedIds=new Set();
+let recentUpdatedIds=new Set();
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){
@@ -572,7 +592,8 @@ function dbRowToEditor(r){
     wh:r.wh||"",
     existing:true,
     dirty:false,
-    imported:false
+    imported:false,
+    save_state:""
   };
 }
 
@@ -1121,7 +1142,8 @@ function newBlankRow(){
     fuelman_name:"",
     existing:false,
     dirty:false,
-    imported:false
+    imported:false,
+    save_state:""
   };
 }
 
@@ -1143,7 +1165,7 @@ async function loadUnitMaster(){
   dl.innerHTML=unitMaster.map(u=>`<option value="${esc(u)}"></option>`).join("");
 }
 
-async function loadDate(){
+async function loadDate(options={}){
   hideImportPreview();
   const tanggal=document.getElementById("editorDate").value;
   const status=document.getElementById("status");
@@ -1181,14 +1203,22 @@ async function loadDate(){
     wh:r.wh||"",
     existing:true,
     dirty:false,
-    imported:false
+    imported:false,
+    save_state:
+      recentSavedIds.has(r.id)
+        ? "saved"
+        : recentUpdatedIds.has(r.id)
+          ? "updated"
+          : "db"
   }));
 
   addBlankRows(10);
   await recalcAllHM();
   render();
 
-  status.textContent=`✅ ${data?.length||0} transaksi ditemukan.`;
+  if(!options.preserveStatus){
+    status.textContent=`✅ ${data?.length||0} transaksi ditemukan.`;
+  }
 }
 
 async function getBaseline(unit,tanggal){
@@ -1297,9 +1327,20 @@ function scheduleRecalc(){
 
 function markDirty(index){
   rows[index].dirty=true;
+  rows[index].save_state="";
   isDirty=true;
+
   const tr=document.querySelector(`tr[data-index="${index}"]`);
   tr?.classList.add("dirty");
+
+  const statusCell=tr?.querySelector(".row-status");
+
+  if(statusCell){
+    statusCell.innerHTML=
+      rows[index].existing
+        ? '<span class="status-pill st-new">EDIT • BELUM SIMPAN</span>'
+        : '<span class="status-pill st-new">BARU • BELUM SIMPAN</span>';
+  }
 }
 
 function setValue(index,field,value){
@@ -1362,6 +1403,21 @@ function render(){
       </td>
       <td class="calc wh-auto col-wh">${esc(r.wh || FT_WH[r.fuel_truck] || "-")}</td>
       <td><input class="grid-input col-fuelman" data-col="7" value="${esc(r.fuelman_name)}" placeholder="Opsional"></td>
+      <td class="row-status">
+        ${
+          r.save_state==="saved"
+            ? '<span class="status-pill st-saved">✅ TERSIMPAN BARU</span>'
+            : r.save_state==="updated"
+              ? '<span class="status-pill st-edit">✏️ EDIT TERSIMPAN</span>'
+              : r.existing
+                ? '<span class="status-pill st-db">SUDAH ADA</span>'
+                : r.imported
+                  ? '<span class="status-pill st-new">BARU • BELUM SIMPAN</span>'
+                  : isRowEmpty(r)
+                    ? '<span class="status-pill st-empty">KOSONG</span>'
+                    : '<span class="status-pill st-new">BARU • BELUM SIMPAN</span>'
+        }
+      </td>
       <td class="action">
         ${r.existing
           ? `<button class="btn-red delete-existing" type="button">🗑️ Hapus</button>`
@@ -1508,7 +1564,7 @@ async function saveAll(){
 
   btn.disabled=true;
   btn.textContent="MENYIMPAN...";
-  status.textContent="Menghitung ulang HM...";
+  status.textContent="Memeriksa data sebelum simpan...";
 
   try{
     baselineCache.clear();
@@ -1521,10 +1577,17 @@ async function saveAll(){
 
     const filled=rows.filter(r=>!isRowEmpty(r));
 
-    const existing=filled.filter(r=>r.id);
+    // Hanya data lama yang benar-benar diedit yang di-UPDATE.
+    // Ini mencegah Audit Log penuh oleh baris yang tidak berubah.
+    const existingDirty=filled.filter(r=>r.id && r.dirty);
     const fresh=filled.filter(r=>!r.id);
 
-    for(const r of existing){
+    recentSavedIds=new Set();
+    recentUpdatedIds=new Set();
+
+    let updatedCount=0;
+
+    for(const r of existingDirty){
       const payload={
         tanggal,
         jam:normalizeTime(r.jam),
@@ -1540,21 +1603,32 @@ async function saveAll(){
         fuelman_name:cleanText(r.fuelman_name)||null
       };
 
-      const {error}=await db
+      const {data,error}=await db
         .from("fuel_history")
         .update(payload)
-        .eq("id",r.id);
+        .eq("id",r.id)
+        .select("id");
 
       if(error)throw error;
+
+      if(!data || data.length!==1){
+        throw new Error(
+          `Edit transaksi ID ${r.id} tidak terkonfirmasi di database.`
+        );
+      }
+
+      recentUpdatedIds.add(r.id);
+      updatedCount++;
     }
 
     let insertedCount=0;
     let skippedDuplicateAtSave=0;
 
     if(fresh.length){
-      // Safety check AGAIN right before INSERT.
-      // Duplicate match intentionally excludes JAM because legacy Excel has no JAM.
+      // Cek database lagi tepat sebelum INSERT.
+      // JAM sengaja tidak dipakai untuk deteksi duplikat file lama.
       const latestDbRows=await fetchExistingRange(tanggal,tanggal);
+
       const signatures=new Set(
         latestDbRows.map(r=>duplicateSignature(tanggal,r))
       );
@@ -1592,31 +1666,50 @@ async function saveAll(){
           fuelman_username:null
         }));
 
-        const {error}=await db
+        // .select() dipakai sebagai bukti Supabase benar-benar menerima INSERT.
+        const {data,error}=await db
           .from("fuel_history")
-          .insert(payload);
+          .insert(payload)
+          .select("id,tanggal,unit,hm_akhir,fuel,shift,fuel_truck");
 
         if(error)throw error;
 
-        insertedCount=payload.length;
+        if(!data || data.length!==payload.length){
+          throw new Error(
+            `Database hanya mengonfirmasi ${data?.length||0} dari ${payload.length} transaksi baru.`
+          );
+        }
+
+        data.forEach(r=>recentSavedIds.add(r.id));
+        insertedCount=data.length;
       }
     }
+
+    // Read-back verifikasi langsung dari database.
+    const verifyRows=await fetchExistingRange(tanggal,tanggal);
 
     isDirty=false;
     hideImportPreview(true);
 
-    status.textContent=
-      `✅ Simpan selesai. Edit data lama: ${existing.length}. `+
-      `Data baru masuk: ${insertedCount}. `+
-      `Duplikat dilewati: ${skippedDuplicateAtSave}.`;
+    await loadDate({preserveStatus:true});
 
-    await loadDate();
+    status.innerHTML=
+      `✅ <b>SIMPAN TERKONFIRMASI DATABASE</b> — `+
+      `Tanggal ${formatDateShort(tanggal)} • `+
+      `Baru masuk: <b>${insertedCount}</b> • `+
+      `Edit tersimpan: <b>${updatedCount}</b> • `+
+      `Duplikat dilewati: <b>${skippedDuplicateAtSave}</b> • `+
+      `Total transaksi tanggal ini di database: <b>${verifyRows.length}</b>.`;
 
   }catch(e){
-    status.textContent="❌ "+e.message;
+    console.error(e);
+
+    status.textContent=
+      "❌ SIMPAN GAGAL — tidak semua data berhasil masuk. "+e.message;
+
   }finally{
     btn.disabled=false;
-    btn.textContent="💾 SIMPAN SEMUA";
+    btn.textContent="💾 SIMPAN TANGGAL INI";
   }
 }
 
@@ -1706,6 +1799,10 @@ document.getElementById("recalcBtn").addEventListener("click",async()=>{
   }
 });
 document.getElementById("clearNewBtn").addEventListener("click",clearNewRows);
+
+document.getElementById("checkLogsheetBtn").addEventListener("click",()=>{
+  window.location.href="logsheet.html";
+});
 
 window.addEventListener("beforeunload",e=>{
   if(!isDirty)return;
