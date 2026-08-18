@@ -61,6 +61,7 @@ th{background:#1f2937;color:#fff}
         <label>Jabatan / Akses</label>
         <select id="role">
           <option value="fuelman">FUELMAN</option>
+          <option value="ccr">CCR</option>
           <option value="admin">ADMIN</option>
           <option value="gl">GL</option>
         </select>
@@ -184,7 +185,11 @@ async function createStaff(){
     return;
   }
 
-  const jabatan=role==="gl"?"GL":role==="admin"?"ADMIN":"FUELMAN";
+  const jabatan=
+    role==="gl"?"GL":
+    role==="admin"?"ADMIN":
+    role==="ccr"?"CCR":
+    "FUELMAN";
 
   const ok=confirm(
     "Buat akun baru?\n\n"+
