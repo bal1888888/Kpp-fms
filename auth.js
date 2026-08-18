@@ -39,6 +39,8 @@ window.KPP = {
         window.location.replace("gl.html");
       } else if (profile.role === "admin") {
         window.location.replace("admin.html");
+      } else if (profile.role === "ccr") {
+        window.location.replace("ccr.html");
       } else {
         window.location.replace("fuelman.html");
       }
@@ -61,6 +63,7 @@ window.KPP = {
   roleLabel(role) {
     if (role === "gl") return "GL";
     if (role === "admin") return "ADMIN";
+    if (role === "ccr") return "CCR";
     return "FUELMAN";
   },
 
@@ -99,6 +102,8 @@ window.KPP = {
         "daily-report.html",
         "admin.html",
         "gl.html",
+        "ccr.html",
+        "ccr-approval.html",
         "logsheet.html",
         "logsheet-editor.html",
         "riwayat.html",
@@ -109,6 +114,17 @@ window.KPP = {
       document.querySelectorAll("a[href]").forEach(link => {
         const href = (link.getAttribute("href") || "").split("?")[0];
         if (blocked.includes(href)) {
+          link.style.display = "none";
+        }
+      });
+    }
+
+    if (profile.role === "ccr") {
+      const allowed = ["ccr.html","index.html"];
+
+      document.querySelectorAll("a[href]").forEach(link => {
+        const href = (link.getAttribute("href") || "").split("?")[0];
+        if (href && !allowed.includes(href)) {
           link.style.display = "none";
         }
       });
@@ -131,6 +147,11 @@ window.KPP = {
         ["gl", "gl.html", "🏠 Menu GL"],
         ["dashboard", "dashboard.html", "📊 Dashboard"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
+        ["ccr", "ccr.html", "🎯 CCR Jatah"],
+        ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
+        ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
+        ["ccr", "ccr.html", "🎯 CCR Jatah"],
+        ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
@@ -148,6 +169,10 @@ window.KPP = {
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
+      ];
+    } else if (profile.role === "ccr") {
+      items = [
+        ["ccr", "ccr.html", "🎯 Display CCR"],
       ];
     } else {
       items = [
