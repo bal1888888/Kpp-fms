@@ -343,9 +343,9 @@ window.KPP_ACTIVE_PAGE="pengisian";
 
         <div class="info">
             Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT. Daftar unit dibaca dari Master Unit online.
-            Sistem akan memakai HM valid tertinggi yang pernah tercatat untuk unit tersebut
-            dari transaksi, HM Master/Koreksi, atau baseline logsheet. Data historis yang HM-nya kosong
-            atau lebih kecil tidak akan menurunkan HM acuan.
+            Sistem akan memakai HM berdasarkan <b>koreksi aktual terbaru sebagai titik reset</b>.
+            Setelah ada Koreksi HM, data lama sebelum koreksi tidak dipakai lagi sebagai acuan.
+            Sesudah titik koreksi, sistem memakai HM valid tertinggi dari transaksi berikutnya.
         </div>
 
         <div id="fuelmanSessionInfo" class="session-info hidden">
@@ -1200,54 +1200,32 @@ function hmOperationalKey(row) {
     return `${tanggal}T${jam}`;
 }
 
+function hmOperationalKey(tanggal,jam,id){
+    const d=String(tanggal||"");
+    const t=jam ? String(jam).slice(0,8) : "00:00:00";
+    const i=String(id??"").padStart(20,"0");
+    return `${d} ${t} ${i}`;
+}
+
 async function ambilHmTerakhir(unit) {
-    const [fuelResult, correctionResult] = await Promise.all([
-        supabaseClient
-            .from("fuel_history")
-            .select("id,tanggal,jam,hm_akhir")
-            .eq("unit", unit)
-            .not("hm_akhir", "is", null)
-            .order("hm_akhir", { ascending: false })
-            .order("tanggal", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(1),
-
-        supabaseClient
-            .from("hm_corrections")
-            .select("id,tanggal,jam,hm,operator,note")
-            .eq("unit", unit)
-            .not("hm", "is", null)
-            .order("hm", { ascending: false })
-            .order("tanggal", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(1)
-    ]);
-
-    if (fuelResult.error) {
-        throw fuelResult.error;
-    }
+    // 1) Ambil KOREKSI TERBARU berdasarkan tanggal/jam efektif.
+    // Koreksi adalah titik reset HM. Data transaksi sebelum koreksi
+    // tidak boleh mengalahkan nilai koreksi walaupun angkanya lebih tinggi.
+    const correctionResult = await supabaseClient
+        .from("hm_corrections")
+        .select("id,tanggal,jam,hm,operator,note")
+        .eq("unit", unit)
+        .not("hm", "is", null)
+        .order("tanggal", { ascending: false })
+        .order("jam", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(1);
 
     if (correctionResult.error) {
         console.warn(
-            "HM Master belum tersedia:",
+            "HM Master/Koreksi belum tersedia:",
             correctionResult.error.message
         );
-    }
-
-    const candidates = [];
-
-    const fuelRow =
-        fuelResult.data && fuelResult.data.length
-            ? fuelResult.data[0]
-            : null;
-
-    if (fuelRow && Number.isFinite(Number(fuelRow.hm_akhir))) {
-        candidates.push({
-            hm: Number(fuelRow.hm_akhir),
-            source:
-                `HM tertinggi transaksi (${fuelRow.tanggal}` +
-                `${fuelRow.jam ? " " + String(fuelRow.jam).slice(0,5) : ""})`
-        });
     }
 
     const correctionRow =
@@ -1257,15 +1235,105 @@ async function ambilHmTerakhir(unit) {
             ? correctionResult.data[0]
             : null;
 
+    // 2) Kalau ADA koreksi, hanya transaksi SESUDAH koreksi yang boleh
+    // menaikkan acuan HM. Transaksi lama sebelum koreksi diabaikan.
     if (
         correctionRow &&
         Number.isFinite(Number(correctionRow.hm))
     ) {
-        candidates.push({
-            hm: Number(correctionRow.hm),
+        const correctionHm = Number(correctionRow.hm);
+        const correctionKey = hmOperationalKey(
+            correctionRow.tanggal,
+            correctionRow.jam,
+            correctionRow.id
+        );
+
+        const fuelAfterCorrection = await supabaseClient
+            .from("fuel_history")
+            .select("id,tanggal,jam,hm_akhir")
+            .eq("unit", unit)
+            .gte("tanggal", correctionRow.tanggal)
+            .not("hm_akhir", "is", null)
+            .order("tanggal", { ascending: true })
+            .order("jam", { ascending: true })
+            .order("id", { ascending: true })
+            .limit(1000);
+
+        if (fuelAfterCorrection.error) {
+            throw fuelAfterCorrection.error;
+        }
+
+        let best = {
+            hm: correctionHm,
             source:
-                `HM tertinggi Master/Koreksi (${correctionRow.tanggal}` +
+                `HM Master / Koreksi Aktual (${correctionRow.tanggal}` +
                 `${correctionRow.jam ? " " + String(correctionRow.jam).slice(0,5) : ""})`
+        };
+
+        for (const row of (fuelAfterCorrection.data || [])) {
+            const rowKey = hmOperationalKey(
+                row.tanggal,
+                row.jam,
+                row.id
+            );
+
+            // Harus benar-benar sesudah titik koreksi.
+            if (rowKey <= correctionKey) {
+                continue;
+            }
+
+            const hm = Number(row.hm_akhir);
+
+            // HM kosong / lebih kecil tetap tersimpan di logsheet,
+            // tetapi tidak menurunkan acuan HM.
+            if (
+                Number.isFinite(hm) &&
+                hm > best.hm
+            ) {
+                best = {
+                    hm,
+                    source:
+                        `HM tertinggi setelah koreksi (${row.tanggal}` +
+                        `${row.jam ? " " + String(row.jam).slice(0,5) : ""})`
+                };
+            }
+        }
+
+        return best;
+    }
+
+    // 3) Kalau BELUM PERNAH ada koreksi HM, pakai HM transaksi tertinggi
+    // dan baseline logsheet lama seperti sebelumnya.
+    const fuelResult = await supabaseClient
+        .from("fuel_history")
+        .select("id,tanggal,jam,hm_akhir")
+        .eq("unit", unit)
+        .not("hm_akhir", "is", null)
+        .order("hm_akhir", { ascending: false })
+        .order("tanggal", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(1);
+
+    if (fuelResult.error) {
+        throw fuelResult.error;
+    }
+
+    const candidates = [];
+
+    const fuelRow =
+        fuelResult.data && fuelResult.data.length
+            ? fuelResult.data[0]
+            : null;
+
+    if (
+        fuelRow &&
+        Number.isFinite(Number(fuelRow.hm_akhir))
+    ) {
+        candidates.push({
+            hm: Number(fuelRow.hm_akhir),
+            source:
+                `HM tertinggi transaksi (${fuelRow.tanggal}` +
+                `${fuelRow.jam ? " " + String(fuelRow.jam).slice(0,5) : ""})`
         });
     }
 
