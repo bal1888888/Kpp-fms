@@ -6,6 +6,7 @@
 <title>Logsheet Editor - KPP FMS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
 window.KPP_ALLOWED_ROLES=["gl","admin"];
@@ -23,7 +24,7 @@ body{margin:0;background:#f3f4f6;color:#111827}
 .container{max-width:1500px;margin:20px auto;padding:12px}
 .panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
 .notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.55}
-.controls{display:grid;grid-template-columns:220px auto auto auto;gap:10px;align-items:end}
+.controls{display:grid;grid-template-columns:220px auto auto auto auto;gap:10px;align-items:end}
 label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px;color:#374151}
 input,select,button{font-size:13px}
 input,select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
@@ -58,6 +59,17 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 .row-new td.row-no{background:#eff6ff;color:#1d4ed8}
 .dirty td.row-no{background:#fef3c7;color:#92400e}
 .actions-top{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.import-settings{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(130px,180px));
+  gap:9px;
+  margin-top:12px;
+  padding:10px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+}
+.import-settings input{font-size:13px}
 .help{font-size:11px;color:#64748b;margin-top:8px;line-height:1.45}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:bold}
 .badge-old{background:#dcfce7;color:#166534}
@@ -89,6 +101,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   .controls{grid-template-columns:1fr}
   .actions-top{display:grid;grid-template-columns:1fr 1fr}
   .actions-top button{width:100%;min-height:42px}
+  .import-settings{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -107,9 +120,10 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   <div class="panel">
     <div class="notice">
       <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
-      Untuk input massal dari Excel, copy kolom berurutan:
-      <b>Jam | Unit | Operator Unit | HM Saat Isi | Qty | Shift | Fuel Truck | Fuelman</b>,
-      lalu klik sel <b>Jam</b> pada baris kosong dan paste.
+      Untuk input massal dari Excel, bisa langsung klik <b>IMPORT EXCEL</b> atau paste manual.
+      Jika file punya kolom <b>JAM</b>, jam asli dipakai. Jika tidak ada, sistem membuat jam <b>berurutan, bukan random</b>:
+      Shift 1 mulai 07:30 dan Shift 2 mulai 19:30, dengan interval yang bisa diubah sebelum import.
+      Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
     </div>
 
     <div class="controls" style="margin-top:12px">
@@ -118,8 +132,26 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
         <input type="date" id="editorDate">
       </div>
       <button id="loadBtn" class="btn-blue">LOAD DATA</button>
+      <button id="importBtn" class="btn-blue">📂 IMPORT EXCEL</button>
       <button id="add10Btn" class="btn-gray">+ 10 BARIS</button>
       <button id="saveBtn" class="btn-green">💾 SIMPAN SEMUA</button>
+    </div>
+
+    <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
+
+    <div class="import-settings">
+      <div>
+        <label>Jam Otomatis Shift 1</label>
+        <input type="time" id="autoJamS1" value="07:30">
+      </div>
+      <div>
+        <label>Jam Otomatis Shift 2</label>
+        <input type="time" id="autoJamS2" value="19:30">
+      </div>
+      <div>
+        <label>Interval Antar Baris (menit)</label>
+        <input type="number" id="autoInterval" min="1" max="60" value="1">
+      </div>
     </div>
 
     <div class="actions-top">
@@ -226,6 +258,336 @@ function esc(s){
     .replaceAll('"',"&quot;");
 }
 
+function normalizeHeader(v){
+  return String(v||"")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g," ")
+    .replace(/[._-]+/g," ")
+    .replace(/\s+/g," ");
+}
+
+function findHeaderIndex(headers,names){
+  const normalized=headers.map(normalizeHeader);
+  for(const name of names){
+    const idx=normalized.indexOf(normalizeHeader(name));
+    if(idx>=0)return idx;
+  }
+  return -1;
+}
+
+function excelDateToISO(v){
+  if(v===null||v===undefined||v==="")return "";
+
+  if(v instanceof Date && !isNaN(v)){
+    return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  }
+
+  if(typeof v==="number" && Number.isFinite(v)){
+    const p=XLSX.SSF.parse_date_code(v);
+    if(p && p.y && p.m && p.d){
+      return `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+    }
+  }
+
+  const s=String(v).trim();
+
+  let m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if(m)return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+
+  m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m)return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+
+  return "";
+}
+
+function excelTimeToHHMM(v){
+  if(v===null||v===undefined||v==="")return "";
+
+  if(v instanceof Date && !isNaN(v)){
+    return `${pad(v.getHours())}:${pad(v.getMinutes())}`;
+  }
+
+  if(typeof v==="number" && Number.isFinite(v)){
+    const fraction=((v%1)+1)%1;
+    const total=Math.round(fraction*24*60);
+    const h=Math.floor(total/60)%24;
+    const m=total%60;
+    return `${pad(h)}:${pad(m)}`;
+  }
+
+  const s=String(v).trim();
+  if(!s)return "";
+
+  const hhmm=displayTime(normalizeTime(s));
+  return /^\d{2}:\d{2}$/.test(hhmm)?hhmm:"";
+}
+
+function timeToMinutes(v){
+  const s=String(v||"07:30");
+  const [h,m]=s.split(":").map(Number);
+  return (Number.isFinite(h)?h:7)*60+(Number.isFinite(m)?m:30);
+}
+
+function minutesToTime(total){
+  total=((total%(24*60))+(24*60))%(24*60);
+  const h=Math.floor(total/60);
+  const m=total%60;
+  return `${pad(h)}:${pad(m)}`;
+}
+
+function makeAutoTime(shift,counters){
+  const interval=Math.max(1,Number(document.getElementById("autoInterval").value)||1);
+  const sh=normalizeShift(shift)===2?2:1;
+  const start=sh===2
+    ? document.getElementById("autoJamS2").value || "19:30"
+    : document.getElementById("autoJamS1").value || "07:30";
+
+  const idx=counters[sh]||0;
+  counters[sh]=idx+1;
+
+  return minutesToTime(timeToMinutes(start)+(idx*interval));
+}
+
+function inferFTFromWH(v){
+  const wh=String(v||"").trim().toUpperCase();
+  if(wh==="FT02")return "FT0073";
+  if(wh==="FT01")return "FT0075";
+  return "";
+}
+
+function rowSignature(r){
+  return [
+    displayTime(normalizeTime(r.jam)),
+    cleanText(r.unit).toUpperCase(),
+    num(r.hm_akhir),
+    num(r.fuel),
+    normalizeShift(r.shift),
+    normalizeFT(r.fuel_truck)
+  ].join("|");
+}
+
+async function importExcelFile(file){
+  const status=document.getElementById("status");
+
+  if(!file)return;
+
+  if(isDirty){
+    const ok=confirm(
+      "Ada perubahan yang belum disimpan.\n\n"+
+      "Import Excel akan memuat ulang data tanggal target dan membuang perubahan yang belum disimpan.\n\nLanjut?"
+    );
+    if(!ok){
+      document.getElementById("excelFile").value="";
+      return;
+    }
+  }
+
+  status.textContent="Membaca file Excel...";
+
+  try{
+    const buffer=await file.arrayBuffer();
+    const workbook=XLSX.read(buffer,{type:"array",cellDates:false});
+    const firstSheet=workbook.SheetNames[0];
+
+    if(!firstSheet)throw new Error("Sheet Excel tidak ditemukan.");
+
+    const sheet=workbook.Sheets[firstSheet];
+    const matrix=XLSX.utils.sheet_to_json(sheet,{
+      header:1,
+      raw:true,
+      defval:""
+    });
+
+    if(!matrix.length)throw new Error("File Excel kosong.");
+
+    let headerRow=-1;
+
+    for(let i=0;i<Math.min(matrix.length,50);i++){
+      const hs=(matrix[i]||[]).map(normalizeHeader);
+      const hasUnit=hs.some(x=>["CODE UNIT","UNIT","UNIT CODE"].includes(x));
+      const hasHM=hs.some(x=>["HM","HM AKHIR","HM SAAT ISI","HM ISSUED"].includes(x));
+      const hasQty=hs.some(x=>["QTY ISSUED","QTY","FUEL","LITER","QTY LITER"].includes(x));
+
+      if(hasUnit && hasHM && hasQty){
+        headerRow=i;
+        break;
+      }
+    }
+
+    if(headerRow<0){
+      throw new Error(
+        "Header Logsheet tidak dikenali. Minimal harus ada kolom Unit, HM, dan Qty."
+      );
+    }
+
+    const headers=matrix[headerRow]||[];
+
+    const idx={
+      tanggal:findHeaderIndex(headers,["TANGGAL","DATE"]),
+      jam:findHeaderIndex(headers,["JAM","TIME","WAKTU"]),
+      unit:findHeaderIndex(headers,["CODE UNIT","UNIT","UNIT CODE"]),
+      operator:findHeaderIndex(headers,["OPERATOR UNIT","OPERATOR NAME","OPERATOR"]),
+      hm:findHeaderIndex(headers,["HM SAAT ISI","HM AKHIR","HM","HM ISSUED"]),
+      qty:findHeaderIndex(headers,["QTY ISSUED","QTY","FUEL","LITER","QTY LITER"]),
+      shift:findHeaderIndex(headers,["SHIF","SHIFT"]),
+      ft:findHeaderIndex(headers,["FUEL TRUCK","FUELTRUCK","FT"]),
+      wh:findHeaderIndex(headers,["WH","WAREHOUSE"]),
+      fuelman:findHeaderIndex(headers,["STD + FUELMAN","STD FUELMAN","FUELMAN"])
+    };
+
+    if(idx.unit<0 || idx.hm<0 || idx.qty<0){
+      throw new Error("Kolom Unit / HM / Qty belum terbaca dari file.");
+    }
+
+    const sourceRows=matrix
+      .slice(headerRow+1)
+      .filter(r=>{
+        if(!Array.isArray(r))return false;
+        const unit=cleanText(r[idx.unit]);
+        const hm=idx.hm>=0?r[idx.hm]:"";
+        const qty=idx.qty>=0?r[idx.qty]:"";
+        return unit || hm!=="" || qty!=="";
+      });
+
+    if(!sourceRows.length){
+      throw new Error("Tidak ada baris transaksi yang terbaca.");
+    }
+
+    const dates=sourceRows
+      .map(r=>idx.tanggal>=0?excelDateToISO(r[idx.tanggal]):"")
+      .filter(Boolean);
+
+    const uniqueDates=[...new Set(dates)];
+
+    let targetDate=document.getElementById("editorDate").value || localDate();
+
+    if(uniqueDates.length===1){
+      targetDate=uniqueDates[0];
+    }else if(uniqueDates.length>1){
+      if(!uniqueDates.includes(targetDate)){
+        targetDate=uniqueDates[0];
+      }
+    }
+
+    document.getElementById("editorDate").value=targetDate;
+
+    await loadDate();
+
+    const existingRows=rows.filter(r=>r.existing);
+    const existingSignatures=new Set(existingRows.map(rowSignature));
+
+    const autoCounters={1:0,2:0};
+
+    let generatedJam=0;
+    let skippedOtherDate=0;
+    let duplicateCount=0;
+    let unknownUnit=0;
+    let importedCount=0;
+
+    const imported=[];
+
+    for(const raw of sourceRows){
+      const rowDate=idx.tanggal>=0?excelDateToISO(raw[idx.tanggal]):"";
+
+      if(rowDate && rowDate!==targetDate){
+        skippedOtherDate++;
+        continue;
+      }
+
+      const unit=cleanText(raw[idx.unit]).toUpperCase();
+
+      if(!unit)continue;
+
+      const shift=idx.shift>=0?normalizeShift(raw[idx.shift]):"";
+
+      let jam=idx.jam>=0?excelTimeToHHMM(raw[idx.jam]):"";
+
+      if(!jam){
+        jam=makeAutoTime(shift,autoCounters);
+        generatedJam++;
+      }
+
+      let ft=idx.ft>=0?normalizeFT(raw[idx.ft]):"";
+
+      if(!ft && idx.wh>=0){
+        ft=inferFTFromWH(raw[idx.wh]);
+      }
+
+      const r={
+        ...newBlankRow(),
+        jam,
+        unit,
+        operator:idx.operator>=0?cleanText(raw[idx.operator]):"",
+        hm_akhir:num(raw[idx.hm]),
+        fuel:num(raw[idx.qty]),
+        shift,
+        fuel_truck:ft,
+        wh:FT_WH[ft]||"",
+        fuelman_name:idx.fuelman>=0?cleanText(raw[idx.fuelman]):"",
+        dirty:true,
+        import_generated_time:idx.jam<0 || !excelTimeToHHMM(raw[idx.jam])
+      };
+
+      if(!unitMaster.includes(unit))unknownUnit++;
+
+      const sig=rowSignature(r);
+
+      if(existingSignatures.has(sig)){
+        duplicateCount++;
+        continue;
+      }
+
+      imported.push(r);
+      existingSignatures.add(sig);
+      importedCount++;
+    }
+
+    rows=[
+      ...existingRows,
+      ...imported
+    ];
+
+    addBlankRows(10);
+
+    isDirty=imported.length>0;
+
+    baselineCache.clear();
+    await recalcAllHM();
+    render();
+
+    let msg=`✅ Import preview: ${importedCount} baris masuk.`;
+
+    if(generatedJam){
+      msg+=` ${generatedJam} jam dibuat otomatis berurutan.`;
+    }
+
+    if(duplicateCount){
+      msg+=` ${duplicateCount} duplikat persis dilewati.`;
+    }
+
+    if(skippedOtherDate){
+      msg+=` ${skippedOtherDate} baris tanggal lain dilewati.`;
+    }
+
+    if(unknownUnit){
+      msg+=` ⚠️ ${unknownUnit} unit belum ada di Master Unit; cek sebelum simpan.`;
+    }
+
+    if(uniqueDates.length>1){
+      msg+=` File punya ${uniqueDates.length} tanggal; editor saat ini menampilkan ${targetDate}.`;
+    }
+
+    status.textContent=msg+" Belum masuk database sampai klik SIMPAN SEMUA.";
+
+  }catch(e){
+    console.error(e);
+    status.textContent="❌ Import gagal: "+e.message;
+  }finally{
+    document.getElementById("excelFile").value="";
+  }
+}
+
 function newBlankRow(){
   return {
     id:null,
@@ -253,8 +615,7 @@ function addBlankRows(count=10){
 async function loadUnitMaster(){
   const {data,error}=await db
     .from("unit_master")
-    .select("code_unit")
-    .eq("active",true)
+    .select("code_unit,active")
     .order("code_unit",{ascending:true});
 
   if(error)throw error;
@@ -742,6 +1103,15 @@ document.getElementById("loadBtn").addEventListener("click",()=>{
     if(!confirm("Ada perubahan belum disimpan. Tetap load ulang data?"))return;
   }
   loadDate();
+});
+
+document.getElementById("importBtn").addEventListener("click",()=>{
+  document.getElementById("excelFile").click();
+});
+
+document.getElementById("excelFile").addEventListener("change",e=>{
+  const file=e.target.files?.[0];
+  if(file)importExcelFile(file);
 });
 
 document.getElementById("add10Btn").addEventListener("click",()=>addBlankRows(10));
