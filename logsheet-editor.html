@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Logsheet Editor - KPP FMS</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ACTIVE_PAGE="logsheet-editor";
+</script>
+<script src="auth.js"></script>
+
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:20px}
+.header h1{margin:0 0 5px;font-size:22px}
+.header p{margin:0;color:#d1d5db;font-size:13px}
+
+.container{max-width:1500px;margin:20px auto;padding:12px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.55}
+.controls{display:grid;grid-template-columns:220px auto auto auto;gap:10px;align-items:end}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px;color:#374151}
+input,select,button{font-size:13px}
+input,select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff}
+button{border:0;border-radius:7px;padding:10px 13px;font-weight:bold;cursor:pointer}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.btn-gray{background:#64748b;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+.btn-outline{background:#fff;border:1px solid #cbd5e1;color:#334155}
+
+.status{margin-top:10px;font-size:12px;font-weight:bold}
+.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dbe2ea;border-radius:8px;max-height:68vh}
+table{width:100%;border-collapse:collapse;min-width:1420px}
+th,td{border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:0;text-align:center}
+th{background:#1f2937;color:#fff;font-size:11px;padding:9px 6px;position:sticky;top:0;z-index:3;white-space:nowrap}
+td.row-no{background:#f8fafc;font-size:11px;font-weight:bold;width:42px;min-width:42px}
+td.calc{background:#f1f5f9;color:#475569;font-weight:bold;font-size:11px;padding:7px 5px}
+td.action{background:#fff;padding:5px;white-space:nowrap}
+.grid-input,.grid-select{
+  width:100%;min-width:90px;border:0;border-radius:0;padding:8px 7px;font-size:12px;background:#fff;outline:none
+}
+.grid-input:focus,.grid-select:focus{box-shadow:inset 0 0 0 2px #2563eb}
+.col-jam{min-width:85px}
+.col-unit{min-width:120px}
+.col-operator{min-width:145px}
+.col-hm{min-width:95px}
+.col-qty{min-width:90px}
+.col-shift{min-width:95px}
+.col-ft{min-width:105px}
+.col-fuelman{min-width:130px}
+.row-existing td.row-no{background:#ecfdf5;color:#166534}
+.row-new td.row-no{background:#eff6ff;color:#1d4ed8}
+.dirty td.row-no{background:#fef3c7;color:#92400e}
+.actions-top{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.help{font-size:11px;color:#64748b;margin-top:8px;line-height:1.45}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:bold}
+.badge-old{background:#dcfce7;color:#166534}
+.badge-new{background:#dbeafe;color:#1d4ed8}
+
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
+
+@media(max-width:900px){
+  .header{padding:14px 10px}.header h1{font-size:18px}
+  .container{padding:7px;margin:8px auto}
+  .panel{padding:10px}
+  .controls{grid-template-columns:1fr 1fr}
+  .controls button{min-height:42px}
+  .table-wrap{max-height:70vh}
+  th{font-size:10px}
+  .grid-input,.grid-select{font-size:16px;padding:8px 6px}
+  .app-nav-inner{justify-content:flex-start}
+  .app-nav a{padding:9px 12px;font-size:12px}
+  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .controls{grid-template-columns:1fr}
+  .actions-top{display:grid;grid-template-columns:1fr 1fr}
+  .actions-top button{width:100%;min-height:42px}
+}
+</style>
+</head>
+
+<body>
+<div class="header">
+  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+  <p>Logsheet Editor • GL / Admin</p>
+</div>
+
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
+
+<div class="container">
+
+  <div class="panel">
+    <div class="notice">
+      <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
+      Untuk input massal dari Excel, copy kolom berurutan:
+      <b>Jam | Unit | Operator Unit | HM Saat Isi | Qty | Shift | Fuel Truck | Fuelman</b>,
+      lalu klik sel <b>Jam</b> pada baris kosong dan paste.
+    </div>
+
+    <div class="controls" style="margin-top:12px">
+      <div>
+        <label>Tanggal Logsheet</label>
+        <input type="date" id="editorDate">
+      </div>
+      <button id="loadBtn" class="btn-blue">LOAD DATA</button>
+      <button id="add10Btn" class="btn-gray">+ 10 BARIS</button>
+      <button id="saveBtn" class="btn-green">💾 SIMPAN SEMUA</button>
+    </div>
+
+    <div class="actions-top">
+      <button id="recalcBtn" class="btn-outline">↻ HITUNG ULANG HM</button>
+      <button id="clearNewBtn" class="btn-outline">BERSIHKAN BARIS BARU</button>
+    </div>
+
+    <div id="status" class="status"></div>
+    <div class="help">
+      <span class="badge badge-old">HIJAU</span> data yang sudah ada di database •
+      <span class="badge badge-new">BIRU</span> baris baru •
+      kuning = ada perubahan belum disimpan.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Jam</th>
+            <th>Unit</th>
+            <th>Operator Unit</th>
+            <th>HM Awal 🔒</th>
+            <th>HM Saat Isi</th>
+            <th>HM Jalan 🔒</th>
+            <th>Qty (L)</th>
+            <th>Shift</th>
+            <th>Fuel Truck</th>
+            <th>Fuelman</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="gridBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<datalist id="unitList"></datalist>
+
+<script>
+const db=KPP.db;
+
+const FT_WH={
+  FT0073:"FT02",
+  FT0075:"FT01"
+};
+
+let rows=[];
+let unitMaster=[];
+let baselineCache=new Map();
+let recalcTimer=null;
+let isDirty=false;
+
+function pad(v){return String(v).padStart(2,"0")}
+function localDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function num(v){
+  if(v===null||v===undefined||v==="")return null;
+  const x=Number(String(v).replace(",","."));
+  return Number.isFinite(x)?x:null;
+}
+function normalizeTime(v){
+  let s=String(v||"").trim();
+  if(!s)return "";
+  if(/^\d{1,2}:\d{2}$/.test(s))s+=":00";
+  if(/^\d{1,2}\.\d{2}$/.test(s))s=s.replace(".",":")+":00";
+  const p=s.split(":");
+  if(p.length>=2){
+    const h=Math.max(0,Math.min(23,Number(p[0])||0));
+    const m=Math.max(0,Math.min(59,Number(p[1])||0));
+    const sec=Math.max(0,Math.min(59,Number(p[2])||0));
+    return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  }
+  return s;
+}
+function displayTime(v){
+  return v?String(v).slice(0,5):"";
+}
+function normalizeShift(v){
+  const s=String(v||"").trim().toLowerCase();
+  if(s==="1"||s==="shift 1"||s==="s1")return 1;
+  if(s==="2"||s==="shift 2"||s==="s2")return 2;
+  return "";
+}
+function normalizeFT(v){
+  const s=String(v||"").trim().toUpperCase().replace(/\s/g,"");
+  if(s==="73"||s==="0073"||s==="FT73")return "FT0073";
+  if(s==="75"||s==="0075"||s==="FT75")return "FT0075";
+  if(s==="FT0073"||s==="FT0075")return s;
+  return "";
+}
+function cleanText(v){return String(v||"").trim()}
+function esc(s){
+  return String(s??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+function newBlankRow(){
+  return {
+    id:null,
+    jam:"",
+    unit:"",
+    operator:"",
+    hm_awal:null,
+    hm_akhir:null,
+    hm_jalan:null,
+    fuel:null,
+    shift:"",
+    fuel_truck:"",
+    fuelman_name:"",
+    wh:"",
+    existing:false,
+    dirty:false
+  };
+}
+
+function addBlankRows(count=10){
+  for(let i=0;i<count;i++)rows.push(newBlankRow());
+  render();
+}
+
+async function loadUnitMaster(){
+  const {data,error}=await db
+    .from("unit_master")
+    .select("code_unit")
+    .eq("active",true)
+    .order("code_unit",{ascending:true});
+
+  if(error)throw error;
+
+  unitMaster=(data||[]).map(x=>String(x.code_unit||"").trim().toUpperCase()).filter(Boolean);
+  const dl=document.getElementById("unitList");
+  dl.innerHTML=unitMaster.map(u=>`<option value="${esc(u)}"></option>`).join("");
+}
+
+async function loadDate(){
+  const tanggal=document.getElementById("editorDate").value;
+  const status=document.getElementById("status");
+
+  if(!tanggal)return;
+
+  status.textContent="Memuat data...";
+  baselineCache.clear();
+  isDirty=false;
+
+  const {data,error}=await db
+    .from("fuel_history")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name")
+    .eq("tanggal",tanggal)
+    .order("jam",{ascending:true})
+    .order("id",{ascending:true});
+
+  if(error){
+    status.textContent="❌ "+error.message;
+    return;
+  }
+
+  rows=(data||[]).map(r=>({
+    id:r.id,
+    jam:displayTime(r.jam),
+    unit:cleanText(r.unit).toUpperCase(),
+    operator:r.operator||"",
+    hm_awal:num(r.hm_awal),
+    hm_akhir:num(r.hm_akhir),
+    hm_jalan:num(r.hm_jalan),
+    fuel:num(r.fuel),
+    shift:normalizeShift(r.shift),
+    fuel_truck:normalizeFT(r.fuel_truck) || (String(r.wh||"").toUpperCase()==="FT02"?"FT0073":String(r.wh||"").toUpperCase()==="FT01"?"FT0075":""),
+    fuelman_name:r.fuelman_name||"",
+    wh:r.wh||"",
+    existing:true,
+    dirty:false
+  }));
+
+  addBlankRows(10);
+  await recalcAllHM();
+  render();
+
+  status.textContent=`✅ ${data?.length||0} transaksi ditemukan.`;
+}
+
+async function getBaseline(unit,tanggal){
+  const key=unit+"|"+tanggal;
+  if(baselineCache.has(key))return baselineCache.get(key);
+
+  const [fuelRes,corRes]=await Promise.all([
+    db.from("fuel_history")
+      .select("tanggal,jam,hm_akhir,id")
+      .eq("unit",unit)
+      .lt("tanggal",tanggal)
+      .order("tanggal",{ascending:false})
+      .order("jam",{ascending:false})
+      .order("id",{ascending:false})
+      .limit(1),
+
+    db.from("hm_corrections")
+      .select("tanggal,jam,hm,id")
+      .eq("unit",unit)
+      .lt("tanggal",tanggal)
+      .order("tanggal",{ascending:false})
+      .order("jam",{ascending:false})
+      .order("id",{ascending:false})
+      .limit(1)
+  ]);
+
+  if(fuelRes.error)throw fuelRes.error;
+  if(corRes.error)throw corRes.error;
+
+  const f=(fuelRes.data||[])[0]||null;
+  const c=(corRes.data||[])[0]||null;
+
+  let chosen=null;
+
+  if(f)chosen={dt:`${f.tanggal} ${f.jam||"00:00:00"}`,hm:num(f.hm_akhir)};
+  if(c){
+    const cc={dt:`${c.tanggal} ${c.jam||"00:00:00"}`,hm:num(c.hm)};
+    if(!chosen || cc.dt>chosen.dt)chosen=cc;
+  }
+
+  const value=chosen?.hm ?? null;
+  baselineCache.set(key,value);
+  return value;
+}
+
+async function recalcAllHM(){
+  const tanggal=document.getElementById("editorDate").value;
+  if(!tanggal)return;
+
+  const validRows=rows
+    .map((r,index)=>({r,index}))
+    .filter(x=>cleanText(x.r.unit))
+    .sort((a,b)=>{
+      const ta=normalizeTime(a.r.jam)||"99:99:99";
+      const tb=normalizeTime(b.r.jam)||"99:99:99";
+      if(ta!==tb)return ta.localeCompare(tb);
+      return a.index-b.index;
+    });
+
+  const byUnit=new Map();
+
+  for(const item of validRows){
+    const unit=cleanText(item.r.unit).toUpperCase();
+    if(!byUnit.has(unit))byUnit.set(unit,[]);
+    byUnit.get(unit).push(item);
+  }
+
+  for(const [unit,list] of byUnit.entries()){
+    let prev=await getBaseline(unit,tanggal);
+
+    for(const item of list){
+      const r=item.r;
+      r.hm_awal=prev;
+
+      const akhir=num(r.hm_akhir);
+
+      if(prev!==null && akhir!==null){
+        r.hm_jalan=akhir-prev;
+      }else{
+        r.hm_jalan=null;
+      }
+
+      if(akhir!==null)prev=akhir;
+    }
+  }
+
+  rows.filter(r=>!cleanText(r.unit)).forEach(r=>{
+    r.hm_awal=null;
+    r.hm_jalan=null;
+  });
+
+  updateCalculatedCells();
+}
+
+function scheduleRecalc(){
+  clearTimeout(recalcTimer);
+  recalcTimer=setTimeout(async()=>{
+    try{
+      baselineCache.clear();
+      await recalcAllHM();
+    }catch(e){
+      document.getElementById("status").textContent="❌ Gagal hitung HM: "+e.message;
+    }
+  },250);
+}
+
+function markDirty(index){
+  rows[index].dirty=true;
+  isDirty=true;
+  const tr=document.querySelector(`tr[data-index="${index}"]`);
+  tr?.classList.add("dirty");
+}
+
+function setValue(index,field,value){
+  const r=rows[index];
+
+  if(field==="unit")value=cleanText(value).toUpperCase();
+  if(field==="jam")value=displayTime(normalizeTime(value));
+  if(field==="hm_akhir"||field==="fuel")value=num(value);
+  if(field==="shift")value=normalizeShift(value);
+  if(field==="fuel_truck")value=normalizeFT(value);
+
+  r[field]=value;
+  if(field==="fuel_truck")r.wh=FT_WH[value]||"";
+
+  markDirty(index);
+
+  if(["unit","jam","hm_akhir"].includes(field))scheduleRecalc();
+}
+
+function render(){
+  const body=document.getElementById("gridBody");
+  body.innerHTML="";
+
+  rows.forEach((r,index)=>{
+    const tr=document.createElement("tr");
+    tr.dataset.index=index;
+    tr.className=(r.existing?"row-existing":"row-new")+(r.dirty?" dirty":"");
+
+    tr.innerHTML=`
+      <td class="row-no">${index+1}</td>
+      <td><input class="grid-input col-jam" data-col="0" value="${esc(displayTime(r.jam))}" placeholder="07:30"></td>
+      <td><input class="grid-input col-unit" data-col="1" list="unitList" value="${esc(r.unit)}" placeholder="CB1019"></td>
+      <td><input class="grid-input col-operator" data-col="2" value="${esc(r.operator)}" placeholder="Operator"></td>
+      <td class="calc hm-awal">${r.hm_awal===null?"-":esc(r.hm_awal)}</td>
+      <td><input class="grid-input col-hm" data-col="3" type="number" step="0.1" value="${r.hm_akhir===null?"":esc(r.hm_akhir)}" placeholder="HM"></td>
+      <td class="calc hm-jalan">${r.hm_jalan===null?"-":esc(r.hm_jalan)}</td>
+      <td><input class="grid-input col-qty" data-col="4" type="number" step="0.1" value="${r.fuel===null?"":esc(r.fuel)}" placeholder="Liter"></td>
+      <td>
+        <select class="grid-select col-shift" data-col="5">
+          <option value="">-</option>
+          <option value="1"${String(r.shift)==="1"?" selected":""}>1</option>
+          <option value="2"${String(r.shift)==="2"?" selected":""}>2</option>
+        </select>
+      </td>
+      <td>
+        <select class="grid-select col-ft" data-col="6">
+          <option value="">-</option>
+          <option value="FT0073"${r.fuel_truck==="FT0073"?" selected":""}>FT0073</option>
+          <option value="FT0075"${r.fuel_truck==="FT0075"?" selected":""}>FT0075</option>
+        </select>
+      </td>
+      <td><input class="grid-input col-fuelman" data-col="7" value="${esc(r.fuelman_name)}" placeholder="Opsional"></td>
+      <td class="action">
+        ${r.existing
+          ? `<button class="btn-red delete-existing" type="button">🗑️ Hapus</button>`
+          : `<button class="btn-outline remove-new" type="button">✖</button>`}
+      </td>
+    `;
+
+    body.appendChild(tr);
+  });
+
+  attachGridEvents();
+}
+
+function updateCalculatedCells(){
+  rows.forEach((r,index)=>{
+    const tr=document.querySelector(`tr[data-index="${index}"]`);
+    if(!tr)return;
+    const a=tr.querySelector(".hm-awal");
+    const j=tr.querySelector(".hm-jalan");
+    if(a)a.textContent=r.hm_awal===null?"-":r.hm_awal;
+    if(j)j.textContent=r.hm_jalan===null?"-":r.hm_jalan;
+  });
+}
+
+function attachGridEvents(){
+  const fields=["jam","unit","operator","hm_akhir","fuel","shift","fuel_truck","fuelman_name"];
+
+  document.querySelectorAll("#gridBody tr").forEach(tr=>{
+    const index=Number(tr.dataset.index);
+
+    tr.querySelectorAll("[data-col]").forEach(el=>{
+      const col=Number(el.dataset.col);
+      const field=fields[col];
+
+      el.addEventListener("change",()=>{
+        setValue(index,field,el.value);
+      });
+
+      if(el.tagName==="INPUT"){
+        el.addEventListener("input",()=>{
+          setValue(index,field,el.value);
+        });
+      }
+
+      el.addEventListener("paste",e=>{
+        const text=e.clipboardData?.getData("text");
+        if(!text || (!text.includes("\t") && !text.includes("\n")))return;
+
+        e.preventDefault();
+        pasteMatrix(index,col,text);
+      });
+    });
+
+    tr.querySelector(".remove-new")?.addEventListener("click",()=>{
+      rows.splice(index,1);
+      render();
+    });
+
+    tr.querySelector(".delete-existing")?.addEventListener("click",()=>{
+      deleteExisting(index);
+    });
+  });
+}
+
+function pasteMatrix(startRow,startCol,text){
+  const matrix=text
+    .replace(/\r/g,"")
+    .split("\n")
+    .filter((line,i,arr)=>!(i===arr.length-1 && line===""))
+    .map(line=>line.split("\t"));
+
+  const fields=["jam","unit","operator","hm_akhir","fuel","shift","fuel_truck","fuelman_name"];
+
+  while(rows.length<startRow+matrix.length){
+    rows.push(newBlankRow());
+  }
+
+  matrix.forEach((cols,rOffset)=>{
+    cols.forEach((value,cOffset)=>{
+      const col=startCol+cOffset;
+      if(col>=fields.length)return;
+
+      const idx=startRow+rOffset;
+      const field=fields[col];
+      let v=value;
+
+      if(field==="jam")v=displayTime(normalizeTime(v));
+      if(field==="unit")v=cleanText(v).toUpperCase();
+      if(field==="hm_akhir"||field==="fuel")v=num(v);
+      if(field==="shift")v=normalizeShift(v);
+      if(field==="fuel_truck")v=normalizeFT(v);
+
+      rows[idx][field]=v;
+      if(field==="fuel_truck")rows[idx].wh=FT_WH[v]||"";
+      rows[idx].dirty=true;
+    });
+  });
+
+  isDirty=true;
+  baselineCache.clear();
+
+  recalcAllHM()
+    .then(render)
+    .catch(e=>{
+      document.getElementById("status").textContent="❌ Paste masuk, tapi hitung HM gagal: "+e.message;
+      render();
+    });
+}
+
+function isRowEmpty(r){
+  return !cleanText(r.jam) &&
+    !cleanText(r.unit) &&
+    !cleanText(r.operator) &&
+    r.hm_akhir===null &&
+    r.fuel===null &&
+    !r.shift &&
+    !r.fuel_truck &&
+    !cleanText(r.fuelman_name);
+}
+
+function validateRow(r,index){
+  if(isRowEmpty(r))return null;
+
+  if(!normalizeTime(r.jam))return `Baris ${index+1}: Jam wajib diisi.`;
+  if(!cleanText(r.unit))return `Baris ${index+1}: Unit wajib diisi.`;
+  if(num(r.hm_akhir)===null)return `Baris ${index+1}: HM Saat Isi wajib diisi.`;
+  if(num(r.fuel)===null || num(r.fuel)<=0)return `Baris ${index+1}: Qty harus lebih dari 0.`;
+  if(!normalizeShift(r.shift))return `Baris ${index+1}: Shift wajib 1 atau 2.`;
+  if(!normalizeFT(r.fuel_truck))return `Baris ${index+1}: Fuel Truck wajib FT0073 / FT0075.`;
+
+  if(r.hm_awal!==null && num(r.hm_akhir)<num(r.hm_awal)){
+    return `Baris ${index+1}: HM Saat Isi lebih kecil dari HM Awal.`;
+  }
+
+  return null;
+}
+
+async function saveAll(){
+  const tanggal=document.getElementById("editorDate").value;
+  const status=document.getElementById("status");
+  const btn=document.getElementById("saveBtn");
+
+  if(!tanggal)return;
+
+  btn.disabled=true;
+  btn.textContent="MENYIMPAN...";
+  status.textContent="Menghitung ulang HM...";
+
+  try{
+    baselineCache.clear();
+    await recalcAllHM();
+
+    for(let i=0;i<rows.length;i++){
+      const err=validateRow(rows[i],i);
+      if(err)throw new Error(err);
+    }
+
+    const filled=rows.filter(r=>!isRowEmpty(r));
+
+    const existing=filled.filter(r=>r.id);
+    const fresh=filled.filter(r=>!r.id);
+
+    for(const r of existing){
+      const payload={
+        tanggal,
+        jam:normalizeTime(r.jam),
+        unit:cleanText(r.unit).toUpperCase(),
+        operator:cleanText(r.operator),
+        hm_awal:r.hm_awal,
+        hm_akhir:num(r.hm_akhir),
+        hm_jalan:r.hm_jalan,
+        fuel:num(r.fuel),
+        shift:normalizeShift(r.shift),
+        fuel_truck:normalizeFT(r.fuel_truck),
+        wh:FT_WH[normalizeFT(r.fuel_truck)]||null,
+        fuelman_name:cleanText(r.fuelman_name)||null
+      };
+
+      const {error}=await db
+        .from("fuel_history")
+        .update(payload)
+        .eq("id",r.id);
+
+      if(error)throw error;
+    }
+
+    if(fresh.length){
+      const payload=fresh.map(r=>({
+        tanggal,
+        jam:normalizeTime(r.jam),
+        unit:cleanText(r.unit).toUpperCase(),
+        operator:cleanText(r.operator),
+        hm_awal:r.hm_awal,
+        hm_akhir:num(r.hm_akhir),
+        hm_jalan:r.hm_jalan,
+        fuel:num(r.fuel),
+        shift:normalizeShift(r.shift),
+        fuel_truck:normalizeFT(r.fuel_truck),
+        wh:FT_WH[normalizeFT(r.fuel_truck)]||null,
+        fuelman_name:cleanText(r.fuelman_name)||null,
+        session_id:null,
+        fuelman_user_id:null,
+        fuelman_username:null
+      }));
+
+      const {error}=await db
+        .from("fuel_history")
+        .insert(payload);
+
+      if(error)throw error;
+    }
+
+    isDirty=false;
+    status.textContent=`✅ ${filled.length} baris berhasil disimpan. Audit otomatis mencatat edit data lama.`;
+    await loadDate();
+
+  }catch(e){
+    status.textContent="❌ "+e.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent="💾 SIMPAN SEMUA";
+  }
+}
+
+async function deleteExisting(index){
+  const r=rows[index];
+
+  if(!r?.id)return;
+
+  if(isDirty){
+    const proceed=confirm(
+      "Ada perubahan yang belum disimpan di tabel.\n\n"+
+      "Jika lanjut HAPUS, perubahan lain yang belum disimpan akan dibuang saat data dimuat ulang.\n\nLanjut?"
+    );
+    if(!proceed)return;
+  }
+
+  const ok=confirm(
+    `Hapus transaksi ini?\n\n`+
+    `Unit: ${r.unit}\nJam: ${r.jam}\nQty: ${r.fuel??"-"} L\n\n`+
+    `Tindakan ini tercatat di Audit Log.`
+  );
+
+  if(!ok)return;
+
+  const {error}=await db
+    .from("fuel_history")
+    .delete()
+    .eq("id",r.id);
+
+  if(error){
+    document.getElementById("status").textContent="❌ Gagal hapus: "+error.message;
+    return;
+  }
+
+  document.getElementById("status").textContent="✅ Transaksi dihapus dan tercatat di Audit Log.";
+  await loadDate();
+}
+
+function clearNewRows(){
+  rows=rows.filter(r=>r.existing);
+  addBlankRows(10);
+  isDirty=rows.some(r=>r.dirty);
+  render();
+}
+
+document.getElementById("loadBtn").addEventListener("click",()=>{
+  if(isDirty){
+    if(!confirm("Ada perubahan belum disimpan. Tetap load ulang data?"))return;
+  }
+  loadDate();
+});
+
+document.getElementById("add10Btn").addEventListener("click",()=>addBlankRows(10));
+document.getElementById("saveBtn").addEventListener("click",saveAll);
+document.getElementById("recalcBtn").addEventListener("click",async()=>{
+  try{
+    baselineCache.clear();
+    await recalcAllHM();
+    render();
+    document.getElementById("status").textContent="✅ HM Awal dan HM Jalan dihitung ulang.";
+  }catch(e){
+    document.getElementById("status").textContent="❌ "+e.message;
+  }
+});
+document.getElementById("clearNewBtn").addEventListener("click",clearNewRows);
+
+window.addEventListener("beforeunload",e=>{
+  if(!isDirty)return;
+  e.preventDefault();
+  e.returnValue="";
+});
+
+document.addEventListener("kpp-auth-ready",async()=>{
+  document.getElementById("editorDate").value=localDate();
+
+  try{
+    await loadUnitMaster();
+    await loadDate();
+  }catch(e){
+    document.getElementById("status").textContent="❌ "+e.message;
+  }
+});
+</script>
+
+</body>
+</html>
