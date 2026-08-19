@@ -1889,7 +1889,11 @@ function numberShiftToCcr(value) {
 }
 
 async function ambilKontrolCcrHariIni(unit) {
-    const now = getLocalDateTime();
+    await expireStaleCcr();
+
+    const operationalDate =
+        getOperationalDateForFueling();
+
     const selectedShift =
         Number(document.getElementById("shift").value || 0);
 
@@ -1899,7 +1903,7 @@ async function ambilKontrolCcrHariIni(unit) {
             "id,tanggal,shift,unit,nrp,operator_unit,hm_ccr,max_qty,tolerance_qty,filling_no,status,request_reason"
         )
         .eq("unit", unit)
-        .eq("tanggal", now.tanggal)
+        .eq("tanggal", operationalDate)
         .in("status", ["ACTIVE", "PENDING_GL", "USED"])
         .order("id", { ascending: false });
 
@@ -2466,6 +2470,43 @@ function getLocalDateTime() {
     };
 }
 
+function getOperationalDateForFueling(){
+    if (
+        activeFuelmanSession &&
+        activeFuelmanSession.tanggal
+    ) {
+        return activeFuelmanSession.tanggal;
+    }
+
+    const now = new Date();
+    const minutes = now.getHours()*60 + now.getMinutes();
+    const selectedShift =
+        Number(document.getElementById("shift").value || 0);
+
+    if (selectedShift === 2 && minutes < 390) {
+        const prev = new Date(now);
+        prev.setDate(prev.getDate()-1);
+
+        return (
+            prev.getFullYear() + "-" +
+            String(prev.getMonth()+1).padStart(2,"0") + "-" +
+            String(prev.getDate()).padStart(2,"0")
+        );
+    }
+
+    return getLocalDateTime().tanggal;
+}
+
+async function expireStaleCcr(){
+    const { error } =
+        await supabaseClient.rpc("expire_ccr_allocations");
+
+    if (error) {
+        console.warn("Expire CCR:",error.message);
+    }
+}
+
+
 document
     .getElementById("saveButton")
     .addEventListener(
@@ -2610,7 +2651,7 @@ document
                                     currentCCRAllocation.id,
 
                                 p_tanggal:
-                                    waktu.tanggal,
+                                    currentCCRAllocation.tanggal,
 
                                 p_jam:
                                     waktu.jam,
