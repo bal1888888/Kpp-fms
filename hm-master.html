@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Master Unit & HM - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ACTIVE_PAGE="hm-master";
+</script>
+<script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
 body{margin:0;background:#f3f4f6;color:#111827}
@@ -83,10 +88,26 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
 .master-toolbar>div{flex:1;min-width:180px}
 .table-scroll{max-height:430px;overflow:auto}
 
+
+.badge-qr{display:inline-block;padding:5px 8px;border-radius:999px;font-weight:bold;font-size:10px}
+.badge-qr.yes{background:#dcfce7;color:#166534}
+.badge-qr.no{background:#fee2e2;color:#991b1b}
+.qr-toolbar{display:grid;grid-template-columns:1.4fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:12px}
+.qr-toolbar button{white-space:nowrap}
+.qr-check{width:auto;transform:scale(1.15)}
+.qr-actions{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.qr-btn{background:#7c3aed;color:#fff;padding:7px 9px;font-size:11px}
+.qr-selected-note{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:10px}
+@media(max-width:760px){
+  .qr-toolbar{grid-template-columns:1fr}
+  .qr-toolbar button{width:100%}
+}
+
 </style>
 </head>
 <body>
 <div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Master Unit & HM Aktual</div></div>
+<div id="kppUserBar" class="kpp-userbar"></div>
 <nav class="app-nav"><div class="app-nav-inner"><a href="dashboard.html">📊 Dashboard</a><a href="pengisian.html">⛽ Pengisian</a><a href="stock.html">🛢️ Stock</a><a href="logsheet.html">📄 Logsheet</a><a href="riwayat.html">📋 Riwayat</a><a href="hm-master.html" class="active">⚙️ HM Master</a></div></nav>
 <div class="container">
     <div class="tab-bar">
@@ -127,6 +148,13 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
                         <option value="false">TIDAK AKTIF</option>
                     </select>
                 </div>
+                <div>
+                    <label>Status QR Unit</label>
+                    <select id="masterQrGenerated">
+                        <option value="false">BELUM ADA QR</option>
+                        <option value="true">SUDAH ADA QR</option>
+                    </select>
+                </div>
             </div>
 
             <div style="margin-top:12px">
@@ -156,22 +184,55 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
                     <small>UNIT AKTIF</small>
                     <strong id="totalActiveUnit">0</strong>
                 </div>
+                <div class="card">
+                    <small>QR SUDAH DIBUAT</small>
+                    <strong id="totalQrGenerated">0</strong>
+                </div>
+            </div>
+
+            <div class="qr-toolbar">
+                <div>
+                    <label>Filter Status QR</label>
+                    <select id="qrFilter" onchange="renderUnitTable()">
+                        <option value="all">SEMUA UNIT</option>
+                        <option value="no">BELUM ADA QR</option>
+                        <option value="yes">SUDAH ADA QR</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Pilih QR</label>
+                    <select id="qrQuickSelect">
+                        <option value="">-- Pilih Aksi --</option>
+                        <option value="visible">PILIH SEMUA YANG TAMPIL</option>
+                        <option value="noqr">PILIH SEMUA BELUM QR</option>
+                        <option value="clear">HAPUS SEMUA PILIHAN</option>
+                    </select>
+                </div>
+                <button class="primary" type="button" onclick="applyQrQuickSelect()">✓ TERAPKAN PILIHAN</button>
+                <button class="qr-btn" type="button" onclick="generateSelectedQr()">🏷️ GENERATE QR TERPILIH</button>
+            </div>
+
+            <div class="qr-selected-note">
+                Centang unit yang mau dibuat QR-nya, lalu klik <b>GENERATE QR TERPILIH</b>.
+                Unit yang sudah pernah di-print akan ditandai <b>SUDAH ADA QR</b>.
             </div>
 
             <div class="table-wrap table-scroll">
                 <table>
                     <thead>
                         <tr>
+                            <th>PILIH QR</th>
                             <th>CODE UNIT</th>
                             <th>EGI</th>
                             <th>CODE ELLIPS</th>
-                            <th>STATUS</th>
+                            <th>STATUS UNIT</th>
+                            <th>STATUS QR</th>
                             <th>KETERANGAN</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody id="unitMasterBody">
-                        <tr><td colspan="6">Mengambil master unit...</td></tr>
+                        <tr><td colspan="8">Mengambil master unit...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -467,6 +528,7 @@ const MASTER_LAST_HM = {
 let selectedUnit="";
 let MASTER_UNITS=[...BASE_MASTER_UNITS];
 let UNIT_MASTER_ROWS=[];
+const QR_SELECTED=new Set();
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
@@ -474,6 +536,14 @@ function localTime(){const d=new Date();return `${pad(d.getHours())}:${pad(d.get
 function n(v){return Number(v||0)}
 function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1})}
 function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
+function esc(v){
+    return String(v??"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
 function operationalKey(row){if(!row)return "0000-00-00T00:00:00";return `${row.tanggal||"0000-00-00"}T${String(row.jam||"00:00:00").slice(0,8)}`}
 
 function showTab(tab){
@@ -499,7 +569,16 @@ function renderUnitOptions(){
 function mergeUnitMasterRows(rows){
     const map=new Map(BASE_MASTER_UNITS.map(code=>[
         code,
-        {code_unit:code,egi:"",code_ellips:code,active:true,note:""}
+        {
+            code_unit:code,
+            egi:"",
+            code_ellips:code,
+            active:true,
+            note:"",
+            qr_generated:false,
+            qr_generated_at:null,
+            qr_generated_by_name:null
+        }
     ]));
 
     (rows||[]).forEach(row=>{
@@ -510,7 +589,10 @@ function mergeUnitMasterRows(rows){
             egi:row.egi||"",
             code_ellips:row.code_ellips||code,
             active:row.active!==false,
-            note:row.note||""
+            note:row.note||"",
+            qr_generated:row.qr_generated===true,
+            qr_generated_at:row.qr_generated_at||null,
+            qr_generated_by_name:row.qr_generated_by_name||null
         });
     });
 
@@ -528,7 +610,7 @@ function mergeUnitMasterRows(rows){
 async function loadUnitMaster(){
     const {data,error}=await db
         .from("unit_master")
-        .select("code_unit,egi,code_ellips,active,note")
+        .select("code_unit,egi,code_ellips,active,note,qr_generated,qr_generated_at,qr_generated_by_name")
         .order("code_unit",{ascending:true});
 
     if(error){
@@ -542,40 +624,132 @@ async function loadUnitMaster(){
     mergeUnitMasterRows(data||[]);
 }
 
-function renderUnitTable(){
+function getFilteredUnitRows(){
     const q=normalizeUnit(document.getElementById("unitSearch")?.value||"");
-    const body=document.getElementById("unitMasterBody");
-    if(!body)return;
+    const qrMode=document.getElementById("qrFilter")?.value||"all";
 
-    const filtered=UNIT_MASTER_ROWS.filter(row=>{
+    return UNIT_MASTER_ROWS.filter(row=>{
         const hay=[
             row.code_unit,
             row.egi,
             row.code_ellips,
             row.note
         ].join(" ").toUpperCase();
-        return !q || hay.includes(q);
-    });
 
-    document.getElementById("totalMasterUnit").textContent=UNIT_MASTER_ROWS.length;
+        const searchOk=!q || hay.includes(q);
+
+        const qrOk=
+            qrMode==="all" ||
+            (qrMode==="yes" && row.qr_generated) ||
+            (qrMode==="no" && !row.qr_generated);
+
+        return searchOk && qrOk;
+    });
+}
+
+function setQrSelected(code,checked){
+    code=normalizeUnit(code);
+
+    if(checked){
+        QR_SELECTED.add(code);
+    }else{
+        QR_SELECTED.delete(code);
+    }
+}
+
+function renderUnitTable(){
+    const body=document.getElementById("unitMasterBody");
+    if(!body)return;
+
+    const filtered=getFilteredUnitRows();
+
+    document.getElementById("totalMasterUnit").textContent=
+        UNIT_MASTER_ROWS.length;
+
     document.getElementById("totalActiveUnit").textContent=
         UNIT_MASTER_ROWS.filter(r=>r.active).length;
 
+    document.getElementById("totalQrGenerated").textContent=
+        UNIT_MASTER_ROWS.filter(r=>r.qr_generated).length;
+
     if(!filtered.length){
-        body.innerHTML='<tr><td colspan="6">Unit tidak ditemukan.</td></tr>';
+        body.innerHTML='<tr><td colspan="8">Unit tidak ditemukan.</td></tr>';
         return;
     }
 
-    body.innerHTML=filtered.map(row=>`
+    body.innerHTML=filtered.map(row=>{
+        const qrTitle=row.qr_generated_at
+            ? `Terakhir: ${new Date(row.qr_generated_at).toLocaleString("id-ID")}${row.qr_generated_by_name?` • ${row.qr_generated_by_name}`:""}`
+            : "Belum pernah ditandai QR dibuat";
+
+        return `
         <tr>
-            <td><b>${row.code_unit}</b></td>
-            <td>${row.egi||"-"}</td>
-            <td>${row.code_ellips||row.code_unit}</td>
-            <td class="${row.active?"badge-active":"badge-off"}">${row.active?"AKTIF":"TIDAK AKTIF"}</td>
-            <td>${row.note||"-"}</td>
-            <td><button class="small-btn" onclick="editUnitMaster('${row.code_unit}')">EDIT</button></td>
-        </tr>
-    `).join("");
+            <td>
+                <input
+                    class="qr-check"
+                    type="checkbox"
+                    ${QR_SELECTED.has(row.code_unit)?"checked":""}
+                    onchange="setQrSelected('${row.code_unit}',this.checked)"
+                >
+            </td>
+            <td><b>${esc(row.code_unit)}</b></td>
+            <td>${esc(row.egi||"-")}</td>
+            <td>${esc(row.code_ellips||row.code_unit)}</td>
+            <td class="${row.active?"badge-active":"badge-off"}">
+                ${row.active?"AKTIF":"TIDAK AKTIF"}
+            </td>
+            <td title="${esc(qrTitle)}">
+                <span class="badge-qr ${row.qr_generated?"yes":"no"}">
+                    ${row.qr_generated?"SUDAH ADA QR":"BELUM QR"}
+                </span>
+            </td>
+            <td>${esc(row.note||"-")}</td>
+            <td>
+                <div class="qr-actions">
+                    <button class="small-btn" onclick="editUnitMaster('${row.code_unit}')">EDIT</button>
+                    <button class="qr-btn" onclick="generateOneQr('${row.code_unit}')">QR INI</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join("");
+}
+
+function applyQrQuickSelect(){
+    const mode=document.getElementById("qrQuickSelect").value;
+    const visible=getFilteredUnitRows();
+
+    if(mode==="clear"){
+        QR_SELECTED.clear();
+    }else if(mode==="visible"){
+        visible.forEach(row=>QR_SELECTED.add(row.code_unit));
+    }else if(mode==="noqr"){
+        UNIT_MASTER_ROWS
+            .filter(row=>!row.qr_generated && row.active)
+            .forEach(row=>QR_SELECTED.add(row.code_unit));
+    }
+
+    renderUnitTable();
+}
+
+function generateOneQr(code){
+    QR_SELECTED.clear();
+    QR_SELECTED.add(normalizeUnit(code));
+    generateSelectedQr();
+}
+
+function generateSelectedQr(){
+    const codes=Array.from(QR_SELECTED);
+
+    if(!codes.length){
+        alert("Centang minimal 1 unit yang mau dibuat QR.");
+        return;
+    }
+
+    const url=
+        "qr-unit.html?units="+
+        encodeURIComponent(codes.join(","));
+
+    window.location.href=url;
 }
 
 function editUnitMaster(code){
@@ -586,6 +760,7 @@ function editUnitMaster(code){
     document.getElementById("masterEgi").value=row.egi||"";
     document.getElementById("masterEllipse").value=row.code_ellips||row.code_unit;
     document.getElementById("masterActive").value=row.active?"true":"false";
+    document.getElementById("masterQrGenerated").value=row.qr_generated?"true":"false";
     document.getElementById("masterNote").value=row.note||"";
     window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -595,6 +770,7 @@ function resetUnitForm(){
     document.getElementById("masterEgi").value="";
     document.getElementById("masterEllipse").value="";
     document.getElementById("masterActive").value="true";
+    document.getElementById("masterQrGenerated").value="false";
     document.getElementById("masterNote").value="";
     document.getElementById("unitSaveStatus").textContent="";
 }
@@ -604,6 +780,7 @@ async function saveUnitMaster(){
     const egi=document.getElementById("masterEgi").value.trim().toUpperCase();
     const ellipse=normalizeUnit(document.getElementById("masterEllipse").value)||code;
     const active=document.getElementById("masterActive").value==="true";
+    const qrGenerated=document.getElementById("masterQrGenerated").value==="true";
     const note=document.getElementById("masterNote").value.trim();
     const status=document.getElementById("unitSaveStatus");
 
@@ -624,7 +801,13 @@ async function saveUnitMaster(){
             egi,
             code_ellips:ellipse,
             active,
-            note
+            note,
+            qr_generated:qrGenerated,
+            qr_generated_at:qrGenerated ? new Date().toISOString() : null,
+            qr_generated_by_name:
+                qrGenerated
+                    ? (window.KPP_PROFILE?.display_name||"GL/Admin")
+                    : null
         },{onConflict:"code_unit"});
 
     if(error){
