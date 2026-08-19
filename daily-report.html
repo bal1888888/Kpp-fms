@@ -79,6 +79,19 @@ td:first-child,th:first-child{text-align:left}
   th,td{font-size:10px;padding:8px 6px}
   .report-box{font-size:12px}
 }
+
+.capacity-wrap{margin-top:9px}
+.capacity-row{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px;color:#64748b;margin-bottom:5px}
+.capacity-bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.capacity-fill{height:100%;border-radius:999px;background:#22c55e;transition:width .25s ease}
+.capacity-fill.warn{background:#f59e0b}
+.capacity-fill.full{background:#ef4444}
+.capacity-text.warn{color:#b45309;font-weight:bold}
+.capacity-text.full{color:#b91c1c;font-weight:bold}
+.card.capacity-warn{border-color:#fbbf24;background:#fffbeb}
+.card.capacity-full{border-color:#f87171;background:#fef2f2}
+.period-chip{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:bold}
+
 </style>
 </head>
 
@@ -95,7 +108,7 @@ td:first-child,th:first-child{text-align:left}
 
   <div class="panel">
     <div class="notice">
-      Stock memakai <b>Actual Closing</b> jika sudah ada untuk tanggal/shift yang dipilih; jika belum ada, sistem memakai stock hasil perhitungan opening + receipt + transfer − pemakaian. Usage MTD dihitung dari tanggal 1 sampai <b>H-1</b> tanggal report agar hari berjalan tidak tercampur.
+      Stock tetap dihitung berdasarkan <b>Tanggal Report + Shift Stock</b>. Usage MTD memakai periode operasional <b>tanggal 26 sampai 25</b> dan tetap dihitung sampai <b>H-1</b>. ITO / Days of Cover = <b>Total Stock ÷ Total Pemakaian Kemarin</b>. Kapasitas: MT = 40.000 L/unit, FT = 20.000 L/unit.
     </div>
 
     <div class="controls">
@@ -129,9 +142,9 @@ td:first-child,th:first-child{text-align:left}
         <div class="sub" id="yesterdayLabel">-</div>
       </div>
       <div class="metric">
-        <div class="label">USAGE MTD</div>
+        <div class="label">USAGE MTD — PERIODE 26–25</div>
         <div class="value" id="usageMTD">0 L</div>
-        <div class="sub">Tanggal 1 s.d. H-1</div>
+        <div class="sub" id="mtdPeriodLabel">-</div>
       </div>
       <div class="metric">
         <div class="label">AVG MTD</div>
@@ -141,7 +154,7 @@ td:first-child,th:first-child{text-align:left}
       <div class="metric">
         <div class="label">ITO / DAYS OF COVER</div>
         <div class="value" id="ito">0 hari</div>
-        <div class="sub">Total Stock ÷ AVG MTD</div>
+        <div class="sub">Total Stock ÷ Usage Yesterday</div>
       </div>
     </div>
   </div>
@@ -182,6 +195,16 @@ const FT_MAP={
   FT0075:"FT01"
 };
 
+const STORAGE_CAPACITY={
+  MT01:40000,
+  MT02:40000,
+  MT03:40000,
+  MT04:40000,
+  FT0073:20000,
+  FT0075:20000
+};
+const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+
 function n(v){return Number(v)||0}
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){
@@ -194,8 +217,32 @@ function dateMinusOne(value){
   x.setDate(x.getDate()-1);
   return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
 }
-function monthStart(value){
-  return value.slice(0,7)+"-01";
+function dateISO(y,m,d){
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+function operationalPeriod(referenceDate){
+  const [y,m,d]=referenceDate.split("-").map(Number);
+
+  if(d>=26){
+    const start=dateISO(y,m,26);
+    const nextMonth=new Date(y,m,1);
+    const end=dateISO(
+      nextMonth.getFullYear(),
+      nextMonth.getMonth()+1,
+      25
+    );
+    return {start,end};
+  }
+
+  const prevMonth=new Date(y,m-2,1);
+  const start=dateISO(
+    prevMonth.getFullYear(),
+    prevMonth.getMonth()+1,
+    26
+  );
+  const end=dateISO(y,m,25);
+
+  return {start,end};
 }
 function formatDateID(value){
   if(!value)return "-";
@@ -293,26 +340,72 @@ async function calculateStock(tanggal,shift){
   return stock;
 }
 
+function capacityPct(storage,qty){
+  const cap=n(STORAGE_CAPACITY[storage]);
+  return cap>0 ? (n(qty)/cap)*100 : 0;
+}
+function pctFmt(value){
+  return new Intl.NumberFormat("id-ID",{
+    minimumFractionDigits:1,
+    maximumFractionDigits:1
+  }).format(value);
+}
+function capacityClass(pct){
+  if(pct>=100)return "full";
+  if(pct>=90)return "warn";
+  return "";
+}
+
 function renderStock(stock){
   const host=document.getElementById("stockCards");
   host.innerHTML="";
 
   STORAGES.forEach(storage=>{
     const suffix=FT_MAP[storage] ? ` / WH ${FT_MAP[storage]}` : "";
+    const cap=STORAGE_CAPACITY[storage];
+    const pct=capacityPct(storage,stock[storage]);
+    const cls=capacityClass(pct);
+    const width=Math.max(0,Math.min(pct,100));
+
     host.innerHTML+=`
-      <div class="card">
+      <div class="card ${cls==="warn"?"capacity-warn":cls==="full"?"capacity-full":""}">
         <small>${storage}${suffix}</small>
         <strong>${fmt(stock[storage])} L</strong>
+
+        <div class="capacity-wrap">
+          <div class="capacity-row">
+            <span>Kapasitas ${fmt(cap)} L</span>
+            <span class="capacity-text ${cls}">
+              ${pctFmt(pct)}% penuh
+            </span>
+          </div>
+          <div class="capacity-bar">
+            <div class="capacity-fill ${cls}" style="width:${width}%"></div>
+          </div>
+        </div>
       </div>
     `;
   });
 
   const total=Object.values(stock).reduce((a,b)=>a+n(b),0);
+  const totalPct=TOTAL_CAPACITY>0 ? (total/TOTAL_CAPACITY)*100 : 0;
+  const totalCls=capacityClass(totalPct);
 
   host.innerHTML+=`
     <div class="card total">
       <small>TOTAL STOCK ALL WHS</small>
       <strong>${fmt(total)} L</strong>
+      <div class="capacity-wrap">
+        <div class="capacity-row">
+          <span>Total kapasitas ${fmt(TOTAL_CAPACITY)} L</span>
+          <span class="capacity-text ${totalCls}">
+            ${pctFmt(totalPct)}% terisi
+          </span>
+        </div>
+        <div class="capacity-bar">
+          <div class="capacity-fill ${totalCls}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -357,7 +450,8 @@ function renderUsageTable(summary){
 
 function makeReportText({
   reportDate,stock,totalStock,yesterday,ySummary,
-  usageYesterday,usageMTD,avgMTD,ito,activeDays
+  usageYesterday,usageMTD,avgMTD,ito,activeDays,
+  periodStart,periodEnd
 }){
   return `UPDATE STOCK FUEL
 ${formatDateID(reportDate)}
@@ -382,9 +476,9 @@ Shift 2 : ${fmt(ySummary.FT0075[2])} LTR
 
 TOTAL PEMAKAIAN = ${fmt(usageYesterday)} LTR
 
-USAGE MTD = ${fmt(usageMTD)} LTR
+USAGE MTD (PERIODE ${formatDateID(periodStart)} - ${formatDateID(periodEnd)}) = ${fmt(usageMTD)} LTR
 AVG MTD = ${fmt(avgMTD)} LTR/HARI (${activeDays} hari aktif)
-ITO = ${fmtIto(ito)} HARI`;
+ITO = ${fmtIto(ito)} HARI (TOTAL STOCK ÷ USAGE YESTERDAY)`;
 }
 
 async function loadReport(){
@@ -398,7 +492,8 @@ async function loadReport(){
 
   try{
     const yesterday=dateMinusOne(reportDate);
-    const startMTD=monthStart(reportDate);
+    const period=operationalPeriod(yesterday);
+    const startMTD=period.start;
 
     const [stock,yRows,mtdRows]=await Promise.all([
       calculateStock(reportDate,shift),
@@ -422,18 +517,25 @@ async function loadReport(){
 
     const activeDays=activeDateSet.size;
     const avgMTD=activeDays ? usageMTD/activeDays : 0;
-    const ito=avgMTD>0 ? totalStock/avgMTD : 0;
+
+    // Sesuai rumus operasional terbaru:
+    // ITO / Stock Aman = Total Stock ÷ Total Pemakaian Kemarin.
+    const ito=usageYesterday>0 ? totalStock/usageYesterday : 0;
 
     document.getElementById("usageYesterday").textContent=fmt(usageYesterday)+" L";
     document.getElementById("yesterdayLabel").textContent=formatDateID(yesterday);
     document.getElementById("usageMTD").textContent=fmt(usageMTD)+" L";
+    document.getElementById("mtdPeriodLabel").textContent=
+      `Periode ${formatDateID(period.start)}–${formatDateID(period.end)} • dihitung s.d. ${formatDateID(yesterday)}`;
     document.getElementById("avgMTD").textContent=fmt(avgMTD)+" L/hari";
     document.getElementById("activeDays").textContent=activeDays+" hari aktif";
     document.getElementById("ito").textContent=fmtIto(ito)+" hari";
 
     const reportText=makeReportText({
       reportDate,stock,totalStock,yesterday,ySummary,
-      usageYesterday,usageMTD,avgMTD,ito,activeDays
+      usageYesterday,usageMTD,avgMTD,ito,activeDays,
+      periodStart:period.start,
+      periodEnd:period.end
     });
 
     document.getElementById("reportText").textContent=reportText;
