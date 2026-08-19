@@ -104,6 +104,13 @@ button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:poin
 .btn-gray{background:#64748b;color:#fff}
 .selection-banner{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.5}
 .card-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+
+.qr-created-by{
+  margin-top:6px;
+  font-size:10px;
+  line-height:1.45;
+  color:#64748b;
+}
 </style>
 </head>
 
@@ -194,6 +201,36 @@ function clean(v){
   return String(v??"").trim().toUpperCase();
 }
 
+async function syncSelectedGeneratedStatus(){
+  if(!SELECTED_FROM_MASTER.length){
+    return;
+  }
+
+  const generatedBy=
+    PROFILE?.display_name ||
+    window.KPP_PROFILE?.display_name ||
+    "GL/Admin";
+
+  const generatedAt=
+    new Date().toISOString();
+
+  const {error}=await db
+    .from("unit_master")
+    .update({
+      qr_generated:true,
+      qr_generated_at:generatedAt,
+      qr_generated_by_name:generatedBy
+    })
+    .in("code_unit",SELECTED_FROM_MASTER);
+
+  if(error){
+    console.warn(
+      "Gagal sync status QR:",
+      error.message
+    );
+  }
+}
+
 async function loadUnits(){
   const status=document.getElementById("status");
   status.textContent="Memuat Master Unit...";
@@ -273,6 +310,17 @@ function render(){
       <span class="qr-status-badge ${r.qr_generated?"yes":"no"}">
         ${r.qr_generated?"SUDAH ADA QR":"BELUM QR"}
       </span>
+
+      ${
+        r.qr_generated
+          ? `<div class="qr-created-by">
+               Dibuat oleh: <b>${esc(r.qr_generated_by_name||"GL/Admin")}</b>
+               ${r.qr_generated_at
+                 ? `<br>${new Date(r.qr_generated_at).toLocaleString("id-ID")}`
+                 : ""}
+             </div>`
+          : ""
+      }
 
       <div class="card-actions">
         <button class="btn-blue print-one" data-index="${i}">🖨️ PRINT QR INI</button>
@@ -416,6 +464,11 @@ document.getElementById("printAllBtn").addEventListener("click",()=>{
 
 document.addEventListener("kpp-auth-ready",async e=>{
   PROFILE=e.detail.profile;
+
+  // Kalau masuk dari tombol GENERATE QR TERPILIH di Master Unit,
+  // langsung catat sebagai QR sudah dibuat.
+  await syncSelectedGeneratedStatus();
+
   await loadUnits();
 });
 </script>
