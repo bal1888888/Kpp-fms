@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Approval CCR - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl"];
+window.KPP_ACTIVE_PAGE="ccr-approval";
+</script>
+<script src="auth.js"></script>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:white;text-align:center;padding:21px}
+.header h1{margin:0 0 5px;font-size:23px}
+.container{max-width:1180px;margin:24px auto;padding:14px}
+.panel{background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.07)}
+.notice{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:13px;margin-bottom:16px;line-height:1.55;font-size:13px}
+.table-wrap{overflow:auto;border:1px solid #e5e7eb;border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:1150px}
+th,td{padding:10px 9px;border-bottom:1px solid #e5e7eb;border-right:1px solid #eef2f7;font-size:12px;text-align:center}
+th{background:#1f2937;color:white}
+td.left{text-align:left}
+button{border:0;border-radius:8px;padding:8px 11px;font-weight:bold;cursor:pointer}
+.approve{background:#16a34a;color:white}
+.reject{background:#dc2626;color:white}
+.refresh{background:white;color:#334155;border:1px solid #cbd5e1}
+.status{margin-top:12px;font-weight:bold;font-size:13px}
+.tag{display:inline-block;background:#fef3c7;color:#92400e;padding:5px 8px;border-radius:999px;font-weight:bold;font-size:10px}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold}
+@media(max-width:560px){.container{margin:10px auto;padding:9px}.panel{padding:13px}.header h1{font-size:18px}.app-nav-inner{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+  <div>GL — Persetujuan Jatah CCR Tambahan</div>
+</div>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
+
+<div class="container">
+  <div class="panel">
+    <div class="notice">
+      Hanya <b>pengisian ke-2 dan seterusnya</b> yang masuk ke sini.
+      Setelah GL setujui, status berubah menjadi <b>ACTIVE</b>.
+      Shift 1 berakhir 18:30 dan Shift 2 berakhir 06:30.
+      Pengajuan yang melewati akhir shift otomatis <b>EXPIRED</b> dan tidak dapat di-approve.
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <h2 style="margin:0">✅ Pending Approval</h2>
+      <button id="refreshBtn" class="refresh">↻ REFRESH</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th><th>Shift</th><th>Ke-</th><th>Unit / QR</th><th>NRP</th><th>Nama</th><th>HM</th><th>Jatah</th><th>Tol.</th><th>Batas</th>
+            <th>Alasan CCR</th><th>Diajukan Oleh</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+</div>
+
+<script>
+const db=window.KPP.db;
+let PROFILE=null;
+let ROWS=[];
+
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function fmt(v){const x=Number(v);return Number.isFinite(x)?new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(x):"-"}
+function dateID(v){if(!v)return "-";const [y,m,d]=String(v).split("-");return `${d}/${m}/${y}`}
+
+async function expireStale(){
+  const {error}=await db.rpc("expire_ccr_allocations");
+  if(error)console.warn("Expire CCR:",error.message);
+}
+
+async function load(){
+  const status=document.getElementById("status");
+  status.textContent="Memeriksa masa berlaku shift...";
+  await expireStale();
+  status.textContent="Memuat pengajuan...";
+
+  const {data,error}=await db.from("ccr_allocations").select("*")
+    .eq("status","PENDING_GL")
+    .order("tanggal",{ascending:true})
+    .order("id",{ascending:true});
+
+  if(error){
+    status.textContent="❌ "+error.message;
+    return;
+  }
+
+  ROWS=data||[];
+  const body=document.getElementById("body");
+
+  body.innerHTML=ROWS.length?ROWS.map(r=>{
+    const max=Number(r.max_qty||0)+Number(r.tolerance_qty||0);
+
+    return `<tr>
+      <td>${dateID(r.tanggal)}</td>
+      <td>${esc(r.shift)}</td>
+      <td><b>${r.filling_no}</b></td>
+      <td><b>${esc(r.unit)}</b></td>
+      <td><b>${esc(r.nrp)}</b></td>
+      <td class="left">${esc(r.operator_unit)}</td>
+      <td>${fmt(r.hm_ccr)}</td>
+      <td>${fmt(r.max_qty)} L</td>
+      <td>${fmt(r.tolerance_qty)} L</td>
+      <td><b>${fmt(max)} L</b></td>
+      <td class="left">${esc(r.request_reason||"-")}</td>
+      <td>${esc(r.created_by_name||"-")}</td>
+      <td>
+        <button class="approve" data-id="${r.id}">✅ Setujui</button>
+        <button class="reject" data-id="${r.id}">❌ Tolak</button>
+      </td>
+    </tr>`;
+  }).join(""):'<tr><td colspan="13">Tidak ada pengajuan pending.</td></tr>';
+
+  body.querySelectorAll(".approve").forEach(b=>b.addEventListener("click",()=>approve(b.dataset.id)));
+  body.querySelectorAll(".reject").forEach(b=>b.addEventListener("click",()=>rejectRow(b.dataset.id)));
+
+  status.textContent=`${ROWS.length} pengajuan menunggu persetujuan.`;
+}
+
+async function approve(id){
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
+  if(!confirm(`Setujui ${r.unit} pengisian ke-${r.filling_no} / ${r.operator_unit}?`))return;
+
+  const status=document.getElementById("status");
+  status.textContent="Memeriksa jatah ACTIVE unit sebelumnya...";
+
+  // Guard UI: jangan bikin dua ACTIVE untuk NRP yang sama.
+  const {data:active,error:activeErr}=await db.from("ccr_allocations")
+    .select("id,filling_no,unit")
+    .eq("unit",r.unit)
+    .eq("status","ACTIVE")
+    .neq("id",r.id)
+    .limit(1);
+
+  if(activeErr){
+    status.textContent="❌ "+activeErr.message;
+    return;
+  }
+
+  if(active?.length){
+    status.textContent=
+      `❌ Belum bisa approve. Unit ${r.unit} masih punya pengisian ke-${active[0].filling_no} ACTIVE. Selesaikan/USED dulu.`;
+    return;
+  }
+
+  const {error}=await db.from("ccr_allocations").update({
+    status:"ACTIVE",
+    approved_by:window.KPP_SESSION?.user?.id||null,
+    approved_by_name:PROFILE?.display_name||null,
+    approved_at:new Date().toISOString()
+  }).eq("id",id).eq("status","PENDING_GL");
+
+  if(error){
+    status.textContent="❌ Gagal approve: "+error.message;
+    return;
+  }
+
+  status.textContent=`✅ Pengisian ke-${r.filling_no} disetujui dan sekarang ACTIVE.`;
+  await load();
+}
+
+async function rejectRow(id){
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+
+  const reason=prompt(`Alasan menolak pengisian ke-${r.filling_no} ${r.operator_unit}:`);
+  if(reason===null)return;
+  if(!String(reason).trim()){
+    alert("Alasan penolakan wajib diisi.");
+    return;
+  }
+
+  const {error}=await db.from("ccr_allocations").update({
+    status:"REJECTED",
+    rejected_by:window.KPP_SESSION?.user?.id||null,
+    rejected_by_name:PROFILE?.display_name||null,
+    rejected_at:new Date().toISOString(),
+    rejected_reason:String(reason).trim()
+  }).eq("id",id).eq("status","PENDING_GL");
+
+  if(error){
+    document.getElementById("status").textContent="❌ "+error.message;
+    return;
+  }
+
+  await load();
+}
+
+document.getElementById("refreshBtn").addEventListener("click",load);
+document.addEventListener("kpp-auth-ready",async e=>{
+  PROFILE=e.detail.profile;
+  await load();
+});
+</script>
+</body>
+</html>
