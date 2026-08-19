@@ -1,79 +1,423 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>QR Unit - KPP FMS</title>
 
-    <title>QR Unit DT7441 - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ACTIVE_PAGE="qr-unit";
+</script>
+<script src="auth.js"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            text-align: center;
-            padding: 30px;
-        }
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f3f4f6;color:#111827}
+.header{background:#1f2937;color:#fff;text-align:center;padding:21px}
+.header h1{margin:0 0 5px;font-size:23px}
+.container{max-width:1180px;margin:24px auto;padding:14px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:18px}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:13px;line-height:1.6;margin-bottom:18px;font-size:13px}
+.controls{display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:10px;align-items:end}
+label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px;color:#374151}
+input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;background:#fff}
+button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:pointer}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.btn-outline{background:#fff;color:#334155;border:1px solid #cbd5e1}
+.status{margin-top:12px;font-size:13px;font-weight:bold}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
+.qr-card{background:#fff;border:1px solid #d1d5db;border-radius:14px;padding:15px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.qr-card h3{margin:8px 0 3px;font-size:20px}
+.qr-card .egi{font-size:12px;color:#64748b;min-height:16px}
+.qr-holder{display:flex;justify-content:center;align-items:center;min-height:168px;background:#fff}
+.qr-holder img,.qr-holder canvas{max-width:160px!important;max-height:160px!important}
+.unit-code{font-size:13px;font-weight:bold;color:#1d4ed8;margin-top:5px}
+.card-actions{margin-top:10px}
+.card-actions button{padding:8px 10px;font-size:11px}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
+.app-nav a.active{background:#2563eb;color:#fff}
+.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 
-        .box {
-            background: white;
-            max-width: 400px;
-            margin: auto;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+#printArea{display:none}
 
-        h2 {
-            margin-bottom: 10px;
-        }
+@media(max-width:760px){
+  .controls{grid-template-columns:1fr 1fr}
+  .app-nav-inner{justify-content:flex-start}
+}
+@media(max-width:520px){
+  .container{margin:10px auto;padding:9px}
+  .panel{padding:14px}
+  .header{padding:15px 10px}
+  .header h1{font-size:18px}
+  .controls{grid-template-columns:1fr}
+  .controls button{width:100%}
+  .cards{grid-template-columns:1fr 1fr;gap:9px}
+  .qr-card{padding:10px}
+  .qr-card h3{font-size:16px}
+  .qr-holder{min-height:130px}
+  .qr-holder img,.qr-holder canvas{max-width:120px!important;max-height:120px!important}
+}
 
-        .unit {
-            font-size: 28px;
-            font-weight: bold;
-            margin: 15px 0;
-        }
+@media print{
+  body{background:#fff}
+  body > *{display:none!important}
+  #printArea{display:block!important}
+  #printArea .print-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10mm;
+  }
+  #printArea .print-card{
+    border:1px solid #000;
+    padding:6mm;
+    text-align:center;
+    page-break-inside:avoid;
+  }
+  #printArea .print-card img{
+    width:42mm;
+    height:42mm;
+  }
+  #printArea .print-unit{
+    font-size:18pt;
+    font-weight:bold;
+    margin-top:3mm;
+  }
+  #printArea .print-egi{
+    font-size:10pt;
+    margin-top:1mm;
+  }
+}
 
-        #qrcode {
-            margin: 25px auto;
-            width: 256px;
-        }
-
-        p {
-            color: #555;
-        }
-    </style>
+.qr-status-badge{display:inline-block;margin-top:7px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:bold}
+.qr-status-badge.yes{background:#dcfce7;color:#166534}
+.qr-status-badge.no{background:#fee2e2;color:#991b1b}
+.btn-gray{background:#64748b;color:#fff}
+.selection-banner{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.5}
+.card-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+</style>
 </head>
 
 <body>
+<div class="header">
+  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+  <div>QR Unit Generator</div>
+</div>
 
-    <div class="box">
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
 
-        <h2>KPP FUEL MANAGEMENT SYSTEM</h2>
+<div class="container">
+  <div class="info">
+    QR ini hanya menyimpan <b>Code Unit</b>. Contoh QR HD7441 hanya berisi teks <b>HD7441</b>.
+    Operator, NRP, HM, jatah dan toleransi tetap dibaca dari jatah CCR ACTIVE saat Fuelman melakukan scan.
+    Jadi QR unit cukup dibuat sekali dan bisa ditempel permanen di unit.
+  </div>
 
-        <p>QR UNIT</p>
+  <div id="selectionBanner" class="selection-banner" style="display:none"></div>
 
-        <div class="unit">DT7441</div>
+  <div class="panel">
+    <h2 style="margin-top:0">🏷️ QR Unit</h2>
 
-        <div id="qrcode"></div>
+    <div class="controls">
+      <div>
+        <label>Cari Unit</label>
+        <input id="searchInput" placeholder="Contoh: HD7441 / EX2058">
+      </div>
 
-        <p>Scan QR ini untuk pengisian fuel.</p>
+      <div>
+        <label>Status Master Unit</label>
+        <select id="activeFilter">
+          <option value="active">Aktif</option>
+          <option value="all">Semua</option>
+          <option value="inactive">Tidak Aktif</option>
+        </select>
+      </div>
 
+      <div>
+        <label>Status QR</label>
+        <select id="qrStatusFilter">
+          <option value="all">Semua</option>
+          <option value="no">Belum QR</option>
+          <option value="yes">Sudah QR</option>
+        </select>
+      </div>
+
+      <button id="refreshBtn" class="btn-outline">↻ REFRESH</button>
+      <button id="printAllBtn" class="btn-green">🖨️ PRINT YANG TAMPIL</button>
     </div>
 
-    <script>
+    <div id="status" class="status">Memuat Master Unit...</div>
 
-        new QRCode(
-            document.getElementById("qrcode"),
-            {
-                text: "DT7441",
-                width: 256,
-                height: 256
-            }
-        );
+    <div id="cards" class="cards"></div>
+  </div>
+</div>
 
-    </script>
+<div id="printArea">
+  <div id="printGrid" class="print-grid"></div>
+</div>
 
+<script>
+const db=window.KPP.db;
+
+let ALL_UNITS=[];
+let FILTERED=[];
+let PROFILE=null;
+
+const SELECTED_FROM_MASTER=(()=>{
+  const raw=new URLSearchParams(window.location.search).get("units")||"";
+  return raw
+    .split(",")
+    .map(clean)
+    .filter(Boolean);
+})();
+
+function esc(v){
+  return String(v??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function clean(v){
+  return String(v??"").trim().toUpperCase();
+}
+
+async function loadUnits(){
+  const status=document.getElementById("status");
+  status.textContent="Memuat Master Unit...";
+
+  const {data,error}=await db
+    .from("unit_master")
+    .select("code_unit,egi,active,qr_generated,qr_generated_at,qr_generated_by_name")
+    .order("code_unit",{ascending:true});
+
+  if(error){
+    status.textContent="❌ "+error.message;
+    return;
+  }
+
+  ALL_UNITS=(data||[]).map(r=>({
+    code_unit:clean(r.code_unit),
+    egi:String(r.egi||"").trim(),
+    active:r.active!==false,
+    qr_generated:r.qr_generated===true,
+    qr_generated_at:r.qr_generated_at||null,
+    qr_generated_by_name:r.qr_generated_by_name||null
+  }));
+
+  if(SELECTED_FROM_MASTER.length){
+    document.getElementById("selectionBanner").style.display="block";
+    document.getElementById("selectionBanner").innerHTML=
+      `<b>Dipilih dari Master Unit:</b> ${SELECTED_FROM_MASTER.map(esc).join(", ")}<br>
+       Hanya unit pilihan ini yang ditampilkan. Klik PRINT untuk membuat QR dan otomatis menandai statusnya sebagai SUDAH ADA QR.`;
+  }
+
+  render();
+}
+
+function render(){
+  const q=clean(document.getElementById("searchInput").value);
+  const mode=document.getElementById("activeFilter").value;
+  const qrMode=document.getElementById("qrStatusFilter").value;
+
+  FILTERED=ALL_UNITS.filter(r=>{
+    const selectedOk=
+      !SELECTED_FROM_MASTER.length ||
+      SELECTED_FROM_MASTER.includes(r.code_unit);
+
+    const matchSearch=
+      !q ||
+      r.code_unit.includes(q) ||
+      String(r.egi||"").toUpperCase().includes(q);
+
+    const matchActive=
+      mode==="all" ||
+      (mode==="active" && r.active) ||
+      (mode==="inactive" && !r.active);
+
+    const matchQr=
+      qrMode==="all" ||
+      (qrMode==="yes" && r.qr_generated) ||
+      (qrMode==="no" && !r.qr_generated);
+
+    return selectedOk && matchSearch && matchActive && matchQr;
+  });
+
+  const cards=document.getElementById("cards");
+
+  if(!FILTERED.length){
+    cards.innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:#64748b">Tidak ada unit yang cocok.</div>';
+    document.getElementById("status").textContent="0 unit ditampilkan.";
+    return;
+  }
+
+  cards.innerHTML=FILTERED.map((r,i)=>`
+    <div class="qr-card">
+      <div class="qr-holder" id="qr-${i}"></div>
+      <h3>${esc(r.code_unit)}</h3>
+      <div class="egi">${esc(r.egi||"-")}</div>
+      <div class="unit-code">QR DATA: ${esc(r.code_unit)}</div>
+
+      <span class="qr-status-badge ${r.qr_generated?"yes":"no"}">
+        ${r.qr_generated?"SUDAH ADA QR":"BELUM QR"}
+      </span>
+
+      <div class="card-actions">
+        <button class="btn-blue print-one" data-index="${i}">🖨️ PRINT QR INI</button>
+        <button class="${r.qr_generated?"btn-gray":"btn-green"} toggle-status" data-index="${i}">
+          ${r.qr_generated?"↩ TANDAI BELUM QR":"✅ TANDAI SUDAH QR"}
+        </button>
+      </div>
+    </div>
+  `).join("");
+
+  FILTERED.forEach((r,i)=>{
+    const host=document.getElementById(`qr-${i}`);
+
+    new QRCode(host,{
+      text:r.code_unit,
+      width:160,
+      height:160,
+      correctLevel:QRCode.CorrectLevel.H
+    });
+  });
+
+  cards.querySelectorAll(".print-one").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      printUnits([FILTERED[Number(btn.dataset.index)]]);
+    });
+  });
+
+  cards.querySelectorAll(".toggle-status").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      const row=FILTERED[Number(btn.dataset.index)];
+      await setQrStatus([row.code_unit],!row.qr_generated);
+    });
+  });
+
+  document.getElementById("status").textContent=
+    `✅ ${FILTERED.length} dari ${ALL_UNITS.length} unit ditampilkan.`;
+}
+
+async function setQrStatus(codes,value){
+  if(!codes?.length)return;
+
+  const payload={
+    qr_generated:value,
+    qr_generated_at:value ? new Date().toISOString() : null,
+    qr_generated_by_name:
+      value
+        ? (PROFILE?.display_name||window.KPP_PROFILE?.display_name||"GL/Admin")
+        : null
+  };
+
+  const {error}=await db
+    .from("unit_master")
+    .update(payload)
+    .in("code_unit",codes);
+
+  if(error){
+    alert("❌ Gagal update status QR: "+error.message);
+    return false;
+  }
+
+  ALL_UNITS.forEach(row=>{
+    if(codes.includes(row.code_unit)){
+      row.qr_generated=value;
+      row.qr_generated_at=payload.qr_generated_at;
+      row.qr_generated_by_name=payload.qr_generated_by_name;
+    }
+  });
+
+  render();
+  return true;
+}
+
+function getQrDataUrl(code){
+  return new Promise(resolve=>{
+    const tmp=document.createElement("div");
+    tmp.style.position="fixed";
+    tmp.style.left="-9999px";
+    tmp.style.top="-9999px";
+    document.body.appendChild(tmp);
+
+    new QRCode(tmp,{
+      text:code,
+      width:220,
+      height:220,
+      correctLevel:QRCode.CorrectLevel.H
+    });
+
+    setTimeout(()=>{
+      const img=tmp.querySelector("img");
+      const canvas=tmp.querySelector("canvas");
+
+      let src="";
+
+      if(img && img.src){
+        src=img.src;
+      }else if(canvas){
+        src=canvas.toDataURL("image/png");
+      }
+
+      tmp.remove();
+      resolve(src);
+    },80);
+  });
+}
+
+async function printUnits(units){
+  if(!units?.length)return;
+
+  // Begitu dipilih untuk PRINT, status Master Unit otomatis dianggap QR sudah dibuat.
+  const codes=units.map(r=>r.code_unit);
+  const marked=await setQrStatus(codes,true);
+
+  if(marked===false)return;
+
+  const grid=document.getElementById("printGrid");
+  grid.innerHTML="";
+
+  for(const r of units){
+    const qr=await getQrDataUrl(r.code_unit);
+
+    grid.insertAdjacentHTML("beforeend",`
+      <div class="print-card">
+        <img src="${qr}" alt="QR ${esc(r.code_unit)}">
+        <div class="print-unit">${esc(r.code_unit)}</div>
+        <div class="print-egi">${esc(r.egi||"")}</div>
+        <div style="font-size:8pt;margin-top:2mm">KPP-FMS • QR UNIT</div>
+      </div>
+    `);
+  }
+
+  setTimeout(()=>window.print(),120);
+}
+
+document.getElementById("searchInput").addEventListener("input",render);
+document.getElementById("activeFilter").addEventListener("change",render);
+document.getElementById("qrStatusFilter").addEventListener("change",render);
+document.getElementById("refreshBtn").addEventListener("click",loadUnits);
+document.getElementById("printAllBtn").addEventListener("click",()=>{
+  printUnits(FILTERED);
+});
+
+document.addEventListener("kpp-auth-ready",async e=>{
+  PROFILE=e.detail.profile;
+  await loadUnits();
+});
+</script>
 </body>
 </html>
