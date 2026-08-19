@@ -702,6 +702,13 @@ function renderUnitTable(){
                 <span class="badge-qr ${row.qr_generated?"yes":"no"}">
                     ${row.qr_generated?"SUDAH ADA QR":"BELUM QR"}
                 </span>
+                ${
+                    row.qr_generated
+                        ? `<div style="font-size:10px;color:#64748b;margin-top:4px">
+                             Dibuat: ${esc(row.qr_generated_by_name||"GL/Admin")}
+                           </div>`
+                        : ""
+                }
             </td>
             <td>${esc(row.note||"-")}</td>
             <td>
@@ -737,13 +744,47 @@ function generateOneQr(code){
     generateSelectedQr();
 }
 
-function generateSelectedQr(){
+async function generateSelectedQr(){
     const codes=Array.from(QR_SELECTED);
 
     if(!codes.length){
         alert("Centang minimal 1 unit yang mau dibuat QR.");
         return;
     }
+
+    const generatedBy=
+        window.KPP_PROFILE?.display_name ||
+        "GL/Admin";
+
+    const generatedAt=
+        new Date().toISOString();
+
+    const {error}=await kppDb
+        .from("unit_master")
+        .update({
+            qr_generated:true,
+            qr_generated_at:generatedAt,
+            qr_generated_by_name:generatedBy
+        })
+        .in("code_unit",codes);
+
+    if(error){
+        alert(
+            "❌ Gagal menandai QR sebagai sudah dibuat.\n\n"+
+            error.message
+        );
+        return;
+    }
+
+    UNIT_MASTER_ROWS.forEach(row=>{
+        if(codes.includes(row.code_unit)){
+            row.qr_generated=true;
+            row.qr_generated_at=generatedAt;
+            row.qr_generated_by_name=generatedBy;
+        }
+    });
+
+    renderUnitTable();
 
     const url=
         "qr-unit.html?units="+
