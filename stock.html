@@ -101,6 +101,115 @@ th{background:#e5e7eb}
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 
+
+.hidden{display:none!important}
+
+.stock-save-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.76);
+    z-index:99999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+.stock-save-card{
+    width:min(430px,100%);
+    background:#fff;
+    border-radius:14px;
+    padding:24px;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.28);
+}
+.stock-spinner{
+    width:52px;
+    height:52px;
+    border:5px solid #dbeafe;
+    border-top-color:#2563eb;
+    border-radius:50%;
+    margin:0 auto 16px;
+    animation:kppSpin .85s linear infinite;
+}
+@keyframes kppSpin{to{transform:rotate(360deg)}}
+.stock-save-card h3{margin:0 0 8px}
+.stock-save-card p{margin:0;color:#475569;line-height:1.55}
+.stock-save-card .signal-note{
+    margin-top:12px;
+    padding:10px;
+    background:#fff7ed;
+    border:1px solid #fed7aa;
+    border-radius:8px;
+    color:#9a3412;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.admin-tools{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+    padding:10px;
+    border:1px solid #fecaca;
+    background:#fff7f7;
+    border-radius:9px;
+}
+.danger{background:#dc2626;color:#fff}
+.small-btn{padding:7px 9px;font-size:11px}
+.edit-btn{background:#2563eb;color:#fff}
+.checkbox-cell input{width:auto}
+
+.stock-edit-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.72);
+    z-index:99998;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+}
+.stock-edit-card{
+    width:min(760px,100%);
+    max-height:92vh;
+    overflow:auto;
+    background:#fff;
+    border-radius:14px;
+    padding:20px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.stock-edit-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    margin-bottom:14px;
+}
+.stock-edit-head h3{margin:0}
+.icon-close{
+    width:38px;
+    height:38px;
+    padding:0;
+    border-radius:50%;
+    background:#e5e7eb;
+    color:#111827;
+}
+.edit-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:11px;
+}
+.edit-grid .wide{grid-column:span 3}
+@media(max-width:700px){
+    .edit-grid{grid-template-columns:1fr}
+    .edit-grid .wide{grid-column:auto}
+    .admin-tools{align-items:stretch}
+    .admin-tools button{width:100%}
+}
+
 </style>
 </head>
 
@@ -113,6 +222,96 @@ th{background:#e5e7eb}
 
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
+<div id="stockSaveOverlay" class="stock-save-overlay hidden">
+    <div class="stock-save-card">
+        <div id="stockSaveSpinner" class="stock-spinner"></div>
+        <h3 id="stockSaveTitle">⏳ SEDANG MENYIMPAN</h3>
+        <p id="stockSaveMessage">
+            Data sedang dikirim ke server. Jangan tekan tombol lagi dan jangan pindah halaman.
+        </p>
+        <div id="stockSignalNote" class="signal-note">
+            Jika sinyal lambat, tunggu sampai muncul konfirmasi berhasil/gagal.
+        </div>
+    </div>
+</div>
+
+<div id="stockEditOverlay" class="stock-edit-overlay hidden">
+    <div class="stock-edit-card">
+        <div class="stock-edit-head">
+            <div>
+                <h3>✏️ Edit Transaksi Stock</h3>
+                <div class="note">Khusus GL/Admin. Perubahan tersimpan di audit log.</div>
+            </div>
+            <button type="button" class="icon-close" onclick="closeMovementEditor()">✕</button>
+        </div>
+
+        <input type="hidden" id="editMovementId">
+
+        <div class="edit-grid">
+            <div>
+                <label>Tanggal</label>
+                <input type="date" id="editTanggal">
+            </div>
+
+            <div>
+                <label>Jam</label>
+                <input type="time" step="1" id="editJam">
+            </div>
+
+            <div>
+                <label>Shift</label>
+                <select id="editShift">
+                    <option value="1">Shift 1</option>
+                    <option value="2">Shift 2</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Jenis</label>
+                <select id="editJenis" onchange="syncEditMovementFields()">
+                    <option value="RECEIPT">RECEIPT</option>
+                    <option value="TRANSFER">TRANSFER</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Dari Storage</label>
+                <select id="editSource"></select>
+            </div>
+
+            <div>
+                <label>Ke Storage</label>
+                <select id="editDestination"></select>
+            </div>
+
+            <div>
+                <label>Qty (Liter)</label>
+                <input type="number" min="0.1" step="0.1" id="editQty">
+            </div>
+
+            <div>
+                <label>Operator</label>
+                <input id="editOperator">
+            </div>
+
+            <div>
+                <label>Transportir</label>
+                <input id="editTransporter">
+            </div>
+
+            <div class="wide">
+                <label>Keterangan</label>
+                <textarea id="editNote"></textarea>
+            </div>
+        </div>
+
+        <div class="actions" style="margin-top:14px">
+            <button class="primary" type="button" onclick="saveMovementEdit()">💾 SIMPAN PERUBAHAN</button>
+            <button class="gray" type="button" onclick="closeMovementEditor()">BATAL</button>
+        </div>
+    </div>
+</div>
+
 <div class="container">
 
 <div id="fuelmanSessionInfo" class="session-info hidden">
@@ -322,10 +521,20 @@ th{background:#e5e7eb}
 
 <div class="panel">
     <h3>Pergerakan Fuel Shift Ini</h3>
+
+    <div id="stockAdminTools" class="admin-tools hidden">
+        <div>
+            <b>🛠️ Mode Koreksi Stock — GL/Admin</b>
+            <div class="note">Centang transaksi RECEIPT/TRANSFER yang salah atau spam, lalu hapus. Pengisian unit tidak dihapus dari menu ini.</div>
+        </div>
+        <button class="danger" type="button" onclick="deleteSelectedMovements()">🗑️ HAPUS TERPILIH</button>
+    </div>
+
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th id="selectHead">Pilih</th>
                     <th>Jam</th>
                     <th>Jenis</th>
                     <th>Dari</th>
@@ -333,6 +542,7 @@ th{background:#e5e7eb}
                     <th>Qty</th>
                     <th>Operator</th>
                     <th>Keterangan</th>
+                    <th id="actionHead">Aksi</th>
                 </tr>
             </thead>
             <tbody id="movementBody"></tbody>
@@ -361,6 +571,335 @@ let CURRENT_SYSTEM_STOCK=
 
 let CURRENT_PROFILE=null;
 let ACTIVE_FUELMAN_SESSION=null;
+let STOCK_SAVE_LOCK=false;
+let STOCK_SAVE_TIMER_1=null;
+let STOCK_SAVE_TIMER_2=null;
+let CURRENT_MOVEMENTS=[];
+
+
+
+function esc(value){
+    return String(value??"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
+function isStockEditor(){
+    return !!(
+        CURRENT_PROFILE &&
+        ["gl","admin"].includes(CURRENT_PROFILE.role)
+    );
+}
+
+function beginStockSave(message){
+    if(STOCK_SAVE_LOCK){
+        return false;
+    }
+
+    STOCK_SAVE_LOCK=true;
+
+    const overlay=document.getElementById("stockSaveOverlay");
+    const title=document.getElementById("stockSaveTitle");
+    const msg=document.getElementById("stockSaveMessage");
+    const spinner=document.getElementById("stockSaveSpinner");
+    const note=document.getElementById("stockSignalNote");
+
+    title.textContent="⏳ SEDANG MENYIMPAN";
+    msg.textContent=message || "Data sedang dikirim ke server. Jangan tekan tombol lagi dan jangan pindah halaman.";
+    spinner.style.display="block";
+    note.textContent="Jika sinyal lambat, tunggu sampai muncul konfirmasi berhasil/gagal.";
+    overlay.classList.remove("hidden");
+
+    clearTimeout(STOCK_SAVE_TIMER_1);
+    clearTimeout(STOCK_SAVE_TIMER_2);
+
+    STOCK_SAVE_TIMER_1=setTimeout(()=>{
+        if(STOCK_SAVE_LOCK){
+            msg.textContent="📡 Masih menunggu respon server...";
+            note.textContent="Jangan tekan SIMPAN lagi. Sistem masih menunggu koneksi agar tidak membuat transaksi ganda.";
+        }
+    },8000);
+
+    STOCK_SAVE_TIMER_2=setTimeout(()=>{
+        if(STOCK_SAVE_LOCK){
+            msg.textContent="📡 Sinyal sangat lambat — transaksi masih diproses.";
+            note.textContent="Tetap tunggu sampai sistem menyatakan BERHASIL atau GAGAL. Tombol lain sengaja dikunci.";
+        }
+    },20000);
+
+    return true;
+}
+
+async function finishStockSave(success,message){
+    clearTimeout(STOCK_SAVE_TIMER_1);
+    clearTimeout(STOCK_SAVE_TIMER_2);
+
+    const overlay=document.getElementById("stockSaveOverlay");
+    const title=document.getElementById("stockSaveTitle");
+    const msg=document.getElementById("stockSaveMessage");
+    const spinner=document.getElementById("stockSaveSpinner");
+    const note=document.getElementById("stockSignalNote");
+
+    spinner.style.display="none";
+    title.textContent=success?"✅ TERSIMPAN":"❌ GAGAL";
+    msg.textContent=message || (success?"Data sudah masuk ke server.":"Data gagal disimpan.");
+    note.textContent=success
+        ?"Sekarang tombol dan navigasi sudah dibuka kembali."
+        :"Silakan cek pesan error sebelum mencoba lagi.";
+
+    await new Promise(resolve=>setTimeout(resolve,success?750:1100));
+
+    STOCK_SAVE_LOCK=false;
+    overlay.classList.add("hidden");
+}
+
+window.addEventListener("beforeunload",function(event){
+    if(!STOCK_SAVE_LOCK)return;
+    event.preventDefault();
+    event.returnValue="";
+});
+
+document.addEventListener("click",function(event){
+    if(!STOCK_SAVE_LOCK)return;
+
+    const link=event.target.closest("a[href]");
+    if(link){
+        event.preventDefault();
+        event.stopPropagation();
+    }
+},true);
+
+function setAdminMovementTools(){
+    const show=isStockEditor();
+
+    document.getElementById("stockAdminTools")
+        .classList.toggle("hidden",!show);
+
+    document.getElementById("selectHead")
+        .classList.toggle("hidden",!show);
+
+    document.getElementById("actionHead")
+        .classList.toggle("hidden",!show);
+}
+
+function fillStorageSelect(id,allowBlank=false){
+    const el=document.getElementById(id);
+    if(!el)return;
+
+    el.innerHTML=allowBlank?'<option value="">-</option>':"";
+
+    STORAGES.forEach(storage=>{
+        const option=document.createElement("option");
+        option.value=storage;
+        option.textContent=
+            storage+
+            (storage==="FT0073"?" (WH FT02)":
+             storage==="FT0075"?" (WH FT01)":"");
+        el.appendChild(option);
+    });
+}
+
+function syncEditMovementFields(){
+    const jenis=document.getElementById("editJenis").value;
+    const source=document.getElementById("editSource");
+    const transporter=document.getElementById("editTransporter");
+
+    if(jenis==="RECEIPT"){
+        source.value="";
+        source.disabled=true;
+        transporter.disabled=false;
+    }else{
+        source.disabled=false;
+        transporter.disabled=true;
+        transporter.value="";
+    }
+}
+
+function openMovementEditor(id){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin.");
+        return;
+    }
+
+    const row=CURRENT_MOVEMENTS.find(r=>String(r.id)===String(id));
+    if(!row){
+        alert("Transaksi tidak ditemukan. Refresh stock lalu coba lagi.");
+        return;
+    }
+
+    document.getElementById("editMovementId").value=row.id;
+    document.getElementById("editTanggal").value=row.tanggal||"";
+    document.getElementById("editJam").value=(row.jam||"").slice(0,8);
+    document.getElementById("editShift").value=String(row.shift||1);
+    document.getElementById("editJenis").value=row.jenis||"TRANSFER";
+    document.getElementById("editSource").value=row.source_storage||"";
+    document.getElementById("editDestination").value=row.destination_storage||"";
+    document.getElementById("editQty").value=row.qty??"";
+    document.getElementById("editOperator").value=row.operator||"";
+    document.getElementById("editTransporter").value=row.transporter||"";
+    document.getElementById("editNote").value=row.note||"";
+
+    syncEditMovementFields();
+
+    document.getElementById("stockEditOverlay")
+        .classList.remove("hidden");
+}
+
+function closeMovementEditor(){
+    if(STOCK_SAVE_LOCK)return;
+    document.getElementById("stockEditOverlay")
+        .classList.add("hidden");
+}
+
+async function saveMovementEdit(){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin.");
+        return;
+    }
+
+    const id=Number(document.getElementById("editMovementId").value);
+    const tanggal=document.getElementById("editTanggal").value;
+    const jam=document.getElementById("editJam").value;
+    const shift=Number(document.getElementById("editShift").value);
+    const jenis=document.getElementById("editJenis").value;
+    const source_storage=
+        jenis==="TRANSFER"
+            ? document.getElementById("editSource").value
+            : null;
+    const destination_storage=document.getElementById("editDestination").value;
+    const qty=n(document.getElementById("editQty").value);
+    const operator=document.getElementById("editOperator").value.trim();
+    const transporter=
+        jenis==="RECEIPT"
+            ? document.getElementById("editTransporter").value.trim()||null
+            : null;
+    const note=document.getElementById("editNote").value.trim()||null;
+
+    if(!id||!tanggal||![1,2].includes(shift)||qty<=0||!destination_storage){
+        alert("Lengkapi data transaksi.");
+        return;
+    }
+
+    if(jenis==="TRANSFER"){
+        if(!source_storage){
+            alert("Pilih storage sumber.");
+            return;
+        }
+
+        if(source_storage===destination_storage){
+            alert("Storage sumber dan tujuan tidak boleh sama.");
+            return;
+        }
+    }
+
+    if(!beginStockSave("Menyimpan koreksi transaksi stock..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .update({
+            tanggal,
+            jam:jam||null,
+            shift,
+            jenis,
+            source_storage,
+            destination_storage,
+            qty,
+            operator,
+            transporter,
+            note
+        })
+        .eq("id",id);
+
+    if(error){
+        await finishStockSave(false,"Koreksi gagal: "+error.message);
+        return;
+    }
+
+    document.getElementById("stockEditOverlay")
+        .classList.add("hidden");
+
+    await loadStock();
+    await finishStockSave(true,"Koreksi transaksi sudah tersimpan.");
+}
+
+async function deleteMovement(id){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin.");
+        return;
+    }
+
+    const row=CURRENT_MOVEMENTS.find(r=>String(r.id)===String(id));
+    if(!row)return;
+
+    const ok=confirm(
+        "Hapus transaksi stock ini?\n\n"+
+        "Jam: "+(row.jam||"-")+"\n"+
+        "Jenis: "+row.jenis+"\n"+
+        "Dari: "+(row.source_storage||"-")+"\n"+
+        "Ke: "+(row.destination_storage||"-")+"\n"+
+        "Qty: "+fmt(row.qty)+"\n\n"+
+        "Aksi ini tercatat di audit log."
+    );
+
+    if(!ok)return;
+
+    if(!beginStockSave("Menghapus transaksi stock..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .delete()
+        .eq("id",id);
+
+    if(error){
+        await finishStockSave(false,"Hapus gagal: "+error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,"Transaksi stock sudah dihapus.");
+}
+
+async function deleteSelectedMovements(){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin.");
+        return;
+    }
+
+    const ids=Array.from(
+        document.querySelectorAll(".stock-move-check:checked")
+    ).map(el=>Number(el.value)).filter(Boolean);
+
+    if(!ids.length){
+        alert("Centang transaksi stock yang mau dihapus.");
+        return;
+    }
+
+    const ok=confirm(
+        "Hapus "+ids.length+" transaksi stock terpilih?\n\n"+
+        "Gunakan ini untuk membersihkan transaksi spam/duplikat.\n"+
+        "Semua penghapusan tetap tercatat di audit log."
+    );
+
+    if(!ok)return;
+
+    if(!beginStockSave("Menghapus "+ids.length+" transaksi stock terpilih..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .delete()
+        .in("id",ids);
+
+    if(error){
+        await finishStockSave(false,"Hapus gagal: "+error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,ids.length+" transaksi stock sudah dihapus.");
+}
 
 function localDate(){
     const d=new Date();
@@ -434,7 +973,10 @@ function applyFuelmanIdentity(){
         }
     });
 
-    const openingStorage=document.getElementById("openingStorage");
+    fillStorageSelect("editSource",true);
+fillStorageSelect("editDestination",false);
+
+const openingStorage=document.getElementById("openingStorage");
     if(openingStorage){
         openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck;
         openingStorage.disabled=true;
@@ -699,10 +1241,15 @@ function renderMovement(movementData,fuelData){
     const body=document.getElementById("movementBody");
     body.innerHTML="";
 
+    CURRENT_MOVEMENTS=(movementData||[]).map(row=>({...row}));
+
+    const canEdit=isStockEditor();
     const rows=[];
 
     movementData.forEach(row=>{
         rows.push({
+            source_type:"stock",
+            id:row.id,
             jam:row.jam||"-",
             jenis:row.jenis,
             dari:row.source_storage||"-",
@@ -715,6 +1262,8 @@ function renderMovement(movementData,fuelData){
 
     fuelData.forEach(row=>{
         rows.push({
+            source_type:"fuel",
+            id:row.id,
             jam:row.jam||"-",
             jenis:"PENGISIAN",
             dari:sourceFromFuel(row)||"-",
@@ -728,21 +1277,43 @@ function renderMovement(movementData,fuelData){
     rows.sort((a,b)=>String(a.jam).localeCompare(String(b.jam)));
 
     rows.forEach(row=>{
+        const isMovement=row.source_type==="stock";
+
         body.innerHTML+=`
         <tr>
-            <td>${row.jam}</td>
-            <td>${row.jenis}</td>
-            <td>${row.dari}</td>
-            <td>${row.ke}</td>
+            <td class="${canEdit?"":"hidden"} checkbox-cell">
+                ${
+                    canEdit && isMovement
+                        ? `<input type="checkbox" class="stock-move-check" value="${row.id}">`
+                        : "-"
+                }
+            </td>
+            <td>${esc(row.jam)}</td>
+            <td>${esc(row.jenis)}</td>
+            <td>${esc(row.dari)}</td>
+            <td>${esc(row.ke)}</td>
             <td>${fmt(row.qty)}</td>
-            <td>${row.operator}</td>
-            <td>${row.note}</td>
+            <td>${esc(row.operator)}</td>
+            <td>${esc(row.note)}</td>
+            <td class="${canEdit?"":"hidden"}">
+                ${
+                    canEdit && isMovement
+                        ? `
+                            <button class="edit-btn small-btn" type="button" onclick="openMovementEditor(${row.id})">EDIT</button>
+                            <button class="danger small-btn" type="button" onclick="deleteMovement(${row.id})">HAPUS</button>
+                          `
+                        : "-"
+                }
+            </td>
         </tr>`;
     });
 
     if(!rows.length){
-        body.innerHTML='<tr><td colspan="7">Belum ada pergerakan fuel pada shift ini.</td></tr>';
+        body.innerHTML=
+            `<tr><td colspan="${canEdit?9:7}">Belum ada pergerakan fuel pada shift ini.</td></tr>`;
     }
+
+    setAdminMovementTools();
 }
 
 async function saveOpening(){
@@ -765,6 +1336,8 @@ async function saveOpening(){
         return;
     }
 
+    if(!beginStockSave("Menyimpan Stock Opening..."))return;
+
     const {error}=await db.from("stock_opening").upsert(
         {tanggal,shift,storage,qty,operator},
         {onConflict:"tanggal,shift,storage"}
@@ -773,7 +1346,13 @@ async function saveOpening(){
     document.getElementById("openingStatus").textContent=
         error?"❌ "+error.message:"✅ Stock opening tersimpan.";
 
-    if(!error)loadStock();
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,"Stock Opening sudah tersimpan.");
 }
 
 async function saveReceipt(){
@@ -796,6 +1375,9 @@ async function saveReceipt(){
         return;
     }
 
+    // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
+    if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
+
     const {error}=await db.from("stock_movements").insert({
         tanggal,
         jam:localTime(),
@@ -811,10 +1393,14 @@ async function saveReceipt(){
     document.getElementById("receiptStatus").textContent=
         error?"❌ "+error.message:"✅ Penerimaan tersimpan dan stock bertambah.";
 
-    if(!error){
-        document.getElementById("receiptQty").value="";
-        loadStock();
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
     }
+
+    document.getElementById("receiptQty").value="";
+    await loadStock();
+    await finishStockSave(true,"Penerimaan Solar sudah tersimpan.");
 }
 
 
@@ -864,6 +1450,11 @@ async function saveTransfer(){
         if(!lanjut)return;
     }
 
+    // LOCK sebelum request pertama dikirim.
+    if(!beginStockSave(
+        "Menyimpan Transfer "+source_storage+" → "+destination_storage+"..."
+    ))return;
+
     const {error}=await db.from("stock_movements").insert({
         tanggal,
         jam:localTime(),
@@ -876,12 +1467,21 @@ async function saveTransfer(){
     });
 
     document.getElementById("transferStatus").textContent=
-        error?"❌ "+error.message:"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Total WHS tidak berubah.";
+        error
+            ?"❌ "+error.message
+            :"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Total WHS tidak berubah.";
 
-    if(!error){
-        document.getElementById("transferQty").value="";
-        loadStock();
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
     }
+
+    document.getElementById("transferQty").value="";
+    await loadStock();
+    await finishStockSave(
+        true,
+        "Transfer "+source_storage+" → "+destination_storage+" sudah tersimpan."
+    );
 }
 
 async function saveClosing(){
@@ -966,6 +1566,8 @@ async function saveClosing(){
         });
     }
 
+    if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
+
     const {error:closingError}=await db.from("stock_closing").upsert(
         closingRows,
         {onConflict:"tanggal,shift,storage"}
@@ -974,6 +1576,7 @@ async function saveClosing(){
     if(closingError){
         document.getElementById("closingStatus").textContent=
             "❌ Gagal simpan closing: "+closingError.message;
+        await finishStockSave(false,"Gagal simpan closing: "+closingError.message);
         return;
     }
 
@@ -996,6 +1599,11 @@ async function saveClosing(){
         if(openingError){
             document.getElementById("closingStatus").textContent=
                 "✅ Closing tersimpan, tapi gagal membuat opening berikutnya: "+openingError.message;
+            await loadStock();
+            await finishStockSave(
+                false,
+                "Closing masuk, tetapi Opening shift berikutnya gagal: "+openingError.message
+            );
             return;
         }
 
@@ -1013,7 +1621,8 @@ async function saveClosing(){
                 : "✅ Stock closing tersimpan.";
     }
 
-    loadStock();
+    await loadStock();
+    await finishStockSave(true,"Stock Closing sudah tersimpan.");
 }
 
 const openingStorage=document.getElementById("openingStorage");
@@ -1043,6 +1652,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     }
 
     applyFuelmanIdentity();
+    setAdminMovementTools();
     await loadStock();
 });
 
