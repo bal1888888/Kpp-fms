@@ -142,9 +142,8 @@ td:first-child,th:first-child{text-align:left}
         <div class="sub" id="yesterdayLabel">-</div>
       </div>
       <div class="metric">
-        <div class="label">USAGE MTD — PERIODE 26–25</div>
+        <div class="label">USAGE MTD</div>
         <div class="value" id="usageMTD">0 L</div>
-        <div class="sub" id="mtdPeriodLabel">-</div>
       </div>
       <div class="metric">
         <div class="label">AVG MTD</div>
@@ -450,8 +449,7 @@ function renderUsageTable(summary){
 
 function makeReportText({
   reportDate,stock,totalStock,yesterday,ySummary,
-  usageYesterday,usageMTD,avgMTD,ito,activeDays,
-  periodStart,periodEnd
+  usageYesterday,usageMTD,avgMTD,ito,activeDays
 }){
   return `UPDATE STOCK FUEL
 ${formatDateID(reportDate)}
@@ -476,9 +474,9 @@ Shift 2 : ${fmt(ySummary.FT0075[2])} LTR
 
 TOTAL PEMAKAIAN = ${fmt(usageYesterday)} LTR
 
-USAGE MTD (PERIODE ${formatDateID(periodStart)} - ${formatDateID(periodEnd)}) = ${fmt(usageMTD)} LTR
+USAGE MTD = ${fmt(usageMTD)} LTR
 AVG MTD = ${fmt(avgMTD)} LTR/HARI (${activeDays} hari aktif)
-ITO = ${fmtIto(ito)} HARI (TOTAL STOCK ÷ USAGE YESTERDAY)`;
+ITO = ${fmtIto(ito)} HARI`;
 }
 
 async function loadReport(){
@@ -525,17 +523,13 @@ async function loadReport(){
     document.getElementById("usageYesterday").textContent=fmt(usageYesterday)+" L";
     document.getElementById("yesterdayLabel").textContent=formatDateID(yesterday);
     document.getElementById("usageMTD").textContent=fmt(usageMTD)+" L";
-    document.getElementById("mtdPeriodLabel").textContent=
-      `Periode ${formatDateID(period.start)}–${formatDateID(period.end)} • dihitung s.d. ${formatDateID(yesterday)}`;
     document.getElementById("avgMTD").textContent=fmt(avgMTD)+" L/hari";
     document.getElementById("activeDays").textContent=activeDays+" hari aktif";
     document.getElementById("ito").textContent=fmtIto(ito)+" hari";
 
     const reportText=makeReportText({
       reportDate,stock,totalStock,yesterday,ySummary,
-      usageYesterday,usageMTD,avgMTD,ito,activeDays,
-      periodStart:period.start,
-      periodEnd:period.end
+      usageYesterday,usageMTD,avgMTD,ito,activeDays
     });
 
     document.getElementById("reportText").textContent=reportText;
