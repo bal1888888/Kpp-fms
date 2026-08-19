@@ -60,6 +60,17 @@ td.left{text-align:left}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.app-nav-inner{justify-content:flex-start}}
 @media(max-width:560px){.container{margin:10px auto;padding:9px}.panel{padding:14px}.grid{grid-template-columns:1fr}.header{padding:15px 10px}.header h1{font-size:18px}.actions{display:grid;grid-template-columns:1fr}.actions button{width:100%}}
+
+.edit-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}
+.edit-card{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.edit-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px}
+.edit-head h3{margin:0}
+.edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.edit-grid .wide{grid-column:1/-1}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-danger{background:#dc2626;color:#fff}
+.shift-clock{background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;padding:11px 13px;border-radius:10px;margin-bottom:14px;font-size:12px;line-height:1.55}
+@media(max-width:560px){.edit-grid{grid-template-columns:1fr}.edit-grid .wide{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -84,6 +95,11 @@ td.left{text-align:left}
     <b>1 jatah = 1 kali pengisian.</b>
     Pengisian ke-1 langsung ACTIVE.
     Pengisian ke-2 dan seterusnya otomatis PENDING_GL dan belum bisa dibaca Fuelman sampai GL menyetujui.
+  </div>
+
+  <div class="shift-clock">
+    <b>Jam Shift:</b> Shift 1 = 06:30–18:30 • Shift 2 = 18:30–06:30.
+    Jatah ACTIVE/PENDING yang lewat akhir shift otomatis menjadi <b>EXPIRED</b>.
   </div>
 
   <div class="panel">
@@ -187,6 +203,7 @@ td.left{text-align:left}
           <option value="USED">USED</option>
           <option value="REJECTED">REJECTED</option>
           <option value="CANCELLED">CANCELLED</option>
+          <option value="EXPIRED">EXPIRED</option>
         </select>
         <button id="refreshBtn" class="btn-outline">↻ REFRESH</button>
       </div>
@@ -231,6 +248,30 @@ function today(){
   const d=new Date();
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
+function isoLocalDate(d){
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function currentOperationalShift(){
+  const now=new Date();
+  const mins=now.getHours()*60+now.getMinutes();
+
+  if(mins<390){
+    const prev=new Date(now);
+    prev.setDate(prev.getDate()-1);
+    return {tanggal:isoLocalDate(prev),shift:"Shift 2"};
+  }
+
+  if(mins<1110){
+    return {tanggal:isoLocalDate(now),shift:"Shift 1"};
+  }
+
+  return {tanggal:isoLocalDate(now),shift:"Shift 2"};
+}
+async function expireStale(){
+  const {error}=await db.rpc("expire_ccr_allocations");
+  if(error)console.warn("Expire CCR:",error.message);
+}
+
 function clean(v){return String(v??"").trim()}
 function upper(v){return clean(v).toUpperCase()}
 function num(v){
@@ -264,7 +305,8 @@ function tag(s){
     PENDING_GL:"tag-pending",
     USED:"tag-used",
     REJECTED:"tag-rejected",
-    CANCELLED:"tag-cancelled"
+    CANCELLED:"tag-cancelled",
+    EXPIRED:"tag-cancelled"
   };
   return `<span class="tag ${map[s]||"tag-cancelled"}">${esc(s)}</span>`;
 }
@@ -308,7 +350,7 @@ async function refreshFillingNo(){
       .eq("tanggal",tanggal)
       .eq("shift",shift)
       .eq("unit",unit)
-      .not("status","in",'("CANCELLED","REJECTED")');
+      .not("status","in",'("CANCELLED","REJECTED","EXPIRED")');
 
     if(!error && data?.length){
       next=Math.max(...data.map(x=>Number(x.filling_no)||0))+1;
@@ -453,6 +495,87 @@ async function save(){
   }
 }
 
+
+function openGlEdit(id){
+  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  if(r.status==="USED"){alert("Jatah USED tidak boleh diedit.");return;}
+
+  document.getElementById("editId").value=r.id;
+  document.getElementById("editUnit").value=r.unit||"";
+  document.getElementById("editFillNo").value=r.filling_no??"";
+  document.getElementById("editNrp").value=r.nrp||"";
+  document.getElementById("editOperator").value=r.operator_unit||"";
+  document.getElementById("editHm").value=r.hm_ccr??"";
+  document.getElementById("editMaxQty").value=r.max_qty??"";
+  document.getElementById("editTolerance").value=r.tolerance_qty??0;
+  document.getElementById("editStatus").value=r.status||"";
+  document.getElementById("editReason").value=r.request_reason||"";
+  document.getElementById("editNote").value=r.note||"";
+
+  document.getElementById("glEditOverlay").classList.remove("hidden");
+}
+function closeGlEdit(){
+  document.getElementById("glEditOverlay").classList.add("hidden");
+}
+async function saveGlEdit(){
+  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+
+  const id=Number(document.getElementById("editId").value);
+  const nrp=upper(document.getElementById("editNrp").value);
+  const operator=clean(document.getElementById("editOperator").value);
+  const hm=num(document.getElementById("editHm").value);
+  const maxQty=num(document.getElementById("editMaxQty").value);
+  const tol=num(document.getElementById("editTolerance").value);
+  const reason=clean(document.getElementById("editReason").value)||null;
+  const note=clean(document.getElementById("editNote").value)||null;
+
+  if(!nrp||!operator||hm===null||maxQty===null||maxQty<=0||tol===null||tol<0){
+    alert("Lengkapi NRP, Nama, HM, Jatah dan Toleransi.");
+    return;
+  }
+
+  const {error}=await db.from("ccr_allocations").update({
+    nrp,
+    operator_unit:operator,
+    hm_ccr:hm,
+    max_qty:maxQty,
+    tolerance_qty:tol,
+    request_reason:reason,
+    note
+  }).eq("id",id);
+
+  if(error){alert("❌ Edit gagal: "+error.message);return;}
+
+  closeGlEdit();
+  await loadRows();
+  await refreshFillingNo();
+  alert("✅ Jatah CCR berhasil diedit.");
+}
+async function glDelete(id){
+  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  if(r.status==="USED"){
+    alert("Jatah USED tidak boleh dihapus karena sudah menjadi transaksi fuel.");
+    return;
+  }
+
+  if(!confirm(
+    `Hapus permanen jatah CCR ini?\n\nUnit: ${r.unit}\nPengisian ke-${r.filling_no}\nOperator: ${r.operator_unit||"-"}\nStatus: ${r.status}\n\nPenghapusan tetap tercatat di audit log.`
+  ))return;
+
+  const {error}=await db.from("ccr_allocations").delete().eq("id",id);
+  if(error){alert("❌ Hapus gagal: "+error.message);return;}
+
+  await loadRows();
+  await refreshFillingNo();
+  alert("✅ Jatah CCR sudah dihapus.");
+}
+
 async function cancelRow(id){
   const r=ROWS.find(x=>String(x.id)===String(id));
   if(!r)return;
@@ -515,6 +638,10 @@ async function loadRows(){
             String(r.created_by||"")===String(window.KPP_SESSION?.user?.id||"")
           );
 
+        const canGlControl=
+          PROFILE?.role==="gl" &&
+          r.status!=="USED";
+
         return `
           <tr>
             <td>${dateID(r.tanggal)}</td>
@@ -532,9 +659,12 @@ async function loadRows(){
             <td>${esc(r.created_by_name||"-")}</td>
             <td>
               ${
-                canCancel
-                  ? `<button class="btn-red cancel-btn" data-id="${r.id}" style="padding:7px 9px">Batalkan</button>`
-                  : "-"
+                canGlControl
+                  ? `<button class="btn-blue edit-btn" data-id="${r.id}" style="padding:7px 9px">EDIT</button>
+                     <button class="btn-danger delete-btn" data-id="${r.id}" style="padding:7px 9px">HAPUS</button>`
+                  : canCancel
+                    ? `<button class="btn-red cancel-btn" data-id="${r.id}" style="padding:7px 9px">Batalkan</button>`
+                    : "-"
               }
             </td>
           </tr>
@@ -544,6 +674,12 @@ async function loadRows(){
 
   body.querySelectorAll(".cancel-btn").forEach(btn=>{
     btn.addEventListener("click",()=>cancelRow(btn.dataset.id));
+  });
+  body.querySelectorAll(".edit-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>openGlEdit(btn.dataset.id));
+  });
+  body.querySelectorAll(".delete-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>glDelete(btn.dataset.id));
   });
 
   document.getElementById("tableStatus").textContent=
@@ -565,12 +701,19 @@ document.getElementById("refreshNoBtn").addEventListener("click",refreshFillingN
 document.getElementById("saveBtn").addEventListener("click",save);
 document.getElementById("refreshBtn").addEventListener("click",loadRows);
 document.getElementById("statusFilter").addEventListener("change",loadRows);
+document.getElementById("closeEditBtn").addEventListener("click",closeGlEdit);
+document.getElementById("cancelEditBtn").addEventListener("click",closeGlEdit);
+document.getElementById("saveEditBtn").addEventListener("click",saveGlEdit);
 
 document.addEventListener("kpp-auth-ready",async e=>{
   PROFILE=e.detail.profile;
-  document.getElementById("tanggal").value=today();
+
+  const op=currentOperationalShift();
+  document.getElementById("tanggal").value=op.tanggal;
+  document.getElementById("shift").value=op.shift;
 
   try{
+    await expireStale();
     await loadUnits();
     await loadRows();
     await refreshFillingNo();
@@ -581,5 +724,40 @@ document.addEventListener("kpp-auth-ready",async e=>{
   }
 });
 </script>
+
+<div id="glEditOverlay" class="edit-overlay hidden">
+  <div class="edit-card">
+    <div class="edit-head">
+      <div>
+        <h3>✏️ Edit Jatah CCR — GL</h3>
+        <div style="font-size:12px;color:#64748b;margin-top:4px">
+          Kalau Unit/Tanggal/Shift salah, hapus lalu buat ulang agar nomor ritasi tetap aman.
+        </div>
+      </div>
+      <button type="button" class="btn-outline" id="closeEditBtn">✕</button>
+    </div>
+
+    <input type="hidden" id="editId">
+
+    <div class="edit-grid">
+      <div><label>Unit</label><input id="editUnit" readonly></div>
+      <div><label>Pengisian Ke-</label><input id="editFillNo" readonly></div>
+      <div><label>NRP Operator</label><input id="editNrp"></div>
+      <div><label>Nama Operator</label><input id="editOperator"></div>
+      <div><label>HM CCR</label><input type="number" step="0.1" id="editHm"></div>
+      <div><label>Qty Jatah (L)</label><input type="number" step="1" min="1" id="editMaxQty"></div>
+      <div><label>Toleransi (L)</label><input type="number" step="1" min="0" id="editTolerance"></div>
+      <div><label>Status</label><input id="editStatus" readonly></div>
+      <div class="wide"><label>Alasan Tambahan</label><textarea id="editReason"></textarea></div>
+      <div class="wide"><label>Catatan</label><textarea id="editNote"></textarea></div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-blue" id="saveEditBtn">💾 SIMPAN EDIT</button>
+      <button type="button" class="btn-outline" id="cancelEditBtn">BATAL</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
