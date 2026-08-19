@@ -210,6 +210,28 @@ th{background:#e5e7eb}
     .admin-tools button{width:100%}
 }
 
+
+.stock-capacity{margin-top:9px}
+.stock-capacity-line{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#64748b;margin-bottom:5px}
+.stock-capacity-bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.stock-capacity-fill{height:100%;background:#22c55e;border-radius:999px;transition:width .25s ease}
+.stock-capacity-fill.warn{background:#f59e0b}
+.stock-capacity-fill.full{background:#ef4444}
+.card.capacity-warn{background:#fffbeb;border-color:#fbbf24}
+.card.capacity-full{background:#fef2f2;border-color:#f87171}
+.capacity-warn-text{color:#b45309!important;font-weight:bold}
+.capacity-full-text{color:#b91c1c!important;font-weight:bold}
+.capacity-note{
+    margin-top:10px;
+    padding:10px 12px;
+    border:1px solid #bfdbfe;
+    background:#eff6ff;
+    color:#1e40af;
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.5;
+}
+
 </style>
 </head>
 
@@ -566,6 +588,19 @@ const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
 
+const STORAGE_CAPACITY={
+    MT01:40000,
+    MT02:40000,
+    MT03:40000,
+    MT04:40000,
+    FT0073:20000,
+    FT0075:20000
+};
+
+const CAPACITY_WARNING_PCT=90;
+const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+let LAST_CAPACITY_ALERT_SIGNATURE="";
+
 let CURRENT_SYSTEM_STOCK=
     Object.fromEntries(STORAGES.map(storage=>[storage,0]));
 
@@ -577,6 +612,139 @@ let STOCK_SAVE_TIMER_2=null;
 let CURRENT_MOVEMENTS=[];
 
 
+
+
+function capacity(storage){
+    return n(STORAGE_CAPACITY[storage]);
+}
+
+function capacityPercent(storage,qty){
+    const cap=capacity(storage);
+    return cap>0 ? (n(qty)/cap)*100 : 0;
+}
+
+function pct(value){
+    return Number(value||0).toLocaleString(
+        "id-ID",
+        {minimumFractionDigits:1,maximumFractionDigits:1}
+    );
+}
+
+function capacityState(storage,qty){
+    const p=capacityPercent(storage,qty);
+
+    if(p>=100)return "full";
+    if(p>=CAPACITY_WARNING_PCT)return "warn";
+    return "";
+}
+
+function capacityMessage(storage,qty){
+    const cap=capacity(storage);
+    const p=capacityPercent(storage,qty);
+
+    return (
+        storage+" = "+fmt(qty)+
+        " / "+fmt(cap)+
+        " ("+pct(p)+"%)"
+    );
+}
+
+function validateCapacityHard(storage,projectedQty,context=""){
+    const cap=capacity(storage);
+
+    if(!cap)return true;
+
+    if(projectedQty>cap){
+        alert(
+            "⛔ KAPASITAS TERKUNCI\n\n"+
+            storage+" maksimal "+fmt(cap)+".\n"+
+            "Perkiraan stock setelah "+context+": "+fmt(projectedQty)+".\n\n"+
+            "Transaksi diblokir agar tangki tidak melewati kapasitas."
+        );
+        return false;
+    }
+
+    return true;
+}
+
+function confirmNearCapacity(storage,projectedQty,context=""){
+    const p=capacityPercent(storage,projectedQty);
+
+    if(p<CAPACITY_WARNING_PCT)return true;
+
+    const title=p>=100
+        ?"🔴 TANGKI MENCAPAI 100%"
+        :"⚠️ TANGKI MENDEKATI PENUH";
+
+    return confirm(
+        title+"\n\n"+
+        capacityMessage(storage,projectedQty)+"\n"+
+        (context?context+"\n":"")+
+        "\nLanjutkan transaksi?"
+    );
+}
+
+function showCapacityAlertOnce(stock){
+    if(STOCK_SAVE_LOCK)return;
+
+    const warnings=STORAGES
+        .filter(storage=>capacityPercent(storage,stock[storage])>=CAPACITY_WARNING_PCT)
+        .map(storage=>capacityMessage(storage,stock[storage]));
+
+    if(!warnings.length){
+        LAST_CAPACITY_ALERT_SIGNATURE="";
+        return;
+    }
+
+    const signature=warnings.join("|");
+    if(signature===LAST_CAPACITY_ALERT_SIGNATURE)return;
+
+    LAST_CAPACITY_ALERT_SIGNATURE=signature;
+
+    setTimeout(()=>{
+        if(STOCK_SAVE_LOCK)return;
+
+        alert(
+            "⚠️ PERINGATAN KAPASITAS STOCK\n\n"+
+            warnings.join("\n")+
+            "\n\nMT dikunci maksimal 40.000 L dan FT maksimal 20.000 L."
+        );
+    },250);
+}
+
+function projectedStockAfterEdit(oldRow,newRow){
+    const projected={...CURRENT_SYSTEM_STOCK};
+
+    // Hilangkan efek transaksi lama dari stock saat ini.
+    if(oldRow.jenis==="RECEIPT" && oldRow.destination_storage){
+        projected[oldRow.destination_storage]-=n(oldRow.qty);
+    }
+
+    if(oldRow.jenis==="TRANSFER"){
+        if(oldRow.source_storage){
+            projected[oldRow.source_storage]+=n(oldRow.qty);
+        }
+        if(oldRow.destination_storage){
+            projected[oldRow.destination_storage]-=n(oldRow.qty);
+        }
+    }
+
+    // Terapkan transaksi baru.
+    if(newRow.jenis==="RECEIPT" && newRow.destination_storage){
+        projected[newRow.destination_storage]+=n(newRow.qty);
+    }
+
+    if(newRow.jenis==="TRANSFER"){
+        if(newRow.source_storage){
+            projected[newRow.source_storage]-=n(newRow.qty);
+        }
+        if(newRow.destination_storage){
+            projected[newRow.destination_storage]+=n(newRow.qty);
+        }
+    }
+
+    return projected;
+}
 
 function esc(value){
     return String(value??"")
@@ -794,6 +962,47 @@ async function saveMovementEdit(){
             return;
         }
     }
+
+    const oldRow=CURRENT_MOVEMENTS.find(
+        row=>String(row.id)===String(id)
+    );
+
+    if(!oldRow){
+        alert("Transaksi lama tidak ditemukan. Refresh halaman lalu coba lagi.");
+        return;
+    }
+
+    const newRow={
+        jenis,
+        source_storage,
+        destination_storage,
+        qty
+    };
+
+    const projected=projectedStockAfterEdit(oldRow,newRow);
+
+    for(const storage of STORAGES){
+        if(!validateCapacityHard(
+            storage,
+            projected[storage],
+            "Edit transaksi stock"
+        ))return;
+    }
+
+    const warnStorage=STORAGES.find(
+        storage=>
+            projected[storage]!==CURRENT_SYSTEM_STOCK[storage] &&
+            capacityPercent(storage,projected[storage])>=CAPACITY_WARNING_PCT
+    );
+
+    if(
+        warnStorage &&
+        !confirmNearCapacity(
+            warnStorage,
+            projected[warnStorage],
+            "Edit transaksi stock"
+        )
+    )return;
 
     if(!beginStockSave("Menyimpan koreksi transaksi stock..."))return;
 
@@ -1090,6 +1299,7 @@ async function loadStock(){
     renderStockCards(stock);
     renderClosing(stock,c.data||[]);
     renderMovement(m.data||[],f.data||[]);
+    showCapacityAlertOnce(stock);
 }
 
 function renderStockCards(stock){
@@ -1102,17 +1312,45 @@ function renderStockCards(stock){
         if(storage==="FT0073") suffix=" / WH FT02";
         if(storage==="FT0075") suffix=" / WH FT01";
 
+        const cap=capacity(storage);
+        const p=capacityPercent(storage,stock[storage]);
+        const state=capacityState(storage,stock[storage]);
+        const width=Math.max(0,Math.min(p,100));
+
         cards.innerHTML+=`
-        <div class="card">
+        <div class="card ${state==="warn"?"capacity-warn":state==="full"?"capacity-full":""}">
             <small>${storage}${suffix}</small>
             <strong>${fmt(stock[storage])}</strong>
+
+            <div class="stock-capacity">
+                <div class="stock-capacity-line">
+                    <span>Max ${fmt(cap)}</span>
+                    <span class="${state==="warn"?"capacity-warn-text":state==="full"?"capacity-full-text":""}">
+                        ${pct(p)}% penuh
+                    </span>
+                </div>
+                <div class="stock-capacity-bar">
+                    <div class="stock-capacity-fill ${state}" style="width:${width}%"></div>
+                </div>
+            </div>
         </div>`;
     });
+
+    const totalPct=TOTAL_CAPACITY>0 ? (total/TOTAL_CAPACITY)*100 : 0;
 
     cards.innerHTML+=`
     <div class="card total">
         <small>TOTAL STOCK ALL WHS</small>
         <strong>${fmt(total)}</strong>
+        <div class="stock-capacity">
+            <div class="stock-capacity-line">
+                <span>Total Max ${fmt(TOTAL_CAPACITY)}</span>
+                <span>${pct(totalPct)}% terisi</span>
+            </div>
+            <div class="stock-capacity-bar">
+                <div class="stock-capacity-fill" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
+            </div>
+        </div>
     </div>`;
 }
 
@@ -1336,6 +1574,9 @@ async function saveOpening(){
         return;
     }
 
+    if(!validateCapacityHard(storage,qty,"Stock Opening"))return;
+    if(!confirmNearCapacity(storage,qty,"Stock Opening"))return;
+
     if(!beginStockSave("Menyimpan Stock Opening..."))return;
 
     const {error}=await db.from("stock_opening").upsert(
@@ -1374,6 +1615,21 @@ async function saveReceipt(){
         alert("Qty penerimaan harus lebih dari 0.");
         return;
     }
+
+    const projectedDestination=
+        n(CURRENT_SYSTEM_STOCK[destination_storage])+qty;
+
+    if(!validateCapacityHard(
+        destination_storage,
+        projectedDestination,
+        "Penerimaan Solar"
+    ))return;
+
+    if(!confirmNearCapacity(
+        destination_storage,
+        projectedDestination,
+        "Penerimaan Solar"
+    ))return;
 
     // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
     if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
@@ -1449,6 +1705,21 @@ async function saveTransfer(){
         );
         if(!lanjut)return;
     }
+
+    const projectedDestination=
+        n(CURRENT_SYSTEM_STOCK[destination_storage])+qty;
+
+    if(!validateCapacityHard(
+        destination_storage,
+        projectedDestination,
+        "Transfer "+source_storage+" → "+destination_storage
+    ))return;
+
+    if(!confirmNearCapacity(
+        destination_storage,
+        projectedDestination,
+        "Transfer "+source_storage+" → "+destination_storage
+    ))return;
 
     // LOCK sebelum request pertama dikirim.
     if(!beginStockSave(
@@ -1537,6 +1808,12 @@ async function saveClosing(){
             return;
         }
 
+        if(!validateCapacityHard(
+            storage,
+            actualQty,
+            "Stock Closing"
+        ))return;
+
         const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
 
         closingRows.push({
@@ -1564,6 +1841,22 @@ async function saveClosing(){
                     ? ACTIVE_FUELMAN_SESSION.fuelman_name
                     : null
         });
+    }
+
+    const nearFullClosing=closingRows.filter(
+        row=>capacityPercent(row.storage,row.actual_qty)>=CAPACITY_WARNING_PCT
+    );
+
+    if(nearFullClosing.length){
+        const lanjut=confirm(
+            "⚠️ CLOSING MENDEKATI KAPASITAS\n\n"+
+            nearFullClosing
+                .map(row=>capacityMessage(row.storage,row.actual_qty))
+                .join("\n")+
+            "\n\nLanjut simpan Closing?"
+        );
+
+        if(!lanjut)return;
     }
 
     if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
