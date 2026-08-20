@@ -71,6 +71,12 @@ body{background:var(--bg);color:var(--text)}
 .usage-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#60a5fa,#2563eb);box-shadow:0 4px 10px rgba(37,99,235,.16)}
 .usage-bar-date{font-size:9px;color:var(--muted);margin-top:7px;white-space:nowrap}
 .stock-trend-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#86efac,#16a34a);box-shadow:0 4px 10px rgba(22,163,74,.16)}
+.stock-trend-bar.safe{background:linear-gradient(180deg,#86efac,#16a34a)}
+.stock-trend-bar.low{background:linear-gradient(180deg,#fde68a,#f59e0b)}
+.stock-trend-bar.critical{background:linear-gradient(180deg,#fca5a5,#ef4444)}
+.stock-trend-bar.high{background:linear-gradient(180deg,#fdba74,#f97316)}
+.mtd-compare-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.mtd-compare-note{font-size:10px;color:var(--muted);line-height:1.35}
 .receipt-total{font-size:23px;font-weight:800;margin:2px 0 13px}.receipt-total small{font-size:10px;color:var(--muted);font-weight:normal}
 .receipt-bars{display:flex;flex-direction:column;gap:13px}
 .receipt-row{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center}
@@ -239,7 +245,12 @@ tr:hover{background:#f8fafc}
         <div class="hero-sub">Akumulasi fuel usage MTD</div>
       </div>
     </div>
-    <div class="wide-hero-side">Ringkasan total pemakaian periode MTD. Detail harian dan per shift tetap tersedia di bagian dashboard di bawah.</div>
+    <div class="wide-hero-side">
+      <div class="mtd-compare-wrap">
+        <span class="trend-badge flat" id="mtdCompareBadge">Belum ada pembanding</span>
+        <div class="mtd-compare-note" id="mtdCompareNote">Dibanding periode MTD sebelumnya pada jumlah hari berjalan yang sama.</div>
+      </div>
+    </div>
   </div>
 
   <div class="section">
@@ -316,6 +327,15 @@ tr:hover{background:#f8fafc}
 <script>
 const db=KPP.db;
 const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
+const STORAGE_CAPACITY={MT01:40000,MT02:40000,MT03:40000,MT04:40000,FT0073:20000,FT0075:20000};
+const TOTAL_CAPACITY=200000;
+function stockLevelState(total){
+  const pct=TOTAL_CAPACITY>0?(n(total)/TOTAL_CAPACITY)*100:0;
+  if(pct<20)return "critical";
+  if(pct<35)return "low";
+  if(pct>=90)return "high";
+  return "safe";
+}
 
 function n(v){return Number(v)||0}
 function pad(v){return String(v).padStart(2,"0")}
@@ -344,6 +364,18 @@ function lastDates(endDate,count){
   const out=[];
   for(let i=count-1;i>=0;i--)out.push(dateShift(endDate,-i));
   return out;
+}
+function daysInclusive(start,end){
+  const a=new Date(start+"T00:00:00");
+  const b=new Date(end+"T00:00:00");
+  return Math.max(1,Math.round((b-a)/86400000)+1);
+}
+function previousEquivalentWindow(currentPeriod,currentEnd){
+  const previousPeriod=operationalPeriod(dateMinusOne(currentPeriod.start));
+  const elapsed=daysInclusive(currentPeriod.start,currentEnd);
+  let end=dateShift(previousPeriod.start,elapsed-1);
+  if(end>previousPeriod.end)end=previousPeriod.end;
+  return {start:previousPeriod.start,end,period:previousPeriod};
 }
 function dateISO(y,m,d){return `${y}-${pad(m)}-${pad(d)}`}
 function operationalPeriod(referenceDate){
@@ -489,19 +521,24 @@ function renderStockTrend(points,endDate){
     const height=Math.max(4,(values[i]/max)*125);
     const parts=d.split("-");
     const label=`${parts[2]}/${parts[1]}`;
-    return `<div class="usage-bar-item"><div class="usage-bar-value">${formatAngka(values[i])}</div><div class="stock-trend-bar" style="height:${height}px" title="${formatAngka(values[i])} L"></div><div class="usage-bar-date">${label}</div></div>`;
+    const state=stockLevelState(values[i]);
+    return `<div class="usage-bar-item"><div class="usage-bar-value">${formatAngka(values[i])}</div><div class="stock-trend-bar ${state}" style="height:${height}px" title="${formatAngka(values[i])} L"></div><div class="usage-bar-date">${label}</div></div>`;
   }).join("");
 
   const latest=values[values.length-1];
   const previous=values[values.length-2];
   const badge=document.getElementById("stockTrendBadge");
+  const latestPct=TOTAL_CAPACITY>0?(latest/TOTAL_CAPACITY)*100:0;
+  const state=stockLevelState(latest);
+  const levelText=state==="critical"?" • KRITIS":state==="low"?" • RENDAH":state==="high"?" • TINGGI":" • AMAN";
   if(previous<=0&&latest<=0){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
-  if(previous<=0){badge.className="trend-badge stock-up";badge.textContent="▲ Stock naik";return;}
+  if(previous<=0){badge.className=state==="critical"?"trend-badge stock-down":"trend-badge stock-up";badge.textContent=`${formatIto(latestPct)}%${levelText}`;return;}
   const change=((latest-previous)/previous)*100;
-  if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil";}
-  else if(change>0){badge.className="trend-badge stock-up";badge.textContent=`▲ Naik ${formatIto(Math.abs(change))}%`;}
-  else{badge.className="trend-badge stock-down";badge.textContent=`▼ Turun ${formatIto(Math.abs(change))}%`;}
+  if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent=`• Stabil ${formatIto(latestPct)}%${levelText}`;}
+  else if(change>0){badge.className="trend-badge stock-up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%${levelText}`;}
+  else{badge.className="trend-badge stock-down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%${levelText}`;}
 }
+
 function renderReceipts(rows){
   const sums={"PT. SHA":0,"PT. DKA":0};
   rows.forEach(row=>{
@@ -518,6 +555,22 @@ function renderReceipts(rows){
     const width=qty>0?Math.max(2,(qty/max)*100):0;
     return `<div class="receipt-row"><div class="receipt-company">${company}</div><div class="receipt-track"><div class="receipt-fill" style="width:${width}%"></div></div><div class="receipt-value">${formatAngka(qty)} L</div></div>`;
   }).join("");
+}
+
+function renderMTDCompare(current,previous,window){
+  const badge=document.getElementById("mtdCompareBadge");
+  const note=document.getElementById("mtdCompareNote");
+  if(!previous){
+    badge.className="trend-badge flat";
+    badge.textContent="Belum ada pembanding";
+    note.textContent="Data periode sebelumnya belum tersedia.";
+    return;
+  }
+  const change=((current-previous)/previous)*100;
+  if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil vs periode lalu";}
+  else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}% vs periode lalu`;}
+  else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}% vs periode lalu`;}
+  note.textContent=`Pembanding: ${window.start.split("-").reverse().join("/")} s.d. ${window.end.split("-").reverse().join("/")}`;
 }
 
 async function fetchLatest(){
@@ -651,11 +704,13 @@ async function loadDashboard(){
     const today=localDate();
     const yesterday=dateMinusOne(today);
     const period=operationalPeriod(yesterday);
+    const prevWindow=previousEquivalentWindow(period,yesterday);
     const trendStart=dateShift(yesterday,-4);
     const {tanggal:stockDate,shift:stockShift}=currentOperationalShift();
 
-    const [mtdRows,yesterdayRows,trendFuelRows,totalStock,latestRows,receiptRows,stockTrendPoints]=await Promise.all([
+    const [mtdRows,prevMtdRows,yesterdayRows,trendFuelRows,totalStock,latestRows,receiptRows,stockTrendPoints]=await Promise.all([
       fetchPagedFuel(period.start,yesterday),
+      fetchPagedFuel(prevWindow.start,prevWindow.end),
       fetchPagedFuel(yesterday,yesterday),
       fetchPagedFuel(trendStart,yesterday),
       calculateStock(stockDate,stockShift),
@@ -674,6 +729,7 @@ async function loadDashboard(){
       if(sh===2)shift2+=qty;
     });
 
+    const previousUsageMTD=prevMtdRows.reduce((sum,row)=>sum+n(row.fuel),0);
     const usageYesterday=yesterdayRows.reduce((sum,row)=>sum+n(row.fuel),0);
     const activeDateSet=new Set(mtdRows.filter(row=>n(row.fuel)>0&&row.tanggal).map(row=>row.tanggal));
     const activeDays=activeDateSet.size;
@@ -681,6 +737,7 @@ async function loadDashboard(){
     const ito=usageYesterday>0?totalStock/usageYesterday:0;
 
     document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
+    renderMTDCompare(usageMTD,previousUsageMTD,prevWindow);
     document.getElementById("usageYesterday").textContent=formatAngka(usageYesterday)+" L";
     document.getElementById("yesterdayLabel").textContent=formatTanggal(yesterday);
     document.getElementById("avgMTD").textContent=formatAngka(avgMTD)+" L/hari";
