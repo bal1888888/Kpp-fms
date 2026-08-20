@@ -150,8 +150,6 @@ window.KPP = {
         ["ccr", "ccr.html", "🎯 CCR Jatah"],
         ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
         ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
-        ["ccr", "ccr.html", "🎯 CCR Jatah"],
-        ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
@@ -190,6 +188,14 @@ window.KPP = {
         </div>
       </nav>
     `;
+
+    // Nav dibuat selalu mulai dari kiri.
+    // Ini mencegah Menu GL / Dashboard hilang pada layar yang lebih sempit.
+    const navInner = host.querySelector(".app-nav-inner");
+    if (navInner) {
+      navInner.style.justifyContent = "flex-start";
+      navInner.scrollLeft = 0;
+    }
   }
 };
 
