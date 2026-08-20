@@ -27,6 +27,14 @@ button,.btn{border:0;border-radius:7px;padding:11px 14px;cursor:pointer;font-wei
 .orange{background:#ea580c;color:#fff}
 .purple{background:#7c3aed;color:#fff}
 .gray{background:#475569;color:#fff}
+.stock-total-wide{display:block;margin-bottom:12px}
+.stock-total-card{border:1px solid #86efac;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:18px;background:#f0fdf4}
+.stock-total-card.capacity-low{background:#fffbeb;border-color:#fbbf24}
+.stock-total-card.capacity-critical{background:#fef2f2;border-color:#f87171}
+.stock-total-card.capacity-high{background:#fff7ed;border-color:#fb923c}
+.stock-total-main small{display:block;color:#64748b;font-size:11px;font-weight:bold;margin-bottom:5px}
+.stock-total-main strong{display:block;font-size:30px}
+.stock-total-side{min-width:260px;max-width:420px;flex:1}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
 .card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}
 .card small{color:#64748b}
@@ -54,6 +62,8 @@ th{background:#e5e7eb}
  .container{padding:6px}
  .panel{padding:12px}
  .closing-summary{grid-template-columns:1fr}
+ .stock-total-card{flex-direction:column;align-items:flex-start}
+ .stock-total-side{min-width:0;max-width:none;width:100%}
 }
 
 /* ===== KPP-FMS GLOBAL NAV ===== */
@@ -215,12 +225,22 @@ th{background:#e5e7eb}
 .stock-capacity-line{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#64748b;margin-bottom:5px}
 .stock-capacity-bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
 .stock-capacity-fill{height:100%;background:#22c55e;border-radius:999px;transition:width .25s ease}
-.stock-capacity-fill.warn{background:#f59e0b}
-.stock-capacity-fill.full{background:#ef4444}
-.card.capacity-warn{background:#fffbeb;border-color:#fbbf24}
-.card.capacity-full{background:#fef2f2;border-color:#f87171}
-.capacity-warn-text{color:#b45309!important;font-weight:bold}
-.capacity-full-text{color:#b91c1c!important;font-weight:bold}
+.stock-capacity-fill.safe{background:#22c55e}
+.stock-capacity-fill.low{background:#f59e0b}
+.stock-capacity-fill.critical{background:#ef4444}
+.stock-capacity-fill.high{background:#f97316}
+.card.capacity-safe{background:#f0fdf4;border-color:#86efac}
+.card.capacity-low{background:#fffbeb;border-color:#fbbf24}
+.card.capacity-critical{background:#fef2f2;border-color:#f87171}
+.card.capacity-high{background:#fff7ed;border-color:#fb923c}
+.capacity-safe-text{color:#166534!important;font-weight:bold}
+.capacity-low-text{color:#b45309!important;font-weight:bold}
+.capacity-critical-text{color:#b91c1c!important;font-weight:bold}
+.capacity-high-text{color:#c2410c!important;font-weight:bold}
+.stock-level-alert{display:none;margin:0 0 12px;padding:12px 14px;border-radius:9px;font-size:12px;font-weight:bold;line-height:1.5}
+.stock-level-alert.show{display:block}
+.stock-level-alert.danger{background:#fee2e2;border:1px solid #ef4444;color:#991b1b}
+.stock-level-alert.warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .capacity-note{
     margin-top:10px;
     padding:10px 12px;
@@ -370,6 +390,8 @@ th{background:#e5e7eb}
 
 <div class="panel">
     <h3>Stock Saat Ini</h3>
+    <div id="stockLevelAlert" class="stock-level-alert"></div>
+    <div id="stockTotalWide" class="stock-total-wide"></div>
     <div class="cards" id="stockCards"></div>
     <div class="note" style="margin-top:12px">
         Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk − Transfer Keluar − Pengisian Unit.
@@ -605,6 +627,8 @@ const STORAGE_CAPACITY={
     FT0075:20000
 };
 
+const STOCK_CRITICAL_PCT=20;
+const STOCK_WARNING_PCT=35;
 const CAPACITY_WARNING_PCT=90;
 const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
 let LAST_CAPACITY_ALERT_SIGNATURE="";
@@ -640,10 +664,10 @@ function pct(value){
 
 function capacityState(storage,qty){
     const p=capacityPercent(storage,qty);
-
-    if(p>=100)return "full";
-    if(p>=CAPACITY_WARNING_PCT)return "warn";
-    return "";
+    if(p<STOCK_CRITICAL_PCT)return "critical";
+    if(p<STOCK_WARNING_PCT)return "low";
+    if(p>=CAPACITY_WARNING_PCT)return "high";
+    return "safe";
 }
 
 function capacityMessage(storage,qty){
@@ -695,10 +719,30 @@ function confirmNearCapacity(storage,projectedQty,context=""){
 function showCapacityAlertOnce(stock){
     if(STOCK_SAVE_LOCK)return;
 
-    const warnings=STORAGES
+    const critical=STORAGES
+        .filter(storage=>capacityPercent(storage,stock[storage])<STOCK_CRITICAL_PCT)
+        .map(storage=>capacityMessage(storage,stock[storage]));
+    const high=STORAGES
         .filter(storage=>capacityPercent(storage,stock[storage])>=CAPACITY_WARNING_PCT)
         .map(storage=>capacityMessage(storage,stock[storage]));
 
+    const banner=document.getElementById("stockLevelAlert");
+    if(banner){
+        if(critical.length){
+            banner.className="stock-level-alert show danger";
+            banner.innerHTML="🚨 STOCK MENIPIS: "+critical.join(" • ")+". Segera rencanakan penerimaan/transfer.";
+        }else if(high.length){
+            banner.className="stock-level-alert show warn";
+            banner.innerHTML="⚠️ STOCK MENDEKATI PENUH: "+high.join(" • ")+". Perhatikan kapasitas sebelum penerimaan/transfer.";
+        }else{
+            banner.className="stock-level-alert";
+            banner.textContent="";
+        }
+    }
+
+    const warnings=[];
+    if(critical.length)warnings.push("🚨 STOCK MENIPIS\n"+critical.join("\n"));
+    if(high.length)warnings.push("⚠️ MENDEKATI PENUH\n"+high.join("\n"));
     if(!warnings.length){
         LAST_CAPACITY_ALERT_SIGNATURE="";
         return;
@@ -706,17 +750,11 @@ function showCapacityAlertOnce(stock){
 
     const signature=warnings.join("|");
     if(signature===LAST_CAPACITY_ALERT_SIGNATURE)return;
-
     LAST_CAPACITY_ALERT_SIGNATURE=signature;
 
     setTimeout(()=>{
         if(STOCK_SAVE_LOCK)return;
-
-        alert(
-            "⚠️ PERINGATAN KAPASITAS STOCK\n\n"+
-            warnings.join("\n")+
-            "\n\nMT dikunci maksimal 40.000 L dan FT maksimal 20.000 L."
-        );
+        alert(warnings.join("\n\n"));
     },250);
 }
 
@@ -1339,17 +1377,19 @@ function renderStockCards(stock){
         const state=capacityState(storage,stock[storage]);
         const width=Math.max(0,Math.min(p,100));
 
+        const cardClass=state==="critical"?"capacity-critical":state==="low"?"capacity-low":state==="high"?"capacity-high":"capacity-safe";
+        const textClass=`capacity-${state}-text`;
+        const statusText=state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
+
         cards.innerHTML+=`
-        <div class="card ${state==="warn"?"capacity-warn":state==="full"?"capacity-full":""}">
+        <div class="card ${cardClass}">
             <small>${storage}${suffix}</small>
             <strong>${fmt(stock[storage])}</strong>
 
             <div class="stock-capacity">
                 <div class="stock-capacity-line">
                     <span>Max ${fmt(cap)}</span>
-                    <span class="${state==="warn"?"capacity-warn-text":state==="full"?"capacity-full-text":""}">
-                        ${pct(p)}% penuh
-                    </span>
+                    <span class="${textClass}">${pct(p)}% • ${statusText}</span>
                 </div>
                 <div class="stock-capacity-bar">
                     <div class="stock-capacity-fill ${state}" style="width:${width}%"></div>
@@ -1360,17 +1400,24 @@ function renderStockCards(stock){
 
     const totalPct=TOTAL_CAPACITY>0 ? (total/TOTAL_CAPACITY)*100 : 0;
 
-    cards.innerHTML+=`
-    <div class="card total">
-        <small>TOTAL STOCK ALL WHS</small>
-        <strong>${fmt(total)}</strong>
-        <div class="stock-capacity">
-            <div class="stock-capacity-line">
-                <span>Total Max ${fmt(TOTAL_CAPACITY)}</span>
-                <span>${pct(totalPct)}% terisi</span>
-            </div>
-            <div class="stock-capacity-bar">
-                <div class="stock-capacity-fill" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
+    const totalState=totalPct<STOCK_CRITICAL_PCT?"critical":totalPct<STOCK_WARNING_PCT?"low":totalPct>=CAPACITY_WARNING_PCT?"high":"safe";
+    const totalCardClass=totalState==="critical"?"capacity-critical":totalState==="low"?"capacity-low":totalState==="high"?"capacity-high":"capacity-safe";
+    const totalStatus=totalState==="critical"?"KRITIS":totalState==="low"?"RENDAH":totalState==="high"?"TINGGI":"AMAN";
+    document.getElementById("stockTotalWide").innerHTML=`
+    <div class="stock-total-card ${totalCardClass}">
+        <div class="stock-total-main">
+            <small>TOTAL STOCK ALL WHS</small>
+            <strong>${fmt(total)}</strong>
+        </div>
+        <div class="stock-total-side">
+            <div class="stock-capacity">
+                <div class="stock-capacity-line">
+                    <span>Total Max ${fmt(TOTAL_CAPACITY)}</span>
+                    <span class="capacity-${totalState}-text">${pct(totalPct)}% • ${totalStatus}</span>
+                </div>
+                <div class="stock-capacity-bar">
+                    <div class="stock-capacity-fill ${totalState}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
+                </div>
             </div>
         </div>
     </div>`;
