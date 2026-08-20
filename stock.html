@@ -252,6 +252,91 @@ th{background:#e5e7eb}
     line-height:1.5;
 }
 
+
+
+/* ===== KPP-FMS CLEAN CONNECTED VISUAL v7 ===== */
+:root{
+  --kpp-bg:#f5f7fb;
+  --kpp-card:#ffffff;
+  --kpp-text:#0f172a;
+  --kpp-muted:#64748b;
+  --kpp-line:#e6eaf0;
+  --kpp-blue:#2563eb;
+  --kpp-green:#16a34a;
+  --kpp-yellow:#f59e0b;
+  --kpp-red:#ef4444;
+  --kpp-orange:#f97316;
+}
+body{background:var(--kpp-bg);color:var(--kpp-text)}
+.container{max-width:1280px}
+.panel{border:1px solid var(--kpp-line);border-radius:16px;box-shadow:0 6px 22px rgba(15,23,42,.045);padding:20px}
+
+/* Alert dibuat tipis agar tetap terlihat tanpa mendominasi layar */
+.stock-level-alert{padding:9px 12px;border-radius:9px;font-size:11px;box-shadow:none;background:#fff!important;border:1px solid var(--kpp-line)!important}
+.stock-level-alert.danger{color:#b91c1c!important;border-left:4px solid var(--kpp-red)!important}
+.stock-level-alert.warn{color:#b45309!important;border-left:4px solid var(--kpp-orange)!important}
+
+/* Hero total stock: putih, lebar, satu bahasa visual */
+.stock-total-card,
+.stock-total-card.capacity-safe,
+.stock-total-card.capacity-low,
+.stock-total-card.capacity-critical,
+.stock-total-card.capacity-high{
+  background:#fff!important;
+  border:1px solid var(--kpp-line)!important;
+  border-left-width:5px!important;
+  border-radius:14px;
+  padding:18px 20px;
+  box-shadow:0 3px 14px rgba(15,23,42,.04)
+}
+.stock-total-card.capacity-safe{border-left-color:var(--kpp-green)!important}
+.stock-total-card.capacity-low{border-left-color:var(--kpp-yellow)!important}
+.stock-total-card.capacity-critical{border-left-color:var(--kpp-red)!important}
+.stock-total-card.capacity-high{border-left-color:var(--kpp-orange)!important}
+.stock-total-main small{color:var(--kpp-muted);letter-spacing:.35px}
+.stock-total-main strong{font-size:34px;color:var(--kpp-text)}
+.stock-total-side{max-width:460px}
+
+/* Tank cards: status cukup lewat garis kiri + progress, bukan full background */
+.cards{gap:12px}
+.card,
+.card.capacity-safe,
+.card.capacity-low,
+.card.capacity-critical,
+.card.capacity-high{
+  background:#fff!important;
+  border:1px solid var(--kpp-line)!important;
+  border-left-width:4px!important;
+  border-radius:12px;
+  min-height:112px;
+  box-shadow:0 2px 10px rgba(15,23,42,.025)
+}
+.card.capacity-safe{border-left-color:var(--kpp-green)!important}
+.card.capacity-low{border-left-color:var(--kpp-yellow)!important}
+.card.capacity-critical{border-left-color:var(--kpp-red)!important}
+.card.capacity-high{border-left-color:var(--kpp-orange)!important}
+.card strong{color:var(--kpp-text)!important;font-size:22px}
+.stock-capacity-line{margin-bottom:7px}
+.stock-capacity-bar{height:7px;background:#eef1f5}
+
+.capacity-safe-text{color:#15803d!important}
+.capacity-low-text{color:#a16207!important}
+.capacity-critical-text{color:#b91c1c!important}
+.capacity-high-text{color:#c2410c!important}
+
+.capacity-note{background:#f8fafc;border-color:#dbe3ee;color:#475569}
+.summary-box{background:#fff;border-color:var(--kpp-line);border-radius:11px}
+input,select,textarea{border-color:#d8dee8;border-radius:9px}
+input:focus,select:focus,textarea:focus{outline:2px solid #dbeafe;border-color:#93c5fd}
+.table-wrap{border-radius:11px}
+th{background:#f8fafc;color:#475569}
+
+@media(max-width:700px){
+  .panel{padding:14px}
+  .stock-total-main strong{font-size:29px}
+  .card{min-height:auto}
+}
+
 </style>
 </head>
 
@@ -730,10 +815,10 @@ function showCapacityAlertOnce(stock){
     if(banner){
         if(critical.length){
             banner.className="stock-level-alert show danger";
-            banner.innerHTML="🚨 STOCK MENIPIS: "+critical.join(" • ")+". Segera rencanakan penerimaan/transfer.";
+            banner.innerHTML="⚠️ Stock menipis: "+critical.join(" • ")+". Rencanakan penerimaan / transfer.";
         }else if(high.length){
             banner.className="stock-level-alert show warn";
-            banner.innerHTML="⚠️ STOCK MENDEKATI PENUH: "+high.join(" • ")+". Perhatikan kapasitas sebelum penerimaan/transfer.";
+            banner.innerHTML="ℹ️ Stock mendekati penuh: "+high.join(" • ")+". Cek kapasitas sebelum penerimaan / transfer.";
         }else{
             banner.className="stock-level-alert";
             banner.textContent="";
