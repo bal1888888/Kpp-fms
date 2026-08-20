@@ -11,102 +11,153 @@ window.KPP_ACTIVE_PAGE="hm-master";
 </script>
 <script src="auth.js"></script>
 <style>
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-body{margin:0;background:#f3f4f6;color:#111827}
-.header{background:#1f2937;color:#fff;text-align:center;padding:20px}
-.header h2{margin:0 0 5px}
-.container{max-width:1050px;margin:22px auto;padding:12px}
-.panel{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+:root{
+  --bg:#f6f8fb;
+  --panel:#ffffff;
+  --panel-soft:#f8fafc;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --line-strong:#cbd5e1;
+  --blue:#2563eb;
+  --blue-dark:#1d4ed8;
+  --blue-soft:#eff6ff;
+  --green:#16a34a;
+  --green-soft:#f0fdf4;
+  --amber:#d97706;
+  --amber-soft:#fffbeb;
+  --red:#dc2626;
+  --red-soft:#fef2f2;
+  --violet:#7c3aed;
+  --violet-soft:#f5f3ff;
+  --shadow:0 8px 28px rgba(15,23,42,.055);
+}
+*{box-sizing:border-box;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text)}
+.header{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 70%,#172554 100%);
+  color:#fff;text-align:center;padding:26px 16px 24px;border-bottom:1px solid rgba(255,255,255,.08)
+}
+.header h2{margin:0;font-size:23px;letter-spacing:.3px}
+.header div{margin-top:6px;color:#cbd5e1;font-size:13px;font-weight:600}
+.container{max-width:1180px;margin:20px auto 40px;padding:0 16px}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:20px;margin-bottom:16px;box-shadow:var(--shadow)
+}
+.panel h3{margin:0 0 15px;font-size:17px;letter-spacing:-.15px;display:flex;align-items:center;gap:8px}
+.panel h3::before{content:"";width:4px;height:18px;border-radius:999px;background:var(--blue);display:inline-block}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px}
-input,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px}
-textarea{min-height:78px;resize:vertical}
-button{border:0;border-radius:7px;padding:11px 15px;cursor:pointer;font-weight:bold}
-.primary{background:#2563eb;color:#fff}
-.green{background:#16a34a;color:#fff}
+label{display:block;font-size:11px;font-weight:800;letter-spacing:.35px;text-transform:uppercase;color:#475569;margin-bottom:7px}
+input,textarea,select{
+  width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;font-size:14px;
+  background:#fff;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s,background .15s
+}
+input:focus,textarea:focus,select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+textarea{min-height:82px;resize:vertical}
+button{
+  border:0;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:800;font-size:12px;
+  letter-spacing:.15px;transition:transform .12s,filter .12s,box-shadow .12s
+}
+button:hover{filter:brightness(.98);box-shadow:0 5px 12px rgba(15,23,42,.10)}
+button:active{transform:translateY(1px)}
+.primary{background:var(--blue);color:#fff}
+.green{background:var(--green);color:#fff}
+.secondary{background:#e2e8f0;color:#334155}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px}
-.card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#f8fafc}
-.card small{color:#64748b;display:block;margin-bottom:6px}
-.card strong{font-size:20px;display:block}
-.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:13px;font-size:13px;line-height:1.55}
-.warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:13px;font-size:13px;line-height:1.55;margin-top:10px}
-.status{margin-top:12px;font-weight:bold;font-size:13px}
-table{width:100%;border-collapse:collapse;min-width:720px}
-th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}
-th{background:#e5e7eb}
-.table-wrap{overflow-x:auto}
+.card{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.025)}
+.card small{color:var(--muted);display:block;margin-bottom:7px;font-size:10px;font-weight:800;letter-spacing:.45px;text-transform:uppercase}
+.card strong{font-size:22px;display:block;color:#0f172a}
+.info,.warning,.bulk-fixed-note,.qr-selected-note{border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6}
+.info{background:var(--blue-soft);border:1px solid #dbeafe;color:#334155}
+.warning{background:var(--amber-soft);border:1px solid #fde68a;color:#854d0e;margin-top:9px}
+.status{margin-top:12px;font-weight:700;font-size:12px;color:#334155}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:720px;background:#fff}
+th,td{border:0;border-bottom:1px solid var(--line);padding:10px 9px;font-size:12px;text-align:center}
+th{background:#f8fafc;color:#475569;font-size:10px;letter-spacing:.45px;text-transform:uppercase;font-weight:800;position:sticky;top:0;z-index:2}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#f8fafc}
 
 /* ===== KPP-FMS GLOBAL NAV ===== */
-.app-nav{
-    background:#111827;
-    border-top:1px solid rgba(255,255,255,.08);
-    border-bottom:1px solid #374151;
-    padding:9px 12px;
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-.app-nav-inner{
-    max-width:1250px;
-    margin:0 auto;
-    display:flex;
-    justify-content:center;
-    gap:12px;
-    align-items:center;
-    overflow-x:auto;
-    scrollbar-width:thin;
-}
-.app-nav a{
-    color:#e5e7eb;
-    text-decoration:none;
-    padding:10px 16px;
-    border-radius:7px;
-    white-space:nowrap;
-    font-size:13px;
-    font-weight:bold;
-    border:1px solid transparent;
-}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:9px;align-items:center;overflow-x:auto;scrollbar-width:thin}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:9px 13px;border-radius:8px;white-space:nowrap;font-size:12px;font-weight:800;border:1px solid transparent}
 .app-nav a:hover{background:#374151;color:#fff}
-.app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}
-@media(max-width:700px){
-    .app-nav-inner{justify-content:flex-start}
-    .app-nav a{padding:9px 12px;font-size:12px}
+.app-nav a.active{background:var(--blue);color:#fff;border-color:#60a5fa}
+
+.tab-bar{
+  width:max-content;max-width:100%;display:flex;gap:6px;flex-wrap:nowrap;margin:0 auto 18px;padding:5px;
+  background:#e9eef5;border:1px solid #dbe3ed;border-radius:13px;overflow-x:auto
 }
-
-
-.tab-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.tab-btn{background:#e5e7eb;color:#111827}
-.tab-btn.active{background:#2563eb;color:#fff}
+.tab-btn{background:transparent;color:#475569;box-shadow:none;border:1px solid transparent;padding:10px 15px}
+.tab-btn:hover{box-shadow:none;background:rgba(255,255,255,.55)}
+.tab-btn.active{background:#fff;color:var(--blue-dark);border-color:#dbeafe;box-shadow:0 2px 7px rgba(15,23,42,.07)}
 .tab-page{display:none}
 .tab-page.active{display:block}
-select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;background:#fff}
-.secondary{background:#64748b;color:#fff}
-.small-btn{padding:7px 10px;font-size:11px;background:#2563eb;color:#fff}
-.badge-active{font-weight:bold;color:#15803d}
-.badge-off{font-weight:bold;color:#dc2626}
-.master-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
-.master-toolbar>div{flex:1;min-width:180px}
-.table-scroll{max-height:430px;overflow:auto}
-
-
-.badge-qr{display:inline-block;padding:5px 8px;border-radius:999px;font-weight:bold;font-size:10px}
+.small-btn{padding:7px 10px;font-size:10px;background:var(--blue);color:#fff}
+.badge-active{font-weight:800;color:#15803d}
+.badge-off{font-weight:800;color:var(--red)}
+.master-toolbar{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(3,minmax(130px,.65fr));gap:10px;align-items:stretch;margin-bottom:13px}
+.master-toolbar>div{min-width:0}
+.master-toolbar .card{margin:0;display:flex;justify-content:center;flex-direction:column}
+.table-scroll{max-height:500px;overflow:auto}
+.badge-qr{display:inline-block;padding:5px 8px;border-radius:999px;font-weight:800;font-size:9px;letter-spacing:.2px}
 .badge-qr.yes{background:#dcfce7;color:#166534}
 .badge-qr.no{background:#fee2e2;color:#991b1b}
-.qr-toolbar{display:grid;grid-template-columns:1.4fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:12px}
+.qr-toolbar{display:grid;grid-template-columns:1.35fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:10px}
 .qr-toolbar button{white-space:nowrap}
-.qr-check{width:auto;transform:scale(1.15)}
+.qr-check{width:auto;transform:scale(1.1)}
 .qr-actions{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
-.qr-btn{background:#7c3aed;color:#fff;padding:7px 9px;font-size:11px}
-.qr-selected-note{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:10px}
-@media(max-width:760px){
-  .qr-toolbar{grid-template-columns:1fr}
-  .qr-toolbar button{width:100%}
-}
+.qr-btn{background:var(--violet);color:#fff;padding:7px 9px;font-size:10px}
+.qr-selected-note{background:var(--violet-soft);border:1px solid #ddd6fe;color:#5b21b6;margin-top:10px}
 
+/* ===== BULK HM: main work area ===== */
+.bulk-focus{border-top:4px solid var(--blue);padding-top:17px}
+.bulk-focus h3::before{background:var(--blue)}
+.bulk-hm-toolbar{display:grid;grid-template-columns:1.25fr .8fr .8fr;gap:10px;align-items:end;margin:14px 0 10px}
+.bulk-hm-table{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.bulk-hm-table table{min-width:900px}
+.bulk-hm-table th{top:0}
+.bulk-hm-table input[type="number"]{min-width:120px;padding:8px 10px;background:#f8fafc}
+.bulk-hm-table input[type="checkbox"]{width:auto;transform:scale(1.1);accent-color:var(--blue)}
+.bulk-hm-table tr:has(input[type="checkbox"]:checked){background:#f4f8ff}
+.bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;align-items:center}
+.bulk-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.bulk-chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid var(--line);font-size:10px;font-weight:800}
+.bulk-chip b{color:var(--blue-dark)}
+.bulk-fixed-note{background:#f8fafc;border:1px solid var(--line);border-left:4px solid var(--green);color:#475569;margin-top:9px}
+.bulk-fix-meta{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+#bulkSaveBtn{padding-inline:18px}
+
+.single-hm-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.single-hm-wrap>.panel{height:100%;margin-bottom:0}
+.history-panel{margin-top:16px}
+
+@media(max-width:900px){
+  .master-toolbar{grid-template-columns:1fr 1fr}
+  .master-toolbar>div:first-child{grid-column:1/-1}
+  .qr-toolbar{grid-template-columns:1fr 1fr}
+  .single-hm-wrap{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .header{padding:21px 14px 19px}.header h2{font-size:19px}.container{padding:0 11px;margin-top:14px}
+  .app-nav-inner{justify-content:flex-start}.app-nav a{padding:9px 11px;font-size:11px}
+  .panel{padding:15px;border-radius:14px}.panel h3{font-size:15px}
+  .tab-bar{width:100%;justify-content:stretch}.tab-btn{flex:1;white-space:nowrap;padding:10px 11px}
+  .master-toolbar{grid-template-columns:1fr 1fr}.qr-toolbar{grid-template-columns:1fr}.qr-toolbar button{width:100%}
+  .bulk-hm-toolbar{grid-template-columns:1fr}.bulk-actions{display:grid;grid-template-columns:1fr 1fr}.bulk-actions #bulkSaveBtn{grid-column:1/-1}
+  .cards{grid-template-columns:1fr}.grid{grid-template-columns:1fr}
+}
+@media(max-width:430px){
+  .master-toolbar{grid-template-columns:1fr}.master-toolbar>div:first-child{grid-column:auto}
+  .bulk-actions{grid-template-columns:1fr}.bulk-actions #bulkSaveBtn{grid-column:auto}
+}
 </style>
 </head>
 <body>
-<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Master Unit & HM Aktual</div></div>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Master Unit &amp; HM Aktual • Admin / GL Control</div></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
 <div class="container">
@@ -118,7 +169,7 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
     <div id="tabUnit" class="tab-page active">
         <div class="panel">
             <div class="info">
-                Master Unit dipakai supaya kalau ada <b>unit baru</b>, kamu tidak perlu edit source code lagi.
+                Kelola populasi unit dari satu tempat. Kalau ada <b>unit baru</b>, tidak perlu edit source code.
                 Setelah unit disimpan dan statusnya <b>Aktif</b>, unit otomatis bisa dipilih di halaman Pengisian Fuel.
             </div>
             <div class="warning">
@@ -240,9 +291,9 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
     </div>
 
     <div id="tabHm" class="tab-page">
-        <div class="panel">
+<div class="panel">
             <div class="info">
-                HM Master dipakai untuk memasukkan <b>HM aktual yang benar-benar terbaca di unit</b> saat mulai go-live atau saat HM lama diketahui salah.
+                Gunakan HM Master untuk menetapkan <b>HM aktual yang benar-benar terbaca di unit</b> saat go-live atau saat referensi lama diketahui salah.
                 Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
             </div>
             <div class="warning">
@@ -250,8 +301,44 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
             </div>
         </div>
 
-        <div class="panel">
-            <h3>2. Pilih Unit</h3>
+        <div class="panel bulk-focus">
+            <h3>1. Fix HM Banyak Unit</h3>
+            <div class="info">
+                Isi HM aktual untuk beberapa unit sekaligus. Setiap nilai yang disimpan oleh <b>Admin/GL</b> menjadi <b>patokan HM resmi</b> mulai tanggal/jam efektifnya. Histori lama tidak dihapus.
+            </div>
+            <div class="bulk-fixed-note">
+                HM yang difix menjadi <b>titik reset/reference resmi</b>. Data lama sebelum waktu efektif tidak boleh mengalahkannya. Nilai berikutnya hanya bergerak dari transaksi setelah waktu tersebut atau koreksi Admin/GL yang lebih baru.
+            </div>
+            <div class="bulk-hm-toolbar" style="margin-top:14px">
+                <div><label>Cari Unit</label><input id="bulkHmSearch" placeholder="Ketik DT, EX, TL..." oninput="renderBulkHmTable()"></div>
+                <div><label>Tanggal Efektif Semua</label><input type="date" id="bulkEffectiveDate"></div>
+                <div><label>Jam Efektif Semua</label><input type="time" id="bulkEffectiveTime" step="1"></div>
+            </div>
+            <div class="grid bulk-fix-meta">
+                <div><label>Admin / GL</label><input id="bulkOperator" placeholder="Nama yang menetapkan HM"></div>
+                <div><label>Keterangan Semua</label><input id="bulkNote" placeholder="Contoh: Sinkron HM aktual massal"></div>
+            </div>
+            <div class="bulk-summary">
+                <span class="bulk-chip">Dipilih: <b id="bulkSelectedCount" style="margin-left:4px">0</b></span>
+                <span class="bulk-chip">HM Terisi: <b id="bulkFilledCount" style="margin-left:4px">0</b></span>
+            </div>
+            <div class="bulk-actions">
+                <button class="primary" type="button" onclick="bulkSelectVisible(true)">✓ PILIH YANG TAMPIL</button>
+                <button class="secondary" type="button" onclick="bulkSelectVisible(false)">HAPUS PILIHAN</button>
+                <button class="green" type="button" id="bulkSaveBtn" onclick="saveBulkCorrections()">💾 SIMPAN HM TERPILIH</button>
+            </div>
+            <div class="bulk-hm-table" style="margin-top:12px">
+                <table>
+                    <thead><tr><th>PILIH</th><th>UNIT</th><th>HM SAAT INI</th><th>SUMBER</th><th>HM AKTUAL BARU</th></tr></thead>
+                    <tbody id="bulkHmBody"><tr><td colspan="5">Memuat unit...</td></tr></tbody>
+                </table>
+            </div>
+            <div class="status" id="bulkSaveStatus"></div>
+        </div>
+
+                <div class="single-hm-wrap">
+<div class="panel">
+            <h3>2. Cek HM Satu Unit</h3>
             <div class="grid">
                 <div>
                     <label>CODE UNIT</label>
@@ -271,7 +358,7 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
         </div>
 
         <div class="panel">
-            <h3>3. Masukkan HM Aktual</h3>
+            <h3>3. Koreksi HM Satu Unit</h3>
             <div class="grid">
                 <div><label>HM Aktual Unit</label><input type="number" id="actualHm" min="0" step="0.1" placeholder="HM sesuai display unit"></div>
                 <div><label>Tanggal Efektif</label><input type="date" id="effectiveDate"></div>
@@ -286,8 +373,9 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
             <div class="status" id="saveStatus"></div>
         </div>
 
-        <div class="panel">
-            <h3>Riwayat Koreksi Unit Terpilih</h3>
+                </div>
+<div class="panel history-panel">
+            <h3>4. Riwayat Koreksi Unit Terpilih</h3>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>Tanggal</th><th>Jam</th><th>Unit</th><th>HM</th><th>Operator</th><th>Keterangan</th></tr></thead>
@@ -295,7 +383,7 @@ select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-s
                 </table>
             </div>
         </div>
-    </div>
+</div>
 </div>
 <script>
 const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
@@ -529,6 +617,9 @@ let selectedUnit="";
 let MASTER_UNITS=[...BASE_MASTER_UNITS];
 let UNIT_MASTER_ROWS=[];
 const QR_SELECTED=new Set();
+const BULK_HM_SELECTED=new Set();
+const BULK_HM_VALUES=new Map();
+let BULK_HM_CURRENT=new Map();
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
@@ -605,6 +696,7 @@ function mergeUnitMasterRows(rows){
 
     renderUnitOptions();
     renderUnitTable();
+    renderBulkHmTable();
 }
 
 async function loadUnitMaster(){
@@ -873,9 +965,109 @@ document.getElementById("masterEllipse").addEventListener("input",e=>e.target.va
 
 document.getElementById("effectiveDate").value=localDate();
 document.getElementById("effectiveTime").value=localTime();
+document.getElementById("bulkEffectiveDate").value=localDate();
+document.getElementById("bulkEffectiveTime").value=localTime();
 document.getElementById("unitInput").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
 
 loadUnitMaster();
+
+
+function getBulkRows(){
+    const q=normalizeUnit(document.getElementById("bulkHmSearch")?.value||"");
+    return UNIT_MASTER_ROWS.filter(r=>r.active && (!q || [r.code_unit,r.egi,r.code_ellips].join(" ").toUpperCase().includes(q)));
+}
+function updateBulkCounts(){
+    const selected=Array.from(BULK_HM_SELECTED).filter(code=>MASTER_UNITS.includes(code));
+    const filled=selected.filter(code=>{
+        const v=BULK_HM_VALUES.get(code);
+        return v!==undefined && String(v).trim()!=="" && Number.isFinite(Number(v));
+    });
+    document.getElementById("bulkSelectedCount").textContent=selected.length;
+    document.getElementById("bulkFilledCount").textContent=filled.length;
+}
+function setBulkSelected(code,checked){
+    code=normalizeUnit(code);
+    if(checked)BULK_HM_SELECTED.add(code);else BULK_HM_SELECTED.delete(code);
+    updateBulkCounts();
+}
+function setBulkHmValue(code,value){
+    code=normalizeUnit(code);
+    BULK_HM_VALUES.set(code,value);
+    if(String(value).trim()!=="")BULK_HM_SELECTED.add(code);
+    updateBulkCounts();
+}
+function bulkSelectVisible(checked){
+    getBulkRows().forEach(r=>checked?BULK_HM_SELECTED.add(r.code_unit):BULK_HM_SELECTED.delete(r.code_unit));
+    renderBulkHmTable();
+}
+async function loadBulkCurrentHm(){
+    const rows=UNIT_MASTER_ROWS.filter(r=>r.active);
+    const next=new Map();
+    let idx=0;
+    async function worker(){
+        while(idx<rows.length){
+            const row=rows[idx++];
+            try{next.set(row.code_unit,(await getLatest(row.code_unit)).current)}
+            catch{next.set(row.code_unit,{hm:0,source:"Gagal baca"})}
+        }
+    }
+    await Promise.all(Array.from({length:Math.min(8,Math.max(1,rows.length))},()=>worker()));
+    BULK_HM_CURRENT=next;
+    renderBulkHmTable();
+}
+function renderBulkHmTable(){
+    const body=document.getElementById("bulkHmBody");
+    if(!body)return;
+    const rows=getBulkRows();
+    if(!rows.length){body.innerHTML='<tr><td colspan="5">Unit tidak ditemukan.</td></tr>';updateBulkCounts();return}
+    body.innerHTML=rows.map(row=>{
+        const cur=BULK_HM_CURRENT.get(row.code_unit)||{hm:null,source:"Memuat..."};
+        const val=BULK_HM_VALUES.get(row.code_unit)??"";
+        return `<tr>
+            <td><input type="checkbox" ${BULK_HM_SELECTED.has(row.code_unit)?"checked":""} onchange="setBulkSelected('${row.code_unit}',this.checked)"></td>
+            <td><b>${esc(row.code_unit)}</b></td>
+            <td>${cur.hm!==null&&cur.hm!==undefined&&n(cur.hm)>0?fmt(cur.hm):"-"}</td>
+            <td style="text-align:left">${esc(cur.source||"-")}</td>
+            <td><input type="number" min="0" step="0.1" value="${esc(val)}" placeholder="HM aktual" oninput="setBulkHmValue('${row.code_unit}',this.value)"></td>
+        </tr>`;
+    }).join("");
+    updateBulkCounts();
+}
+async function saveBulkCorrections(){
+    const tanggal=document.getElementById("bulkEffectiveDate").value;
+    const jam=document.getElementById("bulkEffectiveTime").value;
+    const operator=document.getElementById("bulkOperator").value.trim();
+    const note=document.getElementById("bulkNote").value.trim()||"Sinkron HM aktual massal";
+    const status=document.getElementById("bulkSaveStatus");
+    if(!tanggal||!jam){alert("Tanggal dan jam efektif wajib diisi.");return}
+    if(!operator){alert("Nama Admin/GL wajib diisi.");return}
+    const codes=Array.from(BULK_HM_SELECTED).filter(code=>MASTER_UNITS.includes(code));
+    if(!codes.length){alert("Pilih minimal 1 unit.");return}
+    const payload=[];
+    const missing=[];
+    codes.forEach(code=>{
+        const raw=BULK_HM_VALUES.get(code);
+        const hm=Number(raw);
+        if(raw===undefined||String(raw).trim()===""||!Number.isFinite(hm)||hm<0)missing.push(code);
+        else payload.push({tanggal,jam,unit:code,hm,operator,note});
+    });
+    if(missing.length){alert("HM belum valid untuk: "+missing.join(", "));return}
+    const preview=payload.slice(0,8).map(r=>`${r.unit} = ${fmt(r.hm)}`).join("\n");
+    const extra=payload.length>8?`\n... +${payload.length-8} unit lain`:"";
+    if(!confirm(`FIX HM ${payload.length} UNIT?\n\n${preview}${extra}\n\nEfektif: ${tanggal} ${jam}\nOleh: ${operator}\n\nHM ini menjadi patokan resmi mulai waktu efektif.`))return;
+    const btn=document.getElementById("bulkSaveBtn");
+    btn.disabled=true;
+    status.textContent=`⏳ Menyimpan ${payload.length} HM...`;
+    try{
+        const {error}=await db.from("hm_corrections").insert(payload);
+        if(error)throw error;
+        status.textContent=`✅ ${payload.length} HM berhasil difix sebagai patokan resmi.`;
+        BULK_HM_SELECTED.clear();
+        BULK_HM_VALUES.clear();
+        await loadBulkCurrentHm();
+    }catch(err){status.textContent="❌ "+err.message}
+    finally{btn.disabled=false}
+}
 
 async function getLatest(unit){
     const [fuelRes,corrRes]=await Promise.all([
@@ -949,6 +1141,10 @@ Data histori logsheet lama tidak akan dihapus.`);
     document.getElementById("actualHm").value="";
     await checkUnit();
 }
+document.addEventListener("kpp-auth-ready",()=>{
+    const el=document.getElementById("bulkOperator");
+    if(el&&!el.value)el.value=window.KPP_PROFILE?.display_name||"";
+});
 </script>
 </body>
 </html>
