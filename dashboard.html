@@ -3,216 +3,312 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Admin - KPP FMS</title>
+<title>Dashboard - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-window.KPP_ALLOWED_ROLES=["gl", "admin"];
+window.KPP_ALLOWED_ROLES=["gl","admin"];
 window.KPP_ACTIVE_PAGE="dashboard";
 </script>
 <script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-body{background:#f4f6f8;color:#222}.header{background:#1f2937;color:#fff;padding:20px;text-align:center}
-.header h1{font-size:23px;margin-bottom:5px}.header p{font-size:14px;opacity:.8}
-.container{max-width:1200px;margin:30px auto;padding:20px}.top-bar{display:flex;justify-content:flex-end;margin-bottom:15px}
-.refresh-btn{background:#16a34a;color:#fff;border:none;padding:10px 16px;border-radius:7px;cursor:pointer}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:25px}
-.card,.section{background:#fff;padding:22px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-.card-icon{font-size:30px;margin-bottom:10px}.card-title{color:#666;font-size:13px;margin-bottom:8px}.card-value{font-size:25px;font-weight:bold}
-.section{margin-bottom:20px}.section h2{font-size:19px;margin-bottom:20px}
-.shift-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
-.shift-card{background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e5e7eb}.shift-card h3{margin-bottom:8px}.shift-fuel{font-size:22px;font-weight:bold}
-.table-container{overflow:auto;max-height:60vh}table{width:100%;border-collapse:collapse;min-width:950px}
-th{background:#1f2937;color:#fff;padding:12px;font-size:13px;white-space:nowrap;position:sticky;top:0}
-td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px;white-space:nowrap}tr:hover{background:#f8fafc}
-.status{text-align:center;color:#777;padding:30px}.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:8px;margin-bottom:20px;display:none}
-@media(max-width:900px){
-  .container{padding:10px;margin:12px auto}
-  .header{padding:15px 10px}
-  .header h1{font-size:18px}
-  .header p{font-size:12px}
-  .top-bar{justify-content:stretch}
-  .refresh-btn{width:100%;min-height:44px;font-size:14px}
-  .module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-  .module-link{padding:14px}
-  .module-link .icon{font-size:24px}
-  .module-link strong{font-size:14px}
-  .module-link span{font-size:11px}
-  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-  .card,.section{padding:15px}
-  .card-icon{font-size:24px}
-  .card-title{font-size:11px}
-  .card-value{font-size:20px}
-  .shift-container{grid-template-columns:1fr 1fr;gap:9px}
-  .shift-card{padding:13px}
-  .shift-fuel{font-size:18px}
-  .table-container{-webkit-overflow-scrolling:touch}
-  table{min-width:1250px}
-  th,td{font-size:10px;padding:7px 6px}
-  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+:root{
+  --bg:#f4f6f8;
+  --panel:#ffffff;
+  --text:#111827;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --navy:#1f2937;
+  --blue:#2563eb;
+  --green:#16a34a;
+  --soft-blue:#eff6ff;
+  --soft-green:#ecfdf5;
+  --soft-amber:#fffbeb;
+  --soft-purple:#f5f3ff;
 }
-@media(max-width:520px){
-  .module-grid{grid-template-columns:1fr 1fr}
-  .module-link span{display:none}
-  .cards{grid-template-columns:1fr 1fr}
-  .shift-container{grid-template-columns:1fr}
+body{background:var(--bg);color:var(--text)}
+.header{background:var(--navy);color:#fff;padding:20px;text-align:center}
+.header h1{font-size:23px;margin-bottom:5px}
+.header p{font-size:14px;opacity:.8}
+.container{max-width:1200px;margin:26px auto;padding:18px}
+.top-bar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
+.page-heading h2{font-size:22px;margin-bottom:4px}
+.page-heading p{font-size:12px;color:var(--muted)}
+.refresh-btn{background:var(--green);color:#fff;border:none;padding:10px 16px;border-radius:9px;cursor:pointer;font-weight:bold;min-height:42px}
+.refresh-btn:hover{filter:brightness(.96)}
+.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:10px;margin-bottom:18px;display:none}
+
+.hero-wrap{display:flex;justify-content:center;margin-bottom:18px}
+.hero-card{
+  width:min(100%,360px);
+  background:linear-gradient(145deg,#ffffff,#f8fafc);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  text-align:center;
 }
+.hero-icon{
+  width:58px;height:58px;border-radius:16px;margin:0 auto 12px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--soft-blue);font-size:31px
+}
+.hero-label{font-size:12px;color:var(--muted);font-weight:bold;letter-spacing:.4px;margin-bottom:7px}
+.hero-value{font-size:31px;font-weight:800;line-height:1.1}
+.hero-sub{font-size:11px;color:var(--muted);margin-top:8px}
+
+.section{
+  background:var(--panel);
+  padding:20px;
+  border-radius:15px;
+  border:1px solid var(--line);
+  box-shadow:0 3px 12px rgba(15,23,42,.05);
+  margin-bottom:18px
+}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.section h2{font-size:18px;margin:0}
+.section-link{font-size:12px;text-decoration:none;color:var(--blue);font-weight:bold;white-space:nowrap}
+
+.daily-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.daily-card{
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:15px;
+  min-height:124px;
+  position:relative;
+  overflow:hidden;
+  background:#fff
+}
+.daily-card::after{
+  content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-24px;top:-24px;background:rgba(148,163,184,.08)
+}
+.daily-card.blue{background:linear-gradient(145deg,#fff,var(--soft-blue))}
+.daily-card.green{background:linear-gradient(145deg,#fff,var(--soft-green))}
+.daily-card.amber{background:linear-gradient(145deg,#fff,var(--soft-amber))}
+.daily-card.purple{background:linear-gradient(145deg,#fff,var(--soft-purple))}
+.daily-icon{font-size:25px;margin-bottom:10px}
+.daily-label{font-size:10px;color:var(--muted);font-weight:bold;letter-spacing:.45px;margin-bottom:5px}
+.daily-value{font-size:22px;font-weight:800;line-height:1.2}
+.daily-sub{font-size:10px;color:var(--muted);margin-top:5px}
+
+.shift-container{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.shift-card{
+  background:linear-gradient(145deg,#fff,#f8fafc);
+  padding:18px;border-radius:12px;border:1px solid var(--line);
+  display:flex;align-items:center;gap:14px
+}
+.shift-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--soft-blue);font-size:24px;flex:0 0 auto}
+.shift-card h3{font-size:15px;margin-bottom:5px}
+.shift-fuel{font-size:22px;font-weight:800}
+
+.session-title-wrap{display:flex;align-items:center;gap:8px}
+.session-count{display:inline-flex;min-width:26px;height:26px;padding:0 8px;align-items:center;justify-content:center;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:bold}
+.session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.session-card{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:11px;padding:14px}
+.session-card .name{font-weight:bold;font-size:14px;margin-bottom:7px}
+.session-card .meta{font-size:12px;color:#475569;line-height:1.55}
+.session-empty{padding:14px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;color:var(--muted);font-size:12px;text-align:center}
+
+.table-container{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:950px;background:#fff}
+th{background:var(--navy);color:#fff;padding:12px;font-size:12px;white-space:nowrap;position:sticky;top:0;z-index:1}
+td{padding:10px;border-bottom:1px solid var(--line);text-align:center;font-size:12px;white-space:nowrap}
+tr:hover{background:#f8fafc}
+.status{text-align:center;color:#777;padding:26px;font-size:12px}
 
 /* ===== KPP-FMS GLOBAL NAV ===== */
-.app-nav{
-    background:#111827;
-    border-top:1px solid rgba(255,255,255,.08);
-    border-bottom:1px solid #374151;
-    padding:9px 12px;
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-.app-nav-inner{
-    max-width:1250px;
-    margin:0 auto;
-    display:flex;
-    justify-content:center;
-    gap:12px;
-    align-items:center;
-    overflow-x:auto;
-    scrollbar-width:thin;
-}
-.app-nav a{
-    color:#e5e7eb;
-    text-decoration:none;
-    padding:10px 16px;
-    border-radius:7px;
-    white-space:nowrap;
-    font-size:13px;
-    font-weight:bold;
-    border:1px solid transparent;
-}
-.app-nav a:hover{
-    background:#374151;
-    color:#fff;
-}
-.app-nav a.active{
-    background:#2563eb;
-    color:#fff;
-    border-color:#60a5fa;
-}
-
-
-.module-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
-    gap:12px;
-    margin-bottom:22px;
-}
-.module-link{
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:12px;
-    padding:18px;
-    text-decoration:none;
-    color:#111827;
-    box-shadow:0 2px 8px rgba(0,0,0,.06);
-    transition:.15s ease;
-}
-.module-link:hover{
-    transform:translateY(-2px);
-    box-shadow:0 5px 15px rgba(0,0,0,.10);
-}
-.module-link .icon{font-size:27px;margin-bottom:8px}
-.module-link strong{display:block;margin-bottom:4px}
-.module-link span{font-size:12px;color:#64748b;line-height:1.4}
-
-
-@media(max-width:700px){
-    .app-nav-inner{
-        justify-content:flex-start;
-    }
-    .app-nav a{
-        padding:9px 12px;
-        font-size:12px;
-    }
-}
-
-.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:flex-start;gap:12px;align-items:center;overflow-x:auto;scrollbar-width:thin}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold;border:1px solid transparent}
+.app-nav a:hover{background:#374151;color:#fff}
+.app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}
+.kpp-userbar{background:#fff;border-bottom:1px solid var(--line)}
 .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
-.kpp-userbar-inner span{color:#64748b}
+.kpp-userbar-inner span{color:var(--muted)}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
 
+@media(max-width:900px){
+  .container{padding:10px;margin:12px auto}
+  .header{padding:15px 10px}.header h1{font-size:18px}.header p{font-size:12px}
+  .top-bar{align-items:stretch}.page-heading h2{font-size:19px}
+  .refresh-btn{min-width:125px}
+  .daily-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .daily-card{padding:13px;min-height:115px}.daily-value{font-size:19px}
+  .section{padding:14px}.section h2{font-size:16px}
+  .shift-container{gap:9px}.shift-card{padding:13px}.shift-fuel{font-size:18px}
+  table{min-width:1250px}th,td{font-size:10px;padding:7px 6px}
+  .app-nav a{padding:9px 12px;font-size:12px}
+  .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
+}
+@media(max-width:560px){
+  .top-bar{display:block}.page-heading{margin-bottom:10px}.refresh-btn{width:100%}
+  .hero-card{padding:20px}.hero-value{font-size:28px}
+  .daily-grid{grid-template-columns:1fr 1fr}
+  .daily-label{font-size:9px}.daily-sub{font-size:9px}.daily-icon{font-size:22px}
+  .shift-container{grid-template-columns:1fr}
+  .section-head{align-items:flex-start}.section-link{font-size:11px}
+}
 </style>
 </head>
 <body>
-<div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Dashboard Admin</p></div>
+<div class="header">
+  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
+  <p>PT KPP - Dashboard Fuel Management</p>
+</div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
+
 <div class="container">
-<div class="top-bar"><button class="refresh-btn" id="refreshBtn">↻ Refresh Data</button></div>
-<div id="errorBox" class="error"></div>
+  <div class="top-bar">
+    <div class="page-heading">
+      <h2>📊 Dashboard</h2>
+      <p>Ringkasan operasional fuel terbaru.</p>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">↻ Refresh Data</button>
+  </div>
 
+  <div id="errorBox" class="error"></div>
 
-<div class="module-grid">
-    <a class="module-link" href="pengisian.html">
-        <div class="icon">⛽</div>
-        <strong>Pengisian Fuel</strong>
-        <span>Input unit, HM, operator, Qty, Shift dan Fuel Truck.</span>
-    </a>
-    <a class="module-link" href="stock.html">
-        <div class="icon">🛢️</div>
-        <strong>Stock Fuel</strong>
-        <span>Opening, penerimaan, transfer, pengeluaran dan stock closing.</span>
-    </a>
-    <a class="module-link" href="logsheet.html">
-        <div class="icon">📄</div>
-        <strong>Logsheet</strong>
-        <span>Filter histori, cek double/error dan download Excel.</span>
-    </a>
-    <a class="module-link" href="riwayat.html">
-        <div class="icon">📋</div>
-        <strong>Riwayat</strong>
-        <span>Lihat seluruh transaksi pengisian yang tersimpan.</span>
-    </a>
+  <div class="hero-wrap">
+    <div class="hero-card">
+      <div class="hero-icon">⛽</div>
+      <div class="hero-label">TOTAL FUEL MTD</div>
+      <div class="hero-value" id="totalFuelMTD">0 L</div>
+      <div class="hero-sub">Akumulasi usage MTD</div>
+    </div>
+  </div>
 
-    <a class="module-link" href="hm-master.html">
-        <div class="icon">⚙️</div>
-        <strong>HM Master</strong>
-        <span>Koreksi HM aktual unit sebagai patokan HM awal operasional.</span>
-    </a>
-</div>
+  <div class="section">
+    <div class="section-head">
+      <h2>📋 Ringkasan Daily Report</h2>
+      <a class="section-link" href="daily-report.html">Buka Daily Report →</a>
+    </div>
+    <div class="daily-grid">
+      <div class="daily-card blue">
+        <div class="daily-icon">📉</div>
+        <div class="daily-label">USAGE YESTERDAY</div>
+        <div class="daily-value" id="usageYesterday">0 L</div>
+        <div class="daily-sub" id="yesterdayLabel">-</div>
+      </div>
+      <div class="daily-card green">
+        <div class="daily-icon">📊</div>
+        <div class="daily-label">USAGE MTD</div>
+        <div class="daily-value" id="usageMTD">0 L</div>
+        <div class="daily-sub">Akumulasi MTD</div>
+      </div>
+      <div class="daily-card amber">
+        <div class="daily-icon">⚡</div>
+        <div class="daily-label">AVG MTD</div>
+        <div class="daily-value" id="avgMTD">0 L/hari</div>
+        <div class="daily-sub" id="activeDays">0 hari aktif</div>
+      </div>
+      <div class="daily-card purple">
+        <div class="daily-icon">⏳</div>
+        <div class="daily-label">ITO / DAYS OF COVER</div>
+        <div class="daily-value" id="ito">0 hari</div>
+        <div class="daily-sub">Total Stock ÷ Usage Yesterday</div>
+      </div>
+    </div>
+  </div>
 
-<div class="cards">
-<div class="card"><div class="card-icon">⛽</div><div class="card-title">TOTAL FUEL</div><div class="card-value" id="totalFuel">0 L</div></div>
-<div class="card"><div class="card-icon">🧾</div><div class="card-title">TOTAL TRANSAKSI</div><div class="card-value" id="totalTransaction">0</div></div>
-<div class="card"><div class="card-icon">🚜</div><div class="card-title">TOTAL UNIT</div><div class="card-value" id="totalUnit">0</div></div>
-<div class="card"><div class="card-icon">👷</div><div class="card-title">TOTAL OPERATOR</div><div class="card-value" id="totalOperator">0</div></div>
-<div class="card"><div class="card-icon">🟢</div><div class="card-title">FUELMAN ACTIVE</div><div class="card-value" id="activeFuelmanCount">0</div></div>
-</div>
+  <div class="section">
+    <div class="section-head">
+      <h2>📊 Penggunaan Fuel per Shift MTD</h2>
+    </div>
+    <div class="shift-container">
+      <div class="shift-card">
+        <div class="shift-icon">1️⃣</div>
+        <div><h3>Shift 1</h3><div class="shift-fuel" id="shift1Fuel">0 L</div></div>
+      </div>
+      <div class="shift-card">
+        <div class="shift-icon">2️⃣</div>
+        <div><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
+      </div>
+    </div>
+  </div>
 
-<div class="section"><h2>📊 Penggunaan Fuel per Shift</h2>
-<div class="shift-container">
-<div class="shift-card"><h3>Shift 1</h3><div class="shift-fuel" id="shift1Fuel">0 L</div></div>
-<div class="shift-card"><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
-</div></div>
+  <div class="section">
+    <div class="section-head">
+      <div class="session-title-wrap">
+        <h2>👷 Fuelman Sedang Bertugas</h2>
+        <span class="session-count" id="activeFuelmanCount">0</span>
+      </div>
+    </div>
+    <div id="activeSessions" class="session-grid">
+      <div class="session-empty">Memuat session aktif...</div>
+    </div>
+  </div>
 
-<div class="section">
-<h2>👷 Fuelman Sedang Bertugas</h2>
-<div id="activeSessions" class="session-grid">
-  <div class="session-empty">Memuat session aktif...</div>
-</div>
-</div>
-
-<div class="section"><h2>📋 Transaksi Pengisian Terbaru</h2>
-<div class="table-container"><table>
-<thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>Shift</th></tr></thead>
-<tbody id="transactionTable"></tbody></table></div>
-<div id="statusData" class="status">Mengambil seluruh data dari database...</div>
-</div>
+  <div class="section">
+    <div class="section-head"><h2>📋 Transaksi Pengisian Terbaru</h2></div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>Shift</th>
+          </tr>
+        </thead>
+        <tbody id="transactionTable"></tbody>
+      </table>
+    </div>
+    <div id="statusData" class="status">Mengambil data terbaru...</div>
+  </div>
 </div>
 
 <script>
-function formatAngka(v){return Number(v||0).toLocaleString("id-ID")}
+const db=KPP.db;
+const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
+
+function n(v){return Number(v)||0}
+function pad(v){return String(v).padStart(2,"0")}
+function formatAngka(v){return Number(v||0).toLocaleString("id-ID",{maximumFractionDigits:1})}
+function formatIto(v){return Number(v||0).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})}
 function formatTanggal(v){if(!v)return "-";const p=String(v).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
 function cell(t){const x=document.createElement("td");x.textContent=t;return x}
 
+function localDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function dateMinusOne(value){
+  const [y,m,d]=value.split("-").map(Number);
+  const x=new Date(y,m-1,d);
+  x.setDate(x.getDate()-1);
+  return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+}
+function dateISO(y,m,d){return `${y}-${pad(m)}-${pad(d)}`}
+function operationalPeriod(referenceDate){
+  const [y,m,d]=referenceDate.split("-").map(Number);
+  if(d>=26){
+    const start=dateISO(y,m,26);
+    const nextMonth=new Date(y,m,1);
+    const end=dateISO(nextMonth.getFullYear(),nextMonth.getMonth()+1,25);
+    return {start,end};
+  }
+  const prevMonth=new Date(y,m-2,1);
+  const start=dateISO(prevMonth.getFullYear(),prevMonth.getMonth()+1,26);
+  const end=dateISO(y,m,25);
+  return {start,end};
+}
+function currentOperationalShift(){
+  const now=new Date();
+  const mins=now.getHours()*60+now.getMinutes();
+  let tanggal=localDate();
+  let shift=1;
+  if(mins>=18*60+30){
+    shift=2;
+  }else if(mins<6*60+30){
+    shift=2;
+    tanggal=dateMinusOne(tanggal);
+  }
+  return {tanggal,shift};
+}
+function shiftNumber(v){
+  const s=String(v||"").trim().toLowerCase();
+  if(s==="1"||s==="shift 1")return 1;
+  if(s==="2"||s==="shift 2")return 2;
+  return Number(v)||0;
+}
 function getFuelTruck(item){
   const ft=String(item.fuel_truck||"").trim().toUpperCase();
   if(ft)return ft;
@@ -221,7 +317,6 @@ function getFuelTruck(item){
   if(wh==="FT01")return "FT0075";
   return "-";
 }
-
 function getWH(item){
   const wh=String(item.wh||"").trim().toUpperCase();
   if(wh)return wh;
@@ -230,33 +325,76 @@ function getWH(item){
   if(ft==="FT0075")return "FT01";
   return "-";
 }
-
-function getFuelman(item){
-  return String(item.fuelman_name||item.fuelman_username||"").trim()||"-";
+function getFuelman(item){return String(item.fuelman_name||item.fuelman_username||"").trim()||"-"}
+function sourceFromFuel(row){
+  const ft=String(row.fuel_truck||"").trim().toUpperCase();
+  if(ft==="FT0073"||ft==="FT0075")return ft;
+  const wh=String(row.wh||"").trim().toUpperCase();
+  if(wh==="FT02")return "FT0073";
+  if(wh==="FT01")return "FT0075";
+  return "";
 }
 
-async function fetchAll(){
+async function fetchPagedFuel(startDate,endDate){
   let all=[],from=0,size=1000;
   while(true){
-    const {data,error}=await KPP.db
+    const {data,error}=await db
       .from("fuel_history")
       .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
+      .gte("tanggal",startDate)
+      .lte("tanggal",endDate)
       .order("tanggal",{ascending:true})
       .order("id",{ascending:true})
       .range(from,from+size-1);
-
-    if(error) throw error;
-    all=all.concat(data||[]);
-    if(!data||data.length<size) break;
+    if(error)throw error;
+    const rows=data||[];
+    all=all.concat(rows);
+    if(rows.length<size)break;
     from+=size;
   }
   return all;
 }
 
+async function fetchLatest(){
+  const {data,error}=await db
+    .from("fuel_history")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
+    .order("tanggal",{ascending:false})
+    .order("id",{ascending:false})
+    .limit(200);
+  if(error)throw error;
+  return data||[];
+}
+
+async function calculateStock(tanggal,shift){
+  const [o,m,f,c]=await Promise.all([
+    db.from("stock_opening").select("*").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("stock_movements").select("*").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("fuel_history").select("fuel,fuel_truck,wh").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("stock_closing").select("*").eq("tanggal",tanggal).eq("shift",shift)
+  ]);
+  const err=o.error||m.error||f.error||c.error;
+  if(err)throw err;
+
+  const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
+  (o.data||[]).forEach(row=>{if(row.storage in stock)stock[row.storage]=n(row.qty)});
+  (m.data||[]).forEach(row=>{
+    if(row.jenis==="RECEIPT"&&row.destination_storage in stock)stock[row.destination_storage]+=n(row.qty);
+    if(row.jenis==="TRANSFER"){
+      if(row.source_storage in stock)stock[row.source_storage]-=n(row.qty);
+      if(row.destination_storage in stock)stock[row.destination_storage]+=n(row.qty);
+    }
+  });
+  (f.data||[]).forEach(row=>{const source=sourceFromFuel(row);if(source)stock[source]-=n(row.fuel)});
+  (c.data||[]).forEach(row=>{
+    if(row.storage in stock&&row.actual_qty!==null&&row.actual_qty!==undefined)stock[row.storage]=n(row.actual_qty);
+  });
+  return Object.values(stock).reduce((sum,v)=>sum+n(v),0);
+}
+
 async function loadActiveSessions(){
   const host=document.getElementById("activeSessions");
-
-  const {data,error}=await KPP.db
+  const {data,error}=await db
     .from("fuelman_sessions")
     .select("id,fuelman_name,username,tanggal,shift,fuel_truck,jam_mulai,status")
     .eq("status","ACTIVE")
@@ -270,17 +408,16 @@ async function loadActiveSessions(){
 
   const rows=data||[];
   document.getElementById("activeFuelmanCount").textContent=formatAngka(rows.length);
-
   if(!rows.length){
     host.innerHTML='<div class="session-empty">Tidak ada Fuelman yang sedang ACTIVE.</div>';
     return;
   }
 
   host.innerHTML=rows.map(row=>`
-    <div class="session-card active">
+    <div class="session-card">
       <div class="name">🟢 ${row.fuelman_name||row.username||"-"}</div>
       <div class="meta">
-        ${row.shift||"-"}<br>
+        ${String(row.shift||"").toLowerCase().startsWith("shift")?row.shift:"Shift "+(row.shift||"-")}<br>
         ${row.fuel_truck||"-"}<br>
         Mulai: ${row.jam_mulai?String(row.jam_mulai).slice(0,8):"-"}
       </div>
@@ -288,80 +425,91 @@ async function loadActiveSessions(){
   `).join("");
 }
 
+function renderLatest(rows){
+  const table=document.getElementById("transactionTable");
+  const status=document.getElementById("statusData");
+  table.innerHTML="";
+
+  rows.forEach((item,index)=>{
+    const r=document.createElement("tr");
+    r.appendChild(cell(index+1));
+    r.appendChild(cell(formatTanggal(item.tanggal)));
+    r.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
+    r.appendChild(cell(item.unit||"(KOSONG)"));
+    r.appendChild(cell(item.operator||"-"));
+    r.appendChild(cell(getFuelman(item)));
+    r.appendChild(cell(getFuelTruck(item)));
+    r.appendChild(cell(getWH(item)));
+    r.appendChild(cell(n(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
+    r.appendChild(cell(item.hm_akhir!==null&&item.hm_akhir!==undefined&&item.hm_akhir!==""?formatAngka(item.hm_akhir):"-"));
+    r.appendChild(cell(n(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
+    r.appendChild(cell(formatAngka(item.fuel)+" L"));
+    const shiftText=String(item.shift||"");
+    r.appendChild(cell(shiftText.toLowerCase().startsWith("shift")?shiftText:"Shift "+shiftText));
+    table.appendChild(r);
+  });
+
+  status.style.display=rows.length?"none":"block";
+  if(!rows.length)status.textContent="Belum ada transaksi.";
+}
+
 async function loadDashboard(){
   const errorBox=document.getElementById("errorBox");
   const status=document.getElementById("statusData");
-  const table=document.getElementById("transactionTable");
   errorBox.style.display="none";
   status.style.display="block";
-  status.textContent="Mengambil seluruh data dari database...";
-  table.innerHTML="";
+  status.textContent="Mengambil data terbaru...";
 
   try{
-    await loadActiveSessions();
-    const data=await fetchAll();
+    const today=localDate();
+    const yesterday=dateMinusOne(today);
+    const period=operationalPeriod(yesterday);
+    const {tanggal:stockDate,shift:stockShift}=currentOperationalShift();
 
-    let total=0,shift1=0,shift2=0;
-    const units=new Set(),operators=new Set();
+    const [mtdRows,yesterdayRows,totalStock,latestRows]=await Promise.all([
+      fetchPagedFuel(period.start,yesterday),
+      fetchPagedFuel(yesterday,yesterday),
+      calculateStock(stockDate,stockShift),
+      fetchLatest(),
+      loadActiveSessions()
+    ]);
 
-    data.forEach(item=>{
-      const q=Number(item.fuel)||0;
-      total+=q;
-      if(Number(item.shift)===1) shift1+=q;
-      if(Number(item.shift)===2) shift2+=q;
-      if(item.unit) units.add(String(item.unit).trim().toUpperCase());
-      if(item.operator) operators.add(String(item.operator).trim().toLowerCase());
+    let usageMTD=0,shift1=0,shift2=0;
+    mtdRows.forEach(row=>{
+      const qty=n(row.fuel);
+      usageMTD+=qty;
+      const sh=shiftNumber(row.shift);
+      if(sh===1)shift1+=qty;
+      if(sh===2)shift2+=qty;
     });
 
-    document.getElementById("totalFuel").textContent=formatAngka(total)+" L";
-    document.getElementById("totalTransaction").textContent=formatAngka(data.length);
-    document.getElementById("totalUnit").textContent=formatAngka(units.size);
-    document.getElementById("totalOperator").textContent=formatAngka(operators.size);
+    const usageYesterday=yesterdayRows.reduce((sum,row)=>sum+n(row.fuel),0);
+    const activeDateSet=new Set(mtdRows.filter(row=>n(row.fuel)>0&&row.tanggal).map(row=>row.tanggal));
+    const activeDays=activeDateSet.size;
+    const avgMTD=activeDays?usageMTD/activeDays:0;
+    const ito=usageYesterday>0?totalStock/usageYesterday:0;
+
+    document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
+    document.getElementById("usageYesterday").textContent=formatAngka(usageYesterday)+" L";
+    document.getElementById("yesterdayLabel").textContent=formatTanggal(yesterday);
+    document.getElementById("usageMTD").textContent=formatAngka(usageMTD)+" L";
+    document.getElementById("avgMTD").textContent=formatAngka(avgMTD)+" L/hari";
+    document.getElementById("activeDays").textContent=activeDays+" hari aktif";
+    document.getElementById("ito").textContent=formatIto(ito)+" hari";
     document.getElementById("shift1Fuel").textContent=formatAngka(shift1)+" L";
     document.getElementById("shift2Fuel").textContent=formatAngka(shift2)+" L";
 
-    const latest=[...data]
-      .sort((a,b)=>{
-        const da=a.tanggal||"", db=b.tanggal||"";
-        if(da!==db) return db.localeCompare(da);
-        return Number(b.id||0)-Number(a.id||0);
-      })
-      .slice(0,200);
-
-    latest.forEach((item,index)=>{
-      const r=document.createElement("tr");
-      r.appendChild(cell(index+1));
-      r.appendChild(cell(formatTanggal(item.tanggal)));
-      r.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
-      r.appendChild(cell(item.unit||"(KOSONG)"));
-      r.appendChild(cell(item.operator||"-"));
-      r.appendChild(cell(getFuelman(item)));
-      r.appendChild(cell(getFuelTruck(item)));
-      r.appendChild(cell(getWH(item)));
-      r.appendChild(cell(Number(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
-      r.appendChild(cell(item.hm_akhir!==null&&item.hm_akhir!==undefined&&item.hm_akhir!==""?formatAngka(item.hm_akhir):"-"));
-      r.appendChild(cell(Number(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
-      r.appendChild(cell(formatAngka(item.fuel)+" L"));
-      const shiftText=String(item.shift||"");
-      r.appendChild(cell(shiftText.toLowerCase().startsWith("shift")?shiftText:"Shift "+shiftText));
-      table.appendChild(r);
-    });
-
-    status.style.display=latest.length?"none":"block";
-    if(!latest.length) status.textContent="Belum ada transaksi.";
+    renderLatest(latestRows);
   }catch(error){
     console.error(error);
     errorBox.style.display="block";
-    errorBox.textContent="❌ Gagal mengambil data: "+error.message;
+    errorBox.textContent="❌ Gagal mengambil data dashboard: "+error.message;
     status.style.display="none";
   }
 }
 
 document.getElementById("refreshBtn").addEventListener("click",loadDashboard);
-
-document.addEventListener("kpp-auth-ready",()=>{
-  loadDashboard();
-});
+document.addEventListener("kpp-auth-ready",loadDashboard);
 </script>
 </body>
 </html>
