@@ -67,6 +67,101 @@ window.KPP = {
     return "FUELMAN";
   },
 
+  installGlobalTheme() {
+    if (document.getElementById("kppGlobalDeepTheme")) return;
+
+    const style = document.createElement("style");
+    style.id = "kppGlobalDeepTheme";
+    style.textContent = `
+      :root{
+        --kpp-bg-1:#07111f;
+        --kpp-bg-2:#0b1730;
+        --kpp-bg-3:#102342;
+        --kpp-navy:#07101f;
+        --kpp-navy-2:#0a1629;
+        --kpp-blue:#2563eb;
+        --kpp-blue-hi:#3b82f6;
+        --kpp-line:rgba(148,163,184,.22);
+      }
+
+      html{background:#07111f!important;}
+      body{
+        background:
+          radial-gradient(circle at 12% 8%,rgba(37,99,235,.30),transparent 25%),
+          radial-gradient(circle at 88% 14%,rgba(14,165,233,.16),transparent 25%),
+          linear-gradient(145deg,var(--kpp-bg-1) 0%,var(--kpp-bg-2) 52%,var(--kpp-bg-3) 100%)!important;
+        background-attachment:fixed!important;
+        min-height:100vh!important;
+      }
+
+      body::before{
+        content:"";
+        position:fixed;
+        inset:0;
+        pointer-events:none;
+        z-index:-1;
+        background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(0,0,0,.10));
+      }
+
+      .header{
+        background:linear-gradient(135deg,#050b15 0%,#0b1730 58%,#10284a 100%)!important;
+        border-bottom:1px solid rgba(96,165,250,.24)!important;
+        box-shadow:0 10px 28px rgba(2,6,23,.34)!important;
+      }
+
+      .kpp-userbar{
+        background:#0b1424!important;
+        border-bottom:1px solid rgba(148,163,184,.18)!important;
+        box-shadow:0 5px 16px rgba(2,6,23,.20)!important;
+      }
+      .kpp-userbar-inner{color:#e5edf8!important;}
+      .kpp-userbar-inner span{color:#9fb0c7!important;}
+      .kpp-userbar button{box-shadow:0 6px 14px rgba(2,6,23,.28)!important;}
+      #kppSwitchBtn{background:#1d4ed8!important;}
+      #kppLogoutBtn{background:#b91c1c!important;}
+
+      .app-nav{
+        background:rgba(4,10,20,.96)!important;
+        border-top:1px solid rgba(255,255,255,.04)!important;
+        border-bottom:1px solid rgba(96,165,250,.22)!important;
+        box-shadow:0 8px 22px rgba(2,6,23,.34)!important;
+        backdrop-filter:blur(12px);
+      }
+      .app-nav-inner{scrollbar-color:#334155 transparent;}
+      .app-nav a{
+        color:#cbd5e1!important;
+        border:1px solid transparent!important;
+        transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease!important;
+      }
+      .app-nav a:hover{
+        background:#14233a!important;
+        color:#fff!important;
+        border-color:rgba(96,165,250,.20)!important;
+      }
+      .app-nav a.active{
+        background:linear-gradient(135deg,#1d4ed8,#2563eb 58%,#3b82f6)!important;
+        color:#fff!important;
+        border-color:#60a5fa!important;
+        box-shadow:0 7px 18px rgba(37,99,235,.30)!important;
+      }
+
+      .panel,.sheet,.box,.card{
+        border-color:rgba(203,213,225,.72);
+      }
+
+      ::selection{background:#2563eb;color:#fff;}
+      *{scrollbar-color:#475569 transparent;}
+
+      @media(max-width:700px){
+        body{background-attachment:scroll!important;}
+        .header{box-shadow:0 7px 20px rgba(2,6,23,.28)!important;}
+        .app-nav{box-shadow:0 5px 16px rgba(2,6,23,.28)!important;}
+      }
+    `;
+
+    document.head.appendChild(style);
+  },
+
   renderUserBar(profile) {
     const el = document.getElementById("kppUserBar");
     if (!el || !profile) return;
@@ -201,6 +296,12 @@ window.KPP = {
     }
   }
 };
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => window.KPP.installGlobalTheme(), { once:true });
+} else {
+  window.KPP.installGlobalTheme();
+}
 
 if (window.KPP_ALLOWED_ROLES) {
   document.documentElement.style.visibility = "hidden";
