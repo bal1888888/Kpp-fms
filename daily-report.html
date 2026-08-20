@@ -135,6 +135,109 @@ td:first-child,th:first-child{text-align:left}
 .stock-alert-banner.warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .period-chip{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:bold}
 
+
+
+/* ===== KPP-FMS CLEAN CONNECTED VISUAL v6 ===== */
+:root{
+  --kpp-bg:#f5f7fb;
+  --kpp-card:#ffffff;
+  --kpp-text:#0f172a;
+  --kpp-muted:#64748b;
+  --kpp-line:#e6eaf0;
+  --kpp-blue:#2563eb;
+  --kpp-green:#16a34a;
+  --kpp-yellow:#f59e0b;
+  --kpp-red:#ef4444;
+  --kpp-orange:#f97316;
+}
+body{background:var(--kpp-bg);color:var(--kpp-text)}
+.container{max-width:1180px}
+.panel{border:1px solid var(--kpp-line);border-radius:16px;box-shadow:0 6px 22px rgba(15,23,42,.045);padding:20px}
+.notice{background:#f8fafc;border-color:#dbe3ee;color:#475569}
+
+/* Alarm tetap ada, tapi tampil sebagai strip tipis */
+.stock-alert-banner{padding:9px 12px;border-radius:9px;font-size:11px;background:#fff!important;border:1px solid var(--kpp-line)!important}
+.stock-alert-banner.danger{color:#b91c1c!important;border-left:4px solid var(--kpp-red)!important}
+.stock-alert-banner.warn{color:#b45309!important;border-left:4px solid var(--kpp-orange)!important}
+
+/* Total stock jadi hero yang tenang */
+.stock-total-card,
+.stock-total-card.safe,
+.stock-total-card.warn,
+.stock-total-card.danger{
+  background:#fff!important;
+  border:1px solid var(--kpp-line)!important;
+  border-left-width:5px!important;
+  border-radius:14px;
+  box-shadow:0 3px 14px rgba(15,23,42,.04)
+}
+.stock-total-card.safe{border-left-color:var(--kpp-green)!important}
+.stock-total-card.warn{border-left-color:var(--kpp-yellow)!important}
+.stock-total-card.danger{border-left-color:var(--kpp-red)!important}
+.stock-total-main small{color:var(--kpp-muted)!important}
+.stock-total-main strong{font-size:35px;color:var(--kpp-text)!important}
+.stock-total-side .stock-total-note{color:var(--kpp-muted)!important;font-size:11px}
+
+/* Stock individual tidak lagi penuh warna */
+.card,
+.card.capacity-safe,
+.card.capacity-low,
+.card.capacity-critical,
+.card.capacity-high{
+  background:#fff!important;
+  border:1px solid var(--kpp-line)!important;
+  border-left-width:4px!important;
+  border-radius:12px;
+  box-shadow:0 2px 10px rgba(15,23,42,.025)
+}
+.card.capacity-safe{border-left-color:var(--kpp-green)!important}
+.card.capacity-low{border-left-color:var(--kpp-yellow)!important}
+.card.capacity-critical{border-left-color:var(--kpp-red)!important}
+.card.capacity-high{border-left-color:var(--kpp-orange)!important}
+.card strong{color:var(--kpp-text)!important}
+.capacity-bar{height:7px;background:#eef1f5}
+
+/* Usage cards: satu bahasa visual; warna hanya untuk indikator */
+.metrics{gap:12px}
+.metric,
+.metric.blue,
+.metric.green,
+.metric.amber,
+.metric.purple{
+  background:#fff!important;
+  border:1px solid var(--kpp-line);
+  border-top:3px solid #dbeafe;
+  border-radius:13px;
+  box-shadow:0 2px 10px rgba(15,23,42,.025);
+  min-height:136px
+}
+.metric::after{display:none}
+.metric .label{color:var(--kpp-muted)}
+.metric .value{font-size:23px;color:var(--kpp-text)}
+.metric .sub{color:#718096}
+.metric .trend-line{border-top:1px dashed #e5e7eb;padding-top:9px;margin-top:10px}
+.metric .metric-note{font-size:9px;color:#94a3b8;max-width:118px}
+.trend-pill{padding:4px 7px;font-size:9px}
+.trend-pill.neutral{background:#f1f5f9;color:#64748b}
+.trend-pill.up-good,.trend-pill.down-bad{background:#ecfdf5;color:#15803d}
+.trend-pill.down-good,.trend-pill.up-bad{background:#fef2f2;color:#b91c1c}
+
+/* ITO warning cukup garis + chip, bukan full kuning/merah */
+.metric.warn-state{background:#fff!important;border-color:#fde68a;border-left:4px solid var(--kpp-yellow)}
+.metric.danger-state{background:#fff!important;border-color:#fecaca;border-left:4px solid var(--kpp-red)}
+.metric-alert{padding:6px 8px;font-size:9px;border-radius:7px}
+.metric-alert.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.metric-alert.danger{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+
+.table-wrap{border-color:var(--kpp-line);border-radius:11px}
+th{background:#f8fafc;color:#475569}
+.report-box{border-radius:12px}
+
+@media(max-width:850px){
+  .panel{padding:14px}
+  .stock-total-main strong{font-size:30px}
+}
+
 </style>
 </head>
 
@@ -503,10 +606,10 @@ function renderStock(stock){
 
   if(criticalList.length){
     alertHost.className="stock-alert-banner show danger";
-    alertHost.textContent=`🚨 STOCK MENIPIS: ${criticalList.join(" • ")}. Segera rencanakan penerimaan / transfer.`;
+    alertHost.textContent=`⚠️ Stock menipis: ${criticalList.join(" • ")}. Segera rencanakan penerimaan / transfer.`;
   }else if(highList.length){
     alertHost.className="stock-alert-banner show warn";
-    alertHost.textContent=`⚠️ STOCK MENDEKATI PENUH: ${highList.join(" • ")}. Perhatikan kapasitas sebelum penerimaan / transfer.`;
+    alertHost.textContent=`ℹ️ Stock mendekati penuh: ${highList.join(" • ")}. Perhatikan kapasitas sebelum penerimaan / transfer.`;
   }else{
     alertHost.className="stock-alert-banner";
     alertHost.textContent="";
@@ -533,7 +636,7 @@ function renderStock(stock){
             <div class="capacity-fill ${totalCls}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
           </div>
         </div>
-        <div class="stock-total-note">Hijau 35-89,9% • Kuning 20-34,9% • Merah &lt;20% • Oranye ≥90% mendekati penuh.</div>
+        <div class="stock-total-note">Status total stock mengikuti level kapasitas storage.</div>
       </div>
     </div>
   `;
