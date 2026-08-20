@@ -47,7 +47,7 @@ button:disabled{background:#94a3b8}
   <div id="status" class="status"></div>
 
   <div class="note">
-    GL punya akses penuh termasuk Kelola Akun. Admin punya akses operasional/admin tetapi tidak bisa membuat akun. Fuelman hanya masuk ke Pengisian Fuel dan Stock Fuel.
+    GL masuk langsung ke Dashboard dan punya akses penuh termasuk Kelola Akun. Admin masuk langsung ke Dashboard dengan akses operasional/admin. Fuelman masuk ke menu Fuelman, dan CCR masuk ke Display CCR.
   </div>
 </div>
 
@@ -58,6 +58,7 @@ let DIRECTORY=[];
 function labelRole(r){
   if(r==="gl")return "GL";
   if(r==="admin")return "ADMIN";
+  if(r==="ccr")return "CCR";
   return "FUELMAN";
 }
 
@@ -113,8 +114,8 @@ async function route(){
     throw new Error("Akun tidak aktif.");
   }
 
-  if(p.role==="gl") window.location.replace("gl.html");
-  else if(p.role==="admin") window.location.replace("admin.html");
+  if(p.role==="gl") window.location.replace("dashboard.html");
+  else if(p.role==="admin") window.location.replace("dashboard.html");
   else if(p.role==="ccr") window.location.replace("ccr.html");
   else window.location.replace("fuelman.html");
 
@@ -163,5 +164,4 @@ route().catch(()=>{});
 loadDirectory();
 </script>
 </body>
-  <!-- redeploy pages -->
 </html>
