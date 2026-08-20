@@ -29,16 +29,49 @@ button{border:0;border-radius:8px;padding:11px 16px;font-weight:bold;cursor:poin
 .btn-blue{background:#2563eb;color:#fff}
 .btn-gray{background:#64748b;color:#fff}
 .notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.5;margin-bottom:14px}
+.stock-total-wide{display:block;margin-bottom:12px}
+.stock-total-card{background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border:1px solid #86efac;border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;gap:18px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.stock-total-card.warn{background:linear-gradient(135deg,#fffbeb,#fff7ed);border-color:#fbbf24}
+.stock-total-card.danger{background:linear-gradient(135deg,#fef2f2,#fff1f2);border-color:#f87171}
+.stock-total-card.warn .stock-total-main small,.stock-total-card.warn .stock-total-main strong,.stock-total-card.warn .stock-total-note{color:#b45309}
+.stock-total-card.danger .stock-total-main small,.stock-total-card.danger .stock-total-main strong,.stock-total-card.danger .stock-total-note{color:#b91c1c}
+.stock-total-main small{display:block;font-size:12px;color:#166534;font-weight:bold;letter-spacing:.3px;margin-bottom:7px}
+.stock-total-main strong{display:block;font-size:34px;line-height:1.1;color:#166534}
+.stock-total-side{min-width:220px;max-width:340px}
+.stock-total-side .stock-total-note{font-size:12px;color:#166534;line-height:1.45;margin-top:8px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}
-.card.total{background:#ecfdf5;border-color:#a7f3d0}
+.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;transition:.2s ease}
 .card small{display:block;font-size:11px;color:#64748b;margin-bottom:6px}
 .card strong{font-size:21px}
+.card.capacity-safe{background:#f0fdf4;border-color:#86efac}
+.card.capacity-safe strong{color:#166534}
+.card.capacity-warn{background:#fffbeb;border-color:#fbbf24}
+.card.capacity-warn strong{color:#b45309}
+.card.capacity-full{background:#fef2f2;border-color:#f87171}
+.card.capacity-full strong{color:#b91c1c}
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.metric{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px}
-.metric .label{font-size:11px;color:#64748b;font-weight:bold}
-.metric .value{font-size:22px;font-weight:bold;margin-top:6px}
-.metric .sub{font-size:11px;color:#64748b;margin-top:4px}
+.metric{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;min-height:132px;position:relative;overflow:hidden}
+.metric::after{content:"";position:absolute;right:-24px;top:-24px;width:74px;height:74px;border-radius:50%;background:rgba(148,163,184,.09)}
+.metric .label{font-size:11px;color:#64748b;font-weight:bold;position:relative;z-index:1}
+.metric .value{font-size:22px;font-weight:bold;margin-top:6px;position:relative;z-index:1}
+.metric .sub{font-size:11px;color:#64748b;margin-top:4px;position:relative;z-index:1}
+.metric .trend-line{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:10px;position:relative;z-index:1}
+.metric .metric-note{font-size:10px;color:#64748b;line-height:1.35;text-align:right}
+.metric.blue{background:linear-gradient(145deg,#fff,#eff6ff)}
+.metric.green{background:linear-gradient(145deg,#fff,#ecfdf5)}
+.metric.amber{background:linear-gradient(145deg,#fff,#fffbeb)}
+.metric.purple{background:linear-gradient(145deg,#fff,#f5f3ff)}
+.metric.warn-state{border-color:#fbbf24;background:linear-gradient(145deg,#fff,#fffbeb)}
+.metric.danger-state{border-color:#f87171;background:linear-gradient(145deg,#fff,#fef2f2)}
+.metric-alert{margin-top:9px;padding:8px 10px;border-radius:8px;font-size:10px;font-weight:bold;position:relative;z-index:1}
+.metric-alert.warn{background:#fef3c7;color:#92400e;border:1px solid #f59e0b}
+.metric-alert.danger{background:#fee2e2;color:#991b1b;border:1px solid #ef4444}
+.trend-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:bold;white-space:nowrap}
+.trend-pill.neutral{background:#e2e8f0;color:#475569}
+.trend-pill.up-good{background:#dcfce7;color:#166534}
+.trend-pill.down-good{background:#fee2e2;color:#b91c1c}
+.trend-pill.up-bad{background:#fee2e2;color:#b91c1c}
+.trend-pill.down-bad{background:#dcfce7;color:#166534}
 .section-title{margin:0 0 12px;font-size:17px}
 .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #e5e7eb;border-radius:8px}
 table{width:100%;border-collapse:collapse;min-width:650px}
@@ -75,7 +108,7 @@ td:first-child,th:first-child{text-align:left}
   .controls{grid-template-columns:1fr}
   .controls button{grid-column:auto}
   .metrics{grid-template-columns:1fr 1fr}
-  .cards{grid-template-columns:1fr 1fr}
+  .stock-total-card{flex-direction:column;align-items:flex-start}.stock-total-side{min-width:0;max-width:none;width:100%}.cards{grid-template-columns:1fr 1fr}
   th,td{font-size:10px;padding:8px 6px}
   .report-box{font-size:12px}
 }
@@ -84,12 +117,22 @@ td:first-child,th:first-child{text-align:left}
 .capacity-row{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px;color:#64748b;margin-bottom:5px}
 .capacity-bar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
 .capacity-fill{height:100%;border-radius:999px;background:#22c55e;transition:width .25s ease}
-.capacity-fill.warn{background:#f59e0b}
-.capacity-fill.full{background:#ef4444}
-.capacity-text.warn{color:#b45309;font-weight:bold}
-.capacity-text.full{color:#b91c1c;font-weight:bold}
-.card.capacity-warn{border-color:#fbbf24;background:#fffbeb}
-.card.capacity-full{border-color:#f87171;background:#fef2f2}
+.capacity-fill.safe{background:#22c55e}
+.capacity-fill.low{background:#f59e0b}
+.capacity-fill.critical{background:#ef4444}
+.capacity-fill.high{background:#f97316}
+.capacity-text.safe{color:#166534;font-weight:bold}
+.capacity-text.low{color:#b45309;font-weight:bold}
+.capacity-text.critical{color:#b91c1c;font-weight:bold}
+.capacity-text.high{color:#c2410c;font-weight:bold}
+.card.capacity-safe{border-color:#86efac;background:#f0fdf4}
+.card.capacity-low{border-color:#fbbf24;background:#fffbeb}
+.card.capacity-critical{border-color:#f87171;background:#fef2f2}
+.card.capacity-high{border-color:#fb923c;background:#fff7ed}
+.stock-alert-banner{display:none;margin:0 0 12px;padding:11px 13px;border-radius:9px;font-size:12px;font-weight:bold;line-height:1.5}
+.stock-alert-banner.show{display:block}
+.stock-alert-banner.danger{background:#fee2e2;border:1px solid #ef4444;color:#991b1b}
+.stock-alert-banner.warn{background:#fef3c7;border:1px solid #f59e0b;color:#92400e}
 .period-chip{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:bold}
 
 </style>
@@ -130,30 +173,50 @@ td:first-child,th:first-child{text-align:left}
 
   <div class="panel">
     <h2 class="section-title">🛢️ Stock Fuel</h2>
+    <div id="stockAlertBanner" class="stock-alert-banner"></div>
+    <div id="stockTotalWide" class="stock-total-wide"></div>
     <div id="stockCards" class="cards"></div>
   </div>
 
   <div class="panel">
     <h2 class="section-title">📊 Ringkasan Usage</h2>
     <div class="metrics">
-      <div class="metric">
+      <div class="metric blue" id="usageYesterdayCard">
         <div class="label">USAGE YESTERDAY</div>
         <div class="value" id="usageYesterday">0 L</div>
         <div class="sub" id="yesterdayLabel">-</div>
+        <div class="trend-line">
+          <span class="trend-pill neutral" id="usageYesterdayTrend">Belum ada pembanding</span>
+          <div class="metric-note" id="usageYesterdayNote">vs H-2</div>
+        </div>
       </div>
-      <div class="metric">
+      <div class="metric green">
         <div class="label">USAGE MTD</div>
         <div class="value" id="usageMTD">0 L</div>
+        <div class="sub">Akumulasi MTD sampai H-1</div>
+        <div class="trend-line">
+          <span class="trend-pill neutral" id="usageMTDTrend">Belum ada pembanding</span>
+          <div class="metric-note" id="usageMTDNote">vs periode sebelumnya</div>
+        </div>
       </div>
-      <div class="metric">
+      <div class="metric amber" id="avgCard">
         <div class="label">AVG MTD</div>
         <div class="value" id="avgMTD">0 L/hari</div>
         <div class="sub" id="activeDays">0 hari aktif</div>
+        <div class="trend-line">
+          <span class="trend-pill neutral" id="avgTrend">Belum ada pembanding</span>
+          <div class="metric-note" id="avgNote">vs rata-rata sebelumnya</div>
+        </div>
       </div>
-      <div class="metric">
+      <div class="metric purple" id="itoCard">
         <div class="label">ITO / DAYS OF COVER</div>
         <div class="value" id="ito">0 hari</div>
         <div class="sub">Total Stock ÷ Usage Yesterday</div>
+        <div class="trend-line">
+          <span class="trend-pill neutral" id="itoTrend">Belum ada pembanding</span>
+          <div class="metric-note" id="itoNote">Aman stock</div>
+        </div>
+        <div id="itoAlert" class="metric-alert hidden"></div>
       </div>
     </div>
   </div>
@@ -215,6 +278,24 @@ function dateMinusOne(value){
   const x=new Date(y,m-1,d);
   x.setDate(x.getDate()-1);
   return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+}
+function dateShift(value,days){
+  const [y,m,d]=value.split("-").map(Number);
+  const x=new Date(y,m-1,d);
+  x.setDate(x.getDate()+days);
+  return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+}
+function daysInclusive(start,end){
+  const a=new Date(start+"T00:00:00");
+  const b=new Date(end+"T00:00:00");
+  return Math.max(1,Math.round((b-a)/86400000)+1);
+}
+function previousEquivalentWindow(currentPeriod,currentEnd){
+  const previousPeriod=operationalPeriod(dateMinusOne(currentPeriod.start));
+  const elapsed=daysInclusive(currentPeriod.start,currentEnd);
+  let end=dateShift(previousPeriod.start,elapsed-1);
+  if(end>previousPeriod.end)end=previousPeriod.end;
+  return {start:previousPeriod.start,end,period:previousPeriod};
 }
 function dateISO(y,m,d){
   return `${y}-${pad(m)}-${pad(d)}`;
@@ -350,14 +431,47 @@ function pctFmt(value){
   }).format(value);
 }
 function capacityClass(pct){
-  if(pct>=100)return "full";
-  if(pct>=90)return "warn";
-  return "";
+  if(pct<20)return "critical";
+  if(pct<35)return "low";
+  if(pct>=90)return "high";
+  return "safe";
+}
+function trendData(current,previous,preferLower=false){
+  if(!Number.isFinite(previous) || previous<=0){
+    return {cls:"neutral",text:"Belum ada pembanding",delta:0};
+  }
+  const delta=((current-previous)/previous)*100;
+  if(Math.abs(delta)<0.05){
+    return {cls:"neutral",text:"• Stabil",delta};
+  }
+  const goingUp=delta>0;
+  let cls;
+  if(preferLower){
+    cls=goingUp?"up-bad":"down-good";
+  }else{
+    cls=goingUp?"up-good":"down-bad";
+  }
+  const arrow=goingUp?"▲":"▼";
+  return {cls,text:`${arrow} ${pctFmt(Math.abs(delta))}%`,delta};
+}
+function applyTrend(id,text,cls){
+  const el=document.getElementById(id);
+  el.className=`trend-pill ${cls}`;
+  el.textContent=text;
+}
+function itoState(days){
+  if(days<2)return {state:"danger",note:"Alarm: stock menipis",alert:"⚠️ Stock menipis. Segera rencanakan supply / transfer tambahan."};
+  if(days<3)return {state:"warn",note:"Perhatian: stock mulai turun",alert:"Perhatian: cover stock kurang dari 3 hari."};
+  return {state:"safe",note:"Aman stock",alert:""};
 }
 
 function renderStock(stock){
+  const totalHost=document.getElementById("stockTotalWide");
   const host=document.getElementById("stockCards");
+  const alertHost=document.getElementById("stockAlertBanner");
   host.innerHTML="";
+  const criticalList=[];
+  const highList=[];
 
   STORAGES.forEach(storage=>{
     const suffix=FT_MAP[storage] ? ` / WH ${FT_MAP[storage]}` : "";
@@ -365,18 +479,19 @@ function renderStock(stock){
     const pct=capacityPct(storage,stock[storage]);
     const cls=capacityClass(pct);
     const width=Math.max(0,Math.min(pct,100));
+    if(cls==="critical")criticalList.push(`${storage} ${pctFmt(pct)}%`);
+    if(cls==="high")highList.push(`${storage} ${pctFmt(pct)}%`);
+    const cardClass=`capacity-${cls}`;
+    const statusText=cls==="critical"?"KRITIS":cls==="low"?"RENDAH":cls==="high"?"TINGGI":"AMAN";
 
     host.innerHTML+=`
-      <div class="card ${cls==="warn"?"capacity-warn":cls==="full"?"capacity-full":""}">
+      <div class="card ${cardClass}">
         <small>${storage}${suffix}</small>
         <strong>${fmt(stock[storage])} L</strong>
-
         <div class="capacity-wrap">
           <div class="capacity-row">
             <span>Kapasitas ${fmt(cap)} L</span>
-            <span class="capacity-text ${cls}">
-              ${pctFmt(pct)}% penuh
-            </span>
+            <span class="capacity-text ${cls}">${pctFmt(pct)}% • ${statusText}</span>
           </div>
           <div class="capacity-bar">
             <div class="capacity-fill ${cls}" style="width:${width}%"></div>
@@ -386,28 +501,42 @@ function renderStock(stock){
     `;
   });
 
+  if(criticalList.length){
+    alertHost.className="stock-alert-banner show danger";
+    alertHost.textContent=`🚨 STOCK MENIPIS: ${criticalList.join(" • ")}. Segera rencanakan penerimaan / transfer.`;
+  }else if(highList.length){
+    alertHost.className="stock-alert-banner show warn";
+    alertHost.textContent=`⚠️ STOCK MENDEKATI PENUH: ${highList.join(" • ")}. Perhatikan kapasitas sebelum penerimaan / transfer.`;
+  }else{
+    alertHost.className="stock-alert-banner";
+    alertHost.textContent="";
+  }
+
   const total=Object.values(stock).reduce((a,b)=>a+n(b),0);
   const totalPct=TOTAL_CAPACITY>0 ? (total/TOTAL_CAPACITY)*100 : 0;
   const totalCls=capacityClass(totalPct);
+  const totalClass=totalCls==="critical"?"danger":totalCls==="low"||totalCls==="high"?"warn":"safe";
 
-  host.innerHTML+=`
-    <div class="card total">
-      <small>TOTAL STOCK ALL WHS</small>
-      <strong>${fmt(total)} L</strong>
-      <div class="capacity-wrap">
-        <div class="capacity-row">
-          <span>Total kapasitas ${fmt(TOTAL_CAPACITY)} L</span>
-          <span class="capacity-text ${totalCls}">
-            ${pctFmt(totalPct)}% terisi
-          </span>
+  totalHost.innerHTML=`
+    <div class="stock-total-card ${totalClass}">
+      <div class="stock-total-main">
+        <small>TOTAL STOCK ALL WHS</small>
+        <strong>${fmt(total)} L</strong>
+      </div>
+      <div class="stock-total-side">
+        <div class="capacity-wrap">
+          <div class="capacity-row">
+            <span>Total kapasitas ${fmt(TOTAL_CAPACITY)} L</span>
+            <span class="capacity-text ${totalCls}">${pctFmt(totalPct)}% terisi</span>
+          </div>
+          <div class="capacity-bar">
+            <div class="capacity-fill ${totalCls}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
+          </div>
         </div>
-        <div class="capacity-bar">
-          <div class="capacity-fill ${totalCls}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
-        </div>
+        <div class="stock-total-note">Hijau 35-89,9% • Kuning 20-34,9% • Merah &lt;20% • Oranye ≥90% mendekati penuh.</div>
       </div>
     </div>
   `;
-
   return total;
 }
 
@@ -490,22 +619,30 @@ async function loadReport(){
 
   try{
     const yesterday=dateMinusOne(reportDate);
+    const dayBeforeYesterday=dateMinusOne(yesterday);
     const period=operationalPeriod(yesterday);
     const startMTD=period.start;
+    const prevWindow=previousEquivalentWindow(period,yesterday);
 
-    const [stock,yRows,mtdRows]=await Promise.all([
+    const [stock,prevStock,yRows,prevYRows,mtdRows,prevPeriodRows]=await Promise.all([
       calculateStock(reportDate,shift),
+      calculateStock(yesterday,shift),
       fetchPagedFuel(yesterday,yesterday),
-      fetchPagedFuel(startMTD,yesterday)
+      fetchPagedFuel(dayBeforeYesterday,dayBeforeYesterday),
+      fetchPagedFuel(startMTD,yesterday),
+      fetchPagedFuel(prevWindow.start,prevWindow.end)
     ]);
 
     const totalStock=renderStock(stock);
+    const prevTotalStock=Object.values(prevStock).reduce((a,b)=>a+n(b),0);
 
     const ySummary=summarizeYesterday(yRows);
     renderUsageTable(ySummary);
 
     const usageYesterday=yRows.reduce((sum,row)=>sum+n(row.fuel),0);
+    const previousUsage=prevYRows.reduce((sum,row)=>sum+n(row.fuel),0);
     const usageMTD=mtdRows.reduce((sum,row)=>sum+n(row.fuel),0);
+    const previousPeriodUsageMTD=prevPeriodRows.reduce((sum,row)=>sum+n(row.fuel),0);
 
     const activeDateSet=new Set(
       mtdRows
@@ -516,9 +653,16 @@ async function loadReport(){
     const activeDays=activeDateSet.size;
     const avgMTD=activeDays ? usageMTD/activeDays : 0;
 
-    // Sesuai rumus operasional terbaru:
-    // ITO / Stock Aman = Total Stock ÷ Total Pemakaian Kemarin.
+    const prevRowsForAvg=mtdRows.filter(row=>row.tanggal<yesterday);
+    const prevUsageMTD=prevRowsForAvg.reduce((sum,row)=>sum+n(row.fuel),0);
+    const prevActiveDateSet=new Set(
+      prevRowsForAvg.filter(row=>n(row.fuel)>0 && row.tanggal).map(row=>row.tanggal)
+    );
+    const prevActiveDays=prevActiveDateSet.size;
+    const prevAvgMTD=prevActiveDays ? prevUsageMTD/prevActiveDays : 0;
+
     const ito=usageYesterday>0 ? totalStock/usageYesterday : 0;
+    const prevIto=previousUsage>0 ? prevTotalStock/previousUsage : 0;
 
     document.getElementById("usageYesterday").textContent=fmt(usageYesterday)+" L";
     document.getElementById("yesterdayLabel").textContent=formatDateID(yesterday);
@@ -526,6 +670,30 @@ async function loadReport(){
     document.getElementById("avgMTD").textContent=fmt(avgMTD)+" L/hari";
     document.getElementById("activeDays").textContent=activeDays+" hari aktif";
     document.getElementById("ito").textContent=fmtIto(ito)+" hari";
+
+    const usageTrend=trendData(usageYesterday,previousUsage,true);
+    applyTrend("usageYesterdayTrend",usageTrend.text,usageTrend.cls);
+    document.getElementById("usageYesterdayNote").textContent=previousUsage>0?`vs ${formatDateID(dayBeforeYesterday)}`:"Banding belum tersedia";
+
+    const mtdTrend=trendData(usageMTD,previousPeriodUsageMTD,true);
+    applyTrend("usageMTDTrend",mtdTrend.text,mtdTrend.cls);
+    document.getElementById("usageMTDNote").textContent=previousPeriodUsageMTD>0?`vs periode sebelumnya s.d. ${formatDateID(prevWindow.end)}`:"Banding periode belum tersedia";
+
+    const avgTrend=trendData(avgMTD,prevAvgMTD,true);
+    applyTrend("avgTrend",avgTrend.text,avgTrend.cls);
+    document.getElementById("avgNote").textContent=prevActiveDays>0?`vs avg ${prevActiveDays} hari sebelumnya`:"Banding belum tersedia";
+
+    const itoTrend=trendData(ito,prevIto,false);
+    applyTrend("itoTrend",itoTrend.text,itoTrend.cls);
+    const state=itoState(ito);
+    const itoCard=document.getElementById("itoCard");
+    itoCard.classList.remove("warn-state","danger-state");
+    if(state.state==="warn")itoCard.classList.add("warn-state");
+    if(state.state==="danger")itoCard.classList.add("danger-state");
+    document.getElementById("itoNote").textContent=state.note;
+    const itoAlert=document.getElementById("itoAlert");
+    itoAlert.className=`metric-alert ${state.state} ${state.alert?"":"hidden"}`;
+    itoAlert.textContent=state.alert;
 
     const reportText=makeReportText({
       reportDate,stock,totalStock,yesterday,ySummary,
