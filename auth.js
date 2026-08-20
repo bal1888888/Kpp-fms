@@ -36,9 +36,9 @@ window.KPP = {
 
     if (!roles.includes(profile.role)) {
       if (profile.role === "gl") {
-        window.location.replace("gl.html");
+        window.location.replace("dashboard.html");
       } else if (profile.role === "admin") {
-        window.location.replace("admin.html");
+        window.location.replace("dashboard.html");
       } else if (profile.role === "ccr") {
         window.location.replace("ccr.html");
       } else {
@@ -144,8 +144,8 @@ window.KPP = {
 
     if (profile.role === "gl") {
       items = [
-        ["gl", "gl.html", "🏠 Menu GL"],
         ["dashboard", "dashboard.html", "📊 Dashboard"],
+        ["gl", "gl.html", "🏠 Menu GL"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ["ccr", "ccr.html", "🎯 CCR Jatah"],
         ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
@@ -159,8 +159,8 @@ window.KPP = {
       ];
     } else if (profile.role === "admin") {
       items = [
-        ["admin", "admin.html", "🏠 Menu Admin"],
         ["dashboard", "dashboard.html", "📊 Dashboard"],
+        ["admin", "admin.html", "🏠 Menu Admin"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ...commonOps,
         ["logsheet", "logsheet.html", "📄 Logsheet"],
