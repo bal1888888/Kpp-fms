@@ -318,7 +318,11 @@ th{background:#e5e7eb}
 
             <div>
                 <label>Transportir</label>
-                <input id="editTransporter">
+                <select id="editTransporter">
+                    <option value="">Pilih transportir</option>
+                    <option value="PT. SHA">PT. SHA</option>
+                    <option value="PT. DKA">PT. DKA</option>
+                </select>
             </div>
 
             <div class="wide">
@@ -414,7 +418,11 @@ th{background:#e5e7eb}
         </div>
         <div>
             <label>Transportir</label>
-            <input id="receiptTransporter" placeholder="Contoh: PT SHA">
+            <select id="receiptTransporter">
+                <option value="">Pilih transportir</option>
+                <option value="PT. SHA">PT. SHA</option>
+                <option value="PT. DKA">PT. DKA</option>
+            </select>
         </div>
         <div>
             <label>Operator</label>
@@ -870,6 +878,15 @@ function fillStorageSelect(id,allowBlank=false){
     });
 }
 
+function canonicalTransporter(value){
+    const raw=String(value||"").trim();
+    if(!raw)return "";
+    const key=raw.toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(key.includes("SHA"))return "PT. SHA";
+    if(key.includes("DKA"))return "PT. DKA";
+    return raw;
+}
+
 function syncEditMovementFields(){
     const jenis=document.getElementById("editJenis").value;
     const source=document.getElementById("editSource");
@@ -907,7 +924,7 @@ function openMovementEditor(id){
     document.getElementById("editDestination").value=row.destination_storage||"";
     document.getElementById("editQty").value=row.qty??"";
     document.getElementById("editOperator").value=row.operator||"";
-    document.getElementById("editTransporter").value=row.transporter||"";
+    document.getElementById("editTransporter").value=canonicalTransporter(row.transporter);
     document.getElementById("editNote").value=row.note||"";
 
     syncEditMovementFields();
@@ -948,6 +965,11 @@ async function saveMovementEdit(){
 
     if(!id||!tanggal||![1,2].includes(shift)||qty<=0||!destination_storage){
         alert("Lengkapi data transaksi.");
+        return;
+    }
+
+    if(jenis==="RECEIPT"&&!transporter){
+        alert("Pilih perusahaan transportir.");
         return;
     }
 
@@ -1613,6 +1635,11 @@ async function saveReceipt(){
 
     if(qty<=0){
         alert("Qty penerimaan harus lebih dari 0.");
+        return;
+    }
+
+    if(!transporter){
+        alert("Pilih perusahaan transportir.");
         return;
     }
 
