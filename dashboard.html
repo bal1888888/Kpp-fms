@@ -38,16 +38,19 @@ body{background:var(--bg);color:var(--text)}
 .refresh-btn:hover{filter:brightness(.96)}
 .error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:10px;margin-bottom:18px;display:none}
 
-.hero-wrap{display:flex;justify-content:center;margin-bottom:18px}
-.hero-card{
-  width:min(100%,360px);
+.overview-grid{display:grid;grid-template-columns:1.3fr .85fr 1.3fr;gap:16px;align-items:stretch;margin-bottom:18px}
+.overview-card{
   background:linear-gradient(145deg,#ffffff,#f8fafc);
   border:1px solid var(--line);
   border-radius:18px;
-  padding:24px;
-  box-shadow:0 8px 24px rgba(15,23,42,.08);
-  text-align:center;
+  padding:18px;
+  box-shadow:0 8px 24px rgba(15,23,42,.07);
+  min-width:0;
 }
+.overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.overview-title{font-size:14px;font-weight:800;line-height:1.3}
+.overview-sub{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.35}
+.hero-card{display:flex;flex-direction:column;justify-content:center;text-align:center;min-height:258px}
 .hero-icon{
   width:58px;height:58px;border-radius:16px;margin:0 auto 12px;
   display:flex;align-items:center;justify-content:center;
@@ -56,6 +59,21 @@ body{background:var(--bg);color:var(--text)}
 .hero-label{font-size:12px;color:var(--muted);font-weight:bold;letter-spacing:.4px;margin-bottom:7px}
 .hero-value{font-size:31px;font-weight:800;line-height:1.1}
 .hero-sub{font-size:11px;color:var(--muted);margin-top:8px}
+.trend-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;white-space:nowrap;background:#f1f5f9;color:#475569}
+.trend-badge.up{background:#fee2e2;color:#b91c1c}.trend-badge.down{background:#dcfce7;color:#166534}.trend-badge.flat{background:#f1f5f9;color:#475569}
+.usage-bars{height:168px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:18px 4px 0;border-bottom:1px solid #cbd5e1}
+.usage-bar-item{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.usage-bar-value{font-size:9px;font-weight:800;margin-bottom:5px;white-space:nowrap;color:#334155}
+.usage-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#60a5fa,#2563eb);box-shadow:0 4px 10px rgba(37,99,235,.16)}
+.usage-bar-date{font-size:9px;color:var(--muted);margin-top:7px;white-space:nowrap}
+.receipt-total{font-size:23px;font-weight:800;margin:2px 0 13px}.receipt-total small{font-size:10px;color:var(--muted);font-weight:normal}
+.receipt-bars{display:flex;flex-direction:column;gap:13px}
+.receipt-row{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center}
+.receipt-company{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.receipt-track{height:14px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+.receipt-fill{height:100%;min-width:3px;border-radius:999px;background:linear-gradient(90deg,#fb923c,#f97316)}
+.receipt-value{font-size:10px;font-weight:800;white-space:nowrap}
+.receipt-empty{font-size:11px;color:var(--muted);padding:18px 8px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px}
 
 .section{
   background:var(--panel);
@@ -69,7 +87,7 @@ body{background:var(--bg);color:var(--text)}
 .section h2{font-size:18px;margin:0}
 .section-link{font-size:12px;text-decoration:none;color:var(--blue);font-weight:bold;white-space:nowrap}
 
-.daily-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.daily-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .daily-card{
   border:1px solid var(--line);
   border-radius:13px;
@@ -132,7 +150,8 @@ tr:hover{background:#f8fafc}
   .header{padding:15px 10px}.header h1{font-size:18px}.header p{font-size:12px}
   .top-bar{align-items:stretch}.page-heading h2{font-size:19px}
   .refresh-btn{min-width:125px}
-  .daily-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .overview-grid{grid-template-columns:1fr 1fr}.hero-card{grid-column:1 / -1;grid-row:1}.usage-card{grid-column:1}.receipt-card{grid-column:2}
+  .daily-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
   .daily-card{padding:13px;min-height:115px}.daily-value{font-size:19px}
   .section{padding:14px}.section h2{font-size:16px}
   .shift-container{gap:9px}.shift-card{padding:13px}.shift-fuel{font-size:18px}
@@ -142,8 +161,8 @@ tr:hover{background:#f8fafc}
 }
 @media(max-width:560px){
   .top-bar{display:block}.page-heading{margin-bottom:10px}.refresh-btn{width:100%}
-  .hero-card{padding:20px}.hero-value{font-size:28px}
-  .daily-grid{grid-template-columns:1fr 1fr}
+  .overview-grid{grid-template-columns:1fr}.hero-card,.usage-card,.receipt-card{grid-column:auto;grid-row:auto}.hero-card{padding:20px;min-height:auto}.hero-value{font-size:28px}
+  .daily-grid{grid-template-columns:1fr}
   .daily-label{font-size:9px}.daily-sub{font-size:9px}.daily-icon{font-size:22px}
   .shift-container{grid-template-columns:1fr}
   .section-head{align-items:flex-start}.section-link{font-size:11px}
@@ -169,12 +188,36 @@ tr:hover{background:#f8fafc}
 
   <div id="errorBox" class="error"></div>
 
-  <div class="hero-wrap">
-    <div class="hero-card">
+  <div class="overview-grid">
+    <div class="overview-card usage-card">
+      <div class="overview-head">
+        <div>
+          <div class="overview-title">📈 Trend Fuel Usage 5 Hari Terakhir</div>
+          <div class="overview-sub">Perbandingan pemakaian harian sampai H-1.</div>
+        </div>
+        <span class="trend-badge flat" id="usageTrendBadge">-</span>
+      </div>
+      <div class="usage-bars" id="usageTrendBars"></div>
+    </div>
+
+    <div class="overview-card hero-card">
       <div class="hero-icon">⛽</div>
-      <div class="hero-label">TOTAL FUEL MTD</div>
+      <div class="hero-label">TOTAL FUEL USAGE MTD</div>
       <div class="hero-value" id="totalFuelMTD">0 L</div>
-      <div class="hero-sub">Akumulasi usage MTD</div>
+      <div class="hero-sub">Akumulasi fuel usage MTD</div>
+    </div>
+
+    <div class="overview-card receipt-card">
+      <div class="overview-head">
+        <div>
+          <div class="overview-title">🚚 Penerimaan Solar MTD</div>
+          <div class="overview-sub">Total penerimaan per perusahaan transportir sampai H-1.</div>
+        </div>
+      </div>
+      <div class="receipt-total" id="receiptMTDTotal">0 L <small>total</small></div>
+      <div class="receipt-bars" id="receiptTransporterBars">
+        <div class="receipt-empty">Memuat penerimaan...</div>
+      </div>
     </div>
   </div>
 
@@ -189,12 +232,6 @@ tr:hover{background:#f8fafc}
         <div class="daily-label">USAGE YESTERDAY</div>
         <div class="daily-value" id="usageYesterday">0 L</div>
         <div class="daily-sub" id="yesterdayLabel">-</div>
-      </div>
-      <div class="daily-card green">
-        <div class="daily-icon">📊</div>
-        <div class="daily-label">USAGE MTD</div>
-        <div class="daily-value" id="usageMTD">0 L</div>
-        <div class="daily-sub">Akumulasi MTD</div>
       </div>
       <div class="daily-card amber">
         <div class="daily-icon">⚡</div>
@@ -276,6 +313,17 @@ function dateMinusOne(value){
   x.setDate(x.getDate()-1);
   return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
 }
+function dateShift(value,days){
+  const [y,m,d]=value.split("-").map(Number);
+  const x=new Date(y,m-1,d);
+  x.setDate(x.getDate()+days);
+  return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+}
+function lastDates(endDate,count){
+  const out=[];
+  for(let i=count-1;i>=0;i--)out.push(dateShift(endDate,-i));
+  return out;
+}
 function dateISO(y,m,d){return `${y}-${pad(m)}-${pad(d)}`}
 function operationalPeriod(referenceDate){
   const [y,m,d]=referenceDate.split("-").map(Number);
@@ -353,6 +401,79 @@ async function fetchPagedFuel(startDate,endDate){
     from+=size;
   }
   return all;
+}
+
+async function fetchPagedReceipts(startDate,endDate){
+  let all=[],from=0,size=1000;
+  while(true){
+    const {data,error}=await db
+      .from("stock_movements")
+      .select("id,tanggal,shift,jenis,qty,transporter,destination_storage")
+      .eq("jenis","RECEIPT")
+      .gte("tanggal",startDate)
+      .lte("tanggal",endDate)
+      .order("tanggal",{ascending:true})
+      .order("id",{ascending:true})
+      .range(from,from+size-1);
+    if(error)throw error;
+    const rows=data||[];
+    all=all.concat(rows);
+    if(rows.length<size)break;
+    from+=size;
+  }
+  return all;
+}
+
+function canonicalTransporter(value){
+  const raw=String(value||"").trim();
+  if(!raw)return "TANPA NAMA";
+  const key=raw.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(key.includes("SHA"))return "PT. SHA";
+  if(key.includes("DKA"))return "PT. DKA";
+  return raw;
+}
+
+function renderUsageTrend(rows,endDate){
+  const dates=lastDates(endDate,5);
+  const sums=Object.fromEntries(dates.map(d=>[d,0]));
+  rows.forEach(row=>{if(Object.prototype.hasOwnProperty.call(sums,row.tanggal))sums[row.tanggal]+=n(row.fuel)});
+  const values=dates.map(d=>sums[d]);
+  const max=Math.max(...values,1);
+  const host=document.getElementById("usageTrendBars");
+  host.innerHTML=dates.map((d,i)=>{
+    const height=Math.max(4,(values[i]/max)*125);
+    const parts=d.split("-");
+    const label=`${parts[2]}/${parts[1]}`;
+    return `<div class="usage-bar-item"><div class="usage-bar-value">${formatAngka(values[i])}</div><div class="usage-bar" style="height:${height}px" title="${formatAngka(values[i])} L"></div><div class="usage-bar-date">${label}</div></div>`;
+  }).join("");
+
+  const latest=values[values.length-1];
+  const previous=values[values.length-2];
+  const badge=document.getElementById("usageTrendBadge");
+  if(previous<=0&&latest<=0){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
+  if(previous<=0){badge.className="trend-badge up";badge.textContent="▲ Naik";return;}
+  const change=((latest-previous)/previous)*100;
+  if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil";}
+  else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%`; }
+  else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%`; }
+}
+
+function renderReceipts(rows){
+  const sums={"PT. SHA":0,"PT. DKA":0};
+  rows.forEach(row=>{
+    const company=canonicalTransporter(row.transporter);
+    if(!(company in sums))sums[company]=0;
+    sums[company]+=n(row.qty);
+  });
+  const entries=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((s,[,q])=>s+q,0);
+  const max=Math.max(...entries.map(([,q])=>q),1);
+  document.getElementById("receiptMTDTotal").innerHTML=`${formatAngka(total)} L <small>total</small>`;
+  const host=document.getElementById("receiptTransporterBars");
+  host.innerHTML=entries.map(([company,qty])=>{
+    const width=qty>0?Math.max(2,(qty/max)*100):0;
+    return `<div class="receipt-row"><div class="receipt-company">${company}</div><div class="receipt-track"><div class="receipt-fill" style="width:${width}%"></div></div><div class="receipt-value">${formatAngka(qty)} L</div></div>`;
+  }).join("");
 }
 
 async function fetchLatest(){
@@ -466,11 +587,12 @@ async function loadDashboard(){
     const period=operationalPeriod(yesterday);
     const {tanggal:stockDate,shift:stockShift}=currentOperationalShift();
 
-    const [mtdRows,yesterdayRows,totalStock,latestRows]=await Promise.all([
+    const [mtdRows,yesterdayRows,totalStock,latestRows,receiptRows]=await Promise.all([
       fetchPagedFuel(period.start,yesterday),
       fetchPagedFuel(yesterday,yesterday),
       calculateStock(stockDate,stockShift),
       fetchLatest(),
+      fetchPagedReceipts(period.start,yesterday),
       loadActiveSessions()
     ]);
 
@@ -492,13 +614,14 @@ async function loadDashboard(){
     document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
     document.getElementById("usageYesterday").textContent=formatAngka(usageYesterday)+" L";
     document.getElementById("yesterdayLabel").textContent=formatTanggal(yesterday);
-    document.getElementById("usageMTD").textContent=formatAngka(usageMTD)+" L";
     document.getElementById("avgMTD").textContent=formatAngka(avgMTD)+" L/hari";
     document.getElementById("activeDays").textContent=activeDays+" hari aktif";
     document.getElementById("ito").textContent=formatIto(ito)+" hari";
     document.getElementById("shift1Fuel").textContent=formatAngka(shift1)+" L";
     document.getElementById("shift2Fuel").textContent=formatAngka(shift2)+" L";
 
+    renderUsageTrend(mtdRows,yesterday);
+    renderReceipts(receiptRows);
     renderLatest(latestRows);
   }catch(error){
     console.error(error);
