@@ -37,6 +37,9 @@ button{border:0;border-radius:8px;padding:8px 11px;font-weight:bold;cursor:point
 .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold}
 @media(max-width:560px){.container{margin:10px auto;padding:9px}.panel{padding:13px}.header h1{font-size:18px}.app-nav-inner{justify-content:flex-start}}
+
+.hm-est{font-weight:800;color:#1d4ed8;white-space:nowrap}
+.hm-sub{font-size:10px;color:#64748b;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -65,7 +68,7 @@ button{border:0;border-radius:8px;padding:8px 11px;font-weight:bold;cursor:point
       <table>
         <thead>
           <tr>
-            <th>Tanggal</th><th>Shift</th><th>Ke-</th><th>Unit / QR</th><th>NRP</th><th>Nama</th><th>HM</th><th>Jatah</th><th>Tol.</th><th>Batas</th>
+            <th>Tanggal</th><th>Shift</th><th>Ke-</th><th>Unit / QR</th><th>Nama</th><th>HM Sebelum</th><th>HM CCR</th><th>Jam Ambil</th><th>Jam Kerja</th><th>Est. HM Sekarang</th><th>Jatah</th><th>Tol.</th><th>Batas</th>
             <th>Alasan CCR</th><th>Diajukan Oleh</th><th>Aksi</th>
           </tr>
         </thead>
@@ -84,6 +87,22 @@ let ROWS=[];
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function fmt(v){const x=Number(v);return Number.isFinite(x)?new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(x):"-"}
 function dateID(v){if(!v)return "-";const [y,m,d]=String(v).split("-");return `${d}/${m}/${y}`}
+function operationalTimestamp(tanggal,shift,timeValue){
+  if(!tanggal||!shift||!timeValue)return null;
+  const [hh,mm,ss]=String(timeValue).split(":").map(Number);
+  const [y,m,d]=String(tanggal).split("-").map(Number);
+  const dt=new Date(y,m-1,d,hh||0,mm||0,ss||0,0);
+  if(shift==="Shift 2"&&((hh||0)*60+(mm||0))<390)dt.setDate(dt.getDate()+1);
+  return dt;
+}
+function estimateHm(row){
+  const base=Number(row.hm_ccr);
+  if(!Number.isFinite(base)||!row.hm_taken_time)return null;
+  const start=operationalTimestamp(row.tanggal,row.shift,row.hm_taken_time);
+  if(!start)return null;
+  const hours=Math.max(0,(Date.now()-start.getTime())/3600000);
+  return Math.round((base+hours)*10)/10;
+}
 
 async function expireStale(){
   const {error}=await db.rpc("expire_ccr_allocations");
@@ -117,9 +136,12 @@ async function load(){
       <td>${esc(r.shift)}</td>
       <td><b>${r.filling_no}</b></td>
       <td><b>${esc(r.unit)}</b></td>
-      <td><b>${esc(r.nrp)}</b></td>
       <td class="left">${esc(r.operator_unit)}</td>
-      <td>${fmt(r.hm_ccr)}</td>
+      <td>${fmt(r.hm_previous_ref)}</td>
+      <td><b>${fmt(r.hm_ccr)}</b></td>
+      <td>${String(r.hm_taken_time||"-").slice(0,5)}</td>
+      <td>${r.hm_work_since_previous===null||r.hm_work_since_previous===undefined?"-":fmt(r.hm_work_since_previous)+" jam"}</td>
+      <td><div class="hm-est">${estimateHm(r)===null?"-":fmt(estimateHm(r))}</div><div class="hm-sub">estimasi saat ini</div></td>
       <td>${fmt(r.max_qty)} L</td>
       <td>${fmt(r.tolerance_qty)} L</td>
       <td><b>${fmt(max)} L</b></td>
@@ -130,7 +152,7 @@ async function load(){
         <button class="reject" data-id="${r.id}">❌ Tolak</button>
       </td>
     </tr>`;
-  }).join(""):'<tr><td colspan="13">Tidak ada pengajuan pending.</td></tr>';
+  }).join(""):'<tr><td colspan="16">Tidak ada pengajuan pending.</td></tr>';
 
   body.querySelectorAll(".approve").forEach(b=>b.addEventListener("click",()=>approve(b.dataset.id)));
   body.querySelectorAll(".reject").forEach(b=>b.addEventListener("click",()=>rejectRow(b.dataset.id)));
@@ -147,7 +169,7 @@ async function approve(id){
   const status=document.getElementById("status");
   status.textContent="Memeriksa jatah ACTIVE unit sebelumnya...";
 
-  // Guard UI: jangan bikin dua ACTIVE untuk NRP yang sama.
+  // Guard UI: jangan bikin dua ACTIVE untuk UNIT yang sama.
   const {data:active,error:activeErr}=await db.from("ccr_allocations")
     .select("id,filling_no,unit")
     .eq("unit",r.unit)
