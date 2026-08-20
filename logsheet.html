@@ -16,33 +16,39 @@ window.KPP_ACTIVE_PAGE="logsheet";
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-body{background:#e5e7eb;color:#111827}
-.header{background:#1f2937;color:#fff;padding:18px;text-align:center}
-.header h1{font-size:22px;margin-bottom:4px}.header p{font-size:13px;opacity:.8}
-.container{max-width:1550px;margin:20px auto;padding:15px}
-.sheet{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-.company{text-align:center;margin-bottom:22px}.company h2{font-size:20px;margin-bottom:3px}.company p{font-size:13px}
-.period{text-align:center;font-weight:bold;margin-top:12px;font-size:16px}
-.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:10px;border-radius:6px;margin-bottom:15px;font-size:12px}
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
-.summary-card{border:1px solid #d1d5db;padding:14px;border-radius:8px;background:#f9fafb}
-.summary-title{color:#6b7280;font-size:11px;margin-bottom:5px;font-weight:bold}.summary-value{font-size:21px;font-weight:bold}
-.filters{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:15px;margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-.filter-group label{display:block;font-size:11px;font-weight:bold;margin-bottom:5px}
-.filter-group input,.filter-group select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:5px}
-.button-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
-button{border:none;padding:10px 12px;border-radius:6px;cursor:pointer;font-weight:bold}
-.refresh-btn{background:#16a34a;color:#fff}.download-btn{background:#2563eb;color:#fff}
-.table-wrapper{overflow:auto;border:1px solid #9ca3af;max-height:68vh}
-table{width:100%;border-collapse:collapse;min-width:1600px}
-th,td{border:1px solid #9ca3af;padding:7px 8px;font-size:11px;text-align:center;white-space:nowrap}
-thead th{background:#d1d5db;font-weight:bold;position:sticky;top:0;z-index:2}
-tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
-.egi-cell{text-align:left;white-space:normal;min-width:260px}.qty{font-weight:bold}
-.loading{text-align:center;padding:30px;color:#6b7280}
-.error{display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:12px;border-radius:6px;margin-bottom:15px}
+:root{--bg:#f4f6f8;--panel:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--navy:#172033;--blue:#2563eb;--green:#16a34a}
+body{background:var(--bg);color:var(--ink)}
+.header{background:linear-gradient(135deg,#182235,#111827);color:#fff;padding:18px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)}
+.header h1{font-size:22px;margin-bottom:4px;letter-spacing:.02em}.header p{font-size:13px;opacity:.78}
+.container{max-width:1540px;margin:18px auto;padding:14px}
+.sheet{background:var(--panel);padding:22px;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.company{text-align:center;margin-bottom:18px}.company h2{font-size:21px;margin-bottom:4px;letter-spacing:.01em}.company p{font-size:13px;color:#475569}
+.period{text-align:center;font-weight:800;margin-top:12px;font-size:16px;letter-spacing:.03em;color:#172033}
+.notice{background:#f8fbff;border:1px solid #cfe0ff;border-left:4px solid var(--blue);color:#1e40af;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:12px;line-height:1.45}
+.summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.summary-card{position:relative;border:1px solid var(--line);padding:15px 10px 14px;border-radius:12px;background:#fff;text-align:center;display:flex;min-height:88px;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.summary-card:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#dbeafe}
+.summary-card:first-child:before{background:#2563eb}.summary-card:nth-child(2):before{background:#64748b}
+.summary-title{color:var(--muted);font-size:10px;margin-bottom:7px;font-weight:800;letter-spacing:.055em;text-align:center}.summary-value{font-size:21px;font-weight:800;line-height:1.1;text-align:center;color:#0f172a}
+.filters{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:18px;display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:10px;align-items:end}
+.filter-group label{display:block;font-size:10px;font-weight:800;margin-bottom:6px;color:#334155;letter-spacing:.02em}
+.filter-group input,.filter-group select{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#0f172a;outline:none}
+.filter-group input:focus,.filter-group select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.button-row{display:grid;grid-template-columns:1fr 1.25fr;gap:8px;align-items:stretch}
+button{border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:800;min-height:40px}
+.refresh-btn{background:#15803d;color:#fff}.download-btn{background:var(--blue);color:#fff}
+.refresh-btn:hover{background:#166534}.download-btn:hover{background:#1d4ed8}
+.table-wrapper{overflow:auto;border:1px solid #cbd5e1;border-radius:10px;max-height:68vh;background:#fff;box-shadow:inset 0 1px 0 #fff}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1420px}
+th,td{border-right:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;padding:8px 8px;font-size:11px;text-align:center;white-space:nowrap}
+th:last-child,td:last-child{border-right:0}
+thead th{background:#263244;color:#fff;font-weight:800;position:sticky;top:0;z-index:2;letter-spacing:.015em}
+tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
+.egi-cell{text-align:left;white-space:normal;min-width:260px;line-height:1.25}.qty{font-weight:800;color:#0f172a}
+.loading{text-align:center;padding:30px;color:var(--muted)}
+.error{display:none;background:#fff7f7;border:1px solid #fecaca;border-left:4px solid #ef4444;color:#b91c1c;padding:12px;border-radius:9px;margin-bottom:15px}
 .actions{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap}
-.btn{background:#2563eb;color:#fff;padding:10px 15px;border-radius:6px;text-decoration:none;font-size:13px}.btn-green{background:#16a34a}
+.btn{background:var(--blue);color:#fff;padding:10px 15px;border-radius:8px;text-decoration:none;font-size:13px}.btn-green{background:var(--green)}
 .status-double{background:#fee2e2!important;color:#b91c1c;font-weight:bold}
 .status-error{background:#ffedd5!important;color:#c2410c;font-weight:bold}
 .status-hm{background:#fef3c7!important;color:#92400e;font-weight:bold}
@@ -69,8 +75,8 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
   .company h2{font-size:17px}
   .company p{font-size:12px}
   .period{font-size:14px}
-  .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .summary-card{padding:10px}
+  .summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .summary-card{padding:10px;min-height:78px}
   .summary-value{font-size:18px}
   .filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:8px}
   .filter-group input,.filter-group select{font-size:16px;min-height:42px}
@@ -82,7 +88,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
     -webkit-overflow-scrolling:touch;
     border-radius:6px;
   }
-  table{min-width:1450px}
+  table{min-width:1320px}
   th,td{font-size:10px;padding:7px 6px}
   .actions{display:none}
   .app-nav-inner{justify-content:flex-start}
@@ -142,7 +148,7 @@ tbody tr:nth-child(even){background:#f9fafb}tbody tr:hover{background:#eff6ff}
 <div class="table-wrapper">
 <table>
 <thead><tr>
-<th>LOG NO</th><th>TANGGAL</th><th>JAM</th><th>SHIF</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>COST</th><th>ALOKASI</th><th>CEK</th>
+<th>LOG NO</th><th>TANGGAL</th><th>JAM</th><th>SHIFT</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>CEK</th>
 </tr></thead>
 <tbody id="logsheetBody"></tbody>
 </table>
@@ -573,8 +579,6 @@ function renderTable(data){
     row.appendChild(td(formatAngka(item.fuel),"qty"));
     row.appendChild(td(item.operator||"-"));
     row.appendChild(td(getFuelman(item)));
-    row.appendChild(td(item.cost||"-"));
-    row.appendChild(td(item.alokasi||"-"));
 
     const status=getRowStatus(item,index);
     row.appendChild(td(status.text,status.cls,status.reason));
@@ -678,7 +682,7 @@ async function downloadExcel(){
       "LOG NO",
       "TANGGAL",
       "JAM",
-      "SHIF",
+      "SHIFT",
       "WH",
       "FUEL TRUCK",
       "CODE UNIT",
@@ -688,19 +692,17 @@ async function downloadExcel(){
       "QTY ISSUED",
       "OPERATOR UNIT",
       "STD + Fuelman",
-      "COST",
-      "ALOKASI",
       "Cek"
     ];
 
     // Lebar kolom tetap mengikuti bentuk logsheet lama, dengan Fuel Truck ditambahkan.
-    const widths=[11,13,10,7,9,12,13,34,16,12,14,22,17,12,15,55];
+    const widths=[11,13,10,7,9,12,13,34,16,12,14,22,17,55];
     widths.forEach((width,index)=>{
       ws.getColumn(index+1).width=width;
     });
 
     // ===== IDENTITAS / JUDUL - mengikuti gaya logsheet lama =====
-    ws.mergeCells("A2:P2");
+    ws.mergeCells("A2:N2");
     const companyCell=ws.getCell("A2");
     companyCell.value="PT. KALIMANTAN PRIMA PERSADA";
     companyCell.font={
@@ -711,9 +713,9 @@ async function downloadExcel(){
     };
     companyCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A3:P3");
+    ws.mergeCells("A3:N3");
     const subtitleCell=ws.getCell("A3");
-    subtitleCell.value="Integreated Mining Services";
+    subtitleCell.value="Integrated Mining Services";
     subtitleCell.font={
       name:"Times New Roman",
       size:16,
@@ -722,7 +724,7 @@ async function downloadExcel(){
     };
     subtitleCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A5:P5");
+    ws.mergeCells("A5:N5");
     const titleCell=ws.getCell("A5");
 
     const mode=document.getElementById("dateMode").value;
@@ -763,15 +765,15 @@ async function downloadExcel(){
 
     // ===== KETERANGAN STATUS =====
     ws.getCell("A8").value="KETERANGAN";
-    ws.mergeCells("B8:F8");
+    ws.mergeCells("B8:E8");
     ws.getCell("B8").value="JINGGA = ERROR DATA | KUNING = HM DI BAWAH ACUAN";
-    ws.mergeCells("G8:L8");
-    ws.getCell("G8").value="MERAH = DOUBLE POSTING";
-    ws.mergeCells("M8:P8");
-    ws.getCell("M8").value="BIRU = EDIT ADMIN/GL | PUTIH = NORMAL";
+    ws.mergeCells("F8:I8");
+    ws.getCell("F8").value="MERAH = DOUBLE POSTING";
+    ws.mergeCells("J8:N8");
+    ws.getCell("J8").value="BIRU = EDIT ADMIN/GL | PUTIH = NORMAL";
 
     const gold="FFBF9000";
-    const legendRanges=["A8:A8","B8:F8","G8:L8","M8:P8"];
+    const legendRanges=["A8:A8","B8:E8","F8:I8","J8:N8"];
 
     legendRanges.forEach(range=>{
       const r=ws.getCell(range.split(":")[0]);
@@ -780,7 +782,7 @@ async function downloadExcel(){
     });
 
     // Beri border emas pada seluruh baris keterangan.
-    for(let col=1;col<=16;col++){
+    for(let col=1;col<=14;col++){
       const c=ws.getCell(8,col);
       c.border={
         top:{style:"medium",color:{argb:gold}},
@@ -791,9 +793,9 @@ async function downloadExcel(){
     }
 
     ws.getCell("B8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF4B183"}};
-    ws.getCell("G8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF0000"}};
-    ws.getCell("G8").font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
-    ws.getCell("M8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
+    ws.getCell("F8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF0000"}};
+    ws.getCell("F8").font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
+    ws.getCell("J8").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFFFFF"}};
 
     // ===== HEADER KOLOM =====
     const headerRow=ws.getRow(9);
@@ -850,8 +852,6 @@ async function downloadExcel(){
         Number(item.fuel)||0,
         item.operator||"",
         getFuelman(item)==="-" ? "" : getFuelman(item),
-        item.cost||"",
-        item.alokasi||"",
         status
       ]);
 
@@ -886,7 +886,7 @@ async function downloadExcel(){
       };
 
       // Status sesuai aturan KPP-FMS sekarang.
-      const statusCell=row.getCell(16);
+      const statusCell=row.getCell(14);
 
       if(rowStatus.kind==="double"){
         statusCell.fill={
@@ -949,7 +949,7 @@ async function downloadExcel(){
     // Filter seperti Excel biasa.
     ws.autoFilter={
       from:{row:9,column:1},
-      to:{row:9,column:16}
+      to:{row:9,column:14}
     };
 
     // Print / tampilan Excel lebih enak.
