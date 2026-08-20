@@ -146,27 +146,30 @@ window.KPP = {
       items = [
         ["dashboard", "dashboard.html", "📊 Dashboard"],
         ["gl", "gl.html", "🏠 Menu GL"],
+        ["pengisian", "pengisian.html", "⛽ Pengisian"],
+        ["stock", "stock.html", "🛢️ Stock"],
+        ["logsheet", "logsheet.html", "📄 Logsheet"],
+        ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ["ccr", "ccr.html", "🎯 CCR Jatah"],
         ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
-        ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
-        ...commonOps,
-        ["logsheet", "logsheet.html", "📄 Logsheet"],
-        ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
+        ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
         ["akun", "akun.html", "👥 Kelola Akun"],
       ];
     } else if (profile.role === "admin") {
       items = [
         ["dashboard", "dashboard.html", "📊 Dashboard"],
         ["admin", "admin.html", "🏠 Menu Admin"],
-        ["daily-report", "daily-report.html", "📈 Daily Report"],
-        ...commonOps,
+        ["pengisian", "pengisian.html", "⛽ Pengisian"],
+        ["stock", "stock.html", "🛢️ Stock"],
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
+        ["daily-report", "daily-report.html", "📈 Daily Report"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
+        ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
       ];
     } else if (profile.role === "ccr") {
       items = [
