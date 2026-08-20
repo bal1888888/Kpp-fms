@@ -178,6 +178,85 @@ tr:hover{background:#f8fafc}
   .shift-container{grid-template-columns:1fr}
   .section-head{align-items:flex-start}.section-link{font-size:11px}
 }
+
+
+/* ===== KPP-FMS CLEAN CONNECTED VISUAL v8 ===== */
+:root{
+  --kpp-bg:#f5f7fb;
+  --kpp-card:#ffffff;
+  --kpp-text:#0f172a;
+  --kpp-muted:#64748b;
+  --kpp-line:#e6eaf0;
+  --kpp-blue:#2563eb;
+}
+body{background:var(--kpp-bg);color:var(--kpp-text)}
+.container{max-width:1240px}
+.top-bar{margin-bottom:18px}
+.refresh-btn{background:#2563eb;box-shadow:0 3px 10px rgba(37,99,235,.16)}
+
+.overview-grid{gap:14px}
+.overview-card{
+  background:#fff!important;
+  border:1px solid var(--kpp-line);
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(15,23,42,.04);
+  padding:18px
+}
+.overview-title{color:var(--kpp-text)}
+.overview-sub{color:var(--kpp-muted)}
+.usage-bars{border-bottom-color:#e2e8f0}
+
+/* Badge lebih kecil dan lembut */
+.trend-badge{padding:5px 8px;font-size:9px;box-shadow:none}
+.trend-badge.flat{background:#f1f5f9;color:#64748b}
+.trend-badge.up{background:#fef2f2;color:#b91c1c}
+.trend-badge.down{background:#ecfdf5;color:#15803d}
+.trend-badge.stock-up{background:#ecfdf5;color:#15803d}
+.trend-badge.stock-down{background:#fef2f2;color:#b91c1c}
+
+/* Hero MTD: satu fokus, tidak terlalu ramai */
+.wide-hero-card{
+  background:#fff!important;
+  border:1px solid var(--kpp-line);
+  border-left:5px solid var(--kpp-blue);
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(15,23,42,.04);
+  min-height:108px
+}
+.wide-hero-card::after{display:none}
+.hero-icon{width:54px;height:54px;border-radius:14px;background:#eff6ff;font-size:28px}
+.hero-label{color:var(--kpp-muted)}
+.hero-value{color:var(--kpp-text)}
+.wide-hero-side{color:var(--kpp-muted)}
+.mtd-compare-note{color:#94a3b8;font-size:9px}
+
+.section{border:1px solid var(--kpp-line);border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+.daily-grid{gap:12px}
+.daily-card,
+.daily-card.blue,
+.daily-card.green,
+.daily-card.amber,
+.daily-card.purple{
+  background:#fff!important;
+  border:1px solid var(--kpp-line);
+  border-top:3px solid #dbeafe;
+  border-radius:13px;
+  box-shadow:0 2px 10px rgba(15,23,42,.025)
+}
+.daily-card::after{display:none}
+.daily-icon{font-size:22px;margin-bottom:8px}
+.daily-label{color:var(--kpp-muted)}
+.daily-sub{color:#94a3b8}
+
+.shift-card{background:#fff;border-color:var(--kpp-line);box-shadow:0 2px 10px rgba(15,23,42,.025)}
+.shift-icon{background:#eff6ff}
+.session-card{background:#fff;border-color:#d7f0df;border-left:4px solid #22c55e}
+.table-container{border-color:var(--kpp-line);border-radius:11px}
+
+@media(max-width:900px){
+  .overview-card,.section{box-shadow:none}
+}
+
 </style>
 </head>
 <body>
