@@ -330,6 +330,124 @@ window.KPP = {
       }
       #kppGuideBtn:hover{background:#1d4ed8!important;color:#fff!important;}
 
+
+      /* ===== V20 GLOBAL LAYOUT BALANCE ===== */
+      .header{
+        min-height:88px!important;
+      }
+      .kpp-brand-header{
+        width:min(1420px,calc(100% - 32px))!important;
+        min-height:88px!important;
+        padding:10px 14px!important;
+        grid-template-columns:124px minmax(0,1fr) 124px!important;
+        gap:14px!important;
+      }
+      .kpp-brand-logo-wrap{justify-content:flex-start!important;}
+      .kpp-brand-logo{
+        width:112px!important;
+        height:58px!important;
+        border-radius:9px!important;
+      }
+      .kpp-brand-title{
+        font-size:clamp(20px,1.85vw,29px)!important;
+        letter-spacing:.025em!important;
+      }
+      .kpp-brand-subtitle{margin-top:5px!important;}
+
+      .kpp-userbar{
+        min-height:52px!important;
+      }
+      .kpp-userbar-inner{
+        width:min(1420px,calc(100% - 32px))!important;
+        max-width:none!important;
+        margin:0 auto!important;
+        padding:7px 4px!important;
+        display:flex!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        gap:14px!important;
+        flex-wrap:nowrap!important;
+        min-height:52px!important;
+      }
+      .kpp-userbar-inner > div:first-child{
+        display:flex!important;
+        align-items:center!important;
+        gap:5px!important;
+        min-width:0!important;
+        white-space:nowrap!important;
+        font-size:13px!important;
+      }
+      .kpp-userbar-inner > div:last-child{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:flex-end!important;
+        gap:7px!important;
+        flex-wrap:nowrap!important;
+        margin-left:auto!important;
+      }
+      .kpp-userbar button,
+      #kppGuideBtn{
+        min-height:34px!important;
+        padding:7px 11px!important;
+        border-radius:8px!important;
+        font-size:11px!important;
+        white-space:nowrap!important;
+      }
+
+      .app-nav{padding:7px 10px!important;}
+      .app-nav-inner{
+        width:min(1500px,calc(100% - 12px))!important;
+        max-width:none!important;
+        margin:0 auto!important;
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:5px!important;
+        flex-wrap:wrap!important;
+        overflow:visible!important;
+      }
+      .app-nav a{
+        padding:8px 10px!important;
+        font-size:11px!important;
+        line-height:1.1!important;
+        border-radius:8px!important;
+      }
+
+      @media(max-width:1050px){
+        .app-nav-inner{
+          justify-content:flex-start!important;
+          flex-wrap:nowrap!important;
+          overflow-x:auto!important;
+          overflow-y:hidden!important;
+          padding-bottom:3px!important;
+        }
+        .app-nav a{flex:0 0 auto!important;}
+      }
+      @media(max-width:760px){
+        .kpp-brand-header{
+          width:100%!important;
+          grid-template-columns:68px minmax(0,1fr)!important;
+          padding:9px 10px!important;
+          gap:9px!important;
+        }
+        .kpp-brand-logo{width:62px!important;height:48px!important;}
+        .kpp-userbar-inner{
+          width:100%!important;
+          padding:7px 10px!important;
+          flex-wrap:wrap!important;
+          gap:7px!important;
+        }
+        .kpp-userbar-inner > div:first-child{width:100%!important;justify-content:center!important;}
+        .kpp-userbar-inner > div:last-child{
+          width:100%!important;
+          justify-content:center!important;
+          margin-left:0!important;
+          overflow-x:auto!important;
+          padding-bottom:2px!important;
+        }
+        .kpp-userbar button,#kppGuideBtn{font-size:10px!important;padding:7px 9px!important;}
+      }
+
       @media(max-width:700px){
         body{background-attachment:scroll!important;}
         .header{box-shadow:0 7px 20px rgba(2,6,23,.28)!important;}
@@ -876,12 +994,24 @@ window.KPP = {
       </nav>
     `;
 
-    // Nav dibuat selalu mulai dari kiri.
-    // Ini mencegah Menu GL / Dashboard hilang pada layar yang lebih sempit.
+    // Desktop: semua menu dirapikan di tengah dan dibuat muat dalam satu baris bila ruang cukup.
+    // Layar sempit: kembali menjadi scroll horizontal dari kiri agar menu pertama tidak hilang.
     const navInner = host.querySelector(".app-nav-inner");
     if (navInner) {
-      navInner.style.justifyContent = "flex-start";
-      navInner.scrollLeft = 0;
+      const arrangeNav = () => {
+        if (window.innerWidth > 1050) {
+          navInner.style.justifyContent = "center";
+          navInner.style.flexWrap = "wrap";
+          navInner.style.overflowX = "visible";
+        } else {
+          navInner.style.justifyContent = "flex-start";
+          navInner.style.flexWrap = "nowrap";
+          navInner.style.overflowX = "auto";
+          navInner.scrollLeft = 0;
+        }
+      };
+      arrangeNav();
+      window.addEventListener("resize", arrangeNav, {passive:true});
     }
   }
 };
