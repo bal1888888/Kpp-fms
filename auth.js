@@ -1,3 +1,4 @@
+// KPP-FMS AUTH V23 — mobile navigation + profile dropdown fix
 const KPP_SUPABASE_URL = "https://pwowtyfybfqsveuvqrsb.supabase.co";
 const KPP_SUPABASE_KEY = "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const kppDb = supabase.createClient(KPP_SUPABASE_URL, KPP_SUPABASE_KEY);
@@ -564,6 +565,45 @@ window.KPP = {
         .kpp-user-pill .kpp-user-name,.kpp-user-pill .kpp-user-role,.kpp-user-pill .kpp-user-chevron{display:none!important;}
         .kpp-user-avatar{width:28px;height:28px;}
         .kpp-user-dropdown{right:0;width:180px;}
+      }
+
+      /* ===== V23 MOBILE FIX: FULL NAV RANGE + VISIBLE PROFILE MENU ===== */
+      @media(max-width:1050px){
+        .app-nav{
+          overflow:hidden!important;
+          padding-left:0!important;
+          padding-right:0!important;
+        }
+        .app-nav-inner{
+          width:100%!important;
+          max-width:100%!important;
+          margin:0!important;
+          padding:0 10px 3px!important;
+          box-sizing:border-box!important;
+          justify-content:flex-start!important;
+          flex-wrap:nowrap!important;
+          overflow-x:auto!important;
+          overflow-y:hidden!important;
+          -webkit-overflow-scrolling:touch;
+          overscroll-behavior-x:contain;
+          touch-action:pan-x;
+          scroll-padding-inline:10px;
+        }
+        .app-nav a{flex:0 0 auto!important;}
+      }
+      @media(max-width:760px){
+        .header{
+          position:relative!important;
+          z-index:10000!important;
+          overflow:visible!important;
+        }
+        .kpp-brand-header,
+        .kpp-brand-side,
+        .kpp-user-menu{overflow:visible!important;}
+        .kpp-brand-side,
+        .kpp-user-menu{z-index:10010!important;}
+        .kpp-user-dropdown{z-index:10020!important;}
+        .app-nav{position:relative!important;z-index:20!important;}
       }
 
       @media(max-width:700px){
@@ -1224,14 +1264,23 @@ window.KPP = {
     if (navInner) {
       const arrangeNav = () => {
         if (window.innerWidth > 1050) {
-          navInner.style.justifyContent = "center";
-          navInner.style.flexWrap = "wrap";
-          navInner.style.overflowX = "visible";
+          navInner.style.setProperty("justify-content", "center", "important");
+          navInner.style.setProperty("flex-wrap", "wrap", "important");
+          navInner.style.setProperty("overflow-x", "visible", "important");
         } else {
-          navInner.style.justifyContent = "flex-start";
-          navInner.style.flexWrap = "nowrap";
-          navInner.style.overflowX = "auto";
-          navInner.scrollLeft = 0;
+          navInner.style.setProperty("justify-content", "flex-start", "important");
+          navInner.style.setProperty("flex-wrap", "nowrap", "important");
+          navInner.style.setProperty("overflow-x", "auto", "important");
+
+          // Tampilkan menu aktif saat halaman dibuka, tetapi kedua ujung tetap dapat digeser.
+          window.requestAnimationFrame(() => {
+            const activeLink = navInner.querySelector("a.active");
+            if (activeLink) {
+              activeLink.scrollIntoView({ behavior:"auto", block:"nearest", inline:"center" });
+            } else {
+              navInner.scrollLeft = 0;
+            }
+          });
         }
       };
       arrangeNav();
@@ -1282,93 +1331,3 @@ if (window.KPP_ALLOWED_ROLES) {
     }
   });
 }
-
-
-/* ===== KPP-FMS V23 MOBILE-FIRST GLOBAL POLISH ===== */
-(function(){
-  const STYLE_ID="kpp-mobile-first-v23";
-  if(document.getElementById(STYLE_ID)) return;
-  const style=document.createElement("style");
-  style.id=STYLE_ID;
-  style.textContent=`
-    @media(max-width:760px){
-      html,body{max-width:100%;overflow-x:hidden!important;}
-      .kpp-brand-header{
-        grid-template-columns:50px minmax(0,1fr) 38px!important;
-        gap:7px!important;
-        min-height:66px!important;
-        padding:8px 10px!important;
-      }
-      .kpp-brand-logo-wrap{min-width:0!important;}
-      .kpp-brand-logo{
-        width:46px!important;
-        height:34px!important;
-        border-radius:7px!important;
-        object-fit:contain!important;
-      }
-      .kpp-brand-copy{min-width:0!important;text-align:center!important;}
-      .kpp-brand-title{
-        font-size:clamp(14px,4.5vw,18px)!important;
-        line-height:1.12!important;
-        letter-spacing:.015em!important;
-        white-space:normal!important;
-      }
-      .kpp-brand-subtitle{
-        font-size:10px!important;
-        line-height:1.2!important;
-        margin-top:3px!important;
-      }
-      .kpp-brand-side{min-width:0!important;}
-      .kpp-user-pill{
-        width:34px!important;
-        height:34px!important;
-        min-height:34px!important;
-        padding:0!important;
-        border-radius:50%!important;
-        justify-content:center!important;
-      }
-      .kpp-user-avatar{width:26px!important;height:26px!important;font-size:12px!important;}
-      .kpp-user-dropdown{right:0!important;width:176px!important;top:42px!important;}
-      .app-nav{
-        padding:5px 6px!important;
-        box-shadow:0 5px 16px rgba(2,6,23,.28)!important;
-      }
-      .app-nav-inner{
-        justify-content:flex-start!important;
-        gap:4px!important;
-        overflow-x:auto!important;
-        scroll-snap-type:x proximity;
-        scrollbar-width:none!important;
-        -webkit-overflow-scrolling:touch;
-      }
-      .app-nav-inner::-webkit-scrollbar{display:none!important;}
-      .app-nav a{
-        flex:0 0 auto!important;
-        padding:8px 10px!important;
-        font-size:10.5px!important;
-        border-radius:8px!important;
-        scroll-snap-align:start;
-      }
-      body > .container,
-      body > main,
-      .container{
-        max-width:100%!important;
-      }
-    }
-    @media(max-width:430px){
-      .kpp-brand-header{
-        grid-template-columns:44px minmax(0,1fr) 34px!important;
-        gap:5px!important;
-        min-height:60px!important;
-        padding:7px 8px!important;
-      }
-      .kpp-brand-logo{width:40px!important;height:30px!important;}
-      .kpp-brand-title{font-size:14px!important;}
-      .kpp-brand-subtitle{font-size:9.5px!important;}
-      .kpp-user-pill{width:32px!important;height:32px!important;min-height:32px!important;}
-      .kpp-user-avatar{width:24px!important;height:24px!important;}
-      .app-nav a{padding:7px 9px!important;font-size:10px!important;}
-    }
-  `;
-  document.head.appendChild(style);
-})();
