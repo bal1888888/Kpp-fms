@@ -120,6 +120,87 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
   .summary-title{font-size:10px}
   .summary-value{font-size:17px}
 }
+
+
+/* ===== V13 MOBILE-FIRST LOGSHEET ===== */
+.mobile-filter-toggle{display:none}
+@media(max-width:700px){
+  .container{padding:6px!important;margin:8px auto!important}
+  .sheet{padding:8px!important;border-radius:14px!important}
+  .company{padding:12px 8px 10px!important;margin:0 0 10px!important;border-radius:12px!important}
+  .company h2{font-size:15px!important;line-height:1.22!important}
+  .company p{font-size:10px!important;margin-top:2px!important}
+  .period{font-size:12px!important;margin-top:6px!important}
+
+  .summary{
+    display:flex!important;
+    grid-template-columns:none!important;
+    gap:8px!important;
+    overflow-x:auto!important;
+    margin-bottom:10px!important;
+    padding:0 0 4px!important;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .summary::-webkit-scrollbar{display:none!important}
+  .summary-card{
+    flex:0 0 148px!important;
+    min-width:148px!important;
+    min-height:70px!important;
+    padding:9px 8px!important;
+    border-radius:11px!important;
+    scroll-snap-align:start;
+  }
+  .summary-card:first-child{flex-basis:178px!important;min-width:178px!important}
+  .summary-title{font-size:9px!important;margin-bottom:5px!important;letter-spacing:.035em!important}
+  .summary-value{font-size:16px!important}
+
+  .mobile-filter-toggle{
+    display:flex!important;
+    width:100%;
+    min-height:42px;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin:0 0 8px;
+    padding:10px 12px;
+    border:1px solid #b9c7d8;
+    border-radius:10px;
+    background:linear-gradient(180deg,#f8fafc,#e9eef5);
+    color:#0f172a;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .filters{
+    display:none!important;
+    grid-template-columns:1fr!important;
+    padding:10px!important;
+    gap:8px!important;
+    margin-bottom:10px!important;
+    border-radius:10px!important;
+  }
+  .filters.mobile-open{display:grid!important}
+  .filter-group label{font-size:10px!important;margin-bottom:4px!important}
+  .filter-group input,.filter-group select{font-size:14px!important;min-height:40px!important;padding:8px 10px!important}
+  .button-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;width:100%!important}
+  .button-row button{width:100%!important;min-height:40px!important;font-size:11px!important;padding:8px!important}
+
+  .table-wrapper{max-height:60vh!important;border-radius:10px!important}
+  table{min-width:1160px!important}
+  th,td{font-size:9px!important;padding:6px 5px!important}
+  .egi-cell{min-width:210px!important}
+  .cleanup-btn{font-size:8px!important;padding:5px 6px!important;border-radius:6px!important}
+}
+@media(max-width:430px){
+  .summary-card{flex-basis:138px!important;min-width:138px!important}
+  .summary-card:first-child{flex-basis:164px!important;min-width:164px!important}
+  .summary-value{font-size:15px!important}
+  .company h2{font-size:14px!important}
+  .button-row{grid-template-columns:1fr!important}
+}
+
 </style>
 </head>
 <body>
@@ -139,6 +220,10 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
   <div class="summary-card"><div class="summary-title" id="totalShift2Label">SHIFT 2 MTD</div><div class="summary-value" id="totalShift2">0 L</div></div>
 </div>
 
+
+<button type="button" id="mobileFilterToggle" class="mobile-filter-toggle" aria-expanded="false">
+  <span>⚙️ FILTER DATA</span><span id="mobileFilterState">BUKA ▾</span>
+</button>
 <div class="filters">
   <div class="filter-group">
     <label>Mode Tanggal</label>
@@ -1292,6 +1377,19 @@ document.getElementById("refreshBtn").addEventListener("click",loadData);
 document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
 
 syncFuelTruckFromWH();
+
+
+
+const mobileFilterToggle=document.getElementById("mobileFilterToggle");
+if(mobileFilterToggle){
+  mobileFilterToggle.addEventListener("click",()=>{
+    const filters=document.querySelector(".filters");
+    const open=filters?.classList.toggle("mobile-open");
+    mobileFilterToggle.setAttribute("aria-expanded",open?"true":"false");
+    const state=document.getElementById("mobileFilterState");
+    if(state)state.textContent=open?"TUTUP ▴":"BUKA ▾";
+  });
+}
 
 document.addEventListener("kpp-auth-ready",()=>{
   loadData();
