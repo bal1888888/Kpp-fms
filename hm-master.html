@@ -1,309 +1,521 @@
 <!DOCTYPE html>
+<!-- KPP-FMS HM MASTER v8 RESTORE CORRECT PAGE: Admin/GL only -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>CCR - KPP FMS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Unit & HM - KPP TRAM FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-window.KPP_ALLOWED_ROLES=["ccr","gl"];
-window.KPP_ACTIVE_PAGE="ccr";
+window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ACTIVE_PAGE="hm-master";
 </script>
 <script src="auth.js"></script>
-
 <style>
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-body{margin:0;background:#f3f4f6;color:#111827}
-.header{background:#1f2937;color:#fff;text-align:center;padding:21px}
-.header h1{margin:0 0 5px;font-size:23px}
-.container{max-width:1180px;margin:24px auto;padding:14px}
-.panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:18px}
-h2{margin-top:0}
-.info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:13px;line-height:1.6;margin-bottom:18px;font-size:13px}
-.qr-box{background:#111827;color:#fff;border-radius:12px;padding:15px;margin-bottom:16px}
-.qr-box b{color:#93c5fd}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
-label{display:block;font-size:12px;font-weight:bold;margin-bottom:6px;color:#374151}
-input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:14px;background:#fff;color:#111827}
-input[readonly]{background:#f8fafc;color:#475569;font-weight:bold}
-textarea{min-height:78px;resize:vertical}
-.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
-button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:pointer}
-.btn-green{background:#16a34a;color:#fff}
-.btn-red{background:#dc2626;color:#fff}
-.btn-outline{background:#fff;color:#334155;border:1px solid #cbd5e1}
-.ritasi{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:13px;margin-top:13px}
-.ritasi .num{font-size:25px;font-weight:bold;color:#9a3412}
-.formula{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:13px;margin-top:13px}
-.formula .big{font-size:25px;font-weight:bold;color:#166534}
-.pending-box{background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-top:12px}
-.status{margin-top:12px;font-size:13px;font-weight:bold;line-height:1.55}
-.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #e5e7eb;border-radius:10px}
-table{width:100%;border-collapse:collapse;min-width:1500px}
-th,td{padding:9px;border-bottom:1px solid #e5e7eb;border-right:1px solid #eef2f7;font-size:12px;text-align:center}
-th{background:#1f2937;color:#fff;position:sticky;top:0;z-index:2}
-td.left{text-align:left}
-.tag{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:bold}
-.tag-active{background:#dcfce7;color:#166534}
-.tag-pending{background:#fef3c7;color:#92400e}
-.tag-used{background:#dbeafe;color:#1d4ed8}
-.tag-rejected,.tag-cancelled{background:#fee2e2;color:#991b1b}
-.hidden{display:none!important}
+:root{
+  --bg:#f6f8fb;
+  --panel:#ffffff;
+  --panel-soft:#f8fafc;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --line-strong:#cbd5e1;
+  --blue:#2563eb;
+  --blue-dark:#1d4ed8;
+  --blue-soft:#eff6ff;
+  --green:#16a34a;
+  --green-soft:#f0fdf4;
+  --amber:#d97706;
+  --amber-soft:#fffbeb;
+  --red:#dc2626;
+  --red-soft:#fef2f2;
+  --violet:#7c3aed;
+  --violet-soft:#f5f3ff;
+  --shadow:0 8px 28px rgba(15,23,42,.055);
+}
+*{box-sizing:border-box;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text)}
+.header{
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 70%,#172554 100%);
+  color:#fff;text-align:center;padding:26px 16px 24px;border-bottom:1px solid rgba(255,255,255,.08)
+}
+.header h2{margin:0;font-size:23px;letter-spacing:.3px}
+.header div{margin-top:6px;color:#cbd5e1;font-size:13px;font-weight:600}
+.container{max-width:1180px;margin:20px auto 40px;padding:0 16px}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:20px;margin-bottom:16px;box-shadow:var(--shadow)
+}
+.panel h3{margin:0 0 15px;font-size:17px;letter-spacing:-.15px;display:flex;align-items:center;gap:8px}
+.panel h3::before{content:"";width:4px;height:18px;border-radius:999px;background:var(--blue);display:inline-block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:11px;font-weight:800;letter-spacing:.35px;text-transform:uppercase;color:#475569;margin-bottom:7px}
+input,textarea,select{
+  width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;font-size:14px;
+  background:#fff;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s,background .15s
+}
+input:focus,textarea:focus,select:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+textarea{min-height:82px;resize:vertical}
+button{
+  border:0;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:800;font-size:12px;
+  letter-spacing:.15px;transition:transform .12s,filter .12s,box-shadow .12s
+}
+button:hover{filter:brightness(.98);box-shadow:0 5px 12px rgba(15,23,42,.10)}
+button:active{transform:translateY(1px)}
+.primary{background:var(--blue);color:#fff}
+.green{background:var(--green);color:#fff}
+.secondary{background:#e2e8f0;color:#334155}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:14px}
+.card{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.025)}
+.card small{color:var(--muted);display:block;margin-bottom:7px;font-size:10px;font-weight:800;letter-spacing:.45px;text-transform:uppercase}
+.card strong{font-size:22px;display:block;color:#0f172a}
+.info,.warning,.bulk-fixed-note,.qr-selected-note{border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6}
+.info{background:var(--blue-soft);border:1px solid #dbeafe;color:#334155}
+.warning{background:var(--amber-soft);border:1px solid #fde68a;color:#854d0e;margin-top:9px}
+.status{margin-top:12px;font-weight:700;font-size:12px;color:#334155}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:720px;background:#fff}
+th,td{border:0;border-bottom:1px solid var(--line);padding:10px 9px;font-size:12px;text-align:center}
+th{background:#f8fafc;color:#475569;font-size:10px;letter-spacing:.45px;text-transform:uppercase;font-weight:800;position:sticky;top:0;z-index:2}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#f8fafc}
+
+/* ===== KPP-FMS GLOBAL NAV ===== */
 .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
-.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
-.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}
-.app-nav a.active{background:#2563eb;color:#fff}
-.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
-.kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
-.kpp-userbar-inner span{color:#64748b}
-.kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.app-nav-inner{justify-content:flex-start}}
-@media(max-width:560px){.container{margin:10px auto;padding:9px}.panel{padding:14px}.grid{grid-template-columns:1fr}.header{padding:15px 10px}.header h1{font-size:18px}.actions{display:grid;grid-template-columns:1fr}.actions button{width:100%}}
+.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:9px;align-items:center;overflow-x:auto;scrollbar-width:thin}
+.app-nav a{color:#e5e7eb;text-decoration:none;padding:9px 13px;border-radius:8px;white-space:nowrap;font-size:12px;font-weight:800;border:1px solid transparent}
+.app-nav a:hover{background:#374151;color:#fff}
+.app-nav a.active{background:var(--blue);color:#fff;border-color:#60a5fa}
 
-.edit-overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}
-.edit-card{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.edit-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px}
-.edit-head h3{margin:0}
-.edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-.edit-grid .wide{grid-column:1/-1}
-.btn-blue{background:#2563eb;color:#fff}
-.btn-danger{background:#dc2626;color:#fff}
-.shift-clock{background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;padding:11px 13px;border-radius:10px;margin-bottom:14px;font-size:12px;line-height:1.55}
-@media(max-width:560px){.edit-grid{grid-template-columns:1fr}.edit-grid .wide{grid-column:auto}}
+.tab-bar{
+  width:max-content;max-width:100%;display:flex;gap:6px;flex-wrap:nowrap;margin:0 auto 18px;padding:5px;
+  background:#e9eef5;border:1px solid #dbe3ed;border-radius:13px;overflow-x:auto
+}
+.tab-btn{background:transparent;color:#475569;box-shadow:none;border:1px solid transparent;padding:10px 15px}
+.tab-btn:hover{box-shadow:none;background:rgba(255,255,255,.55)}
+.tab-btn.active{background:#fff;color:var(--blue-dark);border-color:#dbeafe;box-shadow:0 2px 7px rgba(15,23,42,.07)}
+.tab-page{display:none}
+.tab-page.active{display:block}
+.small-btn{padding:7px 10px;font-size:10px;background:var(--blue);color:#fff}
+.badge-active{font-weight:800;color:#15803d}
+.badge-off{font-weight:800;color:var(--red)}
+.master-toolbar{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(3,minmax(130px,.65fr));gap:10px;align-items:stretch;margin-bottom:13px}
+.master-toolbar>div{min-width:0}
+.master-toolbar .card{margin:0;display:flex;justify-content:center;flex-direction:column}
+.table-scroll{max-height:500px;overflow:auto}
+.badge-qr{display:inline-block;padding:5px 8px;border-radius:999px;font-weight:800;font-size:9px;letter-spacing:.2px}
+.badge-qr.yes{background:#dcfce7;color:#166534}
+.badge-qr.no{background:#fee2e2;color:#991b1b}
+.qr-toolbar{display:grid;grid-template-columns:1.35fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:10px}
+.qr-toolbar button{white-space:nowrap}
+.qr-check{width:auto;transform:scale(1.1)}
+.qr-actions{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.qr-btn{background:var(--violet);color:#fff;padding:7px 9px;font-size:10px}
+.qr-selected-note{background:var(--violet-soft);border:1px solid #ddd6fe;color:#5b21b6;margin-top:10px}
 
-/* ===== HM INTELLIGENCE CCR V5 ===== */
-.hm-intel{margin-top:14px;border:1px solid #dbeafe;background:linear-gradient(135deg,#f8fbff,#fff);border-radius:14px;padding:14px}
-.hm-intel-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:11px}
-.hm-intel-head b{font-size:14px}.hm-intel-head span{font-size:11px;color:#64748b;text-align:right}
-.hm-intel-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
-.hm-mini{border:1px solid #e2e8f0;background:#fff;border-radius:11px;padding:11px;min-height:85px}
-.hm-mini small{display:block;font-size:10px;font-weight:bold;color:#64748b;margin-bottom:6px}
-.hm-mini strong{display:block;font-size:20px;color:#0f172a;line-height:1.15}
-.hm-mini .mini-sub{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
-.hm-mini.estimate{border-color:#93c5fd;background:#eff6ff}.hm-mini.estimate strong{color:#1d4ed8}
-.hm-mini.work{border-color:#bbf7d0;background:#f0fdf4}.hm-mini.work strong{color:#166534}
-.hm-warning{margin-top:9px;padding:9px 10px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;line-height:1.45;display:none}
-.input-help{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
-.table-hm{white-space:nowrap}
-@media(max-width:900px){.hm-intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.hm-intel-grid{grid-template-columns:1fr}.hm-intel-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}}
+/* ===== BULK HM: main work area ===== */
+.bulk-focus{border-top:4px solid var(--blue);padding-top:17px}
+.bulk-focus h3::before{background:var(--blue)}
+.bulk-hm-toolbar{display:grid;grid-template-columns:1.25fr .8fr .8fr;gap:10px;align-items:end;margin:14px 0 10px}
+.bulk-hm-table{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.bulk-hm-table table{min-width:900px}
+.bulk-hm-table th{top:0}
+.bulk-hm-table input[type="number"]{min-width:120px;padding:8px 10px;background:#f8fafc}
+.bulk-hm-table input[type="checkbox"]{width:auto;transform:scale(1.1);accent-color:var(--blue)}
+.bulk-hm-table tr:has(input[type="checkbox"]:checked){background:#f4f8ff}
+.bulk-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;align-items:center}
+.bulk-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.bulk-chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid var(--line);font-size:10px;font-weight:800}
+.bulk-chip b{color:var(--blue-dark)}
+.bulk-fixed-note{background:#f8fafc;border:1px solid var(--line);border-left:4px solid var(--green);color:#475569;margin-top:9px}
+.bulk-fix-meta{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+#bulkSaveBtn{padding-inline:18px}
 
+.single-hm-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.single-hm-wrap>.panel{height:100%;margin-bottom:0}
+.history-panel{margin-top:16px}
+
+@media(max-width:900px){
+  .master-toolbar{grid-template-columns:1fr 1fr}
+  .master-toolbar>div:first-child{grid-column:1/-1}
+  .qr-toolbar{grid-template-columns:1fr 1fr}
+  .single-hm-wrap{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .header{padding:21px 14px 19px}.header h2{font-size:19px}.container{padding:0 11px;margin-top:14px}
+  .app-nav-inner{justify-content:flex-start}.app-nav a{padding:9px 11px;font-size:11px}
+  .panel{padding:15px;border-radius:14px}.panel h3{font-size:15px}
+  .tab-bar{width:100%;justify-content:stretch}.tab-btn{flex:1;white-space:nowrap;padding:10px 11px}
+  .master-toolbar{grid-template-columns:1fr 1fr}.qr-toolbar{grid-template-columns:1fr}.qr-toolbar button{width:100%}
+  .bulk-hm-toolbar{grid-template-columns:1fr}.bulk-actions{display:grid;grid-template-columns:1fr 1fr}.bulk-actions #bulkSaveBtn{grid-column:1/-1}
+  .cards{grid-template-columns:1fr}.grid{grid-template-columns:1fr}
+}
+@media(max-width:430px){
+  .master-toolbar{grid-template-columns:1fr}.master-toolbar>div:first-child{grid-column:auto}
+  .bulk-actions{grid-template-columns:1fr}.bulk-actions #bulkSaveBtn{grid-column:auto}
+}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-  <div>Display CCR — Jatah Pengisian</div>
-</div>
-
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Master Unit &amp; HM Aktual • Admin / GL Control</div></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
-
 <div class="container">
-
-  <div class="qr-box">
-    <b>QR = CODE UNIT.</b><br>
-    Contoh QR ditempel di HD7441 dan isinya hanya <b>HD7441</b>.
-    CCR menentukan <b>operator, HM, jam pengambilan HM, jatah dan toleransi</b>. Identitas kontrol pengisian tetap <b>UNIT / QR Unit</b>.
-  </div>
-
-  <div class="info">
-    <b>1 jatah = 1 kali pengisian.</b>
-    Pengisian ke-1 langsung ACTIVE.
-    Pengisian ke-2 dan seterusnya otomatis PENDING_GL dan belum bisa dibaca Fuelman sampai GL menyetujui.
-  </div>
-
-  <div class="shift-clock">
-    <b>Jam Shift:</b> Shift 1 = 06:30–18:30 • Shift 2 = 18:30–06:30.
-    Jatah ACTIVE/PENDING yang lewat akhir shift otomatis menjadi <b>EXPIRED</b>.
-  </div>
-
-  <div class="panel">
-    <h2>🎯 Input Jatah Unit</h2>
-
-    <div class="grid">
-      <div>
-        <label>Tanggal</label>
-        <input type="date" id="tanggal">
-      </div>
-
-      <div>
-        <label>Shift</label>
-        <select id="shift">
-          <option value="">-- Pilih Shift --</option>
-          <option value="Shift 1">Shift 1</option>
-          <option value="Shift 2">Shift 2</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Unit / ID QR</label>
-        <input id="unit" list="unitList" placeholder="Contoh: HD7441">
-        <datalist id="unitList"></datalist>
-      </div>
-
-      <div>
-        <label>QR yang Akan Dibaca</label>
-        <input id="qrDisplay" readonly placeholder="Otomatis = Unit">
-      </div>
-
-      <div>
-        <label>Nama Operator</label>
-        <input id="operator" placeholder="Contoh: Rado">
-      </div>
-
-      <div>
-        <label>HM Sebelumnya</label>
-        <input id="hmPreviousInput" readonly placeholder="Pilih unit dulu">
-        <div class="input-help" id="hmPreviousSource">Referensi otomatis dari histori HM.</div>
-      </div>
-
-      <div>
-        <label>HM dari CCR</label>
-        <input type="number" step="0.1" id="hm" placeholder="Contoh: 2950">
-        <div class="input-help">HM yang benar-benar dibaca CCR saat pengambilan HM.</div>
-      </div>
-
-      <div>
-        <label>Jam Pengambilan HM</label>
-        <input type="time" step="60" id="hmTakenTime">
-        <div class="input-help">Estimasi HM refueling dihitung dari jam ini.</div>
-      </div>
-
-      <div>
-        <label>Qty Jatah (L)</label>
-        <input type="number" step="1" min="1" id="maxQty" placeholder="Contoh: 300">
-      </div>
-
-      <div>
-        <label>Toleransi Lebih (L)</label>
-        <input type="number" step="1" min="0" id="toleranceQty" value="0">
-      </div>
+    <div class="tab-bar">
+        <button id="tabUnitBtn" class="tab-btn active" onclick="showTab('unit')">🚜 MASTER UNIT</button>
+        <button id="tabHmBtn" class="tab-btn" onclick="showTab('hm')">⚙️ HM MASTER</button>
     </div>
 
-    <div class="hm-intel">
-      <div class="hm-intel-head">
-        <b>⏱️ Monitor HM Unit</b>
-        <span>Estimasi refueling = HM CCR + selisih waktu sejak HM diambil</span>
-      </div>
-      <div class="hm-intel-grid">
-        <div class="hm-mini">
-          <small>HM SEBELUMNYA</small>
-          <strong id="hmPreviousCard">-</strong>
-          <div class="mini-sub" id="hmPreviousCardSource">Belum pilih unit</div>
+    <div id="tabUnit" class="tab-page active">
+        <div class="panel">
+            <div class="info">
+                Kelola populasi unit dari satu tempat. Kalau ada <b>unit baru</b>, tidak perlu edit source code.
+                Setelah unit disimpan dan statusnya <b>Aktif</b>, unit otomatis bisa dipilih di halaman Pengisian Fuel.
+            </div>
+            <div class="warning">
+                Jangan hapus unit lama yang sudah punya histori. Kalau unit sudah tidak operasi, ubah saja statusnya menjadi <b>Tidak Aktif</b>.
+            </div>
         </div>
-        <div class="hm-mini">
-          <small>HM DIBACA CCR</small>
-          <strong id="hmCcrCard">-</strong>
-          <div class="mini-sub" id="hmTakenCard">Jam ambil HM: -</div>
+
+        <div class="panel">
+            <h3>1. Tambah / Update Unit</h3>
+            <div class="grid">
+                <div>
+                    <label>CODE UNIT</label>
+                    <input id="masterCode" placeholder="Contoh: DT7500" autocomplete="off">
+                </div>
+                <div>
+                    <label>EGI / Tipe Unit</label>
+                    <input id="masterEgi" placeholder="Contoh: KOMATSU DUMP TRUCK MODEL HD785-7">
+                </div>
+                <div>
+                    <label>CODE ELLIPS</label>
+                    <input id="masterEllipse" placeholder="Biasanya sama dengan CODE UNIT">
+                </div>
+                <div>
+                    <label>Status Unit</label>
+                    <select id="masterActive">
+                        <option value="true">AKTIF</option>
+                        <option value="false">TIDAK AKTIF</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Status QR Unit</label>
+                    <select id="masterQrGenerated">
+                        <option value="false">BELUM ADA QR</option>
+                        <option value="true">SUDAH ADA QR</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:12px">
+                <label>Keterangan</label>
+                <textarea id="masterNote" placeholder="Contoh: Unit baru masuk site Agustus 2026"></textarea>
+            </div>
+
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="green" onclick="saveUnitMaster()">SIMPAN / UPDATE UNIT</button>
+                <button class="secondary" onclick="resetUnitForm()">RESET FORM</button>
+            </div>
+            <div class="status" id="unitSaveStatus"></div>
         </div>
-        <div class="hm-mini work">
-          <small>JAM KERJA SEJAK REFERENSI</small>
-          <strong id="hmWorkCard">-</strong>
-          <div class="mini-sub">Selisih HM CCR − HM sebelumnya</div>
+
+        <div class="panel">
+            <h3>Daftar Master Unit</h3>
+            <div class="master-toolbar">
+                <div>
+                    <label>Cari Unit / EGI</label>
+                    <input id="unitSearch" placeholder="Ketik DT, EX, HD785..." oninput="renderUnitTable()">
+                </div>
+                <div class="card">
+                    <small>TOTAL UNIT</small>
+                    <strong id="totalMasterUnit">0</strong>
+                </div>
+                <div class="card">
+                    <small>UNIT AKTIF</small>
+                    <strong id="totalActiveUnit">0</strong>
+                </div>
+                <div class="card">
+                    <small>QR SUDAH DIBUAT</small>
+                    <strong id="totalQrGenerated">0</strong>
+                </div>
+            </div>
+
+            <div class="qr-toolbar">
+                <div>
+                    <label>Filter Status QR</label>
+                    <select id="qrFilter" onchange="renderUnitTable()">
+                        <option value="all">SEMUA UNIT</option>
+                        <option value="no">BELUM ADA QR</option>
+                        <option value="yes">SUDAH ADA QR</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Pilih QR</label>
+                    <select id="qrQuickSelect">
+                        <option value="">-- Pilih Aksi --</option>
+                        <option value="visible">PILIH SEMUA YANG TAMPIL</option>
+                        <option value="noqr">PILIH SEMUA BELUM QR</option>
+                        <option value="clear">HAPUS SEMUA PILIHAN</option>
+                    </select>
+                </div>
+                <button class="primary" type="button" onclick="applyQrQuickSelect()">✓ TERAPKAN PILIHAN</button>
+                <button class="qr-btn" type="button" onclick="generateSelectedQr()">🏷️ GENERATE QR TERPILIH</button>
+            </div>
+
+            <div class="qr-selected-note">
+                Centang unit yang mau dibuat QR-nya, lalu klik <b>GENERATE QR TERPILIH</b>.
+                Unit yang sudah pernah di-print akan ditandai <b>SUDAH ADA QR</b>.
+            </div>
+
+            <div class="table-wrap table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>PILIH QR</th>
+                            <th>CODE UNIT</th>
+                            <th>EGI</th>
+                            <th>CODE ELLIPS</th>
+                            <th>STATUS UNIT</th>
+                            <th>STATUS QR</th>
+                            <th>KETERANGAN</th>
+                            <th>AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unitMasterBody">
+                        <tr><td colspan="8">Mengambil master unit...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="hm-mini estimate">
-          <small>ESTIMASI HM JIKA REFUEL SEKARANG</small>
-          <strong id="hmEstimateCard">-</strong>
-          <div class="mini-sub" id="hmEstimateNote">Menunggu HM & jam pengambilan</div>
+    </div>
+
+    <div id="tabHm" class="tab-page">
+<div class="panel">
+            <div class="info">
+                Gunakan HM Master untuk menetapkan <b>HM aktual yang benar-benar terbaca di unit</b> saat go-live atau saat referensi lama diketahui salah.
+                Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
+            </div>
+            <div class="warning">
+                Untuk <b>unit baru</b>: simpan unit terlebih dahulu di tab MASTER UNIT, lalu masuk ke tab HM MASTER untuk memasukkan HM aktual awalnya.
+            </div>
         </div>
-      </div>
-      <div class="hm-warning" id="hmIntelWarning"></div>
-    </div>
 
-    <div class="ritasi">
-      Ritasi/Pengisian berikutnya untuk UNIT + tanggal + shift ini:
-      <div class="num">Ke-<span id="nextFillNo">1</span></div>
-      <div id="approvalHint" style="font-size:12px;color:#7c2d12">
-        Pengisian ke-1 langsung ACTIVE.
-      </div>
-    </div>
+        <div class="panel bulk-focus">
+            <h3>1. Fix HM Banyak Unit</h3>
+            <div class="info">
+                Isi HM aktual untuk beberapa unit sekaligus. Setiap nilai yang disimpan oleh <b>Admin/GL</b> menjadi <b>patokan HM resmi</b> mulai tanggal/jam efektifnya. Histori lama tidak dihapus.
+            </div>
+            <div class="bulk-fixed-note">
+                HM yang difix menjadi <b>titik reset/reference resmi</b>. Data lama sebelum waktu efektif tidak boleh mengalahkannya. Nilai berikutnya hanya bergerak dari transaksi setelah waktu tersebut atau koreksi Admin/GL yang lebih baru.
+            </div>
+            <div class="bulk-hm-toolbar" style="margin-top:14px">
+                <div><label>Cari Unit</label><input id="bulkHmSearch" placeholder="Ketik DT, EX, TL..." oninput="renderBulkHmTable()"></div>
+                <div><label>Tanggal Efektif Semua</label><input type="date" id="bulkEffectiveDate"></div>
+                <div><label>Jam Efektif Semua</label><input type="time" id="bulkEffectiveTime" step="1"></div>
+            </div>
+            <div class="grid bulk-fix-meta">
+                <div><label>Admin / GL</label><input id="bulkOperator" placeholder="Nama yang menetapkan HM"></div>
+                <div><label>Keterangan Semua</label><input id="bulkNote" placeholder="Contoh: Sinkron HM aktual massal"></div>
+            </div>
+            <div class="bulk-summary">
+                <span class="bulk-chip">Dipilih: <b id="bulkSelectedCount" style="margin-left:4px">0</b></span>
+                <span class="bulk-chip">HM Terisi: <b id="bulkFilledCount" style="margin-left:4px">0</b></span>
+            </div>
+            <div class="bulk-actions">
+                <button class="primary" type="button" onclick="bulkSelectVisible(true)">✓ PILIH YANG TAMPIL</button>
+                <button class="secondary" type="button" onclick="bulkSelectVisible(false)">HAPUS PILIHAN</button>
+                <button class="green" type="button" id="bulkSaveBtn" onclick="saveBulkCorrections()">💾 SIMPAN HM TERPILIH</button>
+            </div>
+            <div class="bulk-hm-table" style="margin-top:12px">
+                <table>
+                    <thead><tr><th>PILIH</th><th>UNIT</th><th>HM SAAT INI</th><th>SUMBER</th><th>HM AKTUAL BARU</th></tr></thead>
+                    <tbody id="bulkHmBody"><tr><td colspan="5">Memuat unit...</td></tr></tbody>
+                </table>
+            </div>
+            <div class="status" id="bulkSaveStatus"></div>
+        </div>
 
-    <div class="formula">
-      Batas final yang boleh diisi Fuelman:
-      <div class="big"><span id="finalLimit">0</span> L</div>
-      <div style="font-size:12px;color:#475569">Qty Jatah + Toleransi</div>
-    </div>
+                <div class="single-hm-wrap">
+<div class="panel">
+            <h3>2. Cek HM Satu Unit</h3>
+            <div class="grid">
+                <div>
+                    <label>CODE UNIT</label>
+                    <input id="unitInput" list="unitOptions" placeholder="Contoh: DT7441" autocomplete="off">
+                    <datalist id="unitOptions"></datalist>
+                </div>
+                <div style="align-self:end">
+                    <button class="primary" onclick="checkUnit()">CEK HM UNIT</button>
+                </div>
+            </div>
+            <div class="cards">
+                <div class="card"><small>HM YANG DIPAKAI SEKARANG</small><strong id="currentHm">-</strong><small id="currentSource" style="margin-top:6px">-</small></div>
+                <div class="card"><small>BASELINE LOGSHEET LAMA</small><strong id="baselineHm">-</strong></div>
+                <div class="card"><small>KOREKSI TERAKHIR</small><strong id="lastCorrection">-</strong><small id="lastCorrectionTime" style="margin-top:6px">-</small></div>
+            </div>
+            <div class="status" id="checkStatus"></div>
+        </div>
 
-    <div id="reasonBox" class="pending-box hidden">
-      <label>Alasan Pengisian Tambahan</label>
-      <textarea id="requestReason" placeholder="Wajib untuk pengisian ke-2 dan seterusnya"></textarea>
-      <div style="font-size:12px;color:#92400e;margin-top:5px">
-        Setelah disimpan, statusnya PENDING_GL.
-      </div>
-    </div>
+        <div class="panel">
+            <h3>3. Koreksi HM Satu Unit</h3>
+            <div class="grid">
+                <div><label>HM Aktual Unit</label><input type="number" id="actualHm" min="0" step="0.1" placeholder="HM sesuai display unit"></div>
+                <div><label>Tanggal Efektif</label><input type="date" id="effectiveDate"></div>
+                <div><label>Jam Efektif</label><input type="time" id="effectiveTime" step="1"></div>
+                <div><label>Fuelman / Operator</label><input id="operator" placeholder="Nama yang input koreksi"></div>
+            </div>
+            <div style="margin-top:12px">
+                <label>Keterangan</label>
+                <textarea id="note" placeholder="Contoh: HM aktual dicek langsung dari display unit sebelum go-live"></textarea>
+            </div>
+            <div style="margin-top:14px"><button class="green" onclick="saveCorrection()">SIMPAN HM AKTUAL</button></div>
+            <div class="status" id="saveStatus"></div>
+        </div>
 
-    <div style="margin-top:13px">
-      <label>Catatan CCR</label>
-      <textarea id="note" placeholder="Opsional"></textarea>
-    </div>
-
-    <div class="actions">
-      <button id="saveBtn" class="btn-green">💾 SIMPAN JATAH</button>
-      <button id="refreshNoBtn" class="btn-outline">↻ CEK RITASI</button>
-    </div>
-
-    <div id="formStatus" class="status"></div>
-  </div>
-
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-      <h2 style="margin:0">📋 Riwayat Jatah CCR</h2>
-      <div class="actions" style="margin:0">
-        <select id="statusFilter" style="width:auto">
-          <option value="ALL">SEMUA</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="PENDING_GL">PENDING GL</option>
-          <option value="USED">USED</option>
-          <option value="REJECTED">REJECTED</option>
-          <option value="CANCELLED">CANCELLED</option>
-          <option value="EXPIRED">EXPIRED</option>
-        </select>
-        <button id="refreshBtn" class="btn-outline">↻ REFRESH</button>
-      </div>
-    </div>
-
-    <div class="table-wrap" style="margin-top:14px">
-      <table>
-        <thead>
-          <tr>
-            <th>Tanggal</th>
-            <th>Shift</th>
-            <th>Ke-</th>
-            <th>Unit / QR</th>
-            <th>Nama</th>
-            <th>HM Sebelum</th>
-            <th>HM CCR</th>
-            <th>Jam Ambil HM</th>
-            <th>Jam Kerja</th>
-            <th>Est. HM Used</th>
-            <th>Jatah</th>
-            <th>Tol.</th>
-            <th>Batas</th>
-            <th>Status</th>
-            <th>Alasan</th>
-            <th>Input By</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="body"></tbody>
-      </table>
-    </div>
-
-    <div id="tableStatus" class="status"></div>
-  </div>
-
+                </div>
+<div class="panel history-panel">
+            <h3>4. Riwayat Koreksi Unit Terpilih</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Tanggal</th><th>Jam</th><th>Unit</th><th>HM</th><th>Operator</th><th>Keterangan</th></tr></thead>
+                    <tbody id="historyBody"><tr><td colspan="6">Pilih unit terlebih dahulu.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
 </div>
-
+</div>
 <script>
-const db=window.KPP.db;
-let PROFILE=null;
-let ROWS=[];
-let CURRENT_HM_REF={hm:0,source:"Belum ada HM sebelumnya"};
-let HM_ESTIMATE_TIMER=null;
-
+const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
+const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const BASE_MASTER_UNITS = [
+        "CB1019",
+        "CM0108",
+        "CP118",
+        "CP119",
+        "CRAJ001",
+        "CRAJ002",
+        "CRSI001",
+        "CRSI002",
+        "CT0042",
+        "CT0054",
+        "CT0058",
+        "DL0051",
+        "DT7049",
+        "DT7081",
+        "DT7102",
+        "DT7122",
+        "DT7127",
+        "DT7220",
+        "DT7441",
+        "DT7442",
+        "DT7443",
+        "DT7444",
+        "DT7445",
+        "DT7446",
+        "DT7447",
+        "DT7448",
+        "DT7449",
+        "DT7450",
+        "DT7451",
+        "DT7452",
+        "DT7453",
+        "DT7454",
+        "DT7455",
+        "DT7456",
+        "DT7457",
+        "DZ1034",
+        "DZ1050",
+        "DZ124",
+        "DZ129",
+        "DZ3041",
+        "DZ3043",
+        "DZ3044",
+        "EX1028",
+        "EX1045",
+        "EX1050",
+        "EX1051",
+        "EX2056",
+        "EX2057",
+        "EX2058",
+        "EX238",
+        "EX239",
+        "EX240",
+        "EX241",
+        "EX432",
+        "EX433",
+        "EX501",
+        "FT0020",
+        "FT0073",
+        "FT0075",
+        "GR2060",
+        "GR2061",
+        "GR2062",
+        "GS0186",
+        "GS0192",
+        "JH01",
+        "LBAJ001",
+        "LBAJ002",
+        "LBAJ003",
+        "LBAJ004",
+        "LBSI001",
+        "LBSI002",
+        "LD0487",
+        "LD0488",
+        "LD0489",
+        "LD0498",
+        "LO0019",
+        "LO0054",
+        "PM5017",
+        "SD4098",
+        "SD4099",
+        "TH0006",
+        "TL0007",
+        "TL0050",
+        "TL0074",
+        "TL0076",
+        "TL0121",
+        "TL0123",
+        "TL0131",
+        "TL0146",
+        "TL0147",
+        "TL0156",
+        "TL0157",
+        "TL0158",
+        "TL0201",
+        "TL0222",
+        "TL0247",
+        "TL0248",
+        "TL0249",
+        "TL0250",
+        "TL0251",
+        "TL0274",
+        "TMAJ001",
+        "TR-B01",
+        "TR-B03",
+        "TR-D01",
+        "TR-D02",
+        "TR-D03",
+        "TR-F01",
+        "TR-F02",
+        "TR-F03",
+        "TR-F04",
+        "TR-F05",
+        "TR-F06",
+        "TR-J01",
+        "TR-KP01",
+        "WE0049",
+        "WP0121",
+        "WP0141",
+        "WP0162",
+        "WT0050",
+        "WT0097",
+        "WT0099",
+        "WT0101",
+        "TR-B04"
+];
 const MASTER_LAST_HM = {
         "CB1019": 587,
         "CM0108": 545,
@@ -402,686 +614,578 @@ const MASTER_LAST_HM = {
         "WT0101": 734,
         "TR-B04": 27963
 };
+let selectedUnit="";
+let MASTER_UNITS=[...BASE_MASTER_UNITS];
+let UNIT_MASTER_ROWS=[];
+const QR_SELECTED=new Set();
+const BULK_HM_SELECTED=new Set();
+const BULK_HM_VALUES=new Map();
+let BULK_HM_CURRENT=new Map();
 
-function pad(n){return String(n).padStart(2,"0")}
-function today(){
-  const d=new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
-function isoLocalDate(d){
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
-function currentOperationalShift(){
-  const now=new Date();
-  const mins=now.getHours()*60+now.getMinutes();
-
-  if(mins<390){
-    const prev=new Date(now);
-    prev.setDate(prev.getDate()-1);
-    return {tanggal:isoLocalDate(prev),shift:"Shift 2"};
-  }
-
-  if(mins<1110){
-    return {tanggal:isoLocalDate(now),shift:"Shift 1"};
-  }
-
-  return {tanggal:isoLocalDate(now),shift:"Shift 2"};
-}
-async function expireStale(){
-  const {error}=await db.rpc("expire_ccr_allocations");
-  if(error)console.warn("Expire CCR:",error.message);
-}
-
-function clean(v){return String(v??"").trim()}
-function upper(v){return clean(v).toUpperCase()}
-function num(v){
-  if(v===null||v===undefined||v==="")return null;
-  const x=Number(v);
-  return Number.isFinite(x)?x:null;
-}
-function fmt(v){
-  const x=Number(v);
-  return Number.isFinite(x)
-    ? new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(x)
-    : "-";
-}
-function dateID(v){
-  if(!v)return "-";
-  const [y,m,d]=String(v).split("-");
-  return `${d}/${m}/${y}`;
-}
+function pad(v){return String(v).padStart(2,"0")}
+function localDate(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function localTime(){const d=new Date();return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+function n(v){return Number(v||0)}
+function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1})}
+function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
 function esc(v){
-  return String(v??"")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    return String(v??"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+function operationalKey(row){if(!row)return "0000-00-00T00:00:00";return `${row.tanggal||"0000-00-00"}T${String(row.jam||"00:00:00").slice(0,8)}`}
+
+function showTab(tab){
+    document.getElementById("tabUnit").classList.toggle("active",tab==="unit");
+    document.getElementById("tabHm").classList.toggle("active",tab==="hm");
+    document.getElementById("tabUnitBtn").classList.toggle("active",tab==="unit");
+    document.getElementById("tabHmBtn").classList.toggle("active",tab==="hm");
 }
 
-function hmOperationalKey(tanggal,jam,id){
-  const d=String(tanggal||"");
-  const t=jam?String(jam).slice(0,8):"00:00:00";
-  const i=String(id??"").padStart(20,"0");
-  return `${d} ${t} ${i}`;
-}
-function localTimeHm(){
-  const d=new Date();
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function operationalTimestamp(tanggal,shift,timeValue){
-  if(!tanggal||!shift||!timeValue)return null;
-  const parts=String(timeValue).split(":");
-  const hh=Number(parts[0]||0),mm=Number(parts[1]||0),ss=Number(parts[2]||0);
-  const [y,m,d]=String(tanggal).split("-").map(Number);
-  const dt=new Date(y,m-1,d,hh,mm,ss,0);
-  if(shift==="Shift 2" && (hh*60+mm)<390)dt.setDate(dt.getDate()+1);
-  return dt;
-}
-function shiftAcceptsTime(shift,timeValue){
-  if(!shift||!timeValue)return false;
-  const [h,m]=String(timeValue).split(":").map(Number);
-  const mins=h*60+(m||0);
-  if(shift==="Shift 1")return mins>=390&&mins<1110;
-  if(shift==="Shift 2")return mins>=1110||mins<390;
-  return false;
-}
-async function ambilHmTerakhir(unit){
-  const correctionResult=await db.from("hm_corrections")
-    .select("id,tanggal,jam,hm,operator,note")
-    .eq("unit",unit).not("hm","is",null)
-    .order("tanggal",{ascending:false}).order("jam",{ascending:false})
-    .order("id",{ascending:false}).limit(1);
-  if(correctionResult.error)console.warn("HM correction:",correctionResult.error.message);
-  const correctionRow=!correctionResult.error&&correctionResult.data?.length?correctionResult.data[0]:null;
-  if(correctionRow&&Number.isFinite(Number(correctionRow.hm))){
-    const correctionHm=Number(correctionRow.hm);
-    const correctionKey=hmOperationalKey(correctionRow.tanggal,correctionRow.jam,correctionRow.id);
-    const after=await db.from("fuel_history")
-      .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
-      .eq("hm_ref_excluded",false)
-      .gte("tanggal",correctionRow.tanggal).not("hm_akhir","is",null)
-      .order("tanggal",{ascending:true}).order("jam",{ascending:true})
-      .order("id",{ascending:true}).limit(1000);
-    if(after.error)throw after.error;
-    let best={hm:correctionHm,source:`HM Master / Koreksi Aktual (${correctionRow.tanggal}${correctionRow.jam?" "+String(correctionRow.jam).slice(0,5):""})`};
-    for(const row of (after.data||[])){
-      if(hmOperationalKey(row.tanggal,row.jam,row.id)<=correctionKey)continue;
-      const value=Number(row.hm_akhir);
-      if(Number.isFinite(value)&&value>best.hm){
-        best={hm:value,source:`HM valid setelah koreksi (${row.tanggal}${row.jam?" "+String(row.jam).slice(0,5):""})`};
-      }
-    }
-    return best;
-  }
-  const fuelResult=await db.from("fuel_history")
-    .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
-    .eq("hm_ref_excluded",false)
-    .not("hm_akhir","is",null).order("hm_akhir",{ascending:false})
-    .order("tanggal",{ascending:false}).order("id",{ascending:false}).limit(1);
-  if(fuelResult.error)throw fuelResult.error;
-  const candidates=[];
-  const fuelRow=fuelResult.data?.length?fuelResult.data[0]:null;
-  if(fuelRow&&Number.isFinite(Number(fuelRow.hm_akhir))){
-    candidates.push({hm:Number(fuelRow.hm_akhir),source:`HM valid tertinggi transaksi (${fuelRow.tanggal}${fuelRow.jam?" "+String(fuelRow.jam).slice(0,5):""})`});
-  }
-  if(Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit)&&Number.isFinite(Number(MASTER_LAST_HM[unit]))){
-    candidates.push({hm:Number(MASTER_LAST_HM[unit]),source:"Baseline logsheet Excel"});
-  }
-  if(!candidates.length)return {hm:0,source:"Belum ada HM sebelumnya"};
-  candidates.sort((a,b)=>b.hm-a.hm);
-  return candidates[0];
-}
-async function loadHmReference(){
-  const unit=upper(document.getElementById("unit").value);
-  const input=document.getElementById("hmPreviousInput");
-  if(!unit){
-    CURRENT_HM_REF={hm:0,source:"Belum pilih unit"};
-    input.value="";
-    document.getElementById("hmPreviousSource").textContent="Referensi otomatis dari histori HM.";
-    updateHmIntel();
-    return;
-  }
-  input.value="Memuat...";
-  try{
-    CURRENT_HM_REF=await ambilHmTerakhir(unit);
-    input.value=CURRENT_HM_REF.hm>0?fmt(CURRENT_HM_REF.hm):"Belum ada";
-    document.getElementById("hmPreviousSource").textContent=CURRENT_HM_REF.source;
-  }catch(err){
-    CURRENT_HM_REF={hm:0,source:"Gagal membaca referensi HM"};
-    input.value="Gagal membaca";
-    document.getElementById("hmPreviousSource").textContent=err.message;
-  }
-  updateHmIntel();
-}
-function estimateHmNow(){
-  const hm=num(document.getElementById("hm").value);
-  const tanggal=document.getElementById("tanggal").value;
-  const shift=document.getElementById("shift").value;
-  const taken=document.getElementById("hmTakenTime").value;
-  if(hm===null||!tanggal||!shift||!taken)return null;
-  const start=operationalTimestamp(tanggal,shift,taken);
-  if(!start)return null;
-  const elapsed=Math.max(0,(Date.now()-start.getTime())/3600000);
-  return {hm:Math.round((hm+elapsed)*10)/10,elapsed:Math.round(elapsed*10)/10,start};
-}
-function updateHmIntel(){
-  const prev=Number(CURRENT_HM_REF.hm)||0;
-  const hm=num(document.getElementById("hm").value);
-  const taken=document.getElementById("hmTakenTime").value;
-  const shift=document.getElementById("shift").value;
-  document.getElementById("hmPreviousCard").textContent=prev>0?fmt(prev):"Belum ada";
-  document.getElementById("hmPreviousCardSource").textContent=CURRENT_HM_REF.source||"-";
-  document.getElementById("hmCcrCard").textContent=hm===null?"-":fmt(hm);
-  document.getElementById("hmTakenCard").textContent=`Jam ambil HM: ${taken||"-"}`;
-  const warning=document.getElementById("hmIntelWarning");
-  warning.style.display="none";
-  if(hm!==null&&prev>0){
-    const work=hm-prev;
-    if(work>=0){
-      document.getElementById("hmWorkCard").textContent=`${fmt(work)} jam`;
-    }else{
-      document.getElementById("hmWorkCard").textContent="HM lebih kecil";
-      warning.textContent=`⚠️ HM CCR ${fmt(hm)} lebih kecil dari HM sebelumnya ${fmt(prev)}. Cek ulang HM/koreksi sebelum simpan.`;
-      warning.style.display="block";
-    }
-  }else{
-    document.getElementById("hmWorkCard").textContent=prev>0?"Masukkan HM":"Data awal";
-  }
-  if(taken&&shift&&!shiftAcceptsTime(shift,taken)){
-    warning.textContent=`⚠️ Jam pengambilan HM ${taken} tidak sesuai ${shift}.`;
-    warning.style.display="block";
-  }
-  const est=estimateHmNow();
-  if(est){
-    document.getElementById("hmEstimateCard").textContent=fmt(est.hm);
-    document.getElementById("hmEstimateNote").textContent=`+${fmt(est.elapsed)} HM dari jam pengambilan • terus bertambah sampai refueling`;
-  }else{
-    document.getElementById("hmEstimateCard").textContent="-";
-    document.getElementById("hmEstimateNote").textContent="Menunggu HM & jam pengambilan";
-  }
+function renderUnitOptions(){
+    const opts=document.getElementById("unitOptions");
+    opts.innerHTML="";
+    MASTER_UNITS
+        .slice()
+        .sort((a,b)=>a.localeCompare(b))
+        .forEach(u=>{
+            const o=document.createElement("option");
+            o.value=u;
+            opts.appendChild(o);
+        });
 }
 
-function tag(s){
-  const map={
-    ACTIVE:"tag-active",
-    PENDING_GL:"tag-pending",
-    USED:"tag-used",
-    REJECTED:"tag-rejected",
-    CANCELLED:"tag-cancelled",
-    EXPIRED:"tag-cancelled"
-  };
-  return `<span class="tag ${map[s]||"tag-cancelled"}">${esc(s)}</span>`;
+function mergeUnitMasterRows(rows){
+    const map=new Map(BASE_MASTER_UNITS.map(code=>[
+        code,
+        {
+            code_unit:code,
+            egi:"",
+            code_ellips:code,
+            active:true,
+            note:"",
+            qr_generated:false,
+            qr_generated_at:null,
+            qr_generated_by_name:null
+        }
+    ]));
+
+    (rows||[]).forEach(row=>{
+        const code=normalizeUnit(row.code_unit);
+        if(!code)return;
+        map.set(code,{
+            code_unit:code,
+            egi:row.egi||"",
+            code_ellips:row.code_ellips||code,
+            active:row.active!==false,
+            note:row.note||"",
+            qr_generated:row.qr_generated===true,
+            qr_generated_at:row.qr_generated_at||null,
+            qr_generated_by_name:row.qr_generated_by_name||null
+        });
+    });
+
+    UNIT_MASTER_ROWS=Array.from(map.values())
+        .sort((a,b)=>a.code_unit.localeCompare(b.code_unit));
+
+    MASTER_UNITS=UNIT_MASTER_ROWS
+        .filter(r=>r.active)
+        .map(r=>r.code_unit);
+
+    renderUnitOptions();
+    renderUnitTable();
+    renderBulkHmTable();
 }
 
-function updateLimit(){
-  const qty=num(document.getElementById("maxQty").value)||0;
-  const tol=num(document.getElementById("toleranceQty").value)||0;
-  document.getElementById("finalLimit").textContent=fmt(qty+tol);
-}
-
-function updateQrDisplay(){
-  document.getElementById("qrDisplay").value=
-    upper(document.getElementById("unit").value);
-}
-
-async function loadUnits(){
-  const {data,error}=await db
-    .from("unit_master")
-    .select("code_unit,egi")
-    .order("code_unit",{ascending:true});
-
-  if(error)throw error;
-
-  document.getElementById("unitList").innerHTML=
-    (data||[]).map(x=>
-      `<option value="${esc(x.code_unit)}">${esc(x.egi||"")}</option>`
-    ).join("");
-}
-
-async function refreshFillingNo(){
-  const unit=upper(document.getElementById("unit").value);
-  const tanggal=document.getElementById("tanggal").value;
-  const shift=document.getElementById("shift").value;
-
-  let next=1;
-
-  if(unit && tanggal && shift){
+async function loadUnitMaster(){
     const {data,error}=await db
-      .from("ccr_allocations")
-      .select("filling_no,status")
-      .eq("tanggal",tanggal)
-      .eq("shift",shift)
-      .eq("unit",unit)
-      .not("status","in",'("CANCELLED","REJECTED","EXPIRED")');
-
-    if(!error && data?.length){
-      next=Math.max(...data.map(x=>Number(x.filling_no)||0))+1;
-    }
-  }
-
-  document.getElementById("nextFillNo").textContent=next;
-
-  const box=document.getElementById("reasonBox");
-  const hint=document.getElementById("approvalHint");
-
-  if(next>=2){
-    box.classList.remove("hidden");
-    hint.innerHTML=
-      `Pengisian ke-${next} akan <b>PENDING_GL</b> sampai disetujui GL.`;
-  }else{
-    box.classList.add("hidden");
-    hint.textContent="Pengisian ke-1 langsung ACTIVE.";
-  }
-
-  return next;
-}
-
-function validate(next){
-  const tanggal=document.getElementById("tanggal").value;
-  const shift=document.getElementById("shift").value;
-  const unit=upper(document.getElementById("unit").value);
-  const operator=clean(document.getElementById("operator").value);
-  const hm=num(document.getElementById("hm").value);
-  const hmTaken=document.getElementById("hmTakenTime").value;
-  const qty=num(document.getElementById("maxQty").value);
-  const tol=num(document.getElementById("toleranceQty").value);
-
-  if(!tanggal)return "Tanggal wajib.";
-  if(!["Shift 1","Shift 2"].includes(shift))return "Shift wajib.";
-  if(!unit)return "Unit wajib.";
-  if(!operator)return "Nama Operator wajib.";
-  if(hm===null)return "HM CCR wajib.";
-  if(!hmTaken)return "Jam pengambilan HM wajib.";
-  if(!shiftAcceptsTime(shift,hmTaken))return `Jam pengambilan HM ${hmTaken} tidak sesuai ${shift}.`;
-  const takenTs=operationalTimestamp(tanggal,shift,hmTaken);
-  if(takenTs&&takenTs.getTime()>Date.now()+120000)return "Jam pengambilan HM tidak boleh di masa depan.";
-  if(qty===null||qty<=0)return "Qty Jatah harus lebih dari 0 L.";
-  if(tol===null||tol<0)return "Toleransi tidak boleh minus.";
-
-  if(next>=2 && !clean(document.getElementById("requestReason").value)){
-    return `Pengisian ke-${next} wajib memiliki alasan untuk approval GL.`;
-  }
-  return "";
-}
-
-async function save(){
-  const btn=document.getElementById("saveBtn");
-  const status=document.getElementById("formStatus");
-
-  btn.disabled=true;
-  btn.textContent="MENYIMPAN...";
-  status.textContent="Memeriksa ritasi...";
-
-  try{
-    const next=await refreshFillingNo();
-    const err=validate(next);
-    if(err)throw new Error(err);
-
-    const unit=upper(document.getElementById("unit").value);
-
-    const payload={
-      tanggal:document.getElementById("tanggal").value,
-      shift:document.getElementById("shift").value,
-      unit,
-      barcode_code:unit,
-      nrp:null,
-      operator_unit:clean(document.getElementById("operator").value),
-      hm_previous_ref:CURRENT_HM_REF.hm>0?Number(CURRENT_HM_REF.hm):null,
-      hm_previous_source:CURRENT_HM_REF.source||null,
-      hm_ccr:num(document.getElementById("hm").value),
-      hm_taken_time:document.getElementById("hmTakenTime").value,
-      hm_work_since_previous:(CURRENT_HM_REF.hm>0&&num(document.getElementById("hm").value)!==null&&num(document.getElementById("hm").value)>=CURRENT_HM_REF.hm)?Math.round((num(document.getElementById("hm").value)-CURRENT_HM_REF.hm)*10)/10:null,
-      max_qty:num(document.getElementById("maxQty").value),
-      tolerance_qty:num(document.getElementById("toleranceQty").value)||0,
-      request_reason:
-        next>=2
-          ? clean(document.getElementById("requestReason").value)
-          : null,
-      note:clean(document.getElementById("note").value)||null,
-      created_by:window.KPP_SESSION?.user?.id||null,
-      created_by_name:PROFILE?.display_name||null,
-      created_by_role:PROFILE?.role||null
-    };
-
-    const {data,error}=await db
-      .from("ccr_allocations")
-      .insert(payload)
-      .select("*")
-      .single();
+        .from("unit_master")
+        .select("code_unit,egi,code_ellips,active,note,qr_generated,qr_generated_at,qr_generated_by_name")
+        .order("code_unit",{ascending:true});
 
     if(error){
-      const m=String(error.message||"");
-
-      if(m.includes("ccr_one_pending_per_unit")){
-        throw new Error(
-          `${unit} masih punya pengajuan PENDING GL. Selesaikan pengajuan itu dulu.`
-        );
-      }
-
-      if(m.includes("ccr_one_active_per_unit")){
-        throw new Error(
-          `${unit} masih punya jatah ACTIVE. Jika ini pengisian tambahan, buat sebagai ritasi berikutnya setelah data ter-refresh.`
-        );
-      }
-
-      throw error;
+        console.warn("Unit Master online belum tersedia:",error.message);
+        mergeUnitMasterRows([]);
+        document.getElementById("unitSaveStatus").textContent=
+            "⚠️ Unit Master online belum tersedia. Jalankan unit_master_setup.sql terlebih dahulu.";
+        return;
     }
 
-    const limit=
-      Number(data.max_qty||0)+
-      Number(data.tolerance_qty||0);
+    mergeUnitMasterRows(data||[]);
+}
 
-    if(data.status==="ACTIVE"){
-      status.innerHTML=
-        `✅ <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} ACTIVE.</b> `+
-        `${esc(data.operator_unit)} • HM ${fmt(data.hm_ccr)} @ ${String(data.hm_taken_time||"-").slice(0,5)} • Batas ${fmt(limit)} L.`;
+function getFilteredUnitRows(){
+    const q=normalizeUnit(document.getElementById("unitSearch")?.value||"");
+    const qrMode=document.getElementById("qrFilter")?.value||"all";
+
+    return UNIT_MASTER_ROWS.filter(row=>{
+        const hay=[
+            row.code_unit,
+            row.egi,
+            row.code_ellips,
+            row.note
+        ].join(" ").toUpperCase();
+
+        const searchOk=!q || hay.includes(q);
+
+        const qrOk=
+            qrMode==="all" ||
+            (qrMode==="yes" && row.qr_generated) ||
+            (qrMode==="no" && !row.qr_generated);
+
+        return searchOk && qrOk;
+    });
+}
+
+function setQrSelected(code,checked){
+    code=normalizeUnit(code);
+
+    if(checked){
+        QR_SELECTED.add(code);
     }else{
-      status.innerHTML=
-        `🟡 <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} PENDING GL.</b> `+
-        `Belum bisa dipakai Fuelman.`;
+        QR_SELECTED.delete(code);
+    }
+}
+
+function renderUnitTable(){
+    const body=document.getElementById("unitMasterBody");
+    if(!body)return;
+
+    const filtered=getFilteredUnitRows();
+
+    document.getElementById("totalMasterUnit").textContent=
+        UNIT_MASTER_ROWS.length;
+
+    document.getElementById("totalActiveUnit").textContent=
+        UNIT_MASTER_ROWS.filter(r=>r.active).length;
+
+    document.getElementById("totalQrGenerated").textContent=
+        UNIT_MASTER_ROWS.filter(r=>r.qr_generated).length;
+
+    if(!filtered.length){
+        body.innerHTML='<tr><td colspan="8">Unit tidak ditemukan.</td></tr>';
+        return;
     }
 
-    await loadRows();
-
-    document.getElementById("operator").value="";
-    document.getElementById("hm").value="";
-    document.getElementById("hmTakenTime").value=localTimeHm();
-    document.getElementById("maxQty").value="";
-    document.getElementById("toleranceQty").value="0";
-    document.getElementById("requestReason").value="";
-    document.getElementById("note").value="";
-
-    await refreshFillingNo();
-    updateLimit();
-    updateHmIntel();
-
-  }catch(e){
-    console.error(e);
-    status.textContent="❌ "+e.message;
-  }finally{
-    btn.disabled=false;
-    btn.textContent="💾 SIMPAN JATAH";
-  }
-}
-
-
-function openGlEdit(id){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
-
-  const r=ROWS.find(x=>String(x.id)===String(id));
-  if(!r)return;
-  if(r.status==="USED"){alert("Jatah USED tidak boleh diedit.");return;}
-
-  document.getElementById("editId").value=r.id;
-  document.getElementById("editUnit").value=r.unit||"";
-  document.getElementById("editFillNo").value=r.filling_no??"";
-  document.getElementById("editOperator").value=r.operator_unit||"";
-  document.getElementById("editHmPrevious").value=r.hm_previous_ref??"";
-  document.getElementById("editHm").value=r.hm_ccr??"";
-  document.getElementById("editHmTakenTime").value=String(r.hm_taken_time||"").slice(0,5);
-  document.getElementById("editMaxQty").value=r.max_qty??"";
-  document.getElementById("editTolerance").value=r.tolerance_qty??0;
-  document.getElementById("editStatus").value=r.status||"";
-  document.getElementById("editReason").value=r.request_reason||"";
-  document.getElementById("editNote").value=r.note||"";
-
-  document.getElementById("glEditOverlay").classList.remove("hidden");
-}
-function closeGlEdit(){
-  document.getElementById("glEditOverlay").classList.add("hidden");
-}
-async function saveGlEdit(){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
-
-  const id=Number(document.getElementById("editId").value);
-  const operator=clean(document.getElementById("editOperator").value);
-  const hmPrevious=num(document.getElementById("editHmPrevious").value);
-  const hm=num(document.getElementById("editHm").value);
-  const hmTaken=document.getElementById("editHmTakenTime").value;
-  const maxQty=num(document.getElementById("editMaxQty").value);
-  const tol=num(document.getElementById("editTolerance").value);
-  const reason=clean(document.getElementById("editReason").value)||null;
-  const note=clean(document.getElementById("editNote").value)||null;
-
-  if(!operator||hm===null||!hmTaken||maxQty===null||maxQty<=0||tol===null||tol<0){
-    alert("Lengkapi Nama Operator, HM, Jam Pengambilan HM, Jatah dan Toleransi.");
-    return;
-  }
-
-  const {error}=await db.from("ccr_allocations").update({
-    operator_unit:operator,
-    hm_ccr:hm,
-    hm_taken_time:hmTaken,
-    hm_work_since_previous:(hmPrevious!==null&&hm>=hmPrevious)?Math.round((hm-hmPrevious)*10)/10:null,
-    max_qty:maxQty,
-    tolerance_qty:tol,
-    request_reason:reason,
-    note
-  }).eq("id",id);
-
-  if(error){alert("❌ Edit gagal: "+error.message);return;}
-
-  closeGlEdit();
-  await loadRows();
-  await refreshFillingNo();
-  alert("✅ Jatah CCR berhasil diedit.");
-}
-async function glDelete(id){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
-
-  const r=ROWS.find(x=>String(x.id)===String(id));
-  if(!r)return;
-  if(r.status==="USED"){
-    alert("Jatah USED tidak boleh dihapus karena sudah menjadi transaksi fuel.");
-    return;
-  }
-
-  if(!confirm(
-    `Hapus permanen jatah CCR ini?\n\nUnit: ${r.unit}\nPengisian ke-${r.filling_no}\nOperator: ${r.operator_unit||"-"}\nStatus: ${r.status}\n\nPenghapusan tetap tercatat di audit log.`
-  ))return;
-
-  const {error}=await db.from("ccr_allocations").delete().eq("id",id);
-  if(error){alert("❌ Hapus gagal: "+error.message);return;}
-
-  await loadRows();
-  await refreshFillingNo();
-  alert("✅ Jatah CCR sudah dihapus.");
-}
-
-async function cancelRow(id){
-  const r=ROWS.find(x=>String(x.id)===String(id));
-  if(!r)return;
-
-  if(!confirm(
-    `Batalkan jatah ${r.unit} pengisian ke-${r.filling_no}?`
-  ))return;
-
-  const {error}=await db
-    .from("ccr_allocations")
-    .update({status:"CANCELLED"})
-    .eq("id",id)
-    .in("status",["ACTIVE","PENDING_GL"]);
-
-  if(error){
-    alert("Gagal membatalkan: "+error.message);
-    return;
-  }
-
-  await loadRows();
-  await refreshFillingNo();
-}
-
-async function loadRows(){
-  const filter=document.getElementById("statusFilter").value;
-
-  let q=db
-    .from("ccr_allocations")
-    .select("*")
-    .order("tanggal",{ascending:false})
-    .order("id",{ascending:false})
-    .limit(500);
-
-  if(filter!=="ALL"){
-    q=q.eq("status",filter);
-  }
-
-  const {data,error}=await q;
-
-  if(error){
-    document.getElementById("tableStatus").textContent=
-      "❌ "+error.message;
-    return;
-  }
-
-  ROWS=data||[];
-
-  const body=document.getElementById("body");
-
-  body.innerHTML=ROWS.length
-    ? ROWS.map(r=>{
-        const limit=
-          Number(r.max_qty||0)+
-          Number(r.tolerance_qty||0);
-
-        const canCancel=
-          ["ACTIVE","PENDING_GL"].includes(r.status) &&
-          (
-            PROFILE?.role==="gl" ||
-            String(r.created_by||"")===String(window.KPP_SESSION?.user?.id||"")
-          );
-
-        const canGlControl=
-          PROFILE?.role==="gl" &&
-          r.status!=="USED";
+    body.innerHTML=filtered.map(row=>{
+        const qrTitle=row.qr_generated_at
+            ? `Terakhir: ${new Date(row.qr_generated_at).toLocaleString("id-ID")}${row.qr_generated_by_name?` • ${row.qr_generated_by_name}`:""}`
+            : "Belum pernah ditandai QR dibuat";
 
         return `
-          <tr>
-            <td>${dateID(r.tanggal)}</td>
-            <td>${esc(r.shift)}</td>
-            <td><b>${r.filling_no??"-"}</b></td>
-            <td><b>${esc(r.unit)}</b></td>
-            <td class="left">${esc(r.operator_unit||"-")}</td>
-            <td class="table-hm">${fmt(r.hm_previous_ref)}</td>
-            <td class="table-hm"><b>${fmt(r.hm_ccr)}</b></td>
-            <td>${String(r.hm_taken_time||"-").slice(0,5)}</td>
-            <td>${r.hm_work_since_previous===null||r.hm_work_since_previous===undefined?"-":fmt(r.hm_work_since_previous)+" jam"}</td>
-            <td>${r.used_estimated_hm===null||r.used_estimated_hm===undefined?"-":fmt(r.used_estimated_hm)}</td>
-            <td>${fmt(r.max_qty)} L</td>
-            <td>${fmt(r.tolerance_qty)} L</td>
-            <td><b>${fmt(limit)} L</b></td>
-            <td>${tag(r.status)}</td>
-            <td class="left">${esc(r.request_reason||"-")}</td>
-            <td>${esc(r.created_by_name||"-")}</td>
+        <tr>
             <td>
-              ${
-                canGlControl
-                  ? `<button class="btn-blue edit-btn" data-id="${r.id}" style="padding:7px 9px">EDIT</button>
-                     <button class="btn-danger delete-btn" data-id="${r.id}" style="padding:7px 9px">HAPUS</button>`
-                  : canCancel
-                    ? `<button class="btn-red cancel-btn" data-id="${r.id}" style="padding:7px 9px">Batalkan</button>`
-                    : "-"
-              }
+                <input
+                    class="qr-check"
+                    type="checkbox"
+                    ${QR_SELECTED.has(row.code_unit)?"checked":""}
+                    onchange="setQrSelected('${row.code_unit}',this.checked)"
+                >
             </td>
-          </tr>
-        `;
-      }).join("")
-    : '<tr><td colspan="17">Belum ada data.</td></tr>';
-
-  body.querySelectorAll(".cancel-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>cancelRow(btn.dataset.id));
-  });
-  body.querySelectorAll(".edit-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>openGlEdit(btn.dataset.id));
-  });
-  body.querySelectorAll(".delete-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>glDelete(btn.dataset.id));
-  });
-
-  document.getElementById("tableStatus").textContent=
-    `✅ ${ROWS.length} data CCR terbaca.`;
+            <td><b>${esc(row.code_unit)}</b></td>
+            <td>${esc(row.egi||"-")}</td>
+            <td>${esc(row.code_ellips||row.code_unit)}</td>
+            <td class="${row.active?"badge-active":"badge-off"}">
+                ${row.active?"AKTIF":"TIDAK AKTIF"}
+            </td>
+            <td title="${esc(qrTitle)}">
+                <span class="badge-qr ${row.qr_generated?"yes":"no"}">
+                    ${row.qr_generated?"SUDAH ADA QR":"BELUM QR"}
+                </span>
+                ${
+                    row.qr_generated
+                        ? `<div style="font-size:10px;color:#64748b;margin-top:4px">
+                             Dibuat: ${esc(row.qr_generated_by_name||"GL/Admin")}
+                           </div>`
+                        : ""
+                }
+            </td>
+            <td>${esc(row.note||"-")}</td>
+            <td>
+                <div class="qr-actions">
+                    <button class="small-btn" onclick="editUnitMaster('${row.code_unit}')">EDIT</button>
+                    <button class="qr-btn" onclick="generateOneQr('${row.code_unit}')">QR INI</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join("");
 }
 
-document.getElementById("unit").addEventListener("input",()=>{
-  updateQrDisplay();
+function applyQrQuickSelect(){
+    const mode=document.getElementById("qrQuickSelect").value;
+    const visible=getFilteredUnitRows();
+
+    if(mode==="clear"){
+        QR_SELECTED.clear();
+    }else if(mode==="visible"){
+        visible.forEach(row=>QR_SELECTED.add(row.code_unit));
+    }else if(mode==="noqr"){
+        UNIT_MASTER_ROWS
+            .filter(row=>!row.qr_generated && row.active)
+            .forEach(row=>QR_SELECTED.add(row.code_unit));
+    }
+
+    renderUnitTable();
+}
+
+function generateOneQr(code){
+    QR_SELECTED.clear();
+    QR_SELECTED.add(normalizeUnit(code));
+    generateSelectedQr();
+}
+
+async function generateSelectedQr(){
+    const codes=Array.from(QR_SELECTED);
+
+    if(!codes.length){
+        alert("Centang minimal 1 unit yang mau dibuat QR.");
+        return;
+    }
+
+    const generatedBy=
+        window.KPP_PROFILE?.display_name ||
+        "GL/Admin";
+
+    const generatedAt=
+        new Date().toISOString();
+
+    const {error}=await kppDb
+        .from("unit_master")
+        .update({
+            qr_generated:true,
+            qr_generated_at:generatedAt,
+            qr_generated_by_name:generatedBy
+        })
+        .in("code_unit",codes);
+
+    if(error){
+        alert(
+            "❌ Gagal menandai QR sebagai sudah dibuat.\n\n"+
+            error.message
+        );
+        return;
+    }
+
+    UNIT_MASTER_ROWS.forEach(row=>{
+        if(codes.includes(row.code_unit)){
+            row.qr_generated=true;
+            row.qr_generated_at=generatedAt;
+            row.qr_generated_by_name=generatedBy;
+        }
+    });
+
+    renderUnitTable();
+
+    const url=
+        "qr-unit.html?units="+
+        encodeURIComponent(codes.join(","));
+
+    window.location.href=url;
+}
+
+function editUnitMaster(code){
+    const row=UNIT_MASTER_ROWS.find(r=>r.code_unit===code);
+    if(!row)return;
+
+    document.getElementById("masterCode").value=row.code_unit;
+    document.getElementById("masterEgi").value=row.egi||"";
+    document.getElementById("masterEllipse").value=row.code_ellips||row.code_unit;
+    document.getElementById("masterActive").value=row.active?"true":"false";
+    document.getElementById("masterQrGenerated").value=row.qr_generated?"true":"false";
+    document.getElementById("masterNote").value=row.note||"";
+    window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function resetUnitForm(){
+    document.getElementById("masterCode").value="";
+    document.getElementById("masterEgi").value="";
+    document.getElementById("masterEllipse").value="";
+    document.getElementById("masterActive").value="true";
+    document.getElementById("masterQrGenerated").value="false";
+    document.getElementById("masterNote").value="";
+    document.getElementById("unitSaveStatus").textContent="";
+}
+
+async function saveUnitMaster(){
+    const code=normalizeUnit(document.getElementById("masterCode").value);
+    const egi=document.getElementById("masterEgi").value.trim().toUpperCase();
+    const ellipse=normalizeUnit(document.getElementById("masterEllipse").value)||code;
+    const active=document.getElementById("masterActive").value==="true";
+    const qrGenerated=document.getElementById("masterQrGenerated").value==="true";
+    const note=document.getElementById("masterNote").value.trim();
+    const status=document.getElementById("unitSaveStatus");
+
+    if(!code){
+        alert("Masukkan CODE UNIT.");
+        return;
+    }
+
+    if(!/^[A-Z0-9-]+$/.test(code)){
+        alert("CODE UNIT hanya boleh huruf, angka, dan tanda minus (-).");
+        return;
+    }
+
+    const {error}=await db
+        .from("unit_master")
+        .upsert({
+            code_unit:code,
+            egi,
+            code_ellips:ellipse,
+            active,
+            note,
+            qr_generated:qrGenerated,
+            qr_generated_at:qrGenerated ? new Date().toISOString() : null,
+            qr_generated_by_name:
+                qrGenerated
+                    ? (window.KPP_PROFILE?.display_name||"GL/Admin")
+                    : null
+        },{onConflict:"code_unit"});
+
+    if(error){
+        status.textContent="❌ "+error.message;
+        return;
+    }
+
+    status.textContent=`✅ ${code} berhasil disimpan ke Master Unit.`;
+    await loadUnitMaster();
+
+    // Supaya unit baru langsung bisa dikoreksi HM-nya.
+    document.getElementById("unitInput").value=code;
+}
+
+document.getElementById("masterCode").addEventListener("input",e=>{
+    e.target.value=e.target.value.toUpperCase();
+    if(!document.getElementById("masterEllipse").value.trim()){
+        document.getElementById("masterEllipse").value=e.target.value;
+    }
 });
-document.getElementById("unit").addEventListener("change",async()=>{
-  updateQrDisplay();
-  await loadHmReference();
-  await refreshFillingNo();
-});
-document.getElementById("tanggal").addEventListener("change",async()=>{await refreshFillingNo();updateHmIntel();});
-document.getElementById("shift").addEventListener("change",async()=>{await refreshFillingNo();updateHmIntel();});
-document.getElementById("hm").addEventListener("input",updateHmIntel);
-document.getElementById("hmTakenTime").addEventListener("input",updateHmIntel);
-document.getElementById("maxQty").addEventListener("input",updateLimit);
-document.getElementById("toleranceQty").addEventListener("input",updateLimit);
-document.getElementById("refreshNoBtn").addEventListener("click",refreshFillingNo);
-document.getElementById("saveBtn").addEventListener("click",save);
-document.getElementById("refreshBtn").addEventListener("click",loadRows);
-document.getElementById("statusFilter").addEventListener("change",loadRows);
-document.getElementById("closeEditBtn").addEventListener("click",closeGlEdit);
-document.getElementById("cancelEditBtn").addEventListener("click",closeGlEdit);
-document.getElementById("saveEditBtn").addEventListener("click",saveGlEdit);
+document.getElementById("masterEllipse").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
 
-document.addEventListener("kpp-auth-ready",async e=>{
-  PROFILE=e.detail.profile;
+document.getElementById("effectiveDate").value=localDate();
+document.getElementById("effectiveTime").value=localTime();
+document.getElementById("bulkEffectiveDate").value=localDate();
+document.getElementById("bulkEffectiveTime").value=localTime();
+document.getElementById("unitInput").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
 
-  const op=currentOperationalShift();
-  document.getElementById("tanggal").value=op.tanggal;
-  document.getElementById("shift").value=op.shift;
-  document.getElementById("hmTakenTime").value=localTimeHm();
-  if(HM_ESTIMATE_TIMER)clearInterval(HM_ESTIMATE_TIMER);
-  HM_ESTIMATE_TIMER=setInterval(updateHmIntel,60000);
+loadUnitMaster();
 
-  try{
-    await expireStale();
-    await loadUnits();
-    await loadRows();
-    await refreshFillingNo();
-    updateLimit();
-    updateHmIntel();
-  }catch(err){
-    document.getElementById("formStatus").textContent=
-      "❌ "+err.message;
-  }
+
+function getBulkRows(){
+    const q=normalizeUnit(document.getElementById("bulkHmSearch")?.value||"");
+    return UNIT_MASTER_ROWS.filter(r=>r.active && (!q || [r.code_unit,r.egi,r.code_ellips].join(" ").toUpperCase().includes(q)));
+}
+function updateBulkCounts(){
+    const selected=Array.from(BULK_HM_SELECTED).filter(code=>MASTER_UNITS.includes(code));
+    const filled=selected.filter(code=>{
+        const v=BULK_HM_VALUES.get(code);
+        return v!==undefined && String(v).trim()!=="" && Number.isFinite(Number(v));
+    });
+    document.getElementById("bulkSelectedCount").textContent=selected.length;
+    document.getElementById("bulkFilledCount").textContent=filled.length;
+}
+function setBulkSelected(code,checked){
+    code=normalizeUnit(code);
+    if(checked)BULK_HM_SELECTED.add(code);else BULK_HM_SELECTED.delete(code);
+    updateBulkCounts();
+}
+function setBulkHmValue(code,value){
+    code=normalizeUnit(code);
+    BULK_HM_VALUES.set(code,value);
+    if(String(value).trim()!=="")BULK_HM_SELECTED.add(code);
+    updateBulkCounts();
+}
+function bulkSelectVisible(checked){
+    getBulkRows().forEach(r=>checked?BULK_HM_SELECTED.add(r.code_unit):BULK_HM_SELECTED.delete(r.code_unit));
+    renderBulkHmTable();
+}
+async function loadBulkCurrentHm(){
+    const rows=UNIT_MASTER_ROWS.filter(r=>r.active);
+    const next=new Map();
+    let idx=0;
+    async function worker(){
+        while(idx<rows.length){
+            const row=rows[idx++];
+            try{next.set(row.code_unit,(await getLatest(row.code_unit)).current)}
+            catch{next.set(row.code_unit,{hm:0,source:"Gagal baca"})}
+        }
+    }
+    await Promise.all(Array.from({length:Math.min(8,Math.max(1,rows.length))},()=>worker()));
+    BULK_HM_CURRENT=next;
+    renderBulkHmTable();
+}
+function renderBulkHmTable(){
+    const body=document.getElementById("bulkHmBody");
+    if(!body)return;
+    const rows=getBulkRows();
+    if(!rows.length){body.innerHTML='<tr><td colspan="5">Unit tidak ditemukan.</td></tr>';updateBulkCounts();return}
+    body.innerHTML=rows.map(row=>{
+        const cur=BULK_HM_CURRENT.get(row.code_unit)||{hm:null,source:"Memuat..."};
+        const val=BULK_HM_VALUES.get(row.code_unit)??"";
+        return `<tr>
+            <td><input type="checkbox" ${BULK_HM_SELECTED.has(row.code_unit)?"checked":""} onchange="setBulkSelected('${row.code_unit}',this.checked)"></td>
+            <td><b>${esc(row.code_unit)}</b></td>
+            <td>${cur.hm!==null&&cur.hm!==undefined&&n(cur.hm)>0?fmt(cur.hm):"-"}</td>
+            <td style="text-align:left">${esc(cur.source||"-")}</td>
+            <td><input type="number" min="0" step="0.1" value="${esc(val)}" placeholder="HM aktual" oninput="setBulkHmValue('${row.code_unit}',this.value)"></td>
+        </tr>`;
+    }).join("");
+    updateBulkCounts();
+}
+async function saveBulkCorrections(){
+    const tanggal=document.getElementById("bulkEffectiveDate").value;
+    const jam=document.getElementById("bulkEffectiveTime").value;
+    const operator=document.getElementById("bulkOperator").value.trim();
+    const note=document.getElementById("bulkNote").value.trim()||"Sinkron HM aktual massal";
+    const status=document.getElementById("bulkSaveStatus");
+    if(!tanggal||!jam){alert("Tanggal dan jam efektif wajib diisi.");return}
+    if(!operator){alert("Nama Admin/GL wajib diisi.");return}
+    const codes=Array.from(BULK_HM_SELECTED).filter(code=>MASTER_UNITS.includes(code));
+    if(!codes.length){alert("Pilih minimal 1 unit.");return}
+    const payload=[];
+    const missing=[];
+    codes.forEach(code=>{
+        const raw=BULK_HM_VALUES.get(code);
+        const hm=Number(raw);
+        if(raw===undefined||String(raw).trim()===""||!Number.isFinite(hm)||hm<0)missing.push(code);
+        else payload.push({tanggal,jam,unit:code,hm,operator,note});
+    });
+    if(missing.length){alert("HM belum valid untuk: "+missing.join(", "));return}
+    const preview=payload.slice(0,8).map(r=>`${r.unit} = ${fmt(r.hm)}`).join("\n");
+    const extra=payload.length>8?`\n... +${payload.length-8} unit lain`:"";
+    if(!confirm(`FIX HM ${payload.length} UNIT?\n\n${preview}${extra}\n\nEfektif: ${tanggal} ${jam}\nOleh: ${operator}\n\nHM ini menjadi patokan resmi mulai waktu efektif.`))return;
+    const btn=document.getElementById("bulkSaveBtn");
+    btn.disabled=true;
+    status.textContent=`⏳ Menyimpan ${payload.length} HM...`;
+    try{
+        const {error}=await db.from("hm_corrections").insert(payload);
+        if(error)throw error;
+        status.textContent=`✅ ${payload.length} HM berhasil difix sebagai patokan resmi.`;
+        BULK_HM_SELECTED.clear();
+        BULK_HM_VALUES.clear();
+        await loadBulkCurrentHm();
+    }catch(err){status.textContent="❌ "+err.message}
+    finally{btn.disabled=false}
+}
+
+async function getLatest(unit){
+    const corrRes=await db.from("hm_corrections")
+        .select("id,tanggal,jam,hm,operator,note")
+        .eq("unit",unit)
+        .not("hm","is",null)
+        .order("tanggal",{ascending:false})
+        .order("jam",{ascending:false})
+        .order("id",{ascending:false})
+        .limit(1);
+    if(corrRes.error)throw corrRes.error;
+    const corr=corrRes.data?.[0]||null;
+
+    if(corr&&Number.isFinite(Number(corr.hm))){
+        let current={
+            hm:n(corr.hm),
+            source:`HM Master / Koreksi Aktual (${corr.tanggal} ${String(corr.jam||"").slice(0,5)})`
+        };
+        const afterRes=await db.from("fuel_history")
+            .select("id,tanggal,jam,hm_akhir")
+            .eq("unit",unit)
+            .eq("hm_ref_excluded",false)
+            .gte("tanggal",corr.tanggal)
+            .not("hm_akhir","is",null)
+            .order("tanggal",{ascending:true})
+            .order("jam",{ascending:true})
+            .order("id",{ascending:true})
+            .limit(1000);
+        if(afterRes.error)throw afterRes.error;
+        const corrKey=operationalKey(corr);
+        for(const row of (afterRes.data||[])){
+            if(operationalKey(row)<=corrKey)continue;
+            const hm=n(row.hm_akhir);
+            if(hm!==null&&hm>current.hm){
+                current={hm,source:`HM valid setelah koreksi (${row.tanggal} ${String(row.jam||"").slice(0,5)})`};
+            }
+        }
+        return {fuel:null,corr,current};
+    }
+
+    const fuelRes=await db.from("fuel_history")
+        .select("id,tanggal,jam,hm_akhir")
+        .eq("unit",unit)
+        .eq("hm_ref_excluded",false)
+        .not("hm_akhir","is",null)
+        .order("hm_akhir",{ascending:false})
+        .order("tanggal",{ascending:false})
+        .order("id",{ascending:false})
+        .limit(1);
+    if(fuelRes.error)throw fuelRes.error;
+    const fuel=fuelRes.data?.[0]||null;
+    const candidates=[];
+    if(fuel&&Number.isFinite(Number(fuel.hm_akhir)))candidates.push({hm:n(fuel.hm_akhir),source:`HM valid tertinggi transaksi (${fuel.tanggal} ${String(fuel.jam||"").slice(0,5)})`});
+    if(Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit))candidates.push({hm:n(MASTER_LAST_HM[unit]),source:"Baseline logsheet Excel"});
+    candidates.sort((a,b)=>b.hm-a.hm);
+    const current=candidates[0]||{hm:0,source:"Belum ada HM"};
+    return {fuel,corr:null,current};
+}
+
+async function checkUnit(){
+    const unit=normalizeUnit(document.getElementById("unitInput").value);
+    if(!MASTER_UNITS.includes(unit)){alert("CODE UNIT tidak ada di master populasi.");return}
+    selectedUnit=unit;
+    document.getElementById("checkStatus").textContent="Mengambil HM...";
+    try{
+        const data=await getLatest(unit);
+        document.getElementById("currentHm").textContent=data.current.hm>0?fmt(data.current.hm):"Belum ada";
+        document.getElementById("currentSource").textContent=data.current.source;
+        const baseline=Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit)?MASTER_LAST_HM[unit]:null;
+        document.getElementById("baselineHm").textContent=baseline!==null?fmt(baseline):"Tidak ada";
+        document.getElementById("lastCorrection").textContent=data.corr?fmt(data.corr.hm):"Belum ada";
+        document.getElementById("lastCorrectionTime").textContent=data.corr?`${data.corr.tanggal} ${String(data.corr.jam).slice(0,5)} • ${data.corr.operator||"-"}`:"-";
+        document.getElementById("actualHm").value="";
+        document.getElementById("checkStatus").textContent=`✅ ${unit} siap dikoreksi bila HM aktual berbeda.`;
+        await loadHistory(unit);
+    }catch(err){document.getElementById("checkStatus").textContent="❌ "+err.message}
+}
+
+async function loadHistory(unit){
+    const {data,error}=await db.from("hm_corrections").select("id,tanggal,jam,unit,hm,operator,note").eq("unit",unit).order("tanggal",{ascending:false}).order("jam",{ascending:false}).order("id",{ascending:false}).limit(20);
+    const body=document.getElementById("historyBody");
+    if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}
+    if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
+    body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");
+}
+
+async function saveCorrection(){
+    if(!selectedUnit){alert("Cek/pilih unit terlebih dahulu.");return}
+    const hm=parseFloat(document.getElementById("actualHm").value);
+    const tanggal=document.getElementById("effectiveDate").value;
+    const jam=document.getElementById("effectiveTime").value;
+    const operator=document.getElementById("operator").value.trim();
+    const note=document.getElementById("note").value.trim();
+    if(Number.isNaN(hm)||hm<0){alert("Masukkan HM aktual yang valid.");return}
+    if(!tanggal||!jam){alert("Tanggal dan jam efektif wajib diisi.");return}
+    if(!operator){alert("Masukkan nama operator/fuelman.");return}
+    const ok=confirm(`Simpan HM aktual?
+
+Unit: ${selectedUnit}
+HM Aktual: ${fmt(hm)}
+Efektif: ${tanggal} ${jam}
+
+Data histori logsheet lama tidak akan dihapus.`);
+    if(!ok)return;
+    const {error}=await db.from("hm_corrections").insert({tanggal,jam,unit:selectedUnit,hm,operator,note});
+    const status=document.getElementById("saveStatus");
+    if(error){status.textContent="❌ "+error.message;return}
+    status.textContent=`✅ HM aktual ${selectedUnit} = ${fmt(hm)} tersimpan dan menjadi patokan sesuai waktu efektif.`;
+    document.getElementById("effectiveDate").value=localDate();
+    document.getElementById("effectiveTime").value=localTime();
+    document.getElementById("actualHm").value="";
+    await checkUnit();
+}
+document.addEventListener("kpp-auth-ready",()=>{
+    const el=document.getElementById("bulkOperator");
+    if(el&&!el.value)el.value=window.KPP_PROFILE?.display_name||"";
 });
 </script>
-
-<div id="glEditOverlay" class="edit-overlay hidden">
-  <div class="edit-card">
-    <div class="edit-head">
-      <div>
-        <h3>✏️ Edit Jatah CCR — GL</h3>
-        <div style="font-size:12px;color:#64748b;margin-top:4px">
-          Kalau Unit/Tanggal/Shift salah, hapus lalu buat ulang agar nomor ritasi tetap aman.
-        </div>
-      </div>
-      <button type="button" class="btn-outline" id="closeEditBtn">✕</button>
-    </div>
-
-    <input type="hidden" id="editId">
-
-    <div class="edit-grid">
-      <div><label>Unit</label><input id="editUnit" readonly></div>
-      <div><label>Pengisian Ke-</label><input id="editFillNo" readonly></div>
-      <div><label>Nama Operator</label><input id="editOperator"></div>
-      <div><label>HM Sebelumnya</label><input type="number" step="0.1" id="editHmPrevious" readonly></div>
-      <div><label>HM CCR</label><input type="number" step="0.1" id="editHm"></div>
-      <div><label>Jam Pengambilan HM</label><input type="time" step="60" id="editHmTakenTime"></div>
-      <div><label>Qty Jatah (L)</label><input type="number" step="1" min="1" id="editMaxQty"></div>
-      <div><label>Toleransi (L)</label><input type="number" step="1" min="0" id="editTolerance"></div>
-      <div><label>Status</label><input id="editStatus" readonly></div>
-      <div class="wide"><label>Alasan Tambahan</label><textarea id="editReason"></textarea></div>
-      <div class="wide"><label>Catatan</label><textarea id="editNote"></textarea></div>
-    </div>
-
-    <div class="actions">
-      <button type="button" class="btn-blue" id="saveEditBtn">💾 SIMPAN EDIT</button>
-      <button type="button" class="btn-outline" id="cancelEditBtn">BATAL</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
