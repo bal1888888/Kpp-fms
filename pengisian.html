@@ -492,243 +492,245 @@ window.KPP_ACTIVE_PAGE="pengisian";
             color: #334155;
         }
 
+
+
+        /* ===== V11 INFOGRAPHIC WORKFLOW LAYOUT ===== */
+        .container{max-width:760px!important;margin:22px auto!important;padding:16px!important;}
+        .form-box{padding:22px!important;border-radius:20px!important;border:1px solid rgba(203,213,225,.75)!important;box-shadow:0 22px 50px rgba(2,6,23,.18)!important;background:rgba(255,255,255,.98)!important;}
+        .form-box h2{font-size:27px!important;color:#0f172a!important;margin:0 0 16px!important;letter-spacing:-.02em!important;}
+        .workflow-ribbon{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:6px;margin:0 0 18px;padding:10px;border:1px solid #dbe5f0;border-radius:14px;background:#f8fbff;}
+        .workflow-ribbon div{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;color:#475569;font-size:11px;text-align:center;}
+        .workflow-ribbon span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#0f766e;color:#fff;font-weight:900;flex:0 0 auto;}
+        .workflow-ribbon div:nth-of-type(even) span{background:#2563eb}.workflow-ribbon i{font-style:normal;color:#94a3b8;font-size:18px;font-weight:900}.workflow-ribbon b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .workflow-card{position:relative!important;background:linear-gradient(180deg,#fff,#fbfdff)!important;border:1px solid #dbe5f0!important;border-radius:16px!important;padding:18px!important;margin-bottom:16px!important;box-shadow:0 7px 20px rgba(15,23,42,.06)!important;}
+        .workflow-card-mini{border-radius:13px!important;background:#f8fbff!important;border-color:#dbe5f0!important;box-shadow:none!important;}
+        .workflow-title{display:flex;align-items:center;gap:12px;margin-bottom:15px;text-align:left!important;}
+        .workflow-title>span{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#0f766e);color:#fff;display:grid;place-items:center;font-size:19px;font-weight:950;box-shadow:0 6px 14px rgba(15,118,110,.20);flex:0 0 auto;}
+        .workflow-title.blue>span{background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 6px 14px rgba(37,99,235,.20);}
+        .workflow-title b{display:block;font-size:16px;color:#0f172a;line-height:1.2}.workflow-title small{display:block;margin-top:3px;color:#64748b;font-size:11px;line-height:1.35;font-weight:600;}
+        .workflow-card .form-group{margin-bottom:13px!important;}.workflow-card label{font-size:12px!important;color:#334155!important;letter-spacing:.01em;}
+        .workflow-card input,.workflow-card select{min-height:46px!important;border:1.5px solid #cbd5e1!important;border-radius:10px!important;background:#fff!important;padding:11px 13px!important;transition:.15s ease;}
+        .workflow-card input:focus,.workflow-card select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.10)!important;}
+        .workflow-step-1 input,.workflow-step-1 select{border-color:#86efac!important}.workflow-step-1 input:focus,.workflow-step-1 select:focus{border-color:#16a34a!important;box-shadow:0 0 0 3px rgba(22,163,74,.10)!important;}
+        .wh-display{margin-top:8px!important;border-radius:12px!important;background:#f0fdf4!important;border-color:#86efac!important;padding:12px!important}.wh-display strong{font-size:25px!important;}
+        .scan-actions{gap:10px!important}.scan-btn,.check-btn{min-height:44px!important;border-radius:10px!important;font-size:13px!important;font-weight:900!important;box-shadow:none!important}.scan-btn{background:#2563eb!important}.check-btn{background:#16a34a!important;}
+        .unit-result{padding:12px 15px!important;margin-bottom:16px!important}.unit-result span{color:#64748b!important;font-size:12px!important}.unit-result strong{font-size:18px!important;color:#0f172a!important;}
+        .previous-hm{text-align:center!important;background:linear-gradient(180deg,#fffaf3,#fff7ed)!important;border-color:#fdba74!important;}.previous-hm .workflow-title{text-align:left!important}.previous-hm>small{font-size:11px!important;font-weight:800!important}.previous-hm>strong{font-size:29px!important;color:#ea580c!important;}
+        .fueling-mode-box{margin:0 0 16px!important;border-radius:12px!important;padding:11px 13px!important;font-size:12px!important;}
+        .hm-result{border-radius:12px!important;padding:13px!important;margin-bottom:13px!important;background:#f0fdf4!important}.hm-result strong{font-size:24px!important;color:#16a34a!important;}
+        .warning{border-radius:11px!important;font-size:12px!important;padding:10px 12px!important;margin-bottom:14px!important;}
+        .save-step{margin-top:5px;padding-top:15px;border-top:1px dashed #cbd5e1}.save-step .workflow-title{margin-bottom:12px}.save-btn{min-height:48px!important;border-radius:11px!important;background:linear-gradient(135deg,#16a34a,#15803d)!important;font-size:14px!important;font-weight:950!important;letter-spacing:.02em;box-shadow:0 10px 20px rgba(22,163,74,.18)!important;}
+        .ccr-allocation-box{border-radius:15px!important;box-shadow:none!important}.ccr-grid{gap:9px!important}.ccr-item{border-radius:10px!important;}
+        .back{display:inline-flex!important;margin-top:12px!important;color:#64748b!important;font-size:12px!important;text-decoration:none!important;font-weight:800!important;}
+        @media(max-width:640px){.container{padding:10px!important;margin:10px auto!important}.form-box{padding:14px!important;border-radius:16px!important}.form-box h2{font-size:22px!important}.workflow-ribbon{grid-template-columns:repeat(5,1fr);gap:5px}.workflow-ribbon i{display:none}.workflow-ribbon div{flex-direction:column;gap:4px;font-size:9px}.workflow-ribbon span{width:24px;height:24px}.workflow-card{padding:14px!important}.workflow-title>span{width:34px;height:34px;font-size:17px}.workflow-title b{font-size:14px}.workflow-title small{font-size:10px}.scan-actions{grid-template-columns:1fr!important}.scan-actions button{width:100%!important}.previous-hm>strong{font-size:25px!important}}
+
+
+
+/* ===== V12 PREVIEW-FINAL PENGISIAN LAYOUT ===== */
+body{background:#f3f6fb!important;color:#0f172a!important;}
+.container{max-width:1500px!important;margin:18px auto 28px!important;padding:0 18px!important;}
+.form-box{background:transparent!important;padding:0!important;box-shadow:none!important;border-radius:0!important;}
+.form-box>h2,.workflow-ribbon,.form-box>.info{display:none!important;}
+.fuel-workspace{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;align-items:start;}
+.fuel-main{min-width:0;display:flex;flex-direction:column;gap:10px;}
+.fuel-card{background:#fff;border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.05);display:grid;grid-template-columns:320px minmax(0,1fr);min-width:0;overflow:hidden;}
+.fuel-card+.fuel-card{margin-top:0;}
+.step-side{display:flex;gap:16px;align-items:flex-start;padding:22px 20px;border-right:1px dashed #dbe5f0;background:linear-gradient(180deg,#fff,#fbfdff);}
+.step-no{width:44px;height:44px;flex:0 0 44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:22px;font-weight:950;background:linear-gradient(135deg,#16a34a,#0f766e);box-shadow:0 8px 18px rgba(15,118,110,.18);}
+.step-side.blue .step-no{background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 8px 18px rgba(37,99,235,.18);}
+.step-copy{padding-top:2px;}
+.step-copy h3{font-size:17px;line-height:1.2;margin:0 0 7px;color:#0f172a;}
+.step-copy p{font-size:12px;line-height:1.55;color:#64748b;margin:0;max-width:210px;}
+.step-content{padding:22px;min-width:0;}
+.step-grid-3{display:grid;grid-template-columns:1fr 1fr 160px;gap:14px;align-items:end;}
+.step-grid-2{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:end;}
+.form-group{margin-bottom:0!important;}
+label{font-size:11px!important;color:#334155!important;margin-bottom:7px!important;letter-spacing:.02em;}
+input,select{min-height:44px!important;border:1px solid #cbd5e1!important;border-radius:9px!important;background:#fff!important;padding:10px 12px!important;font-size:13px!important;}
+input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.09)!important;outline:none!important;}
+#fuelTruck,#shift{border-color:#86efac!important;}
+.wh-display{margin:0!important;min-height:74px!important;padding:11px 12px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;border-radius:12px!important;background:#f0fdf4!important;border:1px solid #a7f3d0!important;}
+.wh-display.hidden{display:none!important;}
+.wh-display small{font-size:10px!important;margin-bottom:4px!important;color:#64748b!important;}
+.wh-display strong{font-size:24px!important;color:#16a34a!important;}
+.scan-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;}
+.scan-btn,.check-btn{min-height:44px!important;border-radius:9px!important;font-size:12px!important;font-weight:900!important;box-shadow:none!important;}
+.scan-btn{background:#2563eb!important}.check-btn{background:#16a34a!important;}
+.unit-inline{margin-top:12px;}
+.unit-result{margin:0!important;padding:11px 14px!important;border-radius:10px!important;background:#f0fdf4!important;border:1px solid #bbf7d0!important;}
+.unit-result span{font-size:11px!important;color:#475569!important}.unit-result strong{font-size:18px!important;color:#16a34a!important;}
+#qrScannerBox{margin-top:12px!important;border-radius:12px!important;}
+.suggestion-box{margin-top:10px!important;}
+.hm-info-grid{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;align-items:stretch;}
+.unit-metric{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:12px;padding:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:104px;}
+.unit-metric small{font-size:10px;color:#64748b;font-weight:800;margin-bottom:7px}.unit-metric strong{font-size:25px;color:#15803d;}
+.previous-hm{margin:0!important;padding:14px!important;border-radius:12px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;min-height:104px;background:#fffaf3!important;border:1px solid #fdba74!important;box-shadow:none!important;}
+.previous-hm.hidden{display:none!important;}
+.previous-hm .workflow-title{display:none!important}.previous-hm>small{font-size:10px!important}.previous-hm>strong{font-size:30px!important;}.hm-source{font-size:10px!important;margin-top:6px!important;}
+.fueling-mode-box{margin:0!important;padding:11px 14px!important;border-radius:10px!important;font-size:11px!important;line-height:1.55!important;}
+.ccr-allocation-box,.ccr-error-box{margin:0!important;border-radius:14px!important;box-shadow:0 4px 14px rgba(15,23,42,.04)!important;}
+.form-area-stack{display:flex;flex-direction:column;gap:10px;}
+#formArea.fuel-form-area{padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;}
+#formArea.fuel-form-area.hidden{display:none!important;}
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.data-grid .hm-result{margin:0!important;min-height:74px!important;border-radius:10px!important;padding:10px!important;display:flex;flex-direction:column;justify-content:center;}
+.data-grid .hm-result small{font-size:10px!important}.data-grid .hm-result strong{font-size:22px!important;}
+#warning{grid-column:1/-1;margin:0!important;}
+.save-card .step-content{padding:18px 22px;}
+.save-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;align-items:center;}
+.summary-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:13px 15px;}
+.summary-title{font-size:11px;font-weight:900;color:#15803d;margin-bottom:7px;}
+.summary-list{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:4px;font-size:10.5px;color:#334155;}
+.summary-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted #dbe5e1;padding-bottom:3px;}
+.summary-row b{color:#0f172a;white-space:nowrap;}
+.save-side{display:flex;flex-direction:column;gap:9px;}
+.save-btn{min-height:50px!important;border-radius:10px!important;background:linear-gradient(135deg,#16a34a,#15803d)!important;font-size:14px!important;font-weight:950!important;box-shadow:0 10px 20px rgba(22,163,74,.17)!important;}
+.save-hint{font-size:10px;color:#64748b;line-height:1.45;text-align:center;}
+.fuel-guide-side{position:sticky;top:76px;background:#fff;border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.05);padding:18px 16px;}
+.guide-head h3{font-size:17px;margin:0 0 4px;color:#0f172a}.guide-head p{font-size:10.5px;color:#64748b;line-height:1.45;margin:0 0 14px;}
+.guide-line{position:relative;padding-left:34px;display:flex;flex-direction:column;gap:17px;}
+.guide-line::before{content:"";position:absolute;left:12px;top:17px;bottom:17px;border-left:1px dashed #cbd5e1;}
+.guide-item{position:relative;}
+.guide-dot{position:absolute;left:-34px;top:0;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#16a34a;color:#fff;font-size:11px;font-weight:950;z-index:1;}
+.guide-item:nth-child(even) .guide-dot{background:#2563eb;}
+.guide-item b{display:block;font-size:11.5px;color:#0f172a;margin-bottom:4px}.guide-item span{display:block;font-size:10px;color:#64748b;line-height:1.45;}
+.guide-open{width:100%;margin-top:16px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:9px;padding:10px 12px;font-size:10.5px;font-weight:900;cursor:pointer;}
+.page-foot{text-align:center;color:#64748b;font-size:10px;padding:12px 0 0;}
+.back{display:none!important;}
+.session-info{margin:0!important;border-radius:12px!important;font-size:11px!important;}
+@media(max-width:1100px){
+  .fuel-workspace{grid-template-columns:1fr;}.fuel-guide-side{position:static;display:none;}.fuel-card{grid-template-columns:250px minmax(0,1fr);}.step-grid-3{grid-template-columns:1fr 1fr 150px;}
+}
+@media(max-width:760px){
+  .container{padding:0 10px!important;margin:10px auto 20px!important;}.fuel-card{grid-template-columns:1fr;border-radius:14px;}.step-side{border-right:0;border-bottom:1px dashed #dbe5f0;padding:14px;gap:12px;}.step-no{width:36px;height:36px;flex-basis:36px;font-size:17px;}.step-copy h3{font-size:14px;margin-bottom:4px}.step-copy p{font-size:10px;max-width:none}.step-content{padding:14px}.step-grid-3,.step-grid-2,.data-grid,.save-layout,.hm-info-grid{grid-template-columns:1fr}.scan-actions{grid-template-columns:1fr!important}.summary-list{grid-template-columns:1fr}.wh-display{min-height:66px!important}.unit-metric,.previous-hm{min-height:82px}.previous-hm>strong{font-size:25px!important;}
+}
+
 </style>
 </head>
 
 <body>
-
-<div class="header">
-    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-    <p>PT KPP - Pengisian Fuel</p>
-</div>
-
+<div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Pengisian Fuel</p></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
+
 <div class="container">
-    <div class="form-box">
-
-        <h2>⛽ Pengisian Fuel</h2>
-
-        <div class="info">
-            Pilih Fuel Truck, lalu pilih atau ketik CODE UNIT. Daftar unit dibaca dari Master Unit online.
-            Sistem akan memakai HM berdasarkan <b>koreksi aktual terbaru sebagai titik reset</b>.
-            Setelah ada Koreksi HM, data lama sebelum koreksi tidak dipakai lagi sebagai acuan.
-            Sesudah titik koreksi, sistem memakai HM valid tertinggi dari transaksi berikutnya.
-        </div>
+  <div class="form-box">
+    <div class="fuel-workspace">
+      <main class="fuel-main">
 
         <div id="fuelmanSessionInfo" class="session-info hidden">
-            <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
-            Fuelman: <span id="sessionFuelman">-</span><br>
-            Shift: <span id="sessionShift">-</span><br>
-            Fuel Truck: <span id="sessionTruck">-</span>
+          <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
+          Fuelman: <span id="sessionFuelman">-</span> · Shift: <span id="sessionShift">-</span> · Fuel Truck: <span id="sessionTruck">-</span>
         </div>
 
-        <div class="section-box">
-            <div class="form-group">
-                <label>Fuel Truck / Sumber Pengisian</label>
-                <select id="fuelTruck">
-                    <option value="">-- Pilih Fuel Truck --</option>
-                    <option value="FT0073">FT0073</option>
-                    <option value="FT0075">FT0075</option>
-                </select>
+        <section class="fuel-card">
+          <div class="step-side"><div class="step-no">1</div><div class="step-copy"><h3>⛽ Pilih Shift & Fuel Truck</h3><p>Pilih shift aktif dan sumber pengisian yang digunakan.</p></div></div>
+          <div class="step-content">
+            <div class="step-grid-3">
+              <div class="form-group"><label>Shift Aktif</label><select id="shift"><option value="">-- Pilih Shift --</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
+              <div class="form-group"><label>Fuel Truck / Sumber Pengisian</label><select id="fuelTruck"><option value="">-- Pilih Fuel Truck --</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
+              <div id="whBox" class="wh-display hidden"><small>WAREHOUSE / WH</small><strong id="whDisplay">-</strong></div>
             </div>
+          </div>
+        </section>
 
-            <div id="whBox" class="wh-display hidden">
-                <small>WAREHOUSE / WH</small>
-                <strong id="whDisplay">-</strong>
+        <section class="fuel-card">
+          <div class="step-side blue"><div class="step-no">2</div><div class="step-copy"><h3>🔎 Pilih / Cari Code Unit</h3><p>Ketik atau scan unit, lalu ambil HM dan kontrol CCR.</p></div></div>
+          <div class="step-content">
+            <div class="step-grid-2">
+              <div class="form-group"><label>CODE UNIT / QR UNIT</label><input type="text" id="unitInput" list="unitOptions" placeholder="Ketik / cari unit..." autocomplete="off"><datalist id="unitOptions"></datalist></div>
+              <div class="scan-actions"><button id="scanQrButton" type="button" class="scan-btn">📷 SCAN QR UNIT</button><button id="checkUnitButton" class="check-btn">CEK UNIT / AMBIL DATA</button></div>
             </div>
-        </div>
+            <div class="unit-inline"><div id="unitResult" class="unit-result hidden"><span>✓ Unit Terpilih</span><strong id="unitDisplay">-</strong></div></div>
+            <div id="qrScannerBox" class="hidden"><div id="qrReader"></div><div id="qrScanStatus" class="scan-status">QR hanya wajib untuk unit yang sedang punya jatah CCR.</div><div style="margin-top:10px"><button id="stopQrButton" type="button" class="scan-stop-btn">✖ TUTUP KAMERA</button></div></div>
+            <div id="suggestionBox" class="suggestion-box hidden"><div class="suggestion-title">🔎 Mungkin yang kamu maksud:</div><div id="suggestionList" class="suggestion-list"></div></div>
+          </div>
+        </section>
 
-        <div class="section-box">
-            <div class="form-group">
-                <label>CODE UNIT / QR UNIT</label>
-                <input
-                    type="text"
-                    id="unitInput"
-                    list="unitOptions"
-                    placeholder="Ketik unit atau scan QR..."
-                    autocomplete="off"
-                >
-                <datalist id="unitOptions"></datalist>
+        <section class="fuel-card">
+          <div class="step-side"><div class="step-no">3</div><div class="step-copy"><h3>🧭 Informasi Unit & HM</h3><p>Pastikan unit terpilih dan HM sebelumnya sudah sesuai.</p></div></div>
+          <div class="step-content">
+            <div class="hm-info-grid">
+              <div class="unit-metric"><small>UNIT TERPILIH</small><strong id="unitDisplayMirror">-</strong></div>
+              <div id="previousHmBox" class="previous-hm hidden"><small>HM SEBELUMNYA</small><strong id="previousHm">-</strong><div class="hm-source" id="hmSource"></div></div>
             </div>
-
-            <div class="scan-actions">
-                <button id="scanQrButton" type="button" class="scan-btn">
-                    📷 SCAN QR UNIT
-                </button>
-
-                <button id="checkUnitButton" class="check-btn">
-                    CEK UNIT / AMBIL DATA
-                </button>
-            </div>
-
-            <div id="qrScannerBox" class="hidden">
-                <div id="qrReader"></div>
-                <div id="qrScanStatus" class="scan-status">
-                    QR hanya wajib untuk unit yang sedang punya jatah CCR.
-                </div>
-                <div style="margin-top:10px">
-                    <button id="stopQrButton" type="button" class="scan-stop-btn">
-                        ✖ TUTUP KAMERA
-                    </button>
-                </div>
-            </div>
-
-            <div id="suggestionBox" class="suggestion-box hidden">
-                <div class="suggestion-title">
-                    🔎 Mungkin yang kamu maksud:
-                </div>
-                <div id="suggestionList" class="suggestion-list"></div>
-            </div>
-        </div>
-
-        <div id="unitResult" class="unit-result hidden">
-            <span>Unit Terpilih</span>
-            <strong id="unitDisplay">-</strong>
-        </div>
-
-        <div id="previousHmBox" class="previous-hm hidden">
-            <small>HM SEBELUMNYA</small>
-            <strong id="previousHm">-</strong>
-            <div class="hm-source" id="hmSource"></div>
-        </div>
-
+          </div>
+        </section>
 
         <div id="fuelingModeBox" class="fueling-mode-box fueling-mode-manual hidden"></div>
 
         <div id="ccrAllocationBox" class="ccr-allocation-box hidden">
-            <h3>✅ JATAH CCR ACTIVE DITEMUKAN</h3>
-
-            <div class="ccr-grid">
-                <div class="ccr-item">
-                    <small>UNIT / QR</small>
-                    <strong id="ccrUnit">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>PENGISIAN KE-</small>
-                    <strong id="ccrFillingNo">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>NAMA OPERATOR</small>
-                    <strong id="ccrOperator">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>HM SEBELUMNYA</small>
-                    <strong id="ccrHmPrevious">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>HM DIBACA CCR</small>
-                    <strong id="ccrHm">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>JAM PENGAMBILAN HM</small>
-                    <strong id="ccrHmTaken">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>JAM KERJA SEJAK REFERENSI</small>
-                    <strong id="ccrHmWork">-</strong>
-                </div>
-
-                <div class="ccr-item ccr-estimate">
-                    <small>ESTIMASI HM SAAT REFUELING</small>
-                    <strong id="ccrHmEstimate">-</strong>
-                    <div class="ccr-time-note" id="ccrHmEstimateNote">Dihitung otomatis sampai saat pengisian disimpan.</div>
-                </div>
-
-                <div class="ccr-item">
-                    <small>JATAH</small>
-                    <strong id="ccrQuota">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>TOLERANSI</small>
-                    <strong id="ccrTolerance">-</strong>
-                </div>
-
-                <div class="ccr-item">
-                    <small>SHIFT CCR</small>
-                    <strong id="ccrShift">-</strong>
-                </div>
-
-                <div class="ccr-item ccr-limit">
-                    <small>BATAS FINAL YANG BOLEH DIISI</small>
-                    <strong id="ccrFinalLimit">-</strong>
-                </div>
-            </div>
+          <h3>✅ JATAH CCR ACTIVE DITEMUKAN</h3>
+          <div class="ccr-grid">
+            <div class="ccr-item"><small>UNIT / QR</small><strong id="ccrUnit">-</strong></div>
+            <div class="ccr-item"><small>PENGISIAN KE-</small><strong id="ccrFillingNo">-</strong></div>
+            <div class="ccr-item"><small>NAMA OPERATOR</small><strong id="ccrOperator">-</strong></div>
+            <div class="ccr-item"><small>HM SEBELUMNYA</small><strong id="ccrHmPrevious">-</strong></div>
+            <div class="ccr-item"><small>HM DIBACA CCR</small><strong id="ccrHm">-</strong></div>
+            <div class="ccr-item"><small>JAM PENGAMBILAN HM</small><strong id="ccrHmTaken">-</strong></div>
+            <div class="ccr-item"><small>JAM KERJA SEJAK REFERENSI</small><strong id="ccrHmWork">-</strong></div>
+            <div class="ccr-item ccr-estimate"><small>ESTIMASI HM SAAT REFUELING</small><strong id="ccrHmEstimate">-</strong><div class="ccr-time-note" id="ccrHmEstimateNote">Dihitung otomatis sampai saat pengisian disimpan.</div></div>
+            <div class="ccr-item"><small>JATAH</small><strong id="ccrQuota">-</strong></div>
+            <div class="ccr-item"><small>TOLERANSI</small><strong id="ccrTolerance">-</strong></div>
+            <div class="ccr-item"><small>SHIFT CCR</small><strong id="ccrShift">-</strong></div>
+            <div class="ccr-item ccr-limit"><small>BATAS FINAL YANG BOLEH DIISI</small><strong id="ccrFinalLimit">-</strong></div>
+          </div>
         </div>
-
         <div id="ccrErrorBox" class="ccr-error-box hidden"></div>
 
-        <div id="formArea" class="hidden">
+        <div id="formArea" class="fuel-form-area hidden">
+          <div class="form-area-stack">
+            <section class="fuel-card">
+              <div class="step-side blue"><div class="step-no">4</div><div class="step-copy"><h3>✏️ Isi Data Pengisian</h3><p>Masukkan HM sekarang, operator dan jumlah fuel.</p></div></div>
+              <div class="step-content">
+                <div class="data-grid">
+                  <div class="form-group"><label>HM Sekarang / Estimasi Refueling</label><input type="number" id="currentHm" placeholder="Masukkan HM sekarang" step="0.1"></div>
+                  <div class="form-group"><label>Nama Operator</label><input type="text" id="operator" placeholder="Masukkan nama operator"></div>
+                  <div class="form-group"><label>Jumlah Fuel (Liter)</label><input type="number" id="fuelQty" placeholder="Masukkan jumlah liter" step="0.01" min="0"></div>
+                  <div class="hm-result"><small>HM JALAN</small><strong id="hmDifference">0 HM</strong></div>
+                  <div id="warning" class="warning">⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.</div>
+                </div>
+                <input type="hidden" id="operatorNrp" value="">
+              </div>
+            </section>
 
-            <div class="form-group">
-                <label>HM Sekarang / Estimasi Refueling</label>
-                <input
-                    type="number"
-                    id="currentHm"
-                    placeholder="Otomatis dihitung dari CCR"
-                    step="0.1"
-                >
-            </div>
-
-            <div class="hm-result">
-                <small>HM JALAN</small>
-                <strong id="hmDifference">0 HM</strong>
-            </div>
-
-            <div id="warning" class="warning">
-                ⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.
-            </div>
-
-            <input type="hidden" id="operatorNrp" value="">
-
-            <div class="form-group">
-                <label>Nama Operator</label>
-                <input
-                    type="text"
-                    id="operator"
-                    placeholder="Otomatis dari CCR"
-                >
-            </div>
-
-            <div class="form-group">
-                <label>Jumlah Fuel (Liter)</label>
-                <input
-                    type="number"
-                    id="fuelQty"
-                    placeholder="Masukkan jumlah liter"
-                    step="0.01"
-                    min="0"
-                >
-            </div>
-
-            <div class="form-group">
-                <label>Shift</label>
-                <select id="shift">
-                    <option value="">-- Pilih Shift --</option>
-                    <option value="1">Shift 1</option>
-                    <option value="2">Shift 2</option>
-                </select>
-            </div>
-
-            <button id="saveButton" class="save-btn">
-                SIMPAN DATA
-            </button>
+            <section class="fuel-card save-card">
+              <div class="step-side"><div class="step-no">5</div><div class="step-copy"><h3>💾 Simpan Data</h3><p>Review ringkasan lalu simpan transaksi.</p></div></div>
+              <div class="step-content">
+                <div class="save-layout">
+                  <div class="summary-box"><div class="summary-title">Ringkasan Pengisian</div><div class="summary-list">
+                    <div class="summary-row"><span>Unit</span><b id="sumUnit">-</b></div>
+                    <div class="summary-row"><span>Fuel Truck (WH)</span><b id="sumTruck">-</b></div>
+                    <div class="summary-row"><span>HM Sebelumnya</span><b id="sumPrev">-</b></div>
+                    <div class="summary-row"><span>HM Sekarang</span><b id="sumCurrent">-</b></div>
+                    <div class="summary-row"><span>Jumlah Fuel</span><b id="sumFuel">-</b></div>
+                    <div class="summary-row"><span>Operator</span><b id="sumOperator">-</b></div>
+                    <div class="summary-row"><span>Shift</span><b id="sumShift">-</b></div>
+                  </div></div>
+                  <div class="save-side"><button id="saveButton" class="save-btn">💾 SIMPAN DATA</button><div class="save-hint">Pastikan seluruh data sudah benar sebelum disimpan.</div></div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
 
-        <a href="dashboard.html" class="back">
-            ← Dashboard
-        </a>
+        <div class="page-foot">© 2026 KPP Mining · KPP TRAM Fuel Management System</div>
+      </main>
 
+      <aside class="fuel-guide-side">
+        <div class="guide-head"><h3>Panduan Visual</h3><p>Ikuti 5 langkah mudah pengisian fuel.</p></div>
+        <div class="guide-line">
+          <div class="guide-item"><div class="guide-dot">1</div><b>Pilih Shift & Fuel Truck</b><span>Tentukan shift aktif dan sumber pengisian.</span></div>
+          <div class="guide-item"><div class="guide-dot">2</div><b>Pilih / Cari Code Unit</b><span>Ketik atau scan QR unit lalu ambil data.</span></div>
+          <div class="guide-item"><div class="guide-dot">3</div><b>Cek Informasi Unit</b><span>Pastikan unit dan HM sebelumnya sudah sesuai.</span></div>
+          <div class="guide-item"><div class="guide-dot">4</div><b>Isi Data Pengisian</b><span>Masukkan HM, operator dan jumlah liter.</span></div>
+          <div class="guide-item"><div class="guide-dot">5</div><b>Simpan Data</b><span>Review ringkasan lalu simpan transaksi.</span></div>
+        </div>
+        <button type="button" class="guide-open" onclick="window.KPP?.openGuide('pengisian',window.KPP_PROFILE||null)">📘 BUKA PANDUAN LENGKAP</button>
+      </aside>
     </div>
+  </div>
 </div>
-
 <script>
 const SUPABASE_URL =
     "https://pwowtyfybfqsveuvqrsb.supabase.co";
@@ -2924,5 +2926,34 @@ document
 
 </script>
 
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const fmt=v=>{const n=Number(v);return Number.isFinite(n)?n.toLocaleString('id-ID',{maximumFractionDigits:1}):'-'};
+  function refreshVisualSummary(){
+    const unit=($('unitDisplay')?.textContent||'-').trim();
+    if($('unitDisplayMirror')) $('unitDisplayMirror').textContent=unit && unit!=='-'?unit:'-';
+    if($('sumUnit')) $('sumUnit').textContent=unit||'-';
+    const ft=$('fuelTruck')?.value||'-';
+    const wh=$('whDisplay')?.textContent?.trim();
+    if($('sumTruck')) $('sumTruck').textContent=ft==='-'?'-':`${ft}${wh&&wh!=='-'?` (${wh})`:''}`;
+    if($('sumPrev')) $('sumPrev').textContent=$('previousHm')?.textContent?.trim()||'-';
+    const cur=$('currentHm')?.value;
+    if($('sumCurrent')) $('sumCurrent').textContent=cur?fmt(cur):'-';
+    const fuel=$('fuelQty')?.value;
+    if($('sumFuel')) $('sumFuel').textContent=fuel?`${fmt(fuel)} L`:'-';
+    if($('sumOperator')) $('sumOperator').textContent=$('operator')?.value?.trim()||'-';
+    const sh=$('shift')?.value;
+    if($('sumShift')) $('sumShift').textContent=sh?`Shift ${sh}`:'-';
+  }
+  ['fuelTruck','shift','unitInput','currentHm','fuelQty','operator'].forEach(id=>$(id)?.addEventListener('input',refreshVisualSummary));
+  ['fuelTruck','shift'].forEach(id=>$(id)?.addEventListener('change',refreshVisualSummary));
+  const observer=new MutationObserver(refreshVisualSummary);
+  ['unitDisplay','previousHm','whDisplay'].forEach(id=>{const el=$(id);if(el)observer.observe(el,{childList:true,subtree:true,characterData:true});});
+  document.addEventListener('kpp-auth-ready',refreshVisualSummary);
+  setTimeout(refreshVisualSummary,250);
+})();
+</script>
 </body>
 </html>
