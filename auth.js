@@ -331,6 +331,33 @@ window.KPP = {
       #kppGuideBtn:hover{background:#1d4ed8!important;color:#fff!important;}
 
 
+
+      /* ===== V21 VISUAL GUIDE MOCKUPS ===== */
+      .kpp-guide-card{width:min(760px,100%)!important;}
+      .kpp-guide-body{padding:18px 22px 16px!important;}
+      .kpp-guide-step-text{min-height:0!important;margin-top:12px!important;}
+      .kpp-guide-visual{
+        margin:12px 0 4px;padding:14px;border-radius:14px;
+        background:linear-gradient(180deg,#f8fbff,#f2f7fb);
+        border:1px solid #dbe5f0;
+      }
+      .kpp-guide-vrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+      .kpp-guide-vfield{background:#fff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 12px;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:#334155;font-size:12px;font-weight:800;}
+      .kpp-guide-vfield.green{border-color:#86efac;background:#f7fff9;}
+      .kpp-guide-vfield.amber{border-color:#fdba74;background:#fffaf3;}
+      .kpp-guide-vfield.purple{border-color:#c4b5fd;background:#faf8ff;}
+      .kpp-guide-vbig{font-size:22px;font-weight:950;color:#0f766e;}
+      .kpp-guide-vbtn{border:0;border-radius:10px;padding:11px 14px;font-size:12px;font-weight:950;color:#fff;background:#2563eb;text-align:center;}
+      .kpp-guide-vbtn.green{background:#16a34a}.kpp-guide-vbtn.red{background:#dc2626}.kpp-guide-vbtn.gray{background:#475569}.kpp-guide-vbtn.purple{background:#7c3aed}
+      .kpp-guide-vtable{overflow:hidden;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font-size:10px;}
+      .kpp-guide-vtable .head,.kpp-guide-vtable .row{display:grid;grid-template-columns:.7fr 1fr 1fr 1fr 1fr;gap:0;}
+      .kpp-guide-vtable span{padding:7px;border-right:1px solid #e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .kpp-guide-vtable .head{background:#0f172a;color:#fff;font-weight:900;}.kpp-guide-vtable .row{color:#334155;border-top:1px solid #e2e8f0;}
+      .kpp-guide-vmetric{background:#fff;border:1px solid #dbe5f0;border-radius:12px;padding:12px;text-align:center;}
+      .kpp-guide-vmetric small{display:block;color:#64748b;font-size:10px;font-weight:900;margin-bottom:4px}.kpp-guide-vmetric strong{font-size:18px;color:#0f172a;}
+      .kpp-guide-varrow{text-align:center;color:#2563eb;font-size:18px;font-weight:900;margin:4px 0;}
+      @media(max-width:600px){.kpp-guide-card{width:100%!important}.kpp-guide-vrow{grid-template-columns:1fr}.kpp-guide-visual{padding:10px}.kpp-guide-head h3{font-size:18px}.kpp-guide-step-title{font-size:17px}}
+
       /* ===== V20 GLOBAL LAYOUT BALANCE ===== */
       .header{
         min-height:88px!important;
@@ -446,6 +473,97 @@ window.KPP = {
           padding-bottom:2px!important;
         }
         .kpp-userbar button,#kppGuideBtn{font-size:10px!important;padding:7px 9px!important;}
+      }
+
+      /* ===== V22 PREVIEW SHELL: CLEAN HEADER + USER MENU ===== */
+      .header{min-height:86px!important;}
+      .kpp-brand-header{
+        width:min(1500px,calc(100% - 28px))!important;
+        min-height:86px!important;
+        grid-template-columns:150px minmax(0,1fr) 210px!important;
+        gap:16px!important;
+        padding:9px 12px!important;
+      }
+      .kpp-brand-logo{
+        width:118px!important;height:58px!important;
+        background:transparent!important;box-shadow:none!important;
+        object-fit:contain!important;
+      }
+      .kpp-brand-title{
+        font-size:clamp(21px,1.9vw,30px)!important;
+        letter-spacing:.015em!important;
+      }
+      .kpp-brand-subtitle{
+        color:#3b82f6!important;
+        font-size:13px!important;
+        font-weight:900!important;
+        margin-top:4px!important;
+      }
+      .kpp-brand-side{display:flex!important;justify-content:flex-end!important;position:relative!important;}
+      .kpp-brand-badge{display:none!important;}
+      .kpp-userbar{display:none!important;}
+      .kpp-user-menu{position:relative;display:inline-flex;align-items:center;}
+      .kpp-user-pill{
+        border:1px solid rgba(96,165,250,.22);
+        background:rgba(8,18,35,.62);
+        color:#f8fafc;
+        min-height:42px;
+        padding:7px 11px 7px 8px;
+        border-radius:14px;
+        display:flex;align-items:center;gap:7px;
+        font-size:11px;font-weight:900;cursor:pointer;
+        box-shadow:0 5px 18px rgba(2,6,23,.24);
+      }
+      .kpp-user-avatar{
+        width:28px;height:28px;border-radius:50%;
+        display:grid;place-items:center;
+        background:linear-gradient(135deg,#60a5fa,#4f46e5);
+        color:#fff;font-size:14px;
+      }
+      .kpp-user-role{color:#a9bdd8;font-weight:800;}
+      .kpp-user-chevron{color:#94a3b8;font-size:12px;margin-left:2px;}
+      .kpp-user-dropdown{
+        position:absolute;right:0;top:calc(100% + 9px);z-index:10020;
+        width:190px;padding:7px;
+        border-radius:13px;border:1px solid rgba(148,163,184,.22);
+        background:#0b1424;box-shadow:0 18px 45px rgba(2,6,23,.42);
+        display:none;
+      }
+      .kpp-user-dropdown.open{display:grid;gap:5px;}
+      .kpp-user-dropdown button{
+        width:100%;border:0;border-radius:9px;padding:10px 11px;
+        background:transparent;color:#e5edf8;text-align:left;
+        font-size:11px;font-weight:850;cursor:pointer;
+      }
+      .kpp-user-dropdown button:hover{background:#14233a;}
+      .kpp-user-dropdown #kppGuideBtn{background:rgba(13,148,136,.13)!important;color:#99f6e4!important;box-shadow:none!important;}
+      .kpp-user-dropdown #kppSwitchBtn{background:rgba(37,99,235,.13)!important;color:#bfdbfe!important;}
+      .kpp-user-dropdown #kppLogoutBtn{background:rgba(185,28,28,.14)!important;color:#fecaca!important;}
+      .app-nav{padding:6px 10px!important;}
+      .app-nav-inner{
+        width:min(1500px,calc(100% - 18px))!important;
+        justify-content:center!important;gap:6px!important;
+      }
+      .app-nav a{padding:8px 11px!important;font-size:11px!important;}
+      @media(max-width:1050px){
+        .kpp-brand-header{grid-template-columns:112px minmax(0,1fr) 168px!important;}
+        .kpp-brand-logo{width:96px!important;height:50px!important;}
+        .kpp-user-pill{min-height:38px;padding:5px 8px;font-size:10px;}
+        .kpp-user-avatar{width:25px;height:25px;font-size:12px;}
+      }
+      @media(max-width:760px){
+        .header{min-height:74px!important;}
+        .kpp-brand-header{
+          grid-template-columns:64px minmax(0,1fr) 44px!important;
+          width:100%!important;min-height:74px!important;padding:8px 9px!important;gap:7px!important;
+        }
+        .kpp-brand-logo{width:58px!important;height:44px!important;}
+        .kpp-brand-title{font-size:clamp(14px,4vw,18px)!important;}
+        .kpp-brand-subtitle{font-size:10px!important;}
+        .kpp-user-pill{width:38px;height:38px;padding:0!important;border-radius:50%;justify-content:center;}
+        .kpp-user-pill .kpp-user-name,.kpp-user-pill .kpp-user-role,.kpp-user-pill .kpp-user-chevron{display:none!important;}
+        .kpp-user-avatar{width:28px;height:28px;}
+        .kpp-user-dropdown{right:0;width:180px;}
       }
 
       @media(max-width:700px){
@@ -567,15 +685,11 @@ window.KPP = {
       pengisian: {
         title: "Pengisian Fuel",
         steps: [
-          ["Pilih Fuel Truck", "Pilih sumber pengisian FT0073 atau FT0075. Jika sesi Fuelman aktif, Fuel Truck harus mengikuti sesi tersebut."],
-          ["Pilih / Scan Code Unit", "Ketik Code Unit lalu klik CEK UNIT / AMBIL DATA. Untuk unit CCR gunakan SCAN QR UNIT sesuai jatah aktif."],
-          ["Cek HM Sebelumnya", "Setelah unit terbaca, lihat HM SEBELUMNYA dan sumber HM. HM resmi mengikuti koreksi/reset Admin/GL terbaru; histori lama yang dikecualikan tidak boleh mengubah acuan live."],
-          ["Masukkan HM Sekarang", "Untuk mode manual, isi HM yang terbaca di unit. Jika unit memakai CCR, sistem menampilkan HM/estimasi refueling dari jatah CCR."],
-          ["Cek HM Jalan", "Lihat HM JALAN yang dihitung dari HM sebelumnya ke HM sekarang. Jika ada warning, periksa kembali HM sebelum lanjut."],
-          ["Isi Nama Operator", "Masukkan nama operator unit. Pada jatah CCR nama dapat terisi otomatis; cukup pastikan benar."],
-          ["Isi Jumlah Fuel", "Masukkan QTY liter yang benar-benar dikeluarkan."],
-          ["Pilih / Cek Shift", "Pastikan Shift 1 atau Shift 2 benar. Jika ada sesi Fuelman aktif, gunakan shift sesi tersebut."],
-          ["Simpan Data", "Cek ulang Fuel Truck, Unit, HM, Operator, Qty, dan Shift lalu tekan SIMPAN DATA satu kali."],
+          ["Pilih Shift & Fuel Truck", "Pilih Shift 1/2 lalu pilih Fuel Truck yang digunakan. Jika sesi Fuelman aktif, Shift dan Fuel Truck harus mengikuti sesi tersebut."],
+          ["Pilih / Scan Code Unit", "Ketik Code Unit lalu klik CEK UNIT / AMBIL DATA. Jika unit punya jatah CCR aktif, gunakan SCAN QR UNIT."],
+          ["Cek Informasi Unit & HM", "Pastikan unit terpilih benar, lalu cek HM SEBELUMNYA. HM live mengikuti correction/reset Admin/GL terbaru dan mengabaikan histori yang sudah dikecualikan."],
+          ["Isi Data Pengisian", "Isi atau cek HM Sekarang, Nama Operator dan Jumlah Fuel. HM Jalan dihitung otomatis. Pada mode CCR, data yang dikunci CCR tetap mengikuti jatah aktif."],
+          ["Review & Simpan Data", "Cek ringkasan Unit, Fuel Truck/WH, HM, Qty, Operator dan Shift. Jika sudah benar, tekan SIMPAN DATA satu kali."],
         ]
       },
       stock: {
@@ -713,6 +827,92 @@ window.KPP = {
       ]
     };
   },
+
+  guideVisual(active, stepTitle, stepIndex) {
+    const page=String(active||"").toLowerCase();
+    const title=String(stepTitle||"").toLowerCase();
+    const field=(label,value="-- Pilih --",cls="")=>`<div class="kpp-guide-vfield ${cls}"><span>${label}</span><b>${value}</b></div>`;
+    const btn=(text,cls="")=>`<div class="kpp-guide-vbtn ${cls}">${text}</div>`;
+    const pair=(a,b)=>`<div class="kpp-guide-vrow">${a}${b}</div>`;
+
+    if(page==="pengisian"){
+      if(title.includes("fuel truck") || title.includes("shift")) return pair(field("Shift Aktif","SHIFT 1","green"),field("Fuel Truck","FT0073","green"));
+      if(title.includes("unit") || title.includes("qr")) return `${field("🔎 CODE UNIT","DT7441")}${pair(btn("📷 SCAN QR UNIT"),btn("CEK UNIT / AMBIL DATA","green"))}`;
+      if(title.includes("hm sebelumnya") || title.includes("acuan")) return `<div class="kpp-guide-vfield green"><span>HM SEBELUMNYA / ACUAN</span><span class="kpp-guide-vbig">8.345 HM</span></div>`;
+      if(title.includes("operator") || title.includes("qty") || title.includes("data")) return pair(field("HM Sekarang","8.351"),field("Nama Operator","Budi"))+pair(field("Jumlah Fuel","440 L"),field("Shift","1"));
+      if(title.includes("simpan")) return `${pair(field("Unit","DT7441","green"),field("HM Jalan","6 HM","green"))}<div style="margin-top:10px">${btn("💾 SIMPAN DATA","green")}</div>`;
+    }
+    if(page==="fuelman"){
+      if(title.includes("shift")) return pair(field("Shift","1","green"),field("Fuel Truck","FT0073","green"));
+      if(title.includes("start")) return btn("▶ START SHIFT","green");
+      if(title.includes("pengisian")) return pair(btn("⛽ BUKA PENGISIAN"),btn("🛢️ STOCK","gray"));
+      if(title.includes("closing")) return pair(field("Stock Akhir FT","12.450 L","amber"),btn("SIMPAN CLOSING","green"));
+      if(title.includes("end")) return btn("■ END SHIFT","red");
+    }
+    if(page==="stock"){
+      if(title.includes("closing")) return pair(field("Fuel Truck","FT0073"),field("Shift","1"))+pair(field("Stock Akhir","12.450 L","green"),btn("SIMPAN CLOSING","green"));
+      if(title.includes("transfer")) return pair(field("Dari FT","FT0073"),field("Ke FT","FT0075"))+field("Qty Transfer","1.000 L");
+      if(title.includes("receipt") || title.includes("penerimaan")) return pair(field("Tujuan","MT01"),field("Transportir","PT. SHA"))+field("Qty Penerimaan","10.000 L","green");
+      return pair(`<div class="kpp-guide-vmetric"><small>TOTAL STOCK</small><strong>116.565 L</strong></div>`,`<div class="kpp-guide-vmetric"><small>STATUS</small><strong style="color:#16a34a">AMAN</strong></div>`);
+    }
+    if(page==="logsheet"){
+      if(title.includes("filter")) return pair(field("Mode Tanggal","Semua Tanggal"),field("Shift","Semua Shift"))+pair(field("WH","FT01"),field("Fuel Truck","FT0075","green"));
+      if(title.includes("hm") || title.includes("rapikan")) return `${field("Filter HM","HM Anomali","amber")}<div class="kpp-guide-varrow">↓</div>${pair(field("DT7441","27.826 HM","amber"),btn("🧹 RAPIKAN HM","purple"))}`;
+      return `<div class="kpp-guide-vtable"><div class="head"><span>TGL</span><span>UNIT</span><span>HM</span><span>QTY</span><span>CEK</span></div><div class="row"><span>22/08</span><span>DT7441</span><span>2.550</span><span>540</span><span>OK</span></div><div class="row"><span>22/08</span><span>DT7442</span><span>2.489</span><span>620</span><span>OK</span></div></div>`;
+    }
+    if(page==="logsheet-editor"){
+      if(title.includes("tanggal")) return pair(field("Tanggal","22/08/2026"),btn("AMBIL DATA"));
+      if(title.includes("edit") || title.includes("hm")) return `<div class="kpp-guide-vtable"><div class="head"><span>UNIT</span><span>HM</span><span>QTY</span><span>SHIFT</span><span>AKSI</span></div><div class="row"><span>DT7441</span><span>2.550</span><span>540</span><span>1</span><span>EDIT</span></div></div>`;
+      if(title.includes("simpan")) return btn("💾 SIMPAN PERUBAHAN","green");
+      return pair(field("Unit","DT7441"),field("HM","2.550"));
+    }
+    if(page==="ccr"){
+      if(title.includes("unit")) return pair(field("Tanggal","22/08/2026"),field("Shift","1"))+field("Unit / ID QR","DT7441");
+      if(title.includes("hm") || title.includes("jam")) return pair(field("HM Sebelumnya","2.550","green"),field("HM dari CCR","2.556"))+pair(field("Jam Ambil HM","10:00"),field("Estimasi Refueling","2.558","green"));
+      if(title.includes("jatah") || title.includes("toleransi")) return pair(field("Qty Jatah","300 L"),field("Toleransi","20 L","amber"));
+      if(title.includes("simpan")) return btn("💾 SIMPAN JATAH","green");
+      return pair(field("Operator","Rado"),field("Unit","DT7441"));
+    }
+    if(page==="ccr-approval"){
+      if(title.includes("refresh")) return btn("↻ REFRESH");
+      if(title.includes("pending") || title.includes("detail")) return `<div class="kpp-guide-vtable"><div class="head"><span>UNIT</span><span>SHIFT</span><span>JATAH</span><span>HM</span><span>STATUS</span></div><div class="row"><span>DT7441</span><span>1</span><span>300</span><span>2.556</span><span>PENDING</span></div></div>`;
+      if(title.includes("setujui")) return pair(btn("✓ SETUJUI","green"),btn("✕ TOLAK","red"));
+      return field("Status","PENDING GL","amber");
+    }
+    if(page==="hm-master"){
+      if(title.includes("master unit")) return pair(btn("🚜 MASTER UNIT","green"),btn("⚙ HM MASTER","gray"));
+      if(title.includes("centang") || title.includes("banyak")) return `<div class="kpp-guide-vtable"><div class="head"><span>✓</span><span>UNIT</span><span>HM REF</span><span>HM BARU</span><span>STATUS</span></div><div class="row"><span>☑</span><span>DT7441</span><span>2.550</span><span>2.558</span><span>SIAP</span></div></div>`;
+      if(title.includes("tanggal") || title.includes("jam")) return pair(field("Tanggal Efektif","22/08/2026"),field("Jam Efektif","16:30"));
+      if(title.includes("simpan")) return btn("💾 SIMPAN HM TERPILIH","green");
+      return pair(field("HM Aktual","2.558"),field("Petugas","Roby / GL"));
+    }
+    if(page==="daily-report"){
+      if(title.includes("tanggal")) return pair(field("Tanggal Report","22/08/2026"),field("Shift","ALL"));
+      if(title.includes("stock")) return pair(`<div class="kpp-guide-vmetric"><small>TOTAL STOCK</small><strong>116.565 L</strong></div>`,`<div class="kpp-guide-vmetric"><small>ITO</small><strong>2,5 Hari</strong></div>`);
+      return pair(`<div class="kpp-guide-vmetric"><small>USAGE YESTERDAY</small><strong>46.665 L</strong></div>`,`<div class="kpp-guide-vmetric"><small>AVG MTD</small><strong>38.910 L</strong></div>`);
+    }
+    if(page==="dashboard"){
+      return `<div class="kpp-guide-vrow"><div class="kpp-guide-vmetric"><small>USAGE 5 HARI</small><strong>↗ 46.665 L</strong></div><div class="kpp-guide-vmetric"><small>TOTAL STOCK</small><strong>116.565 L</strong></div></div><div class="kpp-guide-visual" style="margin-bottom:0"><div style="height:70px;display:flex;align-items:end;gap:8px">${[40,65,48,82,58].map((h,i)=>`<span style="height:${h}%;flex:1;background:${i===3?'#0d9488':'#2563eb'};border-radius:5px 5px 0 0"></span>`).join("")}</div></div>`;
+    }
+    if(page==="riwayat"){
+      if(title.includes("filter") || title.includes("cari")) return pair(field("Tanggal","Semua"),field("Unit","DT7441"));
+      return `<div class="kpp-guide-vtable"><div class="head"><span>JAM</span><span>UNIT</span><span>HM</span><span>QTY</span><span>FT</span></div><div class="row"><span>11:20</span><span>DT7441</span><span>2.558</span><span>540</span><span>FT0073</span></div></div>`;
+    }
+    if(page==="qr-unit"){
+      if(title.includes("cari")) return field("Cari Code Unit","DT7441");
+      if(title.includes("print")) return btn("🖨 PRINT QR INI","purple");
+      return `<div style="display:grid;place-items:center;background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:18px"><div style="width:110px;height:110px;background:repeating-conic-gradient(#0f172a 0 25%,#fff 0 50%) 0/18px 18px;border:7px solid #fff;box-shadow:0 0 0 1px #cbd5e1"></div><b style="margin-top:8px">DT7441</b></div>`;
+    }
+    if(page==="akun"){
+      if(title.includes("username") || title.includes("nama")) return pair(field("Username","tegar"),field("Nama","Tegar"));
+      if(title.includes("jabatan") || title.includes("akses")) return field("Jabatan / Role","FUELMAN","purple");
+      if(title.includes("password")) return field("Password Awal","••••••••");
+      if(title.includes("buat")) return btn("＋ BUAT AKUN","green");
+      return pair(field("User","tegar"),field("Role","FUELMAN"));
+    }
+    return pair(field("Langkah",String(stepIndex+1)),field("Status","Ikuti petunjuk","green"));
+  },
+
   openGuide(active, profile) {
     const guide = this.guideCatalog(active || window.KPP_ACTIVE_PAGE || "", profile || window.KPP_PROFILE || null);
     let host = document.getElementById("kppGuideModal");
@@ -746,6 +946,7 @@ window.KPP = {
             <div class="kpp-guide-progress"><span style="width:${pct}%"></span></div>
             <div class="kpp-guide-stepno">LANGKAH ${stepIndex + 1} / ${total}</div>
             <h4 class="kpp-guide-step-title">${stepTitle}</h4>
+            <div class="kpp-guide-visual">${this.guideVisual(active || window.KPP_ACTIVE_PAGE || "", stepTitle, stepIndex)}</div>
             <div class="kpp-guide-step-text">${stepText}</div>
           </div>
           <div class="kpp-guide-actions">
@@ -796,26 +997,25 @@ window.KPP = {
   },
 
   installGuideButton(profile) {
-    const bar = document.querySelector("#kppUserBar .kpp-userbar-inner > div:last-child");
-    if (bar && !document.getElementById("kppGuideBtn")) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = "kppGuideBtn";
-      btn.textContent = "📘 Panduan";
-      btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
-      bar.prepend(btn);
+    const existing = document.getElementById("kppGuideBtn");
+    if (existing) {
+      if (existing.dataset.kppGuideBound !== "1") {
+        existing.dataset.kppGuideBound = "1";
+        existing.addEventListener("click", () => {
+          this.openGuide(window.KPP_ACTIVE_PAGE || "", profile);
+          document.getElementById("kppUserDropdown")?.classList.remove("open");
+        });
+      }
       return;
     }
 
-    if (!document.getElementById("kppGuideBtn")) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.id = "kppGuideBtn";
-      btn.textContent = "📘 Panduan";
-      btn.style.cssText = "position:fixed;right:14px;bottom:14px;z-index:9998;border:0;border-radius:999px;padding:11px 14px;font-weight:900;cursor:pointer";
-      btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
-      document.body.appendChild(btn);
-    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "kppGuideBtn";
+    btn.textContent = "📘 Panduan";
+    btn.style.cssText = "position:fixed;right:14px;bottom:14px;z-index:9998;border:0;border-radius:999px;padding:11px 14px;font-weight:900;cursor:pointer";
+    btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
+    document.body.appendChild(btn);
   },
 
   simplifyCurrentPage(active) {
@@ -871,28 +1071,52 @@ window.KPP = {
 
   renderUserBar(profile) {
     const el = document.getElementById("kppUserBar");
-    if (!el || !profile) return;
+    if (el) {
+      el.innerHTML = "";
+      el.style.display = "none";
+    }
+    if (!profile) return;
 
-    el.innerHTML = `
-      <div class="kpp-userbar-inner">
-        <div>
-          👤 <b>${profile.display_name}</b>
-          <span>• ${profile.jabatan || this.roleLabel(profile.role)}</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button type="button" id="kppSwitchBtn" style="background:#2563eb">🔄 Ganti Akun</button>
+    const side = document.querySelector(".kpp-brand-side");
+    if (!side) return;
+
+    const displayName = String(profile.display_name || profile.username || "User");
+    const roleText = profile.jabatan || this.roleLabel(profile.role);
+
+    side.innerHTML = `
+      <div class="kpp-user-menu">
+        <button type="button" class="kpp-user-pill" id="kppUserMenuBtn" aria-expanded="false">
+          <span class="kpp-user-avatar">👤</span>
+          <span class="kpp-user-name">${displayName}</span>
+          <span class="kpp-user-role">• ${roleText}</span>
+          <span class="kpp-user-chevron">⌄</span>
+        </button>
+        <div class="kpp-user-dropdown" id="kppUserDropdown">
+          <button type="button" id="kppGuideBtn">📘 Panduan</button>
+          <button type="button" id="kppSwitchBtn">🔄 Ganti Akun</button>
           <button type="button" id="kppLogoutBtn">🚪 Keluar</button>
         </div>
       </div>
     `;
 
-    document.getElementById("kppSwitchBtn")?.addEventListener("click", () => {
-      this.switchAccount();
+    const menuBtn = document.getElementById("kppUserMenuBtn");
+    const menu = document.getElementById("kppUserDropdown");
+    menuBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = !menu?.classList.contains("open");
+      menu?.classList.toggle("open", open);
+      menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
     });
 
-    document.getElementById("kppLogoutBtn")?.addEventListener("click", () => {
-      this.logout();
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".kpp-user-menu")) {
+        menu?.classList.remove("open");
+        menuBtn?.setAttribute("aria-expanded", "false");
+      }
     });
+
+    document.getElementById("kppSwitchBtn")?.addEventListener("click", () => this.switchAccount());
+    document.getElementById("kppLogoutBtn")?.addEventListener("click", () => this.logout());
   },
 
   applyRolePageRules(profile) {
