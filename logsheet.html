@@ -54,6 +54,21 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 .status-hm{background:#fef3c7!important;color:#92400e;font-weight:bold}
 .status-edit{background:#dbeafe!important;color:#1d4ed8;font-weight:bold}
 .status-mixed{background:#ede9fe!important;color:#6d28d9;font-weight:bold}
+
+.status-anomaly{background:#fff1f2!important;color:#be123c;font-weight:800}
+.status-excluded{background:#e2e8f0!important;color:#334155;font-weight:800}
+.hm-tools-note{background:#eef6ff;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;padding:11px 13px;margin:-4px 0 16px;font-size:12px;line-height:1.5;color:#1e3a5f}
+.hm-tools-note b{color:#0f172a}
+.status-cell-wrap{display:flex;align-items:center;justify-content:center;gap:7px;min-width:210px;white-space:normal}
+.cleanup-btn{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:6px 8px;min-height:0;font-size:10px;font-weight:800;white-space:nowrap}
+.cleanup-btn:hover{background:#dbeafe}
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;padding:18px;z-index:5000}
+.modal-card{width:min(520px,100%);background:#fff;border:1px solid #cbd5e1;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.45);padding:18px}
+.modal-card h3{margin:0 0 6px;color:#0f172a}.modal-sub{font-size:12px;line-height:1.5;color:#64748b;margin-bottom:14px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal-field label{display:block;font-size:10px;font-weight:800;color:#475569;margin-bottom:5px}.modal-field input,.modal-field textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px}.modal-field textarea{min-height:82px;resize:vertical}.modal-full{grid-column:1/-1}
+.modal-info{margin:12px 0;padding:10px 11px;border-radius:9px;background:#f8fafc;border:1px solid #e2e8f0;font-size:11px;line-height:1.5;color:#475569}.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.modal-cancel{background:#e2e8f0;color:#334155}.modal-save{background:#2563eb;color:#fff}
+@media(max-width:520px){.modal-grid{grid-template-columns:1fr}.modal-full{grid-column:auto}}
+
 .hidden{display:none!important}
 
 .app-nav{background:#020617;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid #1e3a5f;padding:10px 12px;position:sticky;top:0;z-index:999;box-shadow:0 12px 26px rgba(0,0,0,.34)}
@@ -113,6 +128,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
 <div class="notice" id="dataNotice">Memuat histori + audit perubahan... Kolom CEK akan menjelaskan penyebab: DOUBLE POSTING, masalah data, HM di bawah acuan, atau siapa yang terakhir mengedit (Admin/GL).</div>
+<div class="hm-tools-note"><b>Mode Rapikan HM Admin/GL:</b> gunakan filter HM Anomali untuk menemukan HM turun/loncat. Tombol <b>RAPIKAN HM</b> hanya merapikan histori dan otomatis mengecualikan baris itu dari HM reference. HM resmi tetap diatur lewat HM Master / Bulk Fix.</div>
 
 <div class="summary">
   <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
@@ -140,6 +156,8 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
   <div class="filter-group"><label>Fuel Truck</label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
   <div class="filter-group"><label>Code Unit</label><input type="text" id="filterUnit" placeholder="Contoh: DT7441"></div>
   <div class="filter-group"><label>Fuelman</label><input type="text" id="filterFuelman" placeholder="Contoh: Tegar"></div>
+  <div class="filter-group"><label>Filter HM</label><select id="filterHmAudit"><option value="">Semua HM</option><option value="anomaly">HM Anomali</option><option value="down">HM Turun</option><option value="jump">HM Loncat</option><option value="excluded">Histori Dikecualikan</option></select></div>
+  <div class="filter-group"><label>Batas Loncat HM</label><select id="hmJumpLimit"><option value="50">&gt; 50 HM</option><option value="100" selected>&gt; 100 HM</option><option value="250">&gt; 250 HM</option><option value="500">&gt; 500 HM</option></select></div>
   <div class="button-row"><button class="refresh-btn" id="refreshBtn">↻ REFRESH</button><button class="download-btn" id="downloadBtn">📥 DOWNLOAD EXCEL</button></div>
 </div>
 
@@ -157,6 +175,21 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <div id="loading" class="loading">Mengambil data dari database...</div>
 
 </div></div>
+
+
+<div id="hmCleanupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h3>🧹 Rapikan HM Histori</h3>
+    <div class="modal-sub" id="hmCleanupContext">-</div>
+    <div class="modal-grid">
+      <div class="modal-field"><label>HM Sekarang di Histori</label><input id="cleanupOldHm" readonly></div>
+      <div class="modal-field"><label>HM yang Benar</label><input id="cleanupNewHm" type="number" min="0" step="0.1"></div>
+      <div class="modal-field modal-full"><label>Alasan Rapikan</label><textarea id="cleanupReason" placeholder="Contoh: salah ketik 27826, seharusnya 2478"></textarea></div>
+    </div>
+    <div class="modal-info"><b>Aman untuk sistem HM:</b> transaksi ini tetap ada di Logsheet/audit, tetapi setelah disimpan otomatis <b>tidak dipakai sebagai HM reference</b>. Bila ingin menetapkan HM resmi unit, gunakan HM Master / Bulk Fix.</div>
+    <div class="modal-actions"><button type="button" class="modal-cancel" id="cleanupCancelBtn">BATAL</button><button type="button" class="modal-save" id="cleanupSaveBtn">SIMPAN HISTORI AMAN</button></div>
+  </div>
+</div>
 
 <script>
 const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
@@ -194,6 +227,8 @@ async function loadUnitMasterOnline(){
 let ALL_DATA=[];
 let STATUS_MAP=new Map();
 let AUDIT_MAP=new Map();
+let HM_ANOMALY_MAP=new Map();
+let HM_CLEANUP_ROW=null;
 
 function formatAngka(v){ return Number(v||0).toLocaleString("id-ID"); }
 function formatTanggal(v){
@@ -277,6 +312,55 @@ function buildStatusMap(data){
   });
 
   return statusMap;
+}
+
+function buildHmAnomalyMap(data){
+  const map=new Map();
+  const lastValid=new Map();
+  const jumpLimit=Math.max(1,Number(document.getElementById("hmJumpLimit")?.value||100));
+
+  const sorted=(data||[]).slice().sort((a,b)=>{
+    const ua=String(a.unit||"").toUpperCase(), ub=String(b.unit||"").toUpperCase();
+    if(ua!==ub)return ua.localeCompare(ub);
+    const ka=`${a.tanggal||""}|${String(a.jam||"00:00:00").slice(0,8)}|${String(a.id||"").padStart(20,"0")}`;
+    const kb=`${b.tanggal||""}|${String(b.jam||"00:00:00").slice(0,8)}|${String(b.id||"").padStart(20,"0")}`;
+    return ka.localeCompare(kb);
+  });
+
+  sorted.forEach(item=>{
+    const unit=String(item.unit||"").trim().toUpperCase();
+    const rowKey=String(item.id??"");
+    if(!unit||!rowKey)return;
+
+    if(item.hm_ref_excluded===true){
+      map.set(rowKey,{text:"HISTORI HM — TIDAK JADI ACUAN",cls:"status-excluded",reason:item.hm_ref_excluded_reason||"Dikecualikan dari HM reference oleh Admin/GL.",kind:"excluded"});
+      return;
+    }
+
+    if(item.hm_akhir===null||item.hm_akhir===undefined||item.hm_akhir==="")return;
+    const hm=Number(item.hm_akhir);
+    if(!Number.isFinite(hm))return;
+
+    const prev=lastValid.get(unit)||null;
+    if(!prev){
+      lastValid.set(unit,{hm,id:item.id,tanggal:item.tanggal});
+      return;
+    }
+
+    const delta=hm-prev.hm;
+    if(delta<0){
+      map.set(rowKey,{text:`HM TURUN ${formatAngka(prev.hm)} → ${formatAngka(hm)}`,cls:"status-anomaly",reason:`Indikasi anomali: HM turun ${formatAngka(Math.abs(delta))} dari HM valid sebelumnya ${formatAngka(prev.hm)}.`,kind:"down",previous_hm:prev.hm});
+      return;
+    }
+    if(delta>jumpLimit){
+      map.set(rowKey,{text:`HM LONCAT +${formatAngka(delta)}`,cls:"status-anomaly",reason:`Indikasi anomali: kenaikan ${formatAngka(delta)} HM melebihi batas cek ${formatAngka(jumpLimit)} HM.`,kind:"jump",previous_hm:prev.hm});
+      return;
+    }
+
+    lastValid.set(unit,{hm,id:item.id,tanggal:item.tanggal});
+  });
+
+  return map;
 }
 
 function prettyRole(role){
@@ -446,10 +530,11 @@ function getRowStatus(item,index){
 
   const dataError=getDataErrorStatus(item);
   const duplicate=STATUS_MAP.get(rowKey)||null;
+  const anomaly=HM_ANOMALY_MAP.get(rowKey)||null;
   const hmWarning=getHmWarning(item);
   const edit=getEditStatus(item);
 
-  const primary=dataError || duplicate || hmWarning || null;
+  const primary=dataError || duplicate || anomaly || hmWarning || null;
 
   return combineStatuses(primary,edit);
 }
@@ -514,6 +599,7 @@ function applyFilter(data){
   const fuelTruck=document.getElementById("filterFuelTruck").value;
   const unit=document.getElementById("filterUnit").value.trim().toUpperCase();
   const fuelman=document.getElementById("filterFuelman").value.trim().toUpperCase();
+  const hmAudit=document.getElementById("filterHmAudit")?.value||"";
 
   return data.filter(item=>{
     const t=item.tanggal||"";
@@ -525,6 +611,13 @@ function applyFilter(data){
     if(fuelTruck && getFuelTruck(item)!==fuelTruck) return false;
     if(unit && !String(item.unit||"").toUpperCase().includes(unit)) return false;
     if(fuelman && !getFuelman(item).toUpperCase().includes(fuelman)) return false;
+    if(hmAudit){
+      const a=HM_ANOMALY_MAP.get(String(item.id??""));
+      if(hmAudit==="anomaly" && !(a&&["down","jump"].includes(a.kind)))return false;
+      if(hmAudit==="down" && a?.kind!=="down")return false;
+      if(hmAudit==="jump" && a?.kind!=="jump")return false;
+      if(hmAudit==="excluded" && a?.kind!=="excluded")return false;
+    }
     return true;
   });
 }
@@ -581,13 +674,32 @@ function renderTable(data){
     row.appendChild(td(getFuelman(item)));
 
     const status=getRowStatus(item,index);
-    row.appendChild(td(status.text,status.cls,status.reason));
+    const statusCell=document.createElement("td");
+    if(status.cls)statusCell.className=status.cls;
+    statusCell.title=status.reason||"";
+    const wrap=document.createElement("div");
+    wrap.className="status-cell-wrap";
+    const label=document.createElement("span");
+    label.textContent=status.text||"";
+    wrap.appendChild(label);
+    const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
+    if(anomaly&&["down","jump"].includes(anomaly.kind)){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="cleanup-btn";
+      btn.textContent="🧹 RAPIKAN HM";
+      btn.addEventListener("click",()=>openHmCleanup(item,anomaly));
+      wrap.appendChild(btn);
+    }
+    statusCell.appendChild(wrap);
+    row.appendChild(statusCell);
 
     body.appendChild(row);
   });
 }
 
 function renderFiltered(){
+  HM_ANOMALY_MAP=buildHmAnomalyMap(ALL_DATA);
   const filtered=applyFilter(ALL_DATA);
   updateSummary(filtered);
   renderTable(filtered);
@@ -606,18 +718,24 @@ function renderFiltered(){
     if(st.kind==="double") acc.double++;
     if(st.kind==="error") acc.error++;
     if(st.kind==="hm") acc.hm++;
+    const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
+    if(anomaly?.kind==="down") acc.hmDown++;
+    if(anomaly?.kind==="jump") acc.hmJump++;
+    if(anomaly?.kind==="excluded") acc.excluded++;
     if(getEditStatus(item)) acc.edit++;
 
     return acc;
-  },{double:0,error:0,hm:0,edit:0});
+  },{double:0,error:0,hm:0,hmDown:0,hmJump:0,excluded:0,edit:0});
 
   document.getElementById("dataNotice").textContent=
     `Database: ${formatAngka(ALL_DATA.length)} transaksi • `+
     `Filter: ${formatAngka(filtered.length)} • `+
     `DOUBLE: ${formatAngka(statusCounts.double)} • `+
     `ERROR DATA: ${formatAngka(statusCounts.error)} • `+
-    `HM DI BAWAH ACUAN: ${formatAngka(statusCounts.hm)} • `+
-    `PERNAH DIEDIT ADMIN/GL: ${formatAngka(statusCounts.edit)}.`;
+    `HM TURUN: ${formatAngka(statusCounts.hmDown)} • `+
+    `HM LONCAT: ${formatAngka(statusCounts.hmJump)} • `+
+    `HISTORI DIKECUALIKAN: ${formatAngka(statusCounts.excluded)} • `+
+    `EDIT ADMIN/GL: ${formatAngka(statusCounts.edit)}.`;
 
   return filtered;
 }
@@ -644,6 +762,7 @@ async function loadData(){
     ALL_DATA=fuelRows;
     AUDIT_MAP=buildAuditMap(auditRows);
     STATUS_MAP=buildStatusMap(ALL_DATA);
+    HM_ANOMALY_MAP=buildHmAnomalyMap(ALL_DATA);
 
     renderFiltered();
   }catch(error){
@@ -651,6 +770,45 @@ async function loadData(){
     loading.style.display="none";
     errorBox.style.display="block";
     errorBox.textContent="❌ Gagal mengambil data logsheet: "+error.message;
+  }
+}
+
+function openHmCleanup(item,anomaly){
+  HM_CLEANUP_ROW=item;
+  document.getElementById("hmCleanupContext").textContent=`${String(item.unit||"-").toUpperCase()} • ${formatTanggal(item.tanggal)} • Shift ${item.shift||"-"} • ${anomaly?.text||"HM anomali"}`;
+  document.getElementById("cleanupOldHm").value=item.hm_akhir??"";
+  document.getElementById("cleanupNewHm").value=item.hm_akhir??"";
+  document.getElementById("cleanupReason").value="";
+  document.getElementById("hmCleanupModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("cleanupNewHm")?.focus(),50);
+}
+function closeHmCleanup(){
+  document.getElementById("hmCleanupModal").classList.add("hidden");
+  HM_CLEANUP_ROW=null;
+}
+async function saveHmCleanup(){
+  if(!HM_CLEANUP_ROW)return;
+  const newHmRaw=document.getElementById("cleanupNewHm").value;
+  const reason=document.getElementById("cleanupReason").value.trim();
+  const newHm=newHmRaw===""?null:Number(newHmRaw);
+  if(newHm!==null&&(!Number.isFinite(newHm)||newHm<0)){alert("HM baru tidak valid.");return}
+  if(!reason){alert("Alasan rapikan HM wajib diisi.");return}
+  const btn=document.getElementById("cleanupSaveBtn");
+  btn.disabled=true;btn.textContent="MENYIMPAN...";
+  try{
+    const {data,error}=await supabaseClient.rpc("kpp_cleanup_history_hm",{
+      p_record_id:Number(HM_CLEANUP_ROW.id),
+      p_new_hm:newHm,
+      p_reason:reason
+    });
+    if(error)throw error;
+    closeHmCleanup();
+    await loadData();
+    alert(`✅ HM histori ${data?.unit||""} berhasil dirapikan.\n\nBaris ini tidak akan memengaruhi HM reference.`);
+  }catch(err){
+    alert("❌ Gagal merapikan HM: "+(err?.message||err));
+  }finally{
+    btn.disabled=false;btn.textContent="SIMPAN HISTORI AMAN";
   }
 }
 
@@ -766,11 +924,11 @@ async function downloadExcel(){
     // ===== KETERANGAN STATUS =====
     ws.getCell("A8").value="KETERANGAN";
     ws.mergeCells("B8:E8");
-    ws.getCell("B8").value="JINGGA = ERROR DATA | KUNING = HM DI BAWAH ACUAN";
+    ws.getCell("B8").value="JINGGA = ERROR DATA | MERAH MUDA = HM ANOMALI";
     ws.mergeCells("F8:I8");
     ws.getCell("F8").value="MERAH = DOUBLE POSTING";
     ws.mergeCells("J8:N8");
-    ws.getCell("J8").value="BIRU = EDIT ADMIN/GL | PUTIH = NORMAL";
+    ws.getCell("J8").value="BIRU = EDIT ADMIN/GL | ABU = HM DIKECUALIKAN";
 
     const gold="FFBF9000";
     const legendRanges=["A8:A8","B8:E8","F8:I8","J8:N8"];
@@ -912,6 +1070,12 @@ async function downloadExcel(){
           bold:true,
           color:{argb:"FF000000"}
         };
+      }else if(rowStatus.kind==="down" || rowStatus.kind==="jump"){
+        statusCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFE4E6"}};
+        statusCell.font={name:"Calibri",size:11,bold:true,color:{argb:"FFBE123C"}};
+      }else if(rowStatus.kind==="excluded"){
+        statusCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFE2E8F0"}};
+        statusCell.font={name:"Calibri",size:11,bold:true,color:{argb:"FF334155"}};
       }else if(rowStatus.kind==="hm"){
         statusCell.fill={
           type:"pattern",
@@ -1012,6 +1176,11 @@ async function downloadExcel(){
 
 document.getElementById("filterUnit").addEventListener("input",renderFiltered);
 document.getElementById("filterFuelman").addEventListener("input",renderFiltered);
+document.getElementById("filterHmAudit").addEventListener("change",renderFiltered);
+document.getElementById("hmJumpLimit").addEventListener("change",renderFiltered);
+document.getElementById("cleanupCancelBtn").addEventListener("click",closeHmCleanup);
+document.getElementById("cleanupSaveBtn").addEventListener("click",saveHmCleanup);
+document.getElementById("hmCleanupModal").addEventListener("click",e=>{if(e.target.id==="hmCleanupModal")closeHmCleanup()});
 document.getElementById("dateMode").addEventListener("change",updateDateMode);
 document.getElementById("refreshBtn").addEventListener("click",loadData);
 document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
