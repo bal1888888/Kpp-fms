@@ -152,6 +152,107 @@ window.KPP = {
       ::selection{background:#2563eb;color:#fff;}
       *{scrollbar-color:#475569 transparent;}
 
+      /* ===== KPP TRAM GLOBAL BRANDING ===== */
+      .header{
+        padding:0!important;
+        min-height:94px;
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        overflow:hidden;
+      }
+      .kpp-brand-header{
+        width:min(1320px,100%);
+        min-height:94px;
+        margin:0 auto;
+        padding:12px 22px;
+        display:grid;
+        grid-template-columns:150px minmax(0,1fr) 150px;
+        align-items:center;
+        gap:18px;
+      }
+      .kpp-brand-logo-wrap{
+        min-width:0;
+        display:flex;
+        align-items:center;
+        justify-content:flex-start;
+      }
+      .kpp-brand-logo{
+        display:block;
+        width:138px;
+        height:70px;
+        object-fit:contain;
+        object-position:center;
+        border-radius:10px;
+        background:#000;
+        box-shadow:0 7px 20px rgba(0,0,0,.24);
+      }
+      .kpp-brand-copy{
+        min-width:0;
+        text-align:center;
+      }
+      .kpp-brand-title{
+        margin:0!important;
+        color:#fff!important;
+        font-size:clamp(20px,2.05vw,31px)!important;
+        font-weight:900!important;
+        line-height:1.12!important;
+        letter-spacing:.035em!important;
+        text-shadow:0 2px 12px rgba(0,0,0,.28);
+      }
+      .kpp-brand-subtitle{
+        margin:7px 0 0!important;
+        color:#b9c8dd!important;
+        font-size:13px!important;
+        font-weight:700!important;
+        letter-spacing:.025em!important;
+        line-height:1.25!important;
+      }
+      .kpp-brand-side{
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+      }
+      .kpp-brand-badge{
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+        padding:7px 11px;
+        border:1px solid rgba(74,222,128,.30);
+        border-radius:999px;
+        background:rgba(5,150,105,.12);
+        color:#86efac;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.10em;
+        white-space:nowrap;
+      }
+      .kpp-brand-badge::before{
+        content:"";
+        width:7px;height:7px;border-radius:50%;
+        background:#22c55e;
+        box-shadow:0 0 0 4px rgba(34,197,94,.12);
+      }
+      @media(max-width:760px){
+        .header{min-height:78px;}
+        .kpp-brand-header{
+          min-height:78px;
+          grid-template-columns:76px minmax(0,1fr);
+          gap:10px;
+          padding:10px 12px;
+        }
+        .kpp-brand-logo{width:70px;height:54px;border-radius:8px;}
+        .kpp-brand-title{font-size:clamp(15px,4.25vw,20px)!important;letter-spacing:.01em!important;}
+        .kpp-brand-subtitle{font-size:10.5px!important;margin-top:4px!important;}
+        .kpp-brand-side{display:none;}
+      }
+      @media(max-width:430px){
+        .kpp-brand-header{grid-template-columns:62px minmax(0,1fr);gap:8px;padding:9px 10px;}
+        .kpp-brand-logo{width:58px;height:46px;}
+        .kpp-brand-title{font-size:15px!important;}
+        .kpp-brand-subtitle{font-size:10px!important;}
+      }
+
       /* ===== GLOBAL STEP-BY-STEP GUIDE ===== */
       #kppGuideBtn{
         background:linear-gradient(135deg,#0f766e,#0d9488)!important;
@@ -232,6 +333,57 @@ window.KPP = {
     `;
 
     document.head.appendChild(style);
+  },
+
+  pageSubtitle(active) {
+    const labels = {
+      dashboard: "Dashboard Fuel Operation",
+      gl: "Control Panel GL",
+      admin: "Control Panel Admin",
+      fuelman: "Fuelman Shift & Operation",
+      pengisian: "Pengisian Fuel",
+      stock: "Stock & Closing Fuel",
+      logsheet: "Daily Fuel Logsheet",
+      "logsheet-editor": "Logsheet Editor",
+      "daily-report": "Daily Fuel Report",
+      ccr: "CCR Fuel Allocation",
+      "ccr-approval": "Approval CCR",
+      riwayat: "Riwayat Fuel",
+      "hm-master": "Master Unit & HM",
+      "qr-unit": "QR Unit",
+      akun: "Kelola Akun"
+    };
+    return labels[active] || "Fuel Operation System";
+  },
+
+  installBranding() {
+    const active = window.KPP_ACTIVE_PAGE || "";
+    let header = document.querySelector(".header");
+
+    if (!header) {
+      header = document.createElement("div");
+      header.className = "header";
+      document.body.prepend(header);
+    }
+
+    if (header.dataset.kppBrandInstalled === "1") return;
+    header.dataset.kppBrandInstalled = "1";
+    header.innerHTML = `
+      <div class="kpp-brand-header">
+        <div class="kpp-brand-logo-wrap">
+          <img class="kpp-brand-logo" src="kpp-logo.png" alt="KPP Mining" loading="eager">
+        </div>
+        <div class="kpp-brand-copy">
+          <h1 class="kpp-brand-title">KPP TRAM FUEL MANAGEMENT SYSTEM</h1>
+          <p class="kpp-brand-subtitle">${this.pageSubtitle(active)}</p>
+        </div>
+        <div class="kpp-brand-side">
+          <span class="kpp-brand-badge">TRAM SITE</span>
+        </div>
+      </div>
+    `;
+
+    document.title = `${this.pageSubtitle(active)} - KPP TRAM FMS`;
   },
 
   guideCatalog(active, profile) {
@@ -635,9 +787,13 @@ window.KPP = {
 };
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => window.KPP.installGlobalTheme(), { once:true });
+  document.addEventListener("DOMContentLoaded", () => {
+    window.KPP.installGlobalTheme();
+    window.KPP.installBranding();
+  }, { once:true });
 } else {
   window.KPP.installGlobalTheme();
+  window.KPP.installBranding();
 }
 
 if (window.KPP_ALLOWED_ROLES) {
@@ -651,6 +807,7 @@ if (window.KPP_ALLOWED_ROLES) {
       window.KPP_PROFILE = access.profile;
       window.KPP_SESSION = access.session;
 
+      window.KPP.installBranding();
       window.KPP.renderUserBar(access.profile);
       window.KPP.renderNav(access.profile, window.KPP_ACTIVE_PAGE || "");
       window.KPP.installGuideButton(access.profile);
