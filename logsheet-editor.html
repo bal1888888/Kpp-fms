@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Logsheet Editor - KPP FMS</title>
+<title>Logsheet Editor Aman - KPP FMS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -192,6 +192,9 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
   .import-settings{grid-template-columns:1fr}
   .import-date-control{grid-template-columns:1fr}
 }
+
+.safe-hm-note{background:#eef6ff;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;padding:12px 14px;margin:12px 0 16px;font-size:12px;line-height:1.5;color:#1e3a5f}
+.safe-hm-note b{color:#0f172a}
 </style>
 </head>
 
@@ -205,6 +208,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 <div id="kppRoleNav"></div>
 
 <div class="container">
+<div class="safe-hm-note"><b>Mode Edit Histori Aman.</b> HM yang diubah lewat Logsheet Editor otomatis ditandai sebagai histori saja dan <b>tidak dipakai sebagai HM reference</b>. Untuk mengubah HM resmi unit, gunakan <b>HM Master / Bulk Fix</b>.</div>
 
   <div class="panel">
     <div class="notice">
@@ -547,7 +551,7 @@ async function fetchExistingRange(startDate,endDate){
   while(true){
     const {data,error}=await db
       .from("fuel_history")
-      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name")
+      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name,hm_ref_excluded,hm_ref_excluded_reason")
       .gte("tanggal",startDate)
       .lte("tanggal",endDate)
       .order("tanggal",{ascending:true})
@@ -574,6 +578,9 @@ function dbRowToEditor(r){
     operator:r.operator||"",
     hm_awal:num(r.hm_awal),
     hm_akhir:num(r.hm_akhir),
+    original_hm_akhir:num(r.hm_akhir),
+    hm_ref_excluded:r.hm_ref_excluded===true,
+    hm_ref_excluded_reason:r.hm_ref_excluded_reason||"",
     hm_jalan:num(r.hm_jalan),
     fuel:num(r.fuel),
     shift:normalizeShift(r.shift),
@@ -1134,6 +1141,9 @@ function newBlankRow(){
     operator:"",
     hm_awal:null,
     hm_akhir:null,
+    original_hm_akhir:null,
+    hm_ref_excluded:false,
+    hm_ref_excluded_reason:"",
     hm_jalan:null,
     fuel:null,
     shift:"",
@@ -1178,7 +1188,7 @@ async function loadDate(options={}){
 
   const {data,error}=await db
     .from("fuel_history")
-    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,fuelman_name,hm_ref_excluded,hm_ref_excluded_reason")
     .eq("tanggal",tanggal)
     .order("jam",{ascending:true})
     .order("id",{ascending:true});
@@ -1195,6 +1205,9 @@ async function loadDate(options={}){
     operator:r.operator||"",
     hm_awal:num(r.hm_awal),
     hm_akhir:num(r.hm_akhir),
+    original_hm_akhir:num(r.hm_akhir),
+    hm_ref_excluded:r.hm_ref_excluded===true,
+    hm_ref_excluded_reason:r.hm_ref_excluded_reason||"",
     hm_jalan:num(r.hm_jalan),
     fuel:num(r.fuel),
     shift:normalizeShift(r.shift),
@@ -1225,40 +1238,57 @@ async function getBaseline(unit,tanggal){
   const key=unit+"|"+tanggal;
   if(baselineCache.has(key))return baselineCache.get(key);
 
-  const [fuelRes,corRes]=await Promise.all([
-    db.from("fuel_history")
+  const corRes=await db.from("hm_corrections")
+    .select("tanggal,jam,hm,id")
+    .eq("unit",unit)
+    .lt("tanggal",tanggal)
+    .not("hm","is",null)
+    .order("tanggal",{ascending:false})
+    .order("jam",{ascending:false})
+    .order("id",{ascending:false})
+    .limit(1);
+  if(corRes.error)throw corRes.error;
+
+  const correction=(corRes.data||[])[0]||null;
+  let value=null;
+
+  if(correction&&num(correction.hm)!==null){
+    value=num(correction.hm);
+    const correctionKey=`${correction.tanggal||"0000-00-00"}T${String(correction.jam||"00:00:00").slice(0,8)}|${String(correction.id||"").padStart(20,"0")}`;
+
+    const fuelRes=await db.from("fuel_history")
       .select("tanggal,jam,hm_akhir,id")
       .eq("unit",unit)
+      .eq("hm_ref_excluded",false)
+      .gte("tanggal",correction.tanggal)
+      .lt("tanggal",tanggal)
+      .not("hm_akhir","is",null)
+      .order("tanggal",{ascending:true})
+      .order("jam",{ascending:true})
+      .order("id",{ascending:true})
+      .limit(1000);
+    if(fuelRes.error)throw fuelRes.error;
+
+    for(const row of (fuelRes.data||[])){
+      const rowKey=`${row.tanggal||"0000-00-00"}T${String(row.jam||"00:00:00").slice(0,8)}|${String(row.id||"").padStart(20,"0")}`;
+      const hm=num(row.hm_akhir);
+      if(rowKey>correctionKey&&hm!==null&&(value===null||hm>value))value=hm;
+    }
+  }else{
+    const fuelRes=await db.from("fuel_history")
+      .select("tanggal,jam,hm_akhir,id")
+      .eq("unit",unit)
+      .eq("hm_ref_excluded",false)
       .lt("tanggal",tanggal)
       .not("hm_akhir","is",null)
       .order("hm_akhir",{ascending:false})
       .order("tanggal",{ascending:false})
       .order("id",{ascending:false})
-      .limit(1),
-
-    db.from("hm_corrections")
-      .select("tanggal,jam,hm,id")
-      .eq("unit",unit)
-      .lt("tanggal",tanggal)
-      .not("hm","is",null)
-      .order("hm",{ascending:false})
-      .order("tanggal",{ascending:false})
-      .order("id",{ascending:false})
-      .limit(1)
-  ]);
-
-  if(fuelRes.error)throw fuelRes.error;
-  if(corRes.error)throw corRes.error;
-
-  const f=(fuelRes.data||[])[0]||null;
-  const c=(corRes.data||[])[0]||null;
-
-  const candidates=[
-    f?num(f.hm_akhir):null,
-    c?num(c.hm):null
-  ].filter(v=>v!==null);
-
-  const value=candidates.length?Math.max(...candidates):null;
+      .limit(1);
+    if(fuelRes.error)throw fuelRes.error;
+    const f=(fuelRes.data||[])[0]||null;
+    value=f?num(f.hm_akhir):null;
+  }
 
   baselineCache.set(key,value);
   return value;
@@ -1609,6 +1639,16 @@ async function saveAll(){
         fuelman_name:cleanText(r.fuelman_name)||null
       };
 
+      const hmChanged=num(r.hm_akhir)!==num(r.original_hm_akhir);
+      if(hmChanged){
+        payload.hm_ref_excluded=true;
+        payload.hm_ref_excluded_reason="HM dirapikan melalui Logsheet Editor; tidak dipakai sebagai HM reference.";
+        payload.hm_ref_excluded_at=new Date().toISOString();
+        payload.hm_ref_excluded_by=window.KPP_PROFILE?.user_id||null;
+        payload.hm_ref_excluded_by_name=window.KPP_PROFILE?.display_name||"GL/Admin";
+        payload.hm_ref_excluded_by_role=window.KPP_PROFILE?.role||null;
+      }
+
       const {data,error}=await db
         .from("fuel_history")
         .update(payload)
@@ -1667,6 +1707,12 @@ async function saveAll(){
           fuel_truck:normalizeFT(r.fuel_truck),
           wh:FT_WH[normalizeFT(r.fuel_truck)]||cleanText(r.wh)||null,
           fuelman_name:cleanText(r.fuelman_name)||null,
+          hm_ref_excluded:true,
+          hm_ref_excluded_reason:"Dimasukkan melalui Logsheet Editor; histori manual tidak dipakai sebagai HM reference.",
+          hm_ref_excluded_at:new Date().toISOString(),
+          hm_ref_excluded_by:window.KPP_PROFILE?.user_id||null,
+          hm_ref_excluded_by_name:window.KPP_PROFILE?.display_name||"GL/Admin",
+          hm_ref_excluded_by_role:window.KPP_PROFILE?.role||null,
           session_id:null,
           fuelman_user_id:null,
           fuelman_username:null
