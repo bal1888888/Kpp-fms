@@ -318,6 +318,18 @@ window.KPP = {
       .kpp-guide-list{margin:0;padding-left:20px;color:#475569;font-size:13px;line-height:1.6;}
       .kpp-guide-list li+li{margin-top:6px;}
 
+      /* Static instructional boxes are moved into Panduan to keep pages clean. */
+      .kpp-static-help-hidden{display:none!important;}
+      #kppGuideBtn{
+        background:#17305a!important;
+        color:#eaf2ff!important;
+        border:1px solid rgba(147,197,253,.35)!important;
+        box-shadow:none!important;
+        padding:8px 11px!important;
+        border-radius:9px!important;
+      }
+      #kppGuideBtn:hover{background:#1d4ed8!important;color:#fff!important;}
+
       @media(max-width:700px){
         body{background-attachment:scroll!important;}
         .header{box-shadow:0 7px 20px rgba(2,6,23,.28)!important;}
@@ -392,143 +404,181 @@ window.KPP = {
       dashboard: {
         title: "Dashboard",
         steps: [
-          ["Baca monitor utama", "Mulai dari kartu pemakaian 5 hari, total stock 5 hari, dan penerimaan solar. Ini memberi gambaran cepat kondisi fuel."],
-          ["Cek tren", "Perhatikan naik/turun pemakaian dan perubahan stock. Gunakan warna/status sebagai petunjuk, bukan sebagai pengganti pengecekan data."],
-          ["Lihat MTD", "Baca Total Fuel Usage MTD dan perbandingan periode sebelumnya untuk melihat arah konsumsi periode berjalan."],
-          ["Masuk ke detail", "Kalau ada angka yang perlu ditelusuri, buka Logsheet, Daily Report, atau Stock dari menu atas."],
+          ["Lihat Fuel Usage 5 Hari", "Baca grafik pemakaian fuel 5 hari terakhir untuk melihat hari mana pemakaian naik atau turun."],
+          ["Lihat Total Stock 5 Hari", "Baca monitor total stock 5 hari terakhir untuk melihat arah persediaan fuel."],
+          ["Lihat Penerimaan Solar", "Cek penerimaan solar per transportir untuk memastikan supply yang masuk sudah terbaca."],
+          ["Lihat Total Fuel Usage MTD", "Baca total pemakaian MTD dan perbandingan dengan periode sebelumnya."],
+          ["Turun ke detail", "Lihat ringkasan Daily Report, penggunaan per shift, Fuelman bertugas, dan transaksi terbaru. Kalau ada angka janggal, lanjut ke Logsheet atau Stock."],
         ]
       },
       gl: {
         title: "Menu GL",
         steps: [
-          ["Pilih modul", "Gunakan menu atas untuk masuk ke Dashboard, Pengisian, Stock, Logsheet, CCR, Master, atau Kelola Akun."],
-          ["Prioritaskan pengecekan", "Mulai dari Dashboard dan Daily Report, lalu masuk ke Logsheet/Editor bila ada data yang perlu dikoreksi."],
-          ["Kelola approval", "Gunakan Approval CCR untuk jatah ritasi berikutnya yang membutuhkan persetujuan GL."],
-          ["Kelola master", "Gunakan Master Unit & HM untuk unit baru, QR, atau reset HM resmi."],
+          ["Buka Dashboard", "Mulai dari Dashboard untuk melihat kondisi fuel secara umum."],
+          ["Pilih menu kerja", "Gunakan menu atas: Pengisian, Stock, Logsheet, Logsheet Editor, Daily Report, CCR, Approval, Riwayat, atau Master Unit & HM."],
+          ["Approval bila ada", "Kalau ada jatah CCR ritasi berikutnya berstatus PENDING GL, buka Approval CCR lalu periksa dan setujui/tolak."],
+          ["Rapikan data bila perlu", "Gunakan Logsheet/Editor untuk histori, dan HM Master untuk menetapkan HM resmi unit."],
+          ["Kelola akun", "Kalau perlu tambah anggota atau reset password, buka Kelola Akun."],
         ]
       },
       admin: {
         title: "Menu Admin",
         steps: [
-          ["Mulai dari Dashboard", "Lihat ringkasan operasional sebelum masuk ke detail transaksi."],
-          ["Kelola operasional", "Gunakan Pengisian, Stock, Logsheet, Editor, Daily Report, dan Riwayat sesuai kebutuhan."],
-          ["Rapikan master", "Gunakan Master Unit & HM untuk memperbarui unit atau HM resmi tanpa mengubah histori lama."],
-          ["Audit sebelum selesai", "Jika ada data janggal, telusuri lewat Logsheet/Editor dan simpan alasan koreksi."],
+          ["Buka Dashboard", "Mulai dari Dashboard untuk melihat usage, stock, dan kondisi harian."],
+          ["Pilih menu kerja", "Gunakan menu atas sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, Riwayat, atau Master Unit & HM."],
+          ["Rapikan histori", "Kalau HM/data lama perlu diperbaiki, buka Logsheet atau Logsheet Editor."],
+          ["Tetapkan HM resmi", "Kalau HM live unit harus dibetulkan, gunakan HM Master/Bulk Fix, bukan edit histori biasa."],
         ]
       },
       fuelman: {
-        title: "Menu Fuelman",
+        title: "Alur Fuelman",
         steps: [
-          ["Mulai shift", "Pilih tanggal, shift, dan Fuel Truck yang dibawa lalu Start Shift."],
-          ["Lakukan pengisian", "Masuk ke Pengisian, pilih/scan unit, periksa data, lalu simpan qty fuel."],
-          ["Pantau stock", "Buka Stock selama shift untuk melihat posisi stock Fuel Truck."],
-          ["Closing dan End Shift", "Input stock closing terlebih dahulu. Setelah closing lengkap, baru End Shift."],
+          ["Pilih Shift", "Di halaman Fuelman, pilih Shift 1 atau Shift 2 sesuai jadwal kerja."],
+          ["Pilih Fuel Truck", "Pilih Fuel Truck yang dibawa: FT0073 atau FT0075."],
+          ["Klik START SHIFT", "Tekan START SHIFT. Setelah aktif, nama Fuelman, Shift, dan Fuel Truck akan menjadi sesi kerja kamu."],
+          ["Buka Pengisian Fuel", "Masuk ke menu Pengisian untuk mulai transaksi unit."],
+          ["Pilih / Scan Unit", "Ketik Code Unit lalu CEK UNIT / AMBIL DATA. Kalau unit punya jatah CCR, scan QR unit sesuai aturan."],
+          ["Masukkan / Cek HM", "Lihat HM sebelumnya. Untuk pengisian manual, masukkan HM sekarang. Untuk jatah CCR, HM/estimasi mengikuti data CCR yang tampil."],
+          ["Isi Nama Operator", "Masukkan nama operator yang membawa unit. Kalau dari CCR sudah terisi otomatis, cukup periksa."],
+          ["Isi Qty Fuel", "Masukkan jumlah liter yang benar-benar diisikan ke unit."],
+          ["Periksa Shift", "Pastikan Shift sesuai sesi aktif. Saat sesi Fuelman aktif, data sesi harus sama dengan pengisian."],
+          ["Klik SIMPAN DATA", "Periksa Unit, HM, Operator, Qty, Shift, dan Fuel Truck sekali lagi lalu simpan satu kali."],
+          ["Closing sebelum selesai", "Di akhir shift buka Stock, isi Stock Closing untuk Fuel Truck yang dibawa, simpan closing, lalu kembali ke Fuelman dan END SHIFT."],
         ]
       },
       pengisian: {
         title: "Pengisian Fuel",
         steps: [
-          ["Pastikan shift aktif", "Fuelman harus sudah Start Shift dan Fuel Truck yang digunakan harus sesuai sesi."],
-          ["Pilih atau scan unit", "Untuk unit CCR gunakan QR unit. Unit non-CCR dapat dipilih secara manual sesuai aturan sistem."],
-          ["Periksa HM", "Pastikan HM sebelumnya/reference yang tampil masuk akal sebelum melanjutkan."],
-          ["Isi data pengisian", "Lengkapi operator dan qty. Data shift, Fuelman, dan Fuel Truck mengikuti sesi aktif."],
-          ["Simpan dan cek", "Simpan transaksi satu kali, lalu cek Riwayat/Logsheet bila perlu memastikan data sudah masuk."],
+          ["Pilih Fuel Truck", "Pilih sumber pengisian FT0073 atau FT0075. Jika sesi Fuelman aktif, Fuel Truck harus mengikuti sesi tersebut."],
+          ["Pilih / Scan Code Unit", "Ketik Code Unit lalu klik CEK UNIT / AMBIL DATA. Untuk unit CCR gunakan SCAN QR UNIT sesuai jatah aktif."],
+          ["Cek HM Sebelumnya", "Setelah unit terbaca, lihat HM SEBELUMNYA dan sumber HM. HM resmi mengikuti koreksi/reset Admin/GL terbaru; histori lama yang dikecualikan tidak boleh mengubah acuan live."],
+          ["Masukkan HM Sekarang", "Untuk mode manual, isi HM yang terbaca di unit. Jika unit memakai CCR, sistem menampilkan HM/estimasi refueling dari jatah CCR."],
+          ["Cek HM Jalan", "Lihat HM JALAN yang dihitung dari HM sebelumnya ke HM sekarang. Jika ada warning, periksa kembali HM sebelum lanjut."],
+          ["Isi Nama Operator", "Masukkan nama operator unit. Pada jatah CCR nama dapat terisi otomatis; cukup pastikan benar."],
+          ["Isi Jumlah Fuel", "Masukkan QTY liter yang benar-benar dikeluarkan."],
+          ["Pilih / Cek Shift", "Pastikan Shift 1 atau Shift 2 benar. Jika ada sesi Fuelman aktif, gunakan shift sesi tersebut."],
+          ["Simpan Data", "Cek ulang Fuel Truck, Unit, HM, Operator, Qty, dan Shift lalu tekan SIMPAN DATA satu kali."],
         ]
       },
       stock: {
         title: "Stock Fuel",
         steps: [
-          ["Pilih aktivitas", "Tentukan apakah akan mencatat penerimaan, transfer, atau stock closing."],
-          ["Pilih lokasi", "Pastikan MT/FT sumber dan tujuan sesuai sebelum memasukkan jumlah liter."],
-          ["Isi qty", "Masukkan jumlah sesuai hasil aktual lapangan dan periksa kembali sebelum simpan."],
-          ["Baca status stock", "Gunakan level dan alarm stock untuk melihat tangki yang rendah, aman, atau mendekati penuh."],
-          ["Closing shift", "Fuelman wajib menyelesaikan stock closing sebelum End Shift."],
+          ["Pilih Tanggal dan Shift", "Di Periode Stock pilih tanggal dan Shift 1/2, lalu klik REFRESH STOCK."],
+          ["Cek Stock Saat Ini", "Lihat Total Stock dan masing-masing MT/FT sebelum melakukan transaksi."],
+          ["Isi Opening bila diperlukan", "Pada Stock Opening pilih Storage, isi Qty Opening dan nama Fuelman/Operator, lalu SIMPAN OPENING."],
+          ["Catat Penerimaan", "Kalau ada solar masuk, pilih storage tujuan, isi Qty, pilih transportir PT. SHA/PT. DKA, isi operator, lalu SIMPAN PENERIMAAN."],
+          ["Catat Transfer", "Kalau pindah fuel, pilih Dari Storage dan Ke Storage, isi Qty dan operator, lalu SIMPAN TRANSFER."],
+          ["Isi Stock Closing", "Di akhir shift masukkan hasil stock taking/closing untuk storage yang diwajibkan dan nama Fuelman/Operator Closing."],
+          ["Simpan Closing", "Periksa angka closing lalu tekan SIMPAN STOCK CLOSING. Fuelman baru boleh END SHIFT setelah closing selesai."],
         ]
       },
       logsheet: {
         title: "Logsheet",
         steps: [
-          ["Pilih mode tanggal", "Semua Tanggal menampilkan tabel seluruh histori, tetapi kartu ringkasan di atas otomatis memakai MTD periode berjalan. Tanggal tertentu/rentang memakai total sesuai pilihan."],
-          ["Gunakan filter", "Saring Shift, WH, Fuel Truck, Unit, Fuelman, atau status HM. WH FT01 otomatis mengunci FT0075; WH FT02 mengunci FT0073."],
-          ["Cari HM bermasalah", "Gunakan Filter HM untuk HM Kosong, HM Turun, HM Loncat, atau Histori Dikecualikan."],
-          ["Rapikan histori", "Admin/GL dapat klik RAPIKAN HM. Koreksi ini hanya merapikan histori dan tidak menjadi HM reference live."],
-          ["Download bila perlu", "Download Excel mengikuti filter tabel yang sedang aktif."],
+          ["Pilih Mode Tanggal", "Pilih Semua Tanggal, Tanggal Tertentu, atau Rentang Tanggal. Semua Tanggal membuat kartu ringkasan memakai MTD, sedangkan tabel tetap dapat menampilkan histori sesuai filter."],
+          ["Pilih Shift", "Kalau perlu, saring Shift 1 atau Shift 2."],
+          ["Pilih WH", "Pilih WH FT01 atau FT02. FT01 otomatis mengunci Fuel Truck FT0075, FT02 otomatis mengunci FT0073."],
+          ["Saring Unit / Fuelman", "Isi Code Unit atau Fuelman bila ingin mencari transaksi tertentu."],
+          ["Pilih Filter HM", "Gunakan Perlu Dirapikan, HM Kosong, HM Turun, HM Loncat, atau Histori Dikecualikan untuk mencari HM bermasalah."],
+          ["Pilih Batas Loncat", "Untuk HM Loncat tentukan batas 50, 100, 250, atau 500 HM sesuai kebutuhan pengecekan."],
+          ["Klik RAPIKAN HM", "Pada baris yang perlu diperbaiki, klik RAPIKAN HM, isi HM yang benar dan alasan, lalu simpan. Perubahan ini hanya merapikan histori dan tidak mengubah HM reference live."],
+          ["Download Excel", "Setelah filter sesuai kebutuhan, klik DOWNLOAD EXCEL untuk mengunduh data dengan filter aktif."],
         ]
       },
       "logsheet-editor": {
         title: "Logsheet Editor",
         steps: [
-          ["Pilih sumber data", "Pilih tanggal yang akan diedit atau impor file logsheet lama untuk preview."],
-          ["Periksa baris", "Cek unit, HM, qty, shift, WH/FT, operator, dan fuelman sebelum menyimpan."],
-          ["Edit dengan alasan", "Jika mengubah HM/data lama, isi alasan koreksi agar audit Admin/GL tetap jelas."],
-          ["Simpan histori", "Data yang diedit/ditambah dari Editor adalah histori dan tidak boleh mengalahkan HM reference resmi."],
-          ["Cek hasil", "Buka Logsheet untuk memastikan hasil edit tampil sesuai dan tidak menciptakan anomali baru."],
+          ["Pilih Tanggal Logsheet", "Pilih tanggal yang ingin dilihat atau diedit lalu klik LOAD DATA."],
+          ["Edit Baris", "Cari baris yang perlu diperbaiki kemudian ubah Unit, HM, Qty, Shift, FT, atau field lain yang diperlukan."],
+          ["Isi Alasan Edit", "Jika mengubah data lama, isi alasan supaya audit Admin/GL tercatat jelas."],
+          ["Tambah Baris bila perlu", "Klik +10 BARIS jika perlu input histori manual. Baris dari Editor bersifat histori dan tidak menjadi HM reference live."],
+          ["Import Excel bila perlu", "Klik IMPORT EXCEL, pilih file, tentukan tanggal dari file, lalu tampilkan/cek baris baru sebelum disimpan."],
+          ["Hitung Ulang HM", "Gunakan HITUNG ULANG HM bila perlu memperbarui keterkaitan HM di editor sebelum penyimpanan."],
+          ["Simpan Tanggal Ini", "Periksa semua baris lalu klik SIMPAN TANGGAL INI."],
+          ["Cek di Logsheet", "Setelah tersimpan klik CEK DI LOGSHEET untuk memastikan hasil tampil sesuai."],
         ]
       },
       "daily-report": {
         title: "Daily Report",
         steps: [
-          ["Pilih tanggal/shift", "Tentukan titik laporan yang ingin dilihat."],
-          ["Cek Total Stock", "Baca Total Stock All WHS dan level masing-masing MT/FT."],
-          ["Baca penggunaan", "Periksa Usage Yesterday, Usage MTD, AVG MTD, dan perbandingannya."],
-          ["Cek ITO", "ITO menunjukkan perkiraan hari cover stock berdasarkan pemakaian. Perhatikan warning bila cover rendah."],
-          ["Gunakan untuk laporan", "Salin/ambil data dari tampilan ini untuk kebutuhan daily report operasional."],
+          ["Pilih Tanggal Report", "Pilih tanggal laporan yang ingin dilihat."],
+          ["Pilih Shift Stock", "Pilih Shift 1 atau Shift 2 sebagai titik stock yang dipakai."],
+          ["Klik REFRESH REPORT", "Tekan REFRESH REPORT agar semua angka mengikuti tanggal dan shift pilihan."],
+          ["Baca Stock Fuel", "Cek Total Stock All WHS lalu masing-masing MT/FT dan status levelnya."],
+          ["Baca Ringkasan Usage", "Cek Usage Yesterday, Usage MTD, AVG MTD, dan ITO. ITO / Days of Cover dihitung dari Total Stock ÷ Total Pemakaian Kemarin."],
+          ["Baca Usage per FT / Shift", "Lihat pemakaian masing-masing Fuel Truck dan Shift untuk menemukan perbedaan yang perlu ditelusuri."],
+          ["Copy Report", "Kalau angka sudah benar, gunakan COPY REPORT pada format laporan siap copy."],
         ]
       },
       ccr: {
         title: "CCR Jatah",
         steps: [
-          ["Pilih tanggal, shift, dan unit", "Pastikan unit yang dipilih benar karena QR dan jatah terkunci berdasarkan unit."],
-          ["Periksa HM sebelumnya", "Lihat HM reference unit sebelum memasukkan HM hasil pembacaan CCR."],
-          ["Isi HM dan jam pengambilan", "Masukkan HM yang dibaca serta jam HM tersebut diambil agar estimasi dapat dihitung."],
-          ["Isi jatah", "Masukkan operator, qty jatah, toleransi, dan catatan bila diperlukan."],
-          ["Simpan dan cek ritasi", "Ritasi pertama dapat ACTIVE; ritasi berikutnya mengikuti flow approval yang berlaku."],
+          ["Pilih Tanggal", "Masukkan tanggal operasional jatah."],
+          ["Pilih Shift", "Pilih Shift 1 atau Shift 2. Batas operasional: Shift 1 06:30–18:30 dan Shift 2 18:30–06:30."],
+          ["Pilih Unit / QR", "Masukkan Code Unit yang meminta jatah. QR berisi Code Unit dan kontrol CCR dikunci berdasarkan unit, bukan NRP."],
+          ["Isi Nama Operator", "Masukkan nama operator yang membawa unit."],
+          ["Cek HM Sebelumnya", "Lihat HM reference sebelumnya yang ditarik sistem untuk unit tersebut."],
+          ["Isi HM dari CCR", "Masukkan HM unit yang diterima/dibaca CCR."],
+          ["Isi Jam Pengambilan HM", "Masukkan jam saat HM tersebut diambil/dilaporkan, bukan jam saat form baru diketik."],
+          ["Isi Qty Jatah", "Masukkan jumlah liter jatah yang diberikan."],
+          ["Isi Toleransi", "Masukkan toleransi lebih jika memang diizinkan. Jika tidak ada, biarkan 0."],
+          ["Isi Alasan / Catatan", "Untuk pengisian tambahan isi alasan yang diperlukan dan tambahkan Catatan CCR jika ada."],
+          ["Cek Ritasi", "Klik CEK RITASI bila ingin memastikan pengisian ke berapa untuk Unit + Tanggal + Shift tersebut."],
+          ["Simpan Jatah", "Periksa semua data lalu klik SIMPAN JATAH. Ritasi berikutnya mengikuti flow approval yang berlaku."],
         ]
       },
       "ccr-approval": {
         title: "Approval CCR",
         steps: [
-          ["Cari PENDING", "Tampilkan jatah yang menunggu keputusan GL."],
-          ["Periksa detail", "Cek unit, shift, operator, HM, qty, toleransi, dan alasan ritasi berikutnya."],
-          ["Ambil keputusan", "Approve jika sesuai agar jatah menjadi ACTIVE, atau Reject jika tidak sesuai."],
-          ["Jangan ubah USED", "Jatah yang sudah USED merupakan transaksi fuel dan dikunci oleh sistem."],
+          ["Klik REFRESH", "Ambil daftar jatah terbaru yang menunggu approval."],
+          ["Cari PENDING GL", "Cari jatah yang statusnya masih menunggu keputusan GL."],
+          ["Periksa Detail", "Cek Tanggal, Shift, Unit, Operator, HM, Qty Jatah, Toleransi, dan alasan tambahan."],
+          ["Klik Setujui", "Kalau data benar dan pengisian tambahan disetujui, klik SETUJUI agar jatah menjadi ACTIVE."],
+          ["Klik Tolak bila tidak sesuai", "Kalau tidak disetujui, klik TOLAK. Data USED tidak dapat diedit karena sudah menjadi transaksi fuel."],
         ]
       },
       riwayat: {
         title: "Riwayat Pengisian",
         steps: [
-          ["Tentukan periode", "Pilih tanggal atau filter yang ingin ditelusuri."],
-          ["Saring data", "Gunakan Unit, Shift, WH/FT, operator, atau Fuelman untuk mempersempit pencarian."],
-          ["Periksa transaksi", "Cek waktu, HM, qty, operator, dan Fuelman pada transaksi yang dicari."],
-          ["Lanjut ke Logsheet", "Jika perlu audit atau perapihan, buka Logsheet/Editor sebagai halaman administrasi."],
+          ["Klik Refresh", "Ambil transaksi pengisian terbaru dari database."],
+          ["Cari transaksi", "Gunakan filter yang tersedia untuk mencari tanggal, unit, shift, WH/FT, operator, atau Fuelman."],
+          ["Cek detail", "Periksa Jam, Unit, HM, Qty, Operator, Fuelman, Shift, dan Fuel Truck pada transaksi yang dicari."],
+          ["Rapikan lewat Logsheet", "Kalau ada HM/data historis yang perlu dibetulkan, lanjut ke Logsheet atau Logsheet Editor, bukan mengubah dari Riwayat."],
         ]
       },
       "hm-master": {
         title: "Master Unit & HM",
         steps: [
-          ["Pilih tab", "MASTER UNIT digunakan untuk data unit/QR. HM MASTER digunakan untuk patokan HM resmi."],
-          ["Gunakan Bulk Fix bila banyak", "Centang banyak unit, isi HM aktual masing-masing, lalu gunakan satu tanggal/jam efektif bersama."],
-          ["Gunakan koreksi satuan bila perlu", "Untuk satu unit, cek HM sekarang lalu masukkan HM aktual yang benar."],
-          ["Simpan sebagai reference resmi", "HM yang disimpan Admin/GL di sini menjadi reset/patokan resmi mulai waktu efektif."],
-          ["Cek riwayat", "Gunakan riwayat koreksi untuk memastikan siapa dan kapan HM resmi terakhir ditetapkan."],
+          ["Pilih MASTER UNIT atau HM MASTER", "MASTER UNIT untuk data unit/QR. HM MASTER untuk menetapkan HM resmi."],
+          ["Kalau banyak unit: cari dan centang", "Di Fix HM Banyak Unit, cari unit lalu centang unit-unit yang akan dibetulkan."],
+          ["Isi HM tiap unit", "Masukkan HM aktual yang benar pada masing-masing unit terpilih."],
+          ["Isi Tanggal dan Jam Efektif", "Masukkan satu tanggal dan jam efektif yang menjadi titik mulai reference baru."],
+          ["Isi Admin / GL dan Keterangan", "Masukkan nama petugas serta alasan/keterangan koreksi."],
+          ["Simpan HM Terpilih", "Klik SIMPAN HM TERPILIH lalu cek preview konfirmasi sebelum benar-benar menyimpan."],
+          ["Untuk satu unit", "Gunakan Cek HM Satu Unit, lalu isi HM Aktual, Tanggal Efektif, Jam Efektif, petugas, dan Keterangan."],
+          ["Simpan sebagai HM resmi", "HM yang disimpan di HM Master menjadi reset/reference resmi dan histori sebelum titik itu tidak boleh mengalahkannya."],
         ]
       },
       "qr-unit": {
         title: "QR Unit",
         steps: [
-          ["Pilih unit", "Pilih unit yang QR-nya ingin dibuat atau dicetak."],
-          ["Pastikan code unit", "Isi QR harus sama dengan Code Unit karena sistem CCR mengunci berdasarkan unit."],
-          ["Generate QR", "Buat QR lalu cek teks Code Unit sebelum digunakan di lapangan."],
-          ["Cetak/pasang", "Pasang QR pada unit yang sesuai dan jangan menukar QR antar-unit."],
+          ["Cari Unit", "Ketik Code Unit yang QR-nya ingin dilihat atau dicetak."],
+          ["Pilih Status Master Unit", "Gunakan Aktif/Semua/Tidak Aktif jika ingin menyaring unit."],
+          ["Pilih Status QR", "Gunakan Semua/Belum QR/Sudah QR untuk mencari unit yang perlu dibuat atau dicetak ulang."],
+          ["Klik REFRESH", "Perbarui daftar sesuai filter."],
+          ["Print QR", "Klik PRINT QR INI untuk satu unit atau PRINT YANG TAMPIL untuk beberapa unit."],
+          ["Cocokkan sebelum dipasang", "Pastikan tulisan Code Unit pada QR sama dengan unit fisiknya. Jangan menukar QR antar-unit."],
         ]
       },
       akun: {
         title: "Kelola Akun",
         steps: [
-          ["Pilih aksi", "GL dapat membuat akun baru atau mengelola akun yang sudah ada."],
-          ["Isi identitas", "Pastikan nama, username, jabatan, dan role sesuai orang yang akan menggunakan sistem."],
-          ["Atur akses", "Role menentukan menu yang dapat dibuka. Jangan memberi akses lebih tinggi dari kebutuhan."],
-          ["Reset bila perlu", "Gunakan reset password untuk akun yang membutuhkan sandi baru tanpa membuat akun duplikat."],
+          ["Isi Username Login", "Masukkan username anggota yang akan dibuat."],
+          ["Isi Nama Anggota", "Masukkan nama orang yang menggunakan akun."],
+          ["Pilih Jabatan / Akses", "Pilih FUELMAN, CCR, ADMIN, atau GL sesuai tanggung jawabnya."],
+          ["Isi Password Awal", "Buat password awal lalu klik BUAT AKUN."],
+          ["Reset Password bila perlu", "Untuk akun lama, isi username dan Password Baru di bagian Reset Password Anggota lalu klik GANTI PASSWORD."],
+          ["Cek Daftar Anggota", "Pastikan akun muncul dengan nama dan role yang benar."],
         ]
       }
     };
@@ -536,16 +586,15 @@ window.KPP = {
     if (guides[active]) return guides[active];
 
     return {
-      title: "Panduan KPP-FMS",
+      title: "Panduan KPP TRAM FMS",
       steps: [
-        ["Kenali halaman", "Baca judul halaman dan menu aktif di bagian atas untuk memastikan modul yang sedang digunakan."],
-        ["Isi dari kiri ke kanan", "Ikuti field dan tombol sesuai urutan tampilan. Periksa data sebelum menekan Simpan."],
-        ["Cek hasil", "Setelah menyimpan, gunakan tabel/riwayat yang tersedia untuk memastikan data sudah masuk."],
-        ["Gunakan menu atas", `Pindah modul melalui navigasi sesuai akses ${this.roleLabel(role)}.`],
+        ["Mulai dari field pertama", "Isi halaman dari bagian paling atas ke bawah sesuai urutan field yang tampil."],
+        ["Lanjut satu per satu", "Pilih/isi data berikutnya setelah data sebelumnya sudah benar."],
+        ["Periksa sebelum simpan", "Cek kembali semua angka dan pilihan sebelum menekan tombol Simpan."],
+        ["Cek hasil", `Setelah tersimpan, gunakan halaman riwayat/detail yang sesuai dengan akses ${this.roleLabel(role)}.`],
       ]
     };
   },
-
   openGuide(active, profile) {
     const guide = this.guideCatalog(active || window.KPP_ACTIVE_PAGE || "", profile || window.KPP_PROFILE || null);
     let host = document.getElementById("kppGuideModal");
@@ -649,6 +698,57 @@ window.KPP = {
       btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
       document.body.appendChild(btn);
     }
+  },
+
+  simplifyCurrentPage(active) {
+    const page = active || window.KPP_ACTIVE_PAGE || "";
+    const selectors = {
+      fuelman: [
+        ".container > .info"
+      ],
+      pengisian: [
+        ".form-box > .info"
+      ],
+      "daily-report": [
+        ".container > .panel > .notice"
+      ],
+      ccr: [
+        ".container > .qr-box",
+        ".container > .info",
+        ".container > .shift-clock"
+      ],
+      "ccr-approval": [
+        ".container > .panel > .notice"
+      ],
+      "hm-master": [
+        "#tabUnit > .panel:first-child",
+        "#tabHm > .panel:first-child",
+        ".bulk-focus > .info",
+        ".bulk-focus > .bulk-fixed-note",
+        ".qr-selected-note"
+      ],
+      "logsheet-editor": [
+        ".container > .safe-hm-note",
+        ".container > .panel > .notice",
+        ".container > .panel > .help"
+      ],
+      "qr-unit": [
+        ".container > .info"
+      ],
+      akun: [
+        ".container > .panel:first-child",
+        ".container .note"
+      ]
+    };
+
+    (selectors[page] || []).forEach(selector => {
+      document.querySelectorAll(selector).forEach(el => {
+        el.classList.add("kpp-static-help-hidden");
+        el.setAttribute("aria-hidden", "true");
+      });
+    });
+
+    document.body.classList.add("kpp-clean-display");
   },
 
   renderUserBar(profile) {
@@ -790,10 +890,12 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     window.KPP.installGlobalTheme();
     window.KPP.installBranding();
+    window.KPP.simplifyCurrentPage(window.KPP_ACTIVE_PAGE || "");
   }, { once:true });
 } else {
   window.KPP.installGlobalTheme();
   window.KPP.installBranding();
+  window.KPP.simplifyCurrentPage(window.KPP_ACTIVE_PAGE || "");
 }
 
 if (window.KPP_ALLOWED_ROLES) {
@@ -811,6 +913,7 @@ if (window.KPP_ALLOWED_ROLES) {
       window.KPP.renderUserBar(access.profile);
       window.KPP.renderNav(access.profile, window.KPP_ACTIVE_PAGE || "");
       window.KPP.installGuideButton(access.profile);
+      window.KPP.simplifyCurrentPage(window.KPP_ACTIVE_PAGE || "");
       window.KPP.applyRolePageRules(access.profile);
 
       document.documentElement.style.visibility = "visible";
