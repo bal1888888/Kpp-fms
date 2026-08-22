@@ -499,6 +499,7 @@ async function ambilHmTerakhir(unit){
     const correctionKey=hmOperationalKey(correctionRow.tanggal,correctionRow.jam,correctionRow.id);
     const after=await db.from("fuel_history")
       .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
+      .eq("hm_ref_excluded",false)
       .gte("tanggal",correctionRow.tanggal).not("hm_akhir","is",null)
       .order("tanggal",{ascending:true}).order("jam",{ascending:true})
       .order("id",{ascending:true}).limit(1000);
@@ -508,20 +509,21 @@ async function ambilHmTerakhir(unit){
       if(hmOperationalKey(row.tanggal,row.jam,row.id)<=correctionKey)continue;
       const value=Number(row.hm_akhir);
       if(Number.isFinite(value)&&value>best.hm){
-        best={hm:value,source:`HM tertinggi setelah koreksi (${row.tanggal}${row.jam?" "+String(row.jam).slice(0,5):""})`};
+        best={hm:value,source:`HM valid setelah koreksi (${row.tanggal}${row.jam?" "+String(row.jam).slice(0,5):""})`};
       }
     }
     return best;
   }
   const fuelResult=await db.from("fuel_history")
     .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
+    .eq("hm_ref_excluded",false)
     .not("hm_akhir","is",null).order("hm_akhir",{ascending:false})
     .order("tanggal",{ascending:false}).order("id",{ascending:false}).limit(1);
   if(fuelResult.error)throw fuelResult.error;
   const candidates=[];
   const fuelRow=fuelResult.data?.length?fuelResult.data[0]:null;
   if(fuelRow&&Number.isFinite(Number(fuelRow.hm_akhir))){
-    candidates.push({hm:Number(fuelRow.hm_akhir),source:`HM tertinggi transaksi (${fuelRow.tanggal}${fuelRow.jam?" "+String(fuelRow.jam).slice(0,5):""})`});
+    candidates.push({hm:Number(fuelRow.hm_akhir),source:`HM valid tertinggi transaksi (${fuelRow.tanggal}${fuelRow.jam?" "+String(fuelRow.jam).slice(0,5):""})`});
   }
   if(Object.prototype.hasOwnProperty.call(MASTER_LAST_HM,unit)&&Number.isFinite(Number(MASTER_LAST_HM[unit]))){
     candidates.push({hm:Number(MASTER_LAST_HM[unit]),source:"Baseline logsheet Excel"});
