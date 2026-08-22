@@ -3,14 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Login - KPP FMS</title>
+<title>Login - KPP TRAM Fuel Management System</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
 body{margin:0;min-height:100vh;background:radial-gradient(circle at 14% 10%,rgba(37,99,235,.34),transparent 28%),radial-gradient(circle at 86% 18%,rgba(14,165,233,.17),transparent 25%),linear-gradient(145deg,#050b15 0%,#0a1730 52%,#10284a 100%);display:flex;align-items:center;justify-content:center;padding:18px;color:#111827}
 .box{width:100%;max-width:470px;background:rgba(255,255,255,.98);border:1px solid rgba(147,197,253,.42);border-radius:20px;padding:30px;box-shadow:0 24px 70px rgba(2,6,23,.42),0 0 0 1px rgba(255,255,255,.12)}
 .brand{text-align:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid #e2e8f0}
-.brand h1{margin:0 0 7px;font-size:23px;color:#0f172a;letter-spacing:.2px}
+.brand-logo-shell{width:128px;height:74px;margin:0 auto 13px;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 22px rgba(2,6,23,.18)}
+.brand-logo{width:100%;height:100%;display:block;object-fit:contain}
+.brand-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;margin-bottom:10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:10px;font-weight:900;letter-spacing:.10em}
+.brand-kicker::before{content:"";width:7px;height:7px;border-radius:50%;background:#16a34a}
+.brand h1{margin:0 0 7px;font-size:23px;color:#0f172a;letter-spacing:.2px;line-height:1.18}
 .brand p{margin:0;color:#64748b;font-size:13px}
 label{display:block;font-size:13px;font-weight:bold;margin:15px 0 7px}
 select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;background:#fff}
@@ -26,8 +30,10 @@ button:disabled{background:#94a3b8}
 <body>
 <div class="box">
   <div class="brand">
-    <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-    <p>Pilih akun dan masukkan password</p>
+    <div class="brand-logo-shell"><img class="brand-logo" src="kpp-logo.png" alt="KPP Mining"></div>
+    <div class="brand-kicker">TRAM SITE</div>
+    <h1>KPP TRAM FUEL MANAGEMENT SYSTEM</h1>
+    <p>Fuel Operation • Integrated Mining Services</p>
   </div>
 
   <label>Akun</label>
@@ -47,7 +53,7 @@ button:disabled{background:#94a3b8}
   <div id="status" class="status"></div>
 
   <div class="note">
-    GL masuk langsung ke Dashboard dan punya akses penuh termasuk Kelola Akun. Admin masuk langsung ke Dashboard dengan akses operasional/admin. Fuelman masuk ke menu Fuelman, dan CCR masuk ke Display CCR.
+    Pilih akun sesuai jabatan. Sistem akan mengarahkan otomatis ke display yang sesuai dengan hak akses masing-masing.
   </div>
 </div>
 
