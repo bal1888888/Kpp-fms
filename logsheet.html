@@ -25,10 +25,10 @@ body{background:radial-gradient(circle at 15% 0%,rgba(37,99,235,.24),transparent
 .company{text-align:center;margin:-2px -2px 18px;padding:18px 14px 16px;border-radius:14px;background:linear-gradient(180deg,#ffffff,#f1f5f9);border:1px solid #cbd5e1;box-shadow:0 5px 16px rgba(15,23,42,.07)}.company h2{font-size:21px;margin-bottom:4px;letter-spacing:.01em;color:#0f172a}.company p{font-size:13px;color:#475569}
 .period{text-align:center;font-weight:800;margin-top:12px;font-size:16px;letter-spacing:.03em;color:#172033}
 .notice{background:#eaf2ff;border:1px solid #bfdbfe;border-left:5px solid #2563eb;color:#1e3a5f;padding:10px 12px;border-radius:10px;margin-bottom:16px;font-size:12px;line-height:1.45}
-.summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:18px}
 .summary-card{position:relative;border:1px solid #cbd5e1;padding:15px 10px 14px;border-radius:13px;background:linear-gradient(180deg,#ffffff,#f8fafc);text-align:center;display:flex;min-height:88px;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 7px 18px rgba(15,23,42,.075)}
 .summary-card:before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:#94a3b8}
-.summary-card:first-child{background:linear-gradient(180deg,#eff6ff,#dbeafe);border-color:#93c5fd}.summary-card:first-child:before{background:#1d4ed8}.summary-card:nth-child(2):before{background:#334155}.summary-card:nth-child(3):before,.summary-card:nth-child(4):before{background:#0f766e}.summary-card:nth-child(5):before,.summary-card:nth-child(6):before{background:#6d28d9}
+.summary-card:first-child{background:linear-gradient(180deg,#eff6ff,#dbeafe);border-color:#93c5fd}.summary-card:first-child:before{background:#1d4ed8}.summary-card:nth-child(2):before,.summary-card:nth-child(3):before{background:#0f766e}.summary-card:nth-child(4):before,.summary-card:nth-child(5):before{background:#6d28d9}
 .summary-title{color:var(--muted);font-size:10px;margin-bottom:7px;font-weight:800;letter-spacing:.055em;text-align:center}.summary-value{font-size:21px;font-weight:800;line-height:1.1;text-align:center;color:#0f172a}
 .filters{background:linear-gradient(180deg,#e9eef5,#dde5ef);border:1px solid #b9c7d8;border-radius:13px;padding:14px;margin-bottom:18px;display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:10px;align-items:end;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 5px 14px rgba(15,23,42,.06)}
 .filter-group label{display:block;font-size:10px;font-weight:800;margin-bottom:6px;color:#334155;letter-spacing:.02em}
@@ -129,16 +129,14 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <div class="container"><div class="sheet">
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
-<div class="notice" id="dataNotice">Memuat histori + audit perubahan... Kolom CEK akan menjelaskan penyebab: DOUBLE POSTING, masalah data, HM di bawah acuan, atau siapa yang terakhir mengedit (Admin/GL).</div>
-<div class="hm-tools-note"><b>Mode Rapikan HM Admin/GL:</b> gunakan filter HM untuk menemukan <b>HM kosong, turun, atau loncat</b>. Tombol <b>RAPIKAN HM</b> hanya merapikan histori dan otomatis mengecualikan baris itu dari HM reference. Jadi perapihan histori tidak mengubah patokan HM live; HM resmi tetap diatur lewat HM Master / Bulk Fix.</div>
+<div id="dataNotice" class="hidden" aria-hidden="true"></div>
 
 <div class="summary">
-  <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
-  <div class="summary-card"><div class="summary-title">TOTAL TRANSAKSI</div><div class="summary-value" id="totalTransaksi">0</div></div>
-  <div class="summary-card"><div class="summary-title">FT01</div><div class="summary-value" id="totalFT01">0 L</div></div>
-  <div class="summary-card"><div class="summary-title">FT02</div><div class="summary-value" id="totalFT02">0 L</div></div>
-  <div class="summary-card"><div class="summary-title">SHIFT 1</div><div class="summary-value" id="totalShift1">0 L</div></div>
-  <div class="summary-card"><div class="summary-title">SHIFT 2</div><div class="summary-value" id="totalShift2">0 L</div></div>
+  <div class="summary-card"><div class="summary-title" id="totalFuelLabel">TOTAL QTY ISSUED MTD</div><div class="summary-value" id="totalFuel">0 L</div></div>
+  <div class="summary-card"><div class="summary-title" id="totalFT01Label">FT01 MTD</div><div class="summary-value" id="totalFT01">0 L</div></div>
+  <div class="summary-card"><div class="summary-title" id="totalFT02Label">FT02 MTD</div><div class="summary-value" id="totalFT02">0 L</div></div>
+  <div class="summary-card"><div class="summary-title" id="totalShift1Label">SHIFT 1 MTD</div><div class="summary-value" id="totalShift1">0 L</div></div>
+  <div class="summary-card"><div class="summary-title" id="totalShift2Label">SHIFT 2 MTD</div><div class="summary-value" id="totalShift2">0 L</div></div>
 </div>
 
 <div class="filters">
@@ -643,7 +641,26 @@ function applyFilter(data){
   });
 }
 
-function updateSummary(data){
+function localIsoDate(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+
+function getOperationalMtdBounds(){
+  const now=new Date();
+  const start=now.getDate()>=26
+    ? new Date(now.getFullYear(),now.getMonth(),26)
+    : new Date(now.getFullYear(),now.getMonth()-1,26);
+
+  return {
+    start:localIsoDate(start),
+    end:localIsoDate(now)
+  };
+}
+
+function updateSummary(data,{isMtd=false,mtdBounds=null}={}){
   let total=0,ft01=0,ft02=0,s1=0,s2=0;
   data.forEach(item=>{
     const q=Number(item.fuel)||0;
@@ -655,12 +672,24 @@ function updateSummary(data){
     if(Number(item.shift)===2) s2+=q;
   });
 
+  const suffix=isMtd?" MTD":"";
+  document.getElementById("totalFuelLabel").textContent="TOTAL QTY ISSUED"+suffix;
+  document.getElementById("totalFT01Label").textContent="FT01"+suffix;
+  document.getElementById("totalFT02Label").textContent="FT02"+suffix;
+  document.getElementById("totalShift1Label").textContent="SHIFT 1"+suffix;
+  document.getElementById("totalShift2Label").textContent="SHIFT 2"+suffix;
+
   document.getElementById("totalFuel").textContent=formatAngka(total)+" L";
-  document.getElementById("totalTransaksi").textContent=formatAngka(data.length);
   document.getElementById("totalFT01").textContent=formatAngka(ft01)+" L";
   document.getElementById("totalFT02").textContent=formatAngka(ft02)+" L";
   document.getElementById("totalShift1").textContent=formatAngka(s1)+" L";
   document.getElementById("totalShift2").textContent=formatAngka(s2)+" L";
+
+  const title=isMtd && mtdBounds
+    ? `Ringkasan MTD operasional ${formatTanggal(mtdBounds.start)} - ${formatTanggal(mtdBounds.end)}`
+    : "Ringkasan mengikuti periode/filter yang dipilih";
+
+  document.querySelectorAll(".summary-card").forEach(card=>card.title=title);
 }
 
 function td(text,cls="",title=""){
@@ -722,7 +751,19 @@ function renderTable(data){
 function renderFiltered(){
   HM_ANOMALY_MAP=buildHmAnomalyMap(ALL_DATA);
   const filtered=applyFilter(ALL_DATA);
-  updateSummary(filtered);
+
+  const dateMode=document.getElementById("dateMode").value;
+  if(dateMode==="all"){
+    const mtdBounds=getOperationalMtdBounds();
+    const mtdData=filtered.filter(item=>{
+      const t=String(item.tanggal||"");
+      return t>=mtdBounds.start && t<=mtdBounds.end;
+    });
+    updateSummary(mtdData,{isMtd:true,mtdBounds});
+  }else{
+    updateSummary(filtered,{isMtd:false});
+  }
+
   renderTable(filtered);
 
   const loading=document.getElementById("loading");
@@ -749,7 +790,8 @@ function renderFiltered(){
     return acc;
   },{double:0,error:0,hm:0,hmMissing:0,hmDown:0,hmJump:0,excluded:0,edit:0});
 
-  document.getElementById("dataNotice").textContent=
+  const dataNotice=document.getElementById("dataNotice");
+  if(dataNotice) dataNotice.textContent=
     `Database: ${formatAngka(ALL_DATA.length)} transaksi • `+
     `Filter: ${formatAngka(filtered.length)} • `+
     `DOUBLE: ${formatAngka(statusCounts.double)} • `+
