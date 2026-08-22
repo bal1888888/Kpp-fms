@@ -1,4 +1,4 @@
-// KPP-FMS AUTH V23 — mobile navigation + profile dropdown fix
+// KPP-FMS AUTH V24 — profile dropdown visible on desktop + mobile
 const KPP_SUPABASE_URL = "https://pwowtyfybfqsveuvqrsb.supabase.co";
 const KPP_SUPABASE_KEY = "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const kppDb = supabase.createClient(KPP_SUPABASE_URL, KPP_SUPABASE_KEY);
@@ -591,18 +591,20 @@ window.KPP = {
         }
         .app-nav a{flex:0 0 auto!important;}
       }
+      /* ===== V24 PROFILE FIX: DROPDOWN MUST FLOAT ABOVE NAV ON ALL SCREENS ===== */
+      .header{
+        position:relative!important;
+        z-index:10000!important;
+        overflow:visible!important;
+      }
+      .kpp-brand-header,
+      .kpp-brand-side,
+      .kpp-user-menu{overflow:visible!important;}
+      .kpp-brand-side,
+      .kpp-user-menu{z-index:10010!important;}
+      .kpp-user-dropdown{z-index:10030!important;}
+      #kppRoleNav{position:relative!important;z-index:100!important;}
       @media(max-width:760px){
-        .header{
-          position:relative!important;
-          z-index:10000!important;
-          overflow:visible!important;
-        }
-        .kpp-brand-header,
-        .kpp-brand-side,
-        .kpp-user-menu{overflow:visible!important;}
-        .kpp-brand-side,
-        .kpp-user-menu{z-index:10010!important;}
-        .kpp-user-dropdown{z-index:10020!important;}
         .app-nav{position:relative!important;z-index:20!important;}
       }
 
