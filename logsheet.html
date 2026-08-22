@@ -56,6 +56,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 .status-mixed{background:#ede9fe!important;color:#6d28d9;font-weight:bold}
 
 .status-anomaly{background:#fff1f2!important;color:#be123c;font-weight:800}
+.status-missing{background:#eff6ff!important;color:#1d4ed8;font-weight:800}
 .status-excluded{background:#e2e8f0!important;color:#334155;font-weight:800}
 .hm-tools-note{background:#eef6ff;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;padding:11px 13px;margin:-4px 0 16px;font-size:12px;line-height:1.5;color:#1e3a5f}
 .hm-tools-note b{color:#0f172a}
@@ -70,6 +71,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 @media(max-width:520px){.modal-grid{grid-template-columns:1fr}.modal-full{grid-column:auto}}
 
 .hidden{display:none!important}
+#filterFuelTruck.ft-locked{background:#e2e8f0;color:#0f172a;border-color:#60a5fa;font-weight:700;cursor:not-allowed;box-shadow:inset 0 0 0 1px rgba(37,99,235,.08)}
 
 .app-nav{background:#020617;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid #1e3a5f;padding:10px 12px;position:sticky;top:0;z-index:999;box-shadow:0 12px 26px rgba(0,0,0,.34)}
 .app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:center;gap:12px;align-items:center;overflow-x:auto}
@@ -128,7 +130,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <div class="company"><h2>PT. KALIMANTAN PRIMA PERSADA</h2><p>Integrated Mining Services</p><div class="period">DAILY FUEL BY LOGSHEET</div></div>
 
 <div class="notice" id="dataNotice">Memuat histori + audit perubahan... Kolom CEK akan menjelaskan penyebab: DOUBLE POSTING, masalah data, HM di bawah acuan, atau siapa yang terakhir mengedit (Admin/GL).</div>
-<div class="hm-tools-note"><b>Mode Rapikan HM Admin/GL:</b> gunakan filter HM Anomali untuk menemukan HM turun/loncat. Tombol <b>RAPIKAN HM</b> hanya merapikan histori dan otomatis mengecualikan baris itu dari HM reference. HM resmi tetap diatur lewat HM Master / Bulk Fix.</div>
+<div class="hm-tools-note"><b>Mode Rapikan HM Admin/GL:</b> gunakan filter HM untuk menemukan <b>HM kosong, turun, atau loncat</b>. Tombol <b>RAPIKAN HM</b> hanya merapikan histori dan otomatis mengecualikan baris itu dari HM reference. Jadi perapihan histori tidak mengubah patokan HM live; HM resmi tetap diatur lewat HM Master / Bulk Fix.</div>
 
 <div class="summary">
   <div class="summary-card"><div class="summary-title">TOTAL QTY ISSUED</div><div class="summary-value" id="totalFuel">0 L</div></div>
@@ -153,10 +155,10 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
   <div class="filter-group hidden" id="endDateBox"><label>Sampai Tanggal</label><input type="date" id="filterTanggalAkhir"></div>
   <div class="filter-group"><label>Shift</label><select id="filterShift"><option value="">Semua Shift</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
   <div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option><option value="FT01">FT01</option><option value="FT02">FT02</option></select></div>
-  <div class="filter-group"><label>Fuel Truck</label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
+  <div class="filter-group"><label>Fuel Truck <span id="ftLockHint" style="font-weight:600;color:#64748b"></span></label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
   <div class="filter-group"><label>Code Unit</label><input type="text" id="filterUnit" placeholder="Contoh: DT7441"></div>
   <div class="filter-group"><label>Fuelman</label><input type="text" id="filterFuelman" placeholder="Contoh: Tegar"></div>
-  <div class="filter-group"><label>Filter HM</label><select id="filterHmAudit"><option value="">Semua HM</option><option value="anomaly">HM Anomali</option><option value="down">HM Turun</option><option value="jump">HM Loncat</option><option value="excluded">Histori Dikecualikan</option></select></div>
+  <div class="filter-group"><label>Filter HM</label><select id="filterHmAudit"><option value="">Semua HM</option><option value="anomaly">Perlu Dirapikan</option><option value="missing">HM Kosong</option><option value="down">HM Turun</option><option value="jump">HM Loncat</option><option value="excluded">Histori Dikecualikan</option></select></div>
   <div class="filter-group"><label>Batas Loncat HM</label><select id="hmJumpLimit"><option value="50">&gt; 50 HM</option><option value="100" selected>&gt; 100 HM</option><option value="250">&gt; 250 HM</option><option value="500">&gt; 500 HM</option></select></div>
   <div class="button-row"><button class="refresh-btn" id="refreshBtn">↻ REFRESH</button><button class="download-btn" id="downloadBtn">📥 DOWNLOAD EXCEL</button></div>
 </div>
@@ -182,8 +184,8 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
     <h3>🧹 Rapikan HM Histori</h3>
     <div class="modal-sub" id="hmCleanupContext">-</div>
     <div class="modal-grid">
-      <div class="modal-field"><label>HM Sekarang di Histori</label><input id="cleanupOldHm" readonly></div>
-      <div class="modal-field"><label>HM yang Benar</label><input id="cleanupNewHm" type="number" min="0" step="0.1"></div>
+      <div class="modal-field"><label>HM Sekarang di Histori</label><input id="cleanupOldHm" readonly placeholder="Kosong"></div>
+      <div class="modal-field"><label>HM yang Benar</label><input id="cleanupNewHm" type="number" min="0" step="0.1" placeholder="Isi HM histori yang benar"></div>
       <div class="modal-field modal-full"><label>Alasan Rapikan</label><textarea id="cleanupReason" placeholder="Contoh: salah ketik 27826, seharusnya 2478"></textarea></div>
     </div>
     <div class="modal-info"><b>Aman untuk sistem HM:</b> transaksi ini tetap ada di Logsheet/audit, tetapi setelah disimpan otomatis <b>tidak dipakai sebagai HM reference</b>. Bila ingin menetapkan HM resmi unit, gunakan HM Master / Bulk Fix.</div>
@@ -337,9 +339,27 @@ function buildHmAnomalyMap(data){
       return;
     }
 
-    if(item.hm_akhir===null||item.hm_akhir===undefined||item.hm_akhir==="")return;
+    if(item.hm_akhir===null||item.hm_akhir===undefined||item.hm_akhir===""){
+      map.set(rowKey,{
+        text:"HM KOSONG — BISA DIRAPIKAN",
+        cls:"status-missing",
+        reason:"HM histori kosong. Admin/GL dapat mengisi HM histori melalui RAPIKAN HM; hasilnya tetap dikecualikan dari HM reference live.",
+        kind:"missing",
+        previous_hm:lastValid.get(unit)?.hm ?? null
+      });
+      return;
+    }
     const hm=Number(item.hm_akhir);
-    if(!Number.isFinite(hm))return;
+    if(!Number.isFinite(hm)){
+      map.set(rowKey,{
+        text:"HM TIDAK VALID — BISA DIRAPIKAN",
+        cls:"status-missing",
+        reason:"Nilai HM histori tidak valid. Admin/GL dapat merapikannya tanpa menjadikannya HM reference live.",
+        kind:"missing",
+        previous_hm:lastValid.get(unit)?.hm ?? null
+      });
+      return;
+    }
 
     const prev=lastValid.get(unit)||null;
     if(!prev){
@@ -613,7 +633,8 @@ function applyFilter(data){
     if(fuelman && !getFuelman(item).toUpperCase().includes(fuelman)) return false;
     if(hmAudit){
       const a=HM_ANOMALY_MAP.get(String(item.id??""));
-      if(hmAudit==="anomaly" && !(a&&["down","jump"].includes(a.kind)))return false;
+      if(hmAudit==="anomaly" && !(a&&["missing","down","jump"].includes(a.kind)))return false;
+      if(hmAudit==="missing" && a?.kind!=="missing")return false;
       if(hmAudit==="down" && a?.kind!=="down")return false;
       if(hmAudit==="jump" && a?.kind!=="jump")return false;
       if(hmAudit==="excluded" && a?.kind!=="excluded")return false;
@@ -683,7 +704,7 @@ function renderTable(data){
     label.textContent=status.text||"";
     wrap.appendChild(label);
     const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
-    if(anomaly&&["down","jump"].includes(anomaly.kind)){
+    if(anomaly&&["missing","down","jump","excluded"].includes(anomaly.kind)){
       const btn=document.createElement("button");
       btn.type="button";
       btn.className="cleanup-btn";
@@ -719,19 +740,21 @@ function renderFiltered(){
     if(st.kind==="error") acc.error++;
     if(st.kind==="hm") acc.hm++;
     const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
+    if(anomaly?.kind==="missing") acc.hmMissing++;
     if(anomaly?.kind==="down") acc.hmDown++;
     if(anomaly?.kind==="jump") acc.hmJump++;
     if(anomaly?.kind==="excluded") acc.excluded++;
     if(getEditStatus(item)) acc.edit++;
 
     return acc;
-  },{double:0,error:0,hm:0,hmDown:0,hmJump:0,excluded:0,edit:0});
+  },{double:0,error:0,hm:0,hmMissing:0,hmDown:0,hmJump:0,excluded:0,edit:0});
 
   document.getElementById("dataNotice").textContent=
     `Database: ${formatAngka(ALL_DATA.length)} transaksi • `+
     `Filter: ${formatAngka(filtered.length)} • `+
     `DOUBLE: ${formatAngka(statusCounts.double)} • `+
     `ERROR DATA: ${formatAngka(statusCounts.error)} • `+
+    `HM KOSONG: ${formatAngka(statusCounts.hmMissing)} • `+
     `HM TURUN: ${formatAngka(statusCounts.hmDown)} • `+
     `HM LONCAT: ${formatAngka(statusCounts.hmJump)} • `+
     `HISTORI DIKECUALIKAN: ${formatAngka(statusCounts.excluded)} • `+
@@ -775,7 +798,7 @@ async function loadData(){
 
 function openHmCleanup(item,anomaly){
   HM_CLEANUP_ROW=item;
-  document.getElementById("hmCleanupContext").textContent=`${String(item.unit||"-").toUpperCase()} • ${formatTanggal(item.tanggal)} • Shift ${item.shift||"-"} • ${anomaly?.text||"HM anomali"}`;
+  document.getElementById("hmCleanupContext").textContent=`${String(item.unit||"-").toUpperCase()} • ${formatTanggal(item.tanggal)} • Shift ${item.shift||"-"} • ${anomaly?.text||"HM histori"}`;
   document.getElementById("cleanupOldHm").value=item.hm_akhir??"";
   document.getElementById("cleanupNewHm").value=item.hm_akhir??"";
   document.getElementById("cleanupReason").value="";
@@ -791,6 +814,9 @@ async function saveHmCleanup(){
   const newHmRaw=document.getElementById("cleanupNewHm").value;
   const reason=document.getElementById("cleanupReason").value.trim();
   const newHm=newHmRaw===""?null:Number(newHmRaw);
+  const currentHm=HM_CLEANUP_ROW.hm_akhir;
+  const currentIsBlank=currentHm===null||currentHm===undefined||currentHm==="";
+  if(currentIsBlank && newHm===null){alert("HM histori masih kosong. Masukkan HM yang benar terlebih dahulu.");return}
   if(newHm!==null&&(!Number.isFinite(newHm)||newHm<0)){alert("HM baru tidak valid.");return}
   if(!reason){alert("Alasan rapikan HM wajib diisi.");return}
   const btn=document.getElementById("cleanupSaveBtn");
@@ -1171,8 +1197,46 @@ async function downloadExcel(){
   }
 }
 
-["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift","filterWH","filterFuelTruck"]
+function syncFuelTruckFromWH(){
+  const whSelect=document.getElementById("filterWH");
+  const ftSelect=document.getElementById("filterFuelTruck");
+  const hint=document.getElementById("ftLockHint");
+  const wh=whSelect.value;
+
+  if(wh==="FT01"){
+    ftSelect.value="FT0075";
+    ftSelect.disabled=true;
+    ftSelect.classList.add("ft-locked");
+    ftSelect.title="FT01 otomatis memakai FT0075";
+    if(hint) hint.textContent="• otomatis FT0075";
+    return;
+  }
+
+  if(wh==="FT02"){
+    ftSelect.value="FT0073";
+    ftSelect.disabled=true;
+    ftSelect.classList.add("ft-locked");
+    ftSelect.title="FT02 otomatis memakai FT0073";
+    if(hint) hint.textContent="• otomatis FT0073";
+    return;
+  }
+
+  // Saat kembali ke Semua WH, Fuel Truck dibuka lagi dan filter FT di-reset.
+  ftSelect.disabled=false;
+  ftSelect.classList.remove("ft-locked");
+  ftSelect.value="";
+  ftSelect.title="";
+  if(hint) hint.textContent="";
+}
+
+["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift"]
   .forEach(id=>document.getElementById(id).addEventListener("change",renderFiltered));
+
+document.getElementById("filterWH").addEventListener("change",()=>{
+  syncFuelTruckFromWH();
+  renderFiltered();
+});
+document.getElementById("filterFuelTruck").addEventListener("change",renderFiltered);
 
 document.getElementById("filterUnit").addEventListener("input",renderFiltered);
 document.getElementById("filterFuelman").addEventListener("input",renderFiltered);
@@ -1184,6 +1248,8 @@ document.getElementById("hmCleanupModal").addEventListener("click",e=>{if(e.targ
 document.getElementById("dateMode").addEventListener("change",updateDateMode);
 document.getElementById("refreshBtn").addEventListener("click",loadData);
 document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
+
+syncFuelTruckFromWH();
 
 document.addEventListener("kpp-auth-ready",()=>{
   loadData();
