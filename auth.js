@@ -152,14 +152,351 @@ window.KPP = {
       ::selection{background:#2563eb;color:#fff;}
       *{scrollbar-color:#475569 transparent;}
 
+      /* ===== GLOBAL STEP-BY-STEP GUIDE ===== */
+      #kppGuideBtn{
+        background:linear-gradient(135deg,#0f766e,#0d9488)!important;
+        color:#fff!important;
+        box-shadow:0 6px 14px rgba(13,148,136,.24)!important;
+      }
+      #kppGuideBtn:hover{filter:brightness(1.08);}
+      .kpp-guide-backdrop{
+        position:fixed;inset:0;z-index:99999;
+        background:rgba(2,6,23,.72);
+        backdrop-filter:blur(5px);
+        display:flex;align-items:center;justify-content:center;
+        padding:18px;
+      }
+      .kpp-guide-backdrop.kpp-guide-hidden{display:none!important;}
+      .kpp-guide-card{
+        width:min(620px,100%);
+        background:#fff;color:#0f172a;
+        border:1px solid #cbd5e1;border-radius:18px;
+        box-shadow:0 28px 70px rgba(2,6,23,.42);
+        overflow:hidden;
+      }
+      .kpp-guide-head{
+        padding:18px 20px 15px;
+        background:linear-gradient(135deg,#0b1730,#10284a);
+        color:#fff;
+        display:flex;justify-content:space-between;gap:14px;align-items:flex-start;
+      }
+      .kpp-guide-head small{display:block;color:#93c5fd;font-weight:800;letter-spacing:.06em;margin-bottom:5px;}
+      .kpp-guide-head h3{margin:0;font-size:20px;line-height:1.2;}
+      .kpp-guide-close{
+        flex:0 0 auto;border:0;border-radius:9px;padding:8px 10px;
+        background:rgba(255,255,255,.10);color:#fff;font-weight:900;cursor:pointer;
+      }
+      .kpp-guide-body{padding:22px 22px 18px;}
+      .kpp-guide-progress{
+        height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:18px;
+      }
+      .kpp-guide-progress > span{
+        display:block;height:100%;border-radius:999px;
+        background:linear-gradient(90deg,#2563eb,#0d9488);
+        transition:width .18s ease;
+      }
+      .kpp-guide-stepno{
+        display:inline-flex;align-items:center;gap:6px;
+        padding:5px 9px;border-radius:999px;background:#eff6ff;color:#1d4ed8;
+        font-size:11px;font-weight:900;margin-bottom:10px;
+      }
+      .kpp-guide-step-title{font-size:19px;font-weight:900;margin:0 0 8px;color:#0f172a;}
+      .kpp-guide-step-text{font-size:14px;line-height:1.65;color:#475569;min-height:70px;}
+      .kpp-guide-actions{
+        display:flex;justify-content:space-between;gap:10px;align-items:center;
+        padding:0 22px 20px;
+      }
+      .kpp-guide-actions-left,.kpp-guide-actions-right{display:flex;gap:8px;align-items:center;}
+      .kpp-guide-actions button{
+        border:0;border-radius:9px;padding:10px 14px;font-weight:900;cursor:pointer;
+      }
+      .kpp-guide-prev{background:#e2e8f0;color:#334155;}
+      .kpp-guide-next{background:#2563eb;color:#fff;}
+      .kpp-guide-done{background:#0f766e;color:#fff;}
+      .kpp-guide-all{background:#f8fafc;color:#475569;border:1px solid #cbd5e1!important;}
+      .kpp-guide-list{margin:0;padding-left:20px;color:#475569;font-size:13px;line-height:1.6;}
+      .kpp-guide-list li+li{margin-top:6px;}
+
       @media(max-width:700px){
         body{background-attachment:scroll!important;}
         .header{box-shadow:0 7px 20px rgba(2,6,23,.28)!important;}
         .app-nav{box-shadow:0 5px 16px rgba(2,6,23,.28)!important;}
+        .kpp-guide-backdrop{padding:10px;align-items:flex-end;}
+        .kpp-guide-card{border-radius:18px 18px 0 0;}
+        .kpp-guide-head{padding:16px;}
+        .kpp-guide-body{padding:18px 16px 14px;}
+        .kpp-guide-actions{padding:0 16px 16px;flex-wrap:wrap;}
+        .kpp-guide-actions-left,.kpp-guide-actions-right{width:100%;}
+        .kpp-guide-actions-right{justify-content:flex-end;}
       }
     `;
 
     document.head.appendChild(style);
+  },
+
+  guideCatalog(active, profile) {
+    const role = profile?.role || "";
+    const guides = {
+      dashboard: {
+        title: "Dashboard",
+        steps: [
+          ["Baca monitor utama", "Mulai dari kartu pemakaian 5 hari, total stock 5 hari, dan penerimaan solar. Ini memberi gambaran cepat kondisi fuel."],
+          ["Cek tren", "Perhatikan naik/turun pemakaian dan perubahan stock. Gunakan warna/status sebagai petunjuk, bukan sebagai pengganti pengecekan data."],
+          ["Lihat MTD", "Baca Total Fuel Usage MTD dan perbandingan periode sebelumnya untuk melihat arah konsumsi periode berjalan."],
+          ["Masuk ke detail", "Kalau ada angka yang perlu ditelusuri, buka Logsheet, Daily Report, atau Stock dari menu atas."],
+        ]
+      },
+      gl: {
+        title: "Menu GL",
+        steps: [
+          ["Pilih modul", "Gunakan menu atas untuk masuk ke Dashboard, Pengisian, Stock, Logsheet, CCR, Master, atau Kelola Akun."],
+          ["Prioritaskan pengecekan", "Mulai dari Dashboard dan Daily Report, lalu masuk ke Logsheet/Editor bila ada data yang perlu dikoreksi."],
+          ["Kelola approval", "Gunakan Approval CCR untuk jatah ritasi berikutnya yang membutuhkan persetujuan GL."],
+          ["Kelola master", "Gunakan Master Unit & HM untuk unit baru, QR, atau reset HM resmi."],
+        ]
+      },
+      admin: {
+        title: "Menu Admin",
+        steps: [
+          ["Mulai dari Dashboard", "Lihat ringkasan operasional sebelum masuk ke detail transaksi."],
+          ["Kelola operasional", "Gunakan Pengisian, Stock, Logsheet, Editor, Daily Report, dan Riwayat sesuai kebutuhan."],
+          ["Rapikan master", "Gunakan Master Unit & HM untuk memperbarui unit atau HM resmi tanpa mengubah histori lama."],
+          ["Audit sebelum selesai", "Jika ada data janggal, telusuri lewat Logsheet/Editor dan simpan alasan koreksi."],
+        ]
+      },
+      fuelman: {
+        title: "Menu Fuelman",
+        steps: [
+          ["Mulai shift", "Pilih tanggal, shift, dan Fuel Truck yang dibawa lalu Start Shift."],
+          ["Lakukan pengisian", "Masuk ke Pengisian, pilih/scan unit, periksa data, lalu simpan qty fuel."],
+          ["Pantau stock", "Buka Stock selama shift untuk melihat posisi stock Fuel Truck."],
+          ["Closing dan End Shift", "Input stock closing terlebih dahulu. Setelah closing lengkap, baru End Shift."],
+        ]
+      },
+      pengisian: {
+        title: "Pengisian Fuel",
+        steps: [
+          ["Pastikan shift aktif", "Fuelman harus sudah Start Shift dan Fuel Truck yang digunakan harus sesuai sesi."],
+          ["Pilih atau scan unit", "Untuk unit CCR gunakan QR unit. Unit non-CCR dapat dipilih secara manual sesuai aturan sistem."],
+          ["Periksa HM", "Pastikan HM sebelumnya/reference yang tampil masuk akal sebelum melanjutkan."],
+          ["Isi data pengisian", "Lengkapi operator dan qty. Data shift, Fuelman, dan Fuel Truck mengikuti sesi aktif."],
+          ["Simpan dan cek", "Simpan transaksi satu kali, lalu cek Riwayat/Logsheet bila perlu memastikan data sudah masuk."],
+        ]
+      },
+      stock: {
+        title: "Stock Fuel",
+        steps: [
+          ["Pilih aktivitas", "Tentukan apakah akan mencatat penerimaan, transfer, atau stock closing."],
+          ["Pilih lokasi", "Pastikan MT/FT sumber dan tujuan sesuai sebelum memasukkan jumlah liter."],
+          ["Isi qty", "Masukkan jumlah sesuai hasil aktual lapangan dan periksa kembali sebelum simpan."],
+          ["Baca status stock", "Gunakan level dan alarm stock untuk melihat tangki yang rendah, aman, atau mendekati penuh."],
+          ["Closing shift", "Fuelman wajib menyelesaikan stock closing sebelum End Shift."],
+        ]
+      },
+      logsheet: {
+        title: "Logsheet",
+        steps: [
+          ["Pilih mode tanggal", "Semua Tanggal menampilkan tabel seluruh histori, tetapi kartu ringkasan di atas otomatis memakai MTD periode berjalan. Tanggal tertentu/rentang memakai total sesuai pilihan."],
+          ["Gunakan filter", "Saring Shift, WH, Fuel Truck, Unit, Fuelman, atau status HM. WH FT01 otomatis mengunci FT0075; WH FT02 mengunci FT0073."],
+          ["Cari HM bermasalah", "Gunakan Filter HM untuk HM Kosong, HM Turun, HM Loncat, atau Histori Dikecualikan."],
+          ["Rapikan histori", "Admin/GL dapat klik RAPIKAN HM. Koreksi ini hanya merapikan histori dan tidak menjadi HM reference live."],
+          ["Download bila perlu", "Download Excel mengikuti filter tabel yang sedang aktif."],
+        ]
+      },
+      "logsheet-editor": {
+        title: "Logsheet Editor",
+        steps: [
+          ["Pilih sumber data", "Pilih tanggal yang akan diedit atau impor file logsheet lama untuk preview."],
+          ["Periksa baris", "Cek unit, HM, qty, shift, WH/FT, operator, dan fuelman sebelum menyimpan."],
+          ["Edit dengan alasan", "Jika mengubah HM/data lama, isi alasan koreksi agar audit Admin/GL tetap jelas."],
+          ["Simpan histori", "Data yang diedit/ditambah dari Editor adalah histori dan tidak boleh mengalahkan HM reference resmi."],
+          ["Cek hasil", "Buka Logsheet untuk memastikan hasil edit tampil sesuai dan tidak menciptakan anomali baru."],
+        ]
+      },
+      "daily-report": {
+        title: "Daily Report",
+        steps: [
+          ["Pilih tanggal/shift", "Tentukan titik laporan yang ingin dilihat."],
+          ["Cek Total Stock", "Baca Total Stock All WHS dan level masing-masing MT/FT."],
+          ["Baca penggunaan", "Periksa Usage Yesterday, Usage MTD, AVG MTD, dan perbandingannya."],
+          ["Cek ITO", "ITO menunjukkan perkiraan hari cover stock berdasarkan pemakaian. Perhatikan warning bila cover rendah."],
+          ["Gunakan untuk laporan", "Salin/ambil data dari tampilan ini untuk kebutuhan daily report operasional."],
+        ]
+      },
+      ccr: {
+        title: "CCR Jatah",
+        steps: [
+          ["Pilih tanggal, shift, dan unit", "Pastikan unit yang dipilih benar karena QR dan jatah terkunci berdasarkan unit."],
+          ["Periksa HM sebelumnya", "Lihat HM reference unit sebelum memasukkan HM hasil pembacaan CCR."],
+          ["Isi HM dan jam pengambilan", "Masukkan HM yang dibaca serta jam HM tersebut diambil agar estimasi dapat dihitung."],
+          ["Isi jatah", "Masukkan operator, qty jatah, toleransi, dan catatan bila diperlukan."],
+          ["Simpan dan cek ritasi", "Ritasi pertama dapat ACTIVE; ritasi berikutnya mengikuti flow approval yang berlaku."],
+        ]
+      },
+      "ccr-approval": {
+        title: "Approval CCR",
+        steps: [
+          ["Cari PENDING", "Tampilkan jatah yang menunggu keputusan GL."],
+          ["Periksa detail", "Cek unit, shift, operator, HM, qty, toleransi, dan alasan ritasi berikutnya."],
+          ["Ambil keputusan", "Approve jika sesuai agar jatah menjadi ACTIVE, atau Reject jika tidak sesuai."],
+          ["Jangan ubah USED", "Jatah yang sudah USED merupakan transaksi fuel dan dikunci oleh sistem."],
+        ]
+      },
+      riwayat: {
+        title: "Riwayat Pengisian",
+        steps: [
+          ["Tentukan periode", "Pilih tanggal atau filter yang ingin ditelusuri."],
+          ["Saring data", "Gunakan Unit, Shift, WH/FT, operator, atau Fuelman untuk mempersempit pencarian."],
+          ["Periksa transaksi", "Cek waktu, HM, qty, operator, dan Fuelman pada transaksi yang dicari."],
+          ["Lanjut ke Logsheet", "Jika perlu audit atau perapihan, buka Logsheet/Editor sebagai halaman administrasi."],
+        ]
+      },
+      "hm-master": {
+        title: "Master Unit & HM",
+        steps: [
+          ["Pilih tab", "MASTER UNIT digunakan untuk data unit/QR. HM MASTER digunakan untuk patokan HM resmi."],
+          ["Gunakan Bulk Fix bila banyak", "Centang banyak unit, isi HM aktual masing-masing, lalu gunakan satu tanggal/jam efektif bersama."],
+          ["Gunakan koreksi satuan bila perlu", "Untuk satu unit, cek HM sekarang lalu masukkan HM aktual yang benar."],
+          ["Simpan sebagai reference resmi", "HM yang disimpan Admin/GL di sini menjadi reset/patokan resmi mulai waktu efektif."],
+          ["Cek riwayat", "Gunakan riwayat koreksi untuk memastikan siapa dan kapan HM resmi terakhir ditetapkan."],
+        ]
+      },
+      "qr-unit": {
+        title: "QR Unit",
+        steps: [
+          ["Pilih unit", "Pilih unit yang QR-nya ingin dibuat atau dicetak."],
+          ["Pastikan code unit", "Isi QR harus sama dengan Code Unit karena sistem CCR mengunci berdasarkan unit."],
+          ["Generate QR", "Buat QR lalu cek teks Code Unit sebelum digunakan di lapangan."],
+          ["Cetak/pasang", "Pasang QR pada unit yang sesuai dan jangan menukar QR antar-unit."],
+        ]
+      },
+      akun: {
+        title: "Kelola Akun",
+        steps: [
+          ["Pilih aksi", "GL dapat membuat akun baru atau mengelola akun yang sudah ada."],
+          ["Isi identitas", "Pastikan nama, username, jabatan, dan role sesuai orang yang akan menggunakan sistem."],
+          ["Atur akses", "Role menentukan menu yang dapat dibuka. Jangan memberi akses lebih tinggi dari kebutuhan."],
+          ["Reset bila perlu", "Gunakan reset password untuk akun yang membutuhkan sandi baru tanpa membuat akun duplikat."],
+        ]
+      }
+    };
+
+    if (guides[active]) return guides[active];
+
+    return {
+      title: "Panduan KPP-FMS",
+      steps: [
+        ["Kenali halaman", "Baca judul halaman dan menu aktif di bagian atas untuk memastikan modul yang sedang digunakan."],
+        ["Isi dari kiri ke kanan", "Ikuti field dan tombol sesuai urutan tampilan. Periksa data sebelum menekan Simpan."],
+        ["Cek hasil", "Setelah menyimpan, gunakan tabel/riwayat yang tersedia untuk memastikan data sudah masuk."],
+        ["Gunakan menu atas", `Pindah modul melalui navigasi sesuai akses ${this.roleLabel(role)}.`],
+      ]
+    };
+  },
+
+  openGuide(active, profile) {
+    const guide = this.guideCatalog(active || window.KPP_ACTIVE_PAGE || "", profile || window.KPP_PROFILE || null);
+    let host = document.getElementById("kppGuideModal");
+
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "kppGuideModal";
+      host.className = "kpp-guide-backdrop kpp-guide-hidden";
+      document.body.appendChild(host);
+    }
+
+    let stepIndex = 0;
+    const steps = guide.steps || [];
+
+    const render = () => {
+      const [stepTitle, stepText] = steps[stepIndex] || ["Panduan", "Belum ada langkah untuk halaman ini."];
+      const total = Math.max(steps.length, 1);
+      const pct = ((stepIndex + 1) / total) * 100;
+      const isLast = stepIndex >= total - 1;
+
+      host.innerHTML = `
+        <div class="kpp-guide-card" role="document">
+          <div class="kpp-guide-head">
+            <div>
+              <small>PANDUAN BERURUT</small>
+              <h3>📘 ${guide.title}</h3>
+            </div>
+            <button type="button" class="kpp-guide-close" aria-label="Tutup">✕</button>
+          </div>
+          <div class="kpp-guide-body">
+            <div class="kpp-guide-progress"><span style="width:${pct}%"></span></div>
+            <div class="kpp-guide-stepno">LANGKAH ${stepIndex + 1} / ${total}</div>
+            <h4 class="kpp-guide-step-title">${stepTitle}</h4>
+            <div class="kpp-guide-step-text">${stepText}</div>
+          </div>
+          <div class="kpp-guide-actions">
+            <div class="kpp-guide-actions-left">
+              <button type="button" class="kpp-guide-all">Lihat Semua</button>
+            </div>
+            <div class="kpp-guide-actions-right">
+              <button type="button" class="kpp-guide-prev" ${stepIndex===0?"disabled":""}>← Sebelumnya</button>
+              <button type="button" class="${isLast?"kpp-guide-done":"kpp-guide-next"}">${isLast?"Selesai":"Berikutnya →"}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      host.querySelector(".kpp-guide-close")?.addEventListener("click", close);
+      host.querySelector(".kpp-guide-prev")?.addEventListener("click", () => {
+        if (stepIndex > 0) { stepIndex--; render(); }
+      });
+      host.querySelector(isLast ? ".kpp-guide-done" : ".kpp-guide-next")?.addEventListener("click", () => {
+        if (isLast) close();
+        else { stepIndex++; render(); }
+      });
+      host.querySelector(".kpp-guide-all")?.addEventListener("click", () => {
+        host.querySelector(".kpp-guide-body").innerHTML = `
+          <div class="kpp-guide-stepno">SEMUA LANGKAH</div>
+          <ol class="kpp-guide-list">
+            ${steps.map(([t,x])=>`<li><b>${t}</b><br>${x}</li>`).join("")}
+          </ol>
+        `;
+      });
+    };
+
+    const close = () => {
+      host.classList.add("kpp-guide-hidden");
+      document.removeEventListener("keydown", onKey);
+    };
+
+    const onKey = (event) => {
+      if (event.key === "Escape") close();
+      if (event.key === "ArrowRight" && stepIndex < steps.length - 1) { stepIndex++; render(); }
+      if (event.key === "ArrowLeft" && stepIndex > 0) { stepIndex--; render(); }
+    };
+
+    host.onclick = (event) => { if (event.target === host) close(); };
+    host.classList.remove("kpp-guide-hidden");
+    document.addEventListener("keydown", onKey);
+    render();
+  },
+
+  installGuideButton(profile) {
+    const bar = document.querySelector("#kppUserBar .kpp-userbar-inner > div:last-child");
+    if (bar && !document.getElementById("kppGuideBtn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "kppGuideBtn";
+      btn.textContent = "📘 Panduan";
+      btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
+      bar.prepend(btn);
+      return;
+    }
+
+    if (!document.getElementById("kppGuideBtn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "kppGuideBtn";
+      btn.textContent = "📘 Panduan";
+      btn.style.cssText = "position:fixed;right:14px;bottom:14px;z-index:9998;border:0;border-radius:999px;padding:11px 14px;font-weight:900;cursor:pointer";
+      btn.addEventListener("click", () => this.openGuide(window.KPP_ACTIVE_PAGE || "", profile));
+      document.body.appendChild(btn);
+    }
   },
 
   renderUserBar(profile) {
@@ -316,6 +653,7 @@ if (window.KPP_ALLOWED_ROLES) {
 
       window.KPP.renderUserBar(access.profile);
       window.KPP.renderNav(access.profile, window.KPP_ACTIVE_PAGE || "");
+      window.KPP.installGuideButton(access.profile);
       window.KPP.applyRolePageRules(access.profile);
 
       document.documentElement.style.visibility = "visible";
