@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.2: mobile copy reports + account-linked sounding officer -->
+<!-- KPP-FMS STOCK v9.3: stock cards include estimated sounding height -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -320,6 +320,17 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 .card.capacity-critical{border-left-color:var(--kpp-red)!important}
 .card.capacity-high{border-left-color:var(--kpp-orange)!important}
 .card strong{color:var(--kpp-text)!important;font-size:22px}
+.stock-sounding-estimate{
+  margin-top:7px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  color:#475569;
+  font-size:10px;
+  line-height:1.35;
+}
+.stock-sounding-estimate b{color:#1e3a5f;font-size:11px;white-space:nowrap}
 .stock-capacity-line{margin-bottom:7px}
 .stock-capacity-bar{height:7px;background:#eef1f5}
 
@@ -586,6 +597,8 @@ th{background:#f8fafc;color:#475569}
     <div class="cards" id="stockCards"></div>
     <div class="note" style="margin-top:12px">
         Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk − Transfer Keluar − Pengisian Unit.
+        Tinggi CM pada kartu adalah <b>estimasi sounding dari Stock Sistem menggunakan tabel tera</b>;
+        sounding fisik Fuelman tetap menjadi acuan pengecekan lapangan.
     </div>
 </div>
 
@@ -2493,6 +2506,10 @@ function renderStockCards(stock){
         const p=capacityPercent(storage,stock[storage]);
         const state=capacityState(storage,stock[storage]);
         const width=Math.max(0,Math.min(p,100));
+        const estimatedHeight=TERA.heightForLiters(
+            storage,
+            Math.max(0,n(stock[storage]))
+        );
 
         const cardClass=state==="critical"?"capacity-critical":state==="low"?"capacity-low":state==="high"?"capacity-high":"capacity-safe";
         const textClass=`capacity-${state}-text`;
@@ -2502,6 +2519,10 @@ function renderStockCards(stock){
         <div class="card ${cardClass}">
             <small>${storage}${suffix}</small>
             <strong>${fmt(stock[storage])}</strong>
+            <div class="stock-sounding-estimate">
+                <span>📏 Estimasi sounding sistem</span>
+                <b>≈ ${fmtCm(estimatedHeight)}</b>
+            </div>
 
             <div class="stock-capacity">
                 <div class="stock-capacity-line">
