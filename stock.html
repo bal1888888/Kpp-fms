@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9: TERA + audit transporter PO/LO + measured loss -->
+<!-- KPP-FMS STOCK v9.1: dynamic destination sounding labels + history at bottom -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -635,15 +635,16 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="receiptQty" class="auto-liter" readonly placeholder="Flowmeter akhir − awal">
         </div>
         <div>
-            <label>Sonding Tangki Sebelum (CM)</label>
+            <label id="receiptTankBeforeLabel">Sonding MT01 Sebelum Bongkar (CM)</label>
             <input type="number" id="receiptTankHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Sebelum bongkar">
+            <span class="field-hint">Tangki tujuan kita yang dipilih pada bagian “Masuk ke”.</span>
         </div>
         <div>
-            <label>Sonding Tangki Sesudah (CM)</label>
+            <label id="receiptTankAfterLabel">Sonding MT01 Sesudah Bongkar (CM)</label>
             <input type="number" id="receiptTankHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Setelah bongkar">
         </div>
         <div>
-            <label>Qty Masuk Menurut Tera (Liter)</label>
+            <label id="receiptTankQtyLabel">Qty Masuk MT01 Menurut Tera (Liter)</label>
             <input type="number" id="receiptTankQty" class="auto-liter" readonly placeholder="Liter sesudah − sebelum">
         </div>
         <div>
@@ -659,43 +660,6 @@ th{background:#f8fafc;color:#475569}
         </div>
     </div>
     <div class="status" id="receiptStatus"></div>
-</div>
-
-<div class="panel">
-    <h3>📚 History Penerimaan Transportir</h3>
-    <div class="note" style="margin-bottom:12px">
-        Riwayat kedatangan, referensi PO/LO, hasil flowmeter, hasil sounding tangki, dan loss bongkaran.
-    </div>
-    <div class="grid">
-        <div><label>Dari Tanggal</label><input type="date" id="receiptHistoryDateFrom"></div>
-        <div><label>Sampai Tanggal</label><input type="date" id="receiptHistoryDateTo"></div>
-        <div>
-            <label>Transportir</label>
-            <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
-        </div>
-        <div><label>Cari PO / LO</label><input id="receiptHistoryReference" placeholder="Ketik nomor referensi"></div>
-        <div>
-            <label>Status PO / LO</label>
-            <select id="receiptHistoryReferenceStatus">
-                <option value="all">SEMUA STATUS</option>
-                <option value="pending">BELUM DIISI</option>
-                <option value="complete">SUDAH DIISI</option>
-            </select>
-        </div>
-        <div style="align-self:end"><button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN HISTORY</button></div>
-    </div>
-    <div class="table-wrap" style="margin-top:14px">
-        <table style="min-width:1220px">
-            <thead>
-                <tr>
-                    <th>KEDATANGAN</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
-                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI PO / LO</th>
-                </tr>
-            </thead>
-            <tbody id="receiptHistoryBody"><tr><td colspan="9">Memuat history penerimaan...</td></tr></tbody>
-        </table>
-    </div>
-    <div class="status" id="receiptHistoryStatus"></div>
 </div>
 
 <div class="panel">
@@ -880,6 +844,43 @@ th{background:#f8fafc;color:#475569}
             <tbody id="movementBody"></tbody>
         </table>
     </div>
+</div>
+
+<div class="panel">
+    <h3>📚 History Penerimaan Transportir</h3>
+    <div class="note" style="margin-bottom:12px">
+        Riwayat kedatangan, referensi PO/LO, hasil flowmeter, hasil sounding tangki, dan loss bongkaran.
+    </div>
+    <div class="grid">
+        <div><label>Dari Tanggal</label><input type="date" id="receiptHistoryDateFrom"></div>
+        <div><label>Sampai Tanggal</label><input type="date" id="receiptHistoryDateTo"></div>
+        <div>
+            <label>Transportir</label>
+            <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
+        </div>
+        <div><label>Cari PO / LO</label><input id="receiptHistoryReference" placeholder="Ketik nomor referensi"></div>
+        <div>
+            <label>Status PO / LO</label>
+            <select id="receiptHistoryReferenceStatus">
+                <option value="all">SEMUA STATUS</option>
+                <option value="pending">BELUM DIISI</option>
+                <option value="complete">SUDAH DIISI</option>
+            </select>
+        </div>
+        <div style="align-self:end"><button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN HISTORY</button></div>
+    </div>
+    <div class="table-wrap" style="margin-top:14px">
+        <table style="min-width:1220px">
+            <thead>
+                <tr>
+                    <th>KEDATANGAN</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
+                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI PO / LO</th>
+                </tr>
+            </thead>
+            <tbody id="receiptHistoryBody"><tr><td colspan="9">Memuat history penerimaan...</td></tr></tbody>
+        </table>
+    </div>
+    <div class="status" id="receiptHistoryStatus"></div>
 </div>
 
 <div class="panel actions">
@@ -1563,6 +1564,17 @@ function updateReceiptCalculation(){
     const lossInput=document.getElementById("receiptLoss");
     const destination=document.getElementById("receiptDestination").value;
 
+    document.getElementById("receiptTankBeforeLabel").textContent=
+        `Sonding ${destination} Sebelum Bongkar (CM)`;
+    document.getElementById("receiptTankAfterLabel").textContent=
+        `Sonding ${destination} Sesudah Bongkar (CM)`;
+    document.getElementById("receiptTankQtyLabel").textContent=
+        `Qty Masuk ${destination} Menurut Tera (Liter)`;
+    document.getElementById("receiptTankHeightBefore").placeholder=
+        `Sonding awal ${destination}`;
+    document.getElementById("receiptTankHeightAfter").placeholder=
+        `Sonding akhir ${destination}`;
+
     try{
         const meterStart=startInput.value===""?null:n(startInput.value);
         const meterEnd=endInput.value===""?null:n(endInput.value);
@@ -1597,8 +1609,8 @@ function updateReceiptCalculation(){
         if(tankQty!==null){
             parts.push(
                 tankQty>0
-                    ? `Masuk tangki ${fmt(tankQty)}`
-                    : "Sonding tangki sesudah harus lebih tinggi dari sebelum"
+                    ? `Masuk ${destination} ${fmt(tankQty)}`
+                    : `Sonding ${destination} sesudah harus lebih tinggi dari sebelum`
             );
         }
         if(loss!==null)parts.push(`Loss ${fmtSigned(loss)}`);
@@ -2464,12 +2476,12 @@ async function saveReceipt(){
     }
 
     if(!measurement.tankBefore || !measurement.tankAfter){
-        alert("Isi sonding tangki tujuan sebelum dan sesudah bongkar.");
+        alert(`Isi sonding ${destination_storage} sebelum dan sesudah bongkar.`);
         return;
     }
 
     if(!measurement.tankQty || measurement.tankQty<=0){
-        alert("Sonding tangki sesudah harus lebih tinggi dari sebelum bongkar.");
+        alert(`Sonding ${destination_storage} sesudah harus lebih tinggi dari sebelum bongkar.`);
         return;
     }
 
