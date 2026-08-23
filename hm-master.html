@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS HM MASTER v8 RESTORE CORRECT PAGE: Admin/GL only -->
+<!-- KPP-FMS HM MASTER v9: Unit + HM + Master Transportir, Admin/GL only -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -100,6 +100,8 @@ tbody tr:hover{background:#f8fafc}
 .small-btn{padding:7px 10px;font-size:10px;background:var(--blue);color:#fff}
 .badge-active{font-weight:800;color:#15803d}
 .badge-off{font-weight:800;color:var(--red)}
+.transport-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.transport-note{background:var(--green-soft);border:1px solid #bbf7d0;color:#166534;border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6}
 .master-toolbar{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(3,minmax(130px,.65fr));gap:10px;align-items:stretch;margin-bottom:13px}
 .master-toolbar>div{min-width:0}
 .master-toolbar .card{margin:0;display:flex;justify-content:center;flex-direction:column}
@@ -165,6 +167,7 @@ tbody tr:hover{background:#f8fafc}
     <div class="tab-bar">
         <button id="tabUnitBtn" class="tab-btn active" onclick="showTab('unit')">🚜 MASTER UNIT</button>
         <button id="tabHmBtn" class="tab-btn" onclick="showTab('hm')">⚙️ HM MASTER</button>
+        <button id="tabTransporterBtn" class="tab-btn" onclick="showTab('transporter')">🚛 MASTER TRANSPORTIR</button>
     </div>
 
     <div id="tabUnit" class="tab-page active">
@@ -285,6 +288,73 @@ tbody tr:hover{background:#f8fafc}
                     </thead>
                     <tbody id="unitMasterBody">
                         <tr><td colspan="8">Mengambil master unit...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tabTransporter" class="tab-page">
+        <div class="panel">
+            <div class="transport-note">
+                Kelola perusahaan transportir dari satu tempat. Transportir berstatus <b>AKTIF</b>
+                otomatis muncul di dropdown Penerimaan Solar pada halaman Stock.
+            </div>
+            <div class="warning">
+                Vendor yang sudah pernah dipakai jangan dihapus. Jika kontraknya selesai, ubah status menjadi <b>TIDAK AKTIF</b>
+                supaya histori penerimaan lama tetap terbaca.
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Tambah / Update Transportir</h3>
+            <div class="grid">
+                <div>
+                    <label>Nama Perusahaan Transportir</label>
+                    <input id="transporterName" placeholder="Contoh: PT. SHA" autocomplete="off">
+                </div>
+                <div>
+                    <label>Status</label>
+                    <select id="transporterActive">
+                        <option value="true">AKTIF</option>
+                        <option value="false">TIDAK AKTIF</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Keterangan</label>
+                    <input id="transporterNote" placeholder="Contoh: Vendor bongkaran MT01">
+                </div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="green" type="button" onclick="saveTransporter()">SIMPAN / UPDATE</button>
+                <button class="secondary" type="button" onclick="resetTransporterForm()">RESET FORM</button>
+            </div>
+            <div class="status" id="transporterSaveStatus"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Daftar Master Transportir</h3>
+            <div class="master-toolbar">
+                <div>
+                    <label>Cari Transportir</label>
+                    <input id="transporterSearch" placeholder="Ketik nama vendor..." oninput="renderTransporterTable()">
+                </div>
+                <div class="card">
+                    <small>TOTAL VENDOR</small>
+                    <strong id="totalTransporter">0</strong>
+                </div>
+                <div class="card">
+                    <small>VENDOR AKTIF</small>
+                    <strong id="totalActiveTransporter">0</strong>
+                </div>
+            </div>
+            <div class="table-wrap table-scroll">
+                <table>
+                    <thead>
+                        <tr><th>NAMA TRANSPORTIR</th><th>STATUS</th><th>KETERANGAN</th><th>AKSI</th></tr>
+                    </thead>
+                    <tbody id="transporterBody">
+                        <tr><td colspan="4">Mengambil master transportir...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -617,6 +687,7 @@ const MASTER_LAST_HM = {
 let selectedUnit="";
 let MASTER_UNITS=[...BASE_MASTER_UNITS];
 let UNIT_MASTER_ROWS=[];
+let TRANSPORTER_ROWS=[];
 const QR_SELECTED=new Set();
 const BULK_HM_SELECTED=new Set();
 const BULK_HM_VALUES=new Map();
@@ -628,6 +699,7 @@ function localTime(){const d=new Date();return `${pad(d.getHours())}:${pad(d.get
 function n(v){return Number(v||0)}
 function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1})}
 function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
+function normalizeTransporter(v){return String(v||"").trim().replace(/\s+/g," ").toUpperCase()}
 function esc(v){
     return String(v??"")
         .replaceAll("&","&amp;")
@@ -641,8 +713,130 @@ function operationalKey(row){if(!row)return "0000-00-00T00:00:00";return `${row.
 function showTab(tab){
     document.getElementById("tabUnit").classList.toggle("active",tab==="unit");
     document.getElementById("tabHm").classList.toggle("active",tab==="hm");
+    document.getElementById("tabTransporter").classList.toggle("active",tab==="transporter");
     document.getElementById("tabUnitBtn").classList.toggle("active",tab==="unit");
     document.getElementById("tabHmBtn").classList.toggle("active",tab==="hm");
+    document.getElementById("tabTransporterBtn").classList.toggle("active",tab==="transporter");
+}
+
+async function loadTransporters(){
+    const {data,error}=await db
+        .from("master_transporters")
+        .select("name,active,note,updated_at,updated_by_name")
+        .order("name",{ascending:true});
+
+    if(error){
+        TRANSPORTER_ROWS=[];
+        document.getElementById("transporterBody").innerHTML=
+            `<tr><td colspan="4">❌ ${esc(error.message)}</td></tr>`;
+        document.getElementById("transporterSaveStatus").textContent=
+            "⚠️ Master Transportir belum tersedia. Jalankan SQL Master Transportir terlebih dahulu.";
+        renderTransporterTable();
+        return;
+    }
+
+    TRANSPORTER_ROWS=(data||[]).map(row=>({
+        name:normalizeTransporter(row.name),
+        active:row.active!==false,
+        note:row.note||"",
+        updated_at:row.updated_at||null,
+        updated_by_name:row.updated_by_name||""
+    }));
+    renderTransporterTable();
+}
+
+function renderTransporterTable(){
+    const body=document.getElementById("transporterBody");
+    if(!body)return;
+
+    const query=normalizeTransporter(document.getElementById("transporterSearch")?.value||"");
+    const rows=TRANSPORTER_ROWS.filter(row=>
+        !query || [row.name,row.note].join(" ").toUpperCase().includes(query)
+    );
+
+    document.getElementById("totalTransporter").textContent=TRANSPORTER_ROWS.length;
+    document.getElementById("totalActiveTransporter").textContent=
+        TRANSPORTER_ROWS.filter(row=>row.active).length;
+
+    if(!rows.length){
+        body.innerHTML='<tr><td colspan="4">Belum ada transportir yang cocok.</td></tr>';
+        return;
+    }
+
+    body.innerHTML=rows.map(row=>`
+        <tr>
+            <td><b>${esc(row.name)}</b></td>
+            <td class="${row.active?"badge-active":"badge-off"}">${row.active?"AKTIF":"TIDAK AKTIF"}</td>
+            <td>${esc(row.note||"-")}</td>
+            <td>
+                <div class="transport-actions">
+                    <button class="small-btn" type="button" onclick="editTransporter(decodeURIComponent('${encodeURIComponent(row.name)}'))">EDIT</button>
+                </div>
+            </td>
+        </tr>
+    `).join("");
+}
+
+function editTransporter(name){
+    const normalized=normalizeTransporter(name);
+    const row=TRANSPORTER_ROWS.find(item=>item.name===normalized);
+    if(!row)return;
+
+    const nameInput=document.getElementById("transporterName");
+    nameInput.value=row.name;
+    nameInput.readOnly=true;
+    nameInput.classList.add("locked-field");
+    document.getElementById("transporterActive").value=row.active?"true":"false";
+    document.getElementById("transporterNote").value=row.note||"";
+    document.getElementById("transporterSaveStatus").textContent=
+        "Mode edit: "+row.name+". Nama dikunci agar histori tetap konsisten.";
+    document.getElementById("tabTransporter").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function resetTransporterForm(){
+    const nameInput=document.getElementById("transporterName");
+    nameInput.value="";
+    nameInput.readOnly=false;
+    nameInput.classList.remove("locked-field");
+    document.getElementById("transporterActive").value="true";
+    document.getElementById("transporterNote").value="";
+    document.getElementById("transporterSaveStatus").textContent="";
+}
+
+async function saveTransporter(){
+    const name=normalizeTransporter(document.getElementById("transporterName").value);
+    const active=document.getElementById("transporterActive").value==="true";
+    const note=document.getElementById("transporterNote").value.trim();
+    const status=document.getElementById("transporterSaveStatus");
+
+    if(!name){
+        alert("Masukkan nama perusahaan transportir.");
+        return;
+    }
+
+    if(name.length<3 || name.length>100){
+        alert("Nama transportir harus 3 sampai 100 karakter.");
+        return;
+    }
+
+    status.textContent="⏳ Menyimpan Master Transportir...";
+    const {error}=await db.from("master_transporters").upsert({
+        name,
+        active,
+        note,
+        updated_at:new Date().toISOString(),
+        updated_by_name:window.KPP_PROFILE?.display_name||"Admin/GL"
+    },{onConflict:"name"});
+
+    if(error){
+        status.textContent="❌ "+error.message;
+        return;
+    }
+
+    status.textContent=`✅ ${name} berhasil disimpan.`;
+    await loadTransporters();
+    resetTransporterForm();
+    document.getElementById("transporterSaveStatus").textContent=`✅ ${name} berhasil disimpan.`;
 }
 
 function renderUnitOptions(){
@@ -969,8 +1163,12 @@ document.getElementById("effectiveTime").value=localTime();
 document.getElementById("bulkEffectiveDate").value=localDate();
 document.getElementById("bulkEffectiveTime").value=localTime();
 document.getElementById("unitInput").addEventListener("input",e=>e.target.value=e.target.value.toUpperCase());
+document.getElementById("transporterName").addEventListener("input",e=>{
+    if(!e.target.readOnly)e.target.value=normalizeTransporter(e.target.value);
+});
 
 loadUnitMaster();
+loadTransporters();
 
 
 function getBulkRows(){
