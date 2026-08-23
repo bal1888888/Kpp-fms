@@ -1,4 +1,4 @@
-// KPP-FMS AUTH V24 — profile dropdown visible on desktop + mobile
+// KPP-FMS AUTH V25 — stable mobile scroll + profile dropdown
 const KPP_SUPABASE_URL = "https://pwowtyfybfqsveuvqrsb.supabase.co";
 const KPP_SUPABASE_KEY = "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const kppDb = supabase.createClient(KPP_SUPABASE_URL, KPP_SUPABASE_KEY);
@@ -586,7 +586,7 @@ window.KPP = {
           overflow-y:hidden!important;
           -webkit-overflow-scrolling:touch;
           overscroll-behavior-x:contain;
-          touch-action:pan-x;
+          touch-action:pan-x pan-y;
           scroll-padding-inline:10px;
         }
         .app-nav a{flex:0 0 auto!important;}
@@ -1274,11 +1274,18 @@ window.KPP = {
           navInner.style.setProperty("flex-wrap", "nowrap", "important");
           navInner.style.setProperty("overflow-x", "auto", "important");
 
-          // Tampilkan menu aktif saat halaman dibuka, tetapi kedua ujung tetap dapat digeser.
+          // Tampilkan menu aktif tanpa scrollIntoView karena API itu juga dapat
+          // menggeser viewport halaman secara vertikal saat auth/data selesai dimuat.
           window.requestAnimationFrame(() => {
             const activeLink = navInner.querySelector("a.active");
             if (activeLink) {
-              activeLink.scrollIntoView({ behavior:"auto", block:"nearest", inline:"center" });
+              const navRect = navInner.getBoundingClientRect();
+              const activeRect = activeLink.getBoundingClientRect();
+              const maxScroll = Math.max(0, navInner.scrollWidth - navInner.clientWidth);
+              const targetLeft = navInner.scrollLeft
+                + (activeRect.left - navRect.left)
+                - ((navInner.clientWidth - activeRect.width) / 2);
+              navInner.scrollLeft = Math.max(0, Math.min(maxScroll, targetLeft));
             } else {
               navInner.scrollLeft = 0;
             }
@@ -1286,7 +1293,16 @@ window.KPP = {
         }
       };
       arrangeNav();
-      window.addEventListener("resize", arrangeNav, {passive:true});
+      let lastViewportWidth = window.innerWidth;
+      const handleNavResize = () => {
+        const nextViewportWidth = window.innerWidth;
+        // Address bar HP mengubah tinggi viewport ketika halaman di-scroll.
+        // Abaikan resize tinggi agar posisi halaman tidak dirender ulang.
+        if (nextViewportWidth === lastViewportWidth) return;
+        lastViewportWidth = nextViewportWidth;
+        arrangeNav();
+      };
+      window.addEventListener("resize", handleNavResize, {passive:true});
     }
   }
 };
