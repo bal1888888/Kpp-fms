@@ -213,6 +213,14 @@ window.KPP = {
         display:flex;
         justify-content:flex-end;
         align-items:center;
+        gap:10px;
+      }
+      .kpp-sm-logo{
+        width:58px;
+        height:64px;
+        object-fit:contain;
+        flex:0 0 auto;
+        filter:drop-shadow(0 5px 9px rgba(0,0,0,.28));
       }
       .kpp-brand-badge{
         display:inline-flex;
@@ -481,7 +489,7 @@ window.KPP = {
       .kpp-brand-header{
         width:min(1500px,calc(100% - 28px))!important;
         min-height:86px!important;
-        grid-template-columns:150px minmax(0,1fr) 210px!important;
+        grid-template-columns:150px minmax(0,1fr) 285px!important;
         gap:16px!important;
         padding:9px 12px!important;
       }
@@ -547,18 +555,21 @@ window.KPP = {
       }
       .app-nav a{padding:8px 11px!important;font-size:11px!important;}
       @media(max-width:1050px){
-        .kpp-brand-header{grid-template-columns:112px minmax(0,1fr) 168px!important;}
+        .kpp-brand-header{grid-template-columns:112px minmax(0,1fr) 225px!important;}
         .kpp-brand-logo{width:96px!important;height:50px!important;}
+        .kpp-sm-logo{width:45px;height:52px;}
         .kpp-user-pill{min-height:38px;padding:5px 8px;font-size:10px;}
         .kpp-user-avatar{width:25px;height:25px;font-size:12px;}
       }
       @media(max-width:760px){
         .header{min-height:74px!important;}
         .kpp-brand-header{
-          grid-template-columns:64px minmax(0,1fr) 44px!important;
+          grid-template-columns:64px minmax(0,1fr) 82px!important;
           width:100%!important;min-height:74px!important;padding:8px 9px!important;gap:7px!important;
         }
         .kpp-brand-logo{width:58px!important;height:44px!important;}
+        .kpp-brand-side{gap:4px!important;}
+        .kpp-sm-logo{width:34px;height:40px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.25));}
         .kpp-brand-title{font-size:clamp(14px,4vw,18px)!important;}
         .kpp-brand-subtitle{font-size:10px!important;}
         .kpp-user-pill{width:38px;height:38px;padding:0!important;border-radius:50%;justify-content:center;}
@@ -669,6 +680,7 @@ window.KPP = {
           <p class="kpp-brand-subtitle">${this.pageSubtitle(active)}</p>
         </div>
         <div class="kpp-brand-side">
+          <img class="kpp-sm-logo" src="kpp-tram-sm.png" alt="SM KPP TRAM" loading="eager">
           <span class="kpp-brand-badge">TRAM SITE</span>
         </div>
       </div>
@@ -1137,6 +1149,7 @@ window.KPP = {
     const roleText = profile.jabatan || this.roleLabel(profile.role);
 
     side.innerHTML = `
+      <img class="kpp-sm-logo" src="kpp-tram-sm.png" alt="SM KPP TRAM" loading="eager">
       <div class="kpp-user-menu">
         <button type="button" class="kpp-user-pill" id="kppUserMenuBtn" aria-expanded="false">
           <span class="kpp-user-avatar">👤</span>
