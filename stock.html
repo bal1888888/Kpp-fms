@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.7: persistent collapsible movement and receipt history -->
+<!-- KPP-FMS STOCK v9.8: audit history moved to dedicated History Stock page -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -972,64 +972,10 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
-<div class="panel">
-    <div class="panel-title-row">
-        <h3>📚 History Penerimaan Transportir</h3>
-        <button class="gray panel-toggle-btn" id="receiptHistoryPanelToggle" type="button" onclick="toggleStockPanel('receiptHistory')" aria-expanded="true">🙈 SEMBUNYIKAN</button>
-    </div>
-
-    <div id="receiptHistoryPanelContent">
-    <div class="note" style="margin-bottom:12px">
-        Riwayat kedatangan, PO/LO, flowmeter, sounding tangki, dan loss bongkaran.
-        Periode 1 otomatis tanggal 1–14; Periode 2 otomatis tanggal 15–akhir bulan.
-    </div>
-    <div class="grid">
-        <div><label>Dari Tanggal</label><input type="date" id="receiptHistoryDateFrom"></div>
-        <div><label>Sampai Tanggal</label><input type="date" id="receiptHistoryDateTo"></div>
-        <div>
-            <label>Periode Penerimaan</label>
-            <select id="receiptHistoryPeriod">
-                <option value="all">SEMUA PERIODE</option>
-                <option value="1">PERIODE 1 (1–14)</option>
-                <option value="2">PERIODE 2 (15–AKHIR BULAN)</option>
-            </select>
-        </div>
-        <div>
-            <label>Transportir</label>
-            <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
-        </div>
-        <div><label>Cari PO / LO</label><input id="receiptHistoryReference" placeholder="Ketik nomor referensi"></div>
-        <div>
-            <label>Status PO / LO</label>
-            <select id="receiptHistoryReferenceStatus">
-                <option value="all">SEMUA STATUS</option>
-                <option value="pending">BELUM DIISI</option>
-                <option value="complete">SUDAH DIISI</option>
-            </select>
-        </div>
-        <div class="history-actions">
-            <button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN</button>
-            <button class="green" id="receiptHistoryDownloadBtn" type="button" onclick="downloadReceiptHistoryExcel()">⬇️ DOWNLOAD EXCEL</button>
-        </div>
-    </div>
-    <div class="table-wrap" style="margin-top:14px">
-        <table style="min-width:1320px">
-            <thead>
-                <tr>
-                    <th>KEDATANGAN</th><th>PERIODE</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
-                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI PO / LO</th>
-                </tr>
-            </thead>
-            <tbody id="receiptHistoryBody"><tr><td colspan="10">Memuat history penerimaan...</td></tr></tbody>
-        </table>
-    </div>
-    <div class="status" id="receiptHistoryStatus"></div>
-    </div>
-</div>
-
 <div class="panel actions">
     <a href="pengisian.html" class="btn green">⛽ Pengisian Fuel</a>
     <a href="dashboard.html" class="btn primary">📊 Dashboard</a>
+    <a href="stock-history.html" class="btn purple">📚 History Stock</a>
     <a href="logsheet.html" class="btn gray">📋 Logsheet</a>
 </div>
 
@@ -1086,11 +1032,6 @@ const STOCK_PANEL_CONFIG={
         contentId:"movementPanelContent",
         buttonId:"movementPanelToggle",
         storageKey:"kpp_stock_panel_movement_hidden"
-    },
-    receiptHistory:{
-        contentId:"receiptHistoryPanelContent",
-        buttonId:"receiptHistoryPanelToggle",
-        storageKey:"kpp_stock_panel_receipt_history_hidden"
     }
 };
 
@@ -2233,10 +2174,8 @@ function updateReceiptCalculation(){
 
 async function loadTransporterOptions(){
     const receiptSelect=document.getElementById("receiptTransporter");
-    const historySelect=document.getElementById("receiptHistoryTransporter");
     const editSelect=document.getElementById("editTransporter");
     const selected=receiptSelect.value;
-    const historySelected=historySelect.value;
     const editSelected=editSelect.value;
     const fallback=["PT. SHA","PT. DKA"];
 
@@ -2257,13 +2196,10 @@ async function loadTransporterOptions(){
 
     receiptSelect.innerHTML='<option value="">Pilih transportir</option>'+
         activeNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
-    historySelect.innerHTML='<option value="">SEMUA TRANSPORTIR</option>'+
-        allNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
     editSelect.innerHTML='<option value="">Pilih transportir</option>'+
         allNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
 
     if(selected && activeNames.includes(selected))receiptSelect.value=selected;
-    if(historySelected && allNames.includes(historySelected))historySelect.value=historySelected;
     if(editSelected && allNames.includes(editSelected))editSelect.value=editSelected;
 
     if(error){
@@ -2704,7 +2640,6 @@ async function updateReceiptReference(id){
     }
 
     await loadStock();
-    await loadReceiptHistory();
     await finishStockSave(true,`PO/LO ${next} berhasil disimpan. Data volume penerimaan tetap terkunci.`);
 }
 
@@ -3516,7 +3451,6 @@ async function saveReceipt(){
     ].forEach(id=>{document.getElementById(id).value="";});
     document.getElementById("receiptArrivalTime").value=localTime();
     await loadStock();
-    await loadReceiptHistory();
     await finishStockSave(
         true,
         document_reference
@@ -3885,13 +3819,8 @@ STORAGES.forEach(storage=>{
 });
 
 const TODAY=localDate();
-const CURRENT_RECEIPT_PERIOD=Number(TODAY.slice(8,10))<=14?1:2;
 document.getElementById("tanggal").value=TODAY;
 document.getElementById("receiptArrivalTime").value=localTime();
-document.getElementById("receiptHistoryDateFrom").value=
-    TODAY.slice(0,8)+(CURRENT_RECEIPT_PERIOD===1?"01":"15");
-document.getElementById("receiptHistoryDateTo").value=TODAY;
-document.getElementById("receiptHistoryPeriod").value=String(CURRENT_RECEIPT_PERIOD);
 document.getElementById("receiptReference").addEventListener("input",event=>{
     event.target.value=event.target.value.toUpperCase();
     updateReceiptCalculation();
@@ -3914,10 +3843,6 @@ document.getElementById("receiptDestination").addEventListener("change",updateRe
 document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
 document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
 document.getElementById("closingNote").addEventListener("input",renderClosingCopyPreview);
-document.getElementById("receiptHistoryPeriod").addEventListener("change",async()=>{
-    syncReceiptHistoryPeriodDates();
-    await loadReceiptHistory();
-});
 
 restoreStockPanelVisibility();
 syncTransferDestination();
@@ -3938,7 +3863,6 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     applyFuelmanIdentity();
     setAdminMovementTools();
     await loadStock();
-    await loadReceiptHistory();
 });
 
 </script>
