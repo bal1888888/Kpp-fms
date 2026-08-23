@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.6: copyable final sounding report for every Stock role -->
+<!-- KPP-FMS STOCK v9.7: persistent collapsible movement and receipt history -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -183,6 +183,9 @@ th{background:#e5e7eb}
 .period-two{background:#ede9fe;color:#6d28d9}
 .history-actions{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 .history-actions button{min-height:39px}
+.panel-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.panel-title-row h3{margin:0}
+.panel-toggle-btn{flex:0 0 auto;padding:8px 11px;font-size:10px;letter-spacing:.02em}
 .checkbox-cell input{width:auto}
 
 .stock-edit-overlay{
@@ -233,6 +236,9 @@ th{background:#e5e7eb}
     .admin-tools button{width:100%}
     .history-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
     .history-actions button{width:100%;padding:10px 8px;font-size:11px}
+    .panel-title-row{align-items:flex-start}
+    .panel-title-row h3{font-size:16px;line-height:1.35}
+    .panel-toggle-btn{padding:8px 9px;font-size:9px}
 }
 
 
@@ -930,7 +936,12 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel">
-    <h3>Pergerakan Fuel Shift Ini</h3>
+    <div class="panel-title-row">
+        <h3>Pergerakan Fuel Shift Ini</h3>
+        <button class="gray panel-toggle-btn" id="movementPanelToggle" type="button" onclick="toggleStockPanel('movement')" aria-expanded="true">🙈 SEMBUNYIKAN</button>
+    </div>
+
+    <div id="movementPanelContent">
 
     <div id="stockAdminTools" class="admin-tools hidden">
         <div>
@@ -958,10 +969,16 @@ th{background:#f8fafc;color:#475569}
             <tbody id="movementBody"></tbody>
         </table>
     </div>
+    </div>
 </div>
 
 <div class="panel">
-    <h3>📚 History Penerimaan Transportir</h3>
+    <div class="panel-title-row">
+        <h3>📚 History Penerimaan Transportir</h3>
+        <button class="gray panel-toggle-btn" id="receiptHistoryPanelToggle" type="button" onclick="toggleStockPanel('receiptHistory')" aria-expanded="true">🙈 SEMBUNYIKAN</button>
+    </div>
+
+    <div id="receiptHistoryPanelContent">
     <div class="note" style="margin-bottom:12px">
         Riwayat kedatangan, PO/LO, flowmeter, sounding tangki, dan loss bongkaran.
         Periode 1 otomatis tanggal 1–14; Periode 2 otomatis tanggal 15–akhir bulan.
@@ -1007,6 +1024,7 @@ th{background:#f8fafc;color:#475569}
         </table>
     </div>
     <div class="status" id="receiptHistoryStatus"></div>
+    </div>
 </div>
 
 <div class="panel actions">
@@ -1063,6 +1081,53 @@ let CURRENT_RECEIPT_HISTORY=[];
 let COPY_TOAST_TIMER=null;
 let EXCELJS_LOAD_PROMISE=null;
 const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:"",closing:""};
+const STOCK_PANEL_CONFIG={
+    movement:{
+        contentId:"movementPanelContent",
+        buttonId:"movementPanelToggle",
+        storageKey:"kpp_stock_panel_movement_hidden"
+    },
+    receiptHistory:{
+        contentId:"receiptHistoryPanelContent",
+        buttonId:"receiptHistoryPanelToggle",
+        storageKey:"kpp_stock_panel_receipt_history_hidden"
+    }
+};
+
+function setStockPanelCollapsed(panelKey,collapsed,persist=false){
+    const config=STOCK_PANEL_CONFIG[panelKey];
+    if(!config)return;
+    const content=document.getElementById(config.contentId);
+    const button=document.getElementById(config.buttonId);
+    if(!content || !button)return;
+
+    content.classList.toggle("hidden",collapsed);
+    button.textContent=collapsed?"👁️ TAMPILKAN":"🙈 SEMBUNYIKAN";
+    button.setAttribute("aria-expanded",String(!collapsed));
+
+    if(persist){
+        try{
+            localStorage.setItem(config.storageKey,collapsed?"1":"0");
+        }catch{}
+    }
+}
+
+function toggleStockPanel(panelKey){
+    const config=STOCK_PANEL_CONFIG[panelKey];
+    const content=config?document.getElementById(config.contentId):null;
+    if(!content)return;
+    setStockPanelCollapsed(panelKey,!content.classList.contains("hidden"),true);
+}
+
+function restoreStockPanelVisibility(){
+    Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{
+        let collapsed=false;
+        try{
+            collapsed=localStorage.getItem(config.storageKey)==="1";
+        }catch{}
+        setStockPanelCollapsed(panelKey,collapsed,false);
+    });
+}
 
 
 
@@ -3854,6 +3919,7 @@ document.getElementById("receiptHistoryPeriod").addEventListener("change",async(
     await loadReceiptHistory();
 });
 
+restoreStockPanelVisibility();
 syncTransferDestination();
 updateQuickConverter();
 updateOpeningConversion();
