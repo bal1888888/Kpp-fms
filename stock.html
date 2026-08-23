@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- KPP-FMS STOCK v9: TERA + audit transporter PO/LO + measured loss -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -10,6 +11,7 @@ window.KPP_ALLOWED_ROLES=["gl", "admin", "fuelman"];
 window.KPP_ACTIVE_PAGE="stock";
 </script>
 <script src="auth.js"></script>
+<script src="tera-data_v1_aug2026.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -337,6 +339,52 @@ th{background:#f8fafc;color:#475569}
   .card{min-height:auto}
 }
 
+/* ===== V9 TERA + TRANSPORTER PO/LO + MEASURED LOSS ===== */
+.tera-result{
+  min-height:74px;
+  padding:12px 14px;
+  border:1px solid #bfdbfe;
+  border-left:5px solid #2563eb;
+  border-radius:11px;
+  background:#eff6ff;
+  color:#1e3a5f;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:3px;
+}
+.tera-result small{font-size:10px;font-weight:800;letter-spacing:.04em;color:#64748b}
+.tera-result strong{font-size:23px;color:#0f172a}
+.tera-result.error{background:#fef2f2;border-color:#fecaca;border-left-color:#dc2626;color:#991b1b}
+.auto-liter{background:#eef6ff!important;color:#0f172a!important;font-weight:900!important;cursor:not-allowed}
+.field-hint{display:block;margin-top:5px;color:#64748b;font-size:10px;line-height:1.35}
+.measure-section{
+  margin-top:12px;
+  padding:13px;
+  border:1px solid #dbe3ee;
+  border-radius:12px;
+  background:#f8fafc;
+}
+.measure-section h4{margin:0 0 10px;font-size:12px;color:#334155}
+.measurement-summary{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(150px,1fr));
+  gap:9px;
+}
+.measurement-box{padding:10px 12px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
+.measurement-box small{display:block;font-size:9px;font-weight:900;color:#64748b;margin-bottom:4px}
+.measurement-box strong{font-size:16px;color:#0f172a}
+.measurement-box.loss-positive strong{color:#b45309}
+.measurement-box.loss-negative strong{color:#b91c1c}
+.closing-table .sonding-height{min-width:125px}
+.closing-table .auto-liter{min-width:135px}
+.tera-inline{display:block;margin-top:4px;font-size:9px;color:#64748b;white-space:nowrap}
+@media(max-width:700px){
+  .measurement-summary{grid-template-columns:1fr}
+  .tera-result strong{font-size:20px}
+}
+
 </style>
 </head>
 
@@ -424,9 +472,7 @@ th{background:#f8fafc;color:#475569}
             <div>
                 <label>Transportir</label>
                 <select id="editTransporter">
-                    <option value="">Pilih transportir</option>
-                    <option value="PT. SHA">PT. SHA</option>
-                    <option value="PT. DKA">PT. DKA</option>
+                    <option value="">Memuat Master Transportir...</option>
                 </select>
             </div>
 
@@ -484,6 +530,37 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel">
+    <h3>📏 Konverter Tera MT & FT</h3>
+    <div class="note" style="margin-bottom:12px">
+        Masukkan tinggi sondingan dalam CM. Sistem memakai tabel <b>TERA MT01</b> untuk MT01–MT04
+        dan <b>TERA FT</b> untuk FT0073/FT0075 dari Daily Report Agustus 2026.
+    </div>
+    <div class="grid">
+        <div>
+            <label>Storage</label>
+            <select id="converterStorage" onchange="updateQuickConverter()">
+                <option value="MT01">MT01</option>
+                <option value="MT02">MT02</option>
+                <option value="MT03">MT03</option>
+                <option value="MT04">MT04</option>
+                <option value="FT0073">FT0073 (WH FT02)</option>
+                <option value="FT0075">FT0075 (WH FT01)</option>
+            </select>
+        </div>
+        <div>
+            <label>Tinggi Sonding (CM)</label>
+            <input type="number" id="converterHeight" min="0" step="0.1" inputmode="decimal" oninput="updateQuickConverter()" placeholder="Contoh: 150.2">
+            <span class="field-hint">Gunakan satu angka di belakang koma, sesuai interval tabel tera 0,1 cm.</span>
+        </div>
+        <div id="converterResult" class="tera-result">
+            <small>HASIL KONVERSI</small>
+            <strong>- L</strong>
+            <span>Masukkan tinggi sonding.</span>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
     <h3>1. Stock Opening Awal Shift</h3>
     <div class="grid">
         <div>
@@ -491,8 +568,12 @@ th{background:#f8fafc;color:#475569}
             <select id="openingStorage"></select>
         </div>
         <div>
-            <label>Qty Opening (Liter)</label>
-            <input type="number" id="openingQty" min="0" step="0.1">
+            <label>Tinggi Sonding Opening (CM)</label>
+            <input type="number" id="openingHeight" min="0" step="0.1" inputmode="decimal" oninput="updateOpeningConversion()" placeholder="Tinggi hasil sonding">
+        </div>
+        <div>
+            <label>Stock Opening Otomatis (Liter)</label>
+            <input type="number" id="openingQty" class="auto-liter" readonly placeholder="Otomatis dari tera">
         </div>
         <div>
             <label>Fuelman / Operator</label>
@@ -507,10 +588,14 @@ th{background:#f8fafc;color:#475569}
 
 <div class="panel">
     <h3>2. Penerimaan Solar</h3>
+    <div class="note" style="margin-bottom:12px">
+        Audit membandingkan <b>qty transporter</b> dari flowmeter dengan <b>qty yang benar-benar masuk</b>
+        berdasarkan sounding tangki tujuan. Stock bertambah mengikuti hasil sounding tangki.
+    </div>
     <div class="grid">
         <div>
             <label>Masuk ke</label>
-            <select id="receiptDestination">
+            <select id="receiptDestination" onchange="updateReceiptCalculation()">
                 <option>MT01</option>
                 <option>MT02</option>
                 <option>MT03</option>
@@ -520,16 +605,48 @@ th{background:#f8fafc;color:#475569}
             </select>
         </div>
         <div>
-            <label>Qty Diterima (Liter)</label>
-            <input type="number" id="receiptQty" min="0" step="0.1">
+            <label>Jam Kedatangan</label>
+            <input type="time" id="receiptArrivalTime" step="1">
+        </div>
+        <div>
+            <label>Nomor PO / LO</label>
+            <input id="receiptReference" autocomplete="off" placeholder="Contoh: PO/LO-2026-001">
+            <span class="field-hint">Referensi dokumen wajib untuk audit penerimaan.</span>
         </div>
         <div>
             <label>Transportir</label>
             <select id="receiptTransporter">
-                <option value="">Pilih transportir</option>
-                <option value="PT. SHA">PT. SHA</option>
-                <option value="PT. DKA">PT. DKA</option>
+                <option value="">Memuat Master Transportir...</option>
             </select>
+            <span class="field-hint">Dikelola Admin/GL dari menu Master Unit & HM.</span>
+        </div>
+        <div>
+            <label>Flowmeter Awal Transporter (Liter)</label>
+            <input type="number" id="receiptMeterStart" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Sebelum bongkar">
+        </div>
+        <div>
+            <label>Flowmeter Akhir Transporter (Liter)</label>
+            <input type="number" id="receiptMeterEnd" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Setelah bongkar">
+        </div>
+        <div>
+            <label>Qty Menurut Transporter (Liter)</label>
+            <input type="number" id="receiptQty" class="auto-liter" readonly placeholder="Flowmeter akhir − awal">
+        </div>
+        <div>
+            <label>Sonding Tangki Sebelum (CM)</label>
+            <input type="number" id="receiptTankHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Sebelum bongkar">
+        </div>
+        <div>
+            <label>Sonding Tangki Sesudah (CM)</label>
+            <input type="number" id="receiptTankHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Setelah bongkar">
+        </div>
+        <div>
+            <label>Qty Masuk Menurut Tera (Liter)</label>
+            <input type="number" id="receiptTankQty" class="auto-liter" readonly placeholder="Liter sesudah − sebelum">
+        </div>
+        <div>
+            <label>Selisih / Loss Bongkaran</label>
+            <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter − tangki">
         </div>
         <div>
             <label>Operator</label>
@@ -543,11 +660,40 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel">
+    <h3>📚 History Penerimaan Transportir</h3>
+    <div class="note" style="margin-bottom:12px">
+        Riwayat kedatangan, referensi PO/LO, hasil flowmeter, hasil sounding tangki, dan loss bongkaran.
+    </div>
+    <div class="grid">
+        <div><label>Dari Tanggal</label><input type="date" id="receiptHistoryDateFrom"></div>
+        <div><label>Sampai Tanggal</label><input type="date" id="receiptHistoryDateTo"></div>
+        <div>
+            <label>Transportir</label>
+            <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
+        </div>
+        <div><label>Cari PO / LO</label><input id="receiptHistoryReference" placeholder="Ketik nomor referensi"></div>
+        <div style="align-self:end"><button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN HISTORY</button></div>
+    </div>
+    <div class="table-wrap" style="margin-top:14px">
+        <table style="min-width:1100px">
+            <thead>
+                <tr>
+                    <th>KEDATANGAN</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
+                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th>
+                </tr>
+            </thead>
+            <tbody id="receiptHistoryBody"><tr><td colspan="8">Memuat history penerimaan...</td></tr></tbody>
+        </table>
+    </div>
+    <div class="status" id="receiptHistoryStatus"></div>
+</div>
+
+<div class="panel">
     <h3>3. Transfer Antar Storage</h3>
 
     <div class="note" style="margin-bottom:12px">
-        Bisa transfer MT → FT, FT → MT, FT → FT, atau MT → MT.
-        Total Stock All WHS tidak berubah karena hanya berpindah antar storage.
+        Sistem menghitung dua sisi secara terpisah: <b>keluar dari sumber</b> dan <b>masuk ke tujuan</b>.
+        Selisih keduanya dicatat sebagai loss transfer agar total WHS mengikuti hasil pengukuran fisik.
     </div>
 
     <div class="grid">
@@ -576,8 +722,18 @@ th{background:#f8fafc;color:#475569}
         </div>
 
         <div>
-            <label>Qty Transfer (Liter)</label>
-            <input type="number" id="transferQty" min="0" step="0.1">
+            <label>Sonding Tujuan Sebelum (CM)</label>
+            <input type="number" id="transferDestinationHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sebelum menerima">
+        </div>
+
+        <div>
+            <label>Sonding Tujuan Sesudah (CM)</label>
+            <input type="number" id="transferDestinationHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Setelah menerima">
+        </div>
+
+        <div>
+            <label>Qty Transfer Otomatis (Liter)</label>
+            <input type="number" id="transferQty" class="auto-liter" readonly placeholder="Sesudah − Sebelum">
         </div>
 
         <div>
@@ -590,6 +746,34 @@ th{background:#f8fafc;color:#475569}
         </div>
     </div>
 
+    <div class="measure-section">
+        <h4>Audit Sonding Sumber — wajib untuk menghitung qty keluar dan loss transfer</h4>
+        <div class="grid">
+            <div>
+                <label>Sonding Sumber Sebelum (CM)</label>
+                <input type="number" id="transferSourceHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sebelum keluar">
+            </div>
+            <div>
+                <label>Sonding Sumber Sesudah (CM)</label>
+                <input type="number" id="transferSourceHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Setelah keluar">
+            </div>
+        </div>
+        <div class="measurement-summary">
+            <div class="measurement-box">
+                <small>MASUK MENURUT TUJUAN</small>
+                <strong id="transferDestinationMeasured">- L</strong>
+            </div>
+            <div class="measurement-box">
+                <small>KELUAR MENURUT SUMBER</small>
+                <strong id="transferSourceMeasured">- L</strong>
+            </div>
+            <div class="measurement-box" id="transferLossBox">
+                <small>SELISIH / LOSS</small>
+                <strong id="transferLoss">- L</strong>
+            </div>
+        </div>
+    </div>
+
     <div class="status" id="transferStatus"></div>
 </div>
 
@@ -597,7 +781,7 @@ th{background:#f8fafc;color:#475569}
     <h3>4. Stock Closing / Stock Taking</h3>
 
     <div class="note" style="margin-bottom:12px">
-        Stock Sistem dihitung otomatis. Isi Stock Fisik / hasil sonding pada akhir shift.
+        Masukkan tinggi sonding akhir shift. Stock Fisik dikonversi otomatis dari tabel tera.
         Selisih = Stock Fisik − Stock Sistem.
     </div>
 
@@ -607,7 +791,8 @@ th{background:#f8fafc;color:#475569}
                 <tr>
                     <th>Storage</th>
                     <th>Stock Sistem</th>
-                    <th>Stock Fisik / Sonding</th>
+                    <th>Tinggi Sonding (CM)</th>
+                    <th>Stock Fisik Otomatis</th>
                     <th>Selisih</th>
                 </tr>
             </thead>
@@ -700,21 +885,29 @@ th{background:#f8fafc;color:#475569}
 const SUPABASE_URL="https://pwowtyfybfqsveuvqrsb.supabase.co";
 const SUPABASE_KEY="sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const TERA=window.KPP_TERA;
+
+if(!TERA){
+    throw new Error("File tera-data_v1_aug2026.js belum terpasang atau gagal dimuat.");
+}
 
 const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
 
-const STORAGE_CAPACITY={
-    MT01:40000,
-    MT02:40000,
-    MT03:40000,
-    MT04:40000,
-    FT0073:20000,
-    FT0075:20000
-};
+const STORAGE_CAPACITY={...TERA.nominalCapacity};
+
+const STORAGE_HARD_CAPACITY=Object.fromEntries(
+    STORAGES.map(storage=>{
+        const curveName=TERA.storageCurve[storage];
+        const curve=TERA.curves[curveName];
+        return [storage,Number(curve[curve.length-1])];
+    })
+);
 
 const STOCK_CRITICAL_PCT=20;
 const STOCK_WARNING_PCT=35;
 const CAPACITY_WARNING_PCT=90;
+const LOSS_WARNING_LITERS=100;
+const LOSS_WARNING_PERCENT=0.5;
 const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
 let LAST_CAPACITY_ALERT_SIGNATURE="";
 
@@ -767,14 +960,14 @@ function capacityMessage(storage,qty){
 }
 
 function validateCapacityHard(storage,projectedQty,context=""){
-    const cap=capacity(storage);
+    const cap=n(STORAGE_HARD_CAPACITY[storage]);
 
     if(!cap)return true;
 
     if(projectedQty>cap){
         alert(
             "⛔ KAPASITAS TERKUNCI\n\n"+
-            storage+" maksimal "+fmt(cap)+".\n"+
+            storage+" maksimal menurut tabel tera "+fmt(cap)+".\n"+
             "Perkiraan stock setelah "+context+": "+fmt(projectedQty)+".\n\n"+
             "Transaksi diblokir agar tangki tidak melewati kapasitas."
         );
@@ -1038,6 +1231,14 @@ function openMovementEditor(id){
         return;
     }
 
+    if(row.calculation_method && row.calculation_method!=="MANUAL_EDIT_BY_ADMIN_GL"){
+        alert(
+            "Transaksi ini berasal dari pengukuran sounding/flowmeter dan dikunci untuk menjaga audit.\n\n"+
+            "Jika datanya salah, hapus transaksi lalu input ulang dengan hasil pengukuran yang benar."
+        );
+        return;
+    }
+
     document.getElementById("editMovementId").value=row.id;
     document.getElementById("editTanggal").value=row.tanggal||"";
     document.getElementById("editJam").value=(row.jam||"").slice(0,8);
@@ -1163,7 +1364,25 @@ async function saveMovementEdit(){
             qty,
             operator,
             transporter,
-            note
+            note,
+            calculation_method:"MANUAL_EDIT_BY_ADMIN_GL",
+            arrival_at:null,
+            document_reference:null,
+            meter_start_liter:null,
+            meter_end_liter:null,
+            transporter_measured_qty:null,
+            source_height_before_cm:null,
+            source_liter_before:null,
+            source_height_after_cm:null,
+            source_liter_after:null,
+            destination_height_before_cm:null,
+            destination_liter_before:null,
+            destination_height_after_cm:null,
+            destination_liter_after:null,
+            source_measured_qty:null,
+            destination_measured_qty:null,
+            measurement_loss_qty:null,
+            tera_version:null
         })
         .eq("id",id);
 
@@ -1266,6 +1485,7 @@ function localTime(){
 }
 
 function n(value){return Number(value||0)}
+function r1(value){return Math.round((n(value)+Number.EPSILON)*10)/10}
 
 function fmt(value){
     return n(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
@@ -1274,6 +1494,300 @@ function fmt(value){
 function fmtSigned(value){
     const number=n(value);
     return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+}
+
+function fmtCm(value){
+    return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" cm";
+}
+
+function teraFromInput(storage,inputId){
+    const input=document.getElementById(inputId);
+    if(!input || input.value==="")return null;
+    return TERA.lookup(storage,input.value);
+}
+
+function updateQuickConverter(){
+    const storage=document.getElementById("converterStorage").value;
+    const result=document.getElementById("converterResult");
+
+    try{
+        const tera=teraFromInput(storage,"converterHeight");
+        result.classList.remove("error");
+        if(!tera){
+            result.innerHTML="<small>HASIL KONVERSI</small><strong>- L</strong><span>Masukkan tinggi sonding.</span>";
+            return;
+        }
+
+        result.innerHTML=`
+            <small>${tera.curve} • TINGGI TERPAKAI ${fmtCm(tera.matchedHeightCm)}</small>
+            <strong>${fmt(tera.liters)}</strong>
+            <span>Maksimum tabel: ${fmtCm(tera.maxHeightCm)} = ${fmt(tera.maxLiters)}</span>
+        `;
+    }catch(error){
+        result.classList.add("error");
+        result.innerHTML=`<small>KONVERSI GAGAL</small><strong>-</strong><span>${esc(error.message)}</span>`;
+    }
+}
+
+function updateOpeningConversion(){
+    const storage=document.getElementById("openingStorage").value;
+    const qty=document.getElementById("openingQty");
+    try{
+        const tera=teraFromInput(storage,"openingHeight");
+        qty.value=tera?tera.liters:"";
+        document.getElementById("openingStatus").textContent=tera
+            ? `📏 ${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`
+            : "";
+    }catch(error){
+        qty.value="";
+        document.getElementById("openingStatus").textContent="❌ "+error.message;
+    }
+}
+
+function updateReceiptCalculation(){
+    const startInput=document.getElementById("receiptMeterStart");
+    const endInput=document.getElementById("receiptMeterEnd");
+    const qtyInput=document.getElementById("receiptQty");
+    const tankQtyInput=document.getElementById("receiptTankQty");
+    const lossInput=document.getElementById("receiptLoss");
+    const destination=document.getElementById("receiptDestination").value;
+
+    try{
+        const meterStart=startInput.value===""?null:n(startInput.value);
+        const meterEnd=endInput.value===""?null:n(endInput.value);
+        const transporterQty=
+            meterStart===null || meterEnd===null
+                ? null
+                : r1(meterEnd-meterStart);
+
+        const tankBefore=teraFromInput(destination,"receiptTankHeightBefore");
+        const tankAfter=teraFromInput(destination,"receiptTankHeightAfter");
+        const tankQty=
+            tankBefore && tankAfter
+                ? r1(tankAfter.liters-tankBefore.liters)
+                : null;
+        const loss=
+            transporterQty!==null && tankQty!==null
+                ? r1(transporterQty-tankQty)
+                : null;
+
+        qtyInput.value=transporterQty!==null && transporterQty>0?transporterQty:"";
+        tankQtyInput.value=tankQty!==null && tankQty>0?tankQty:"";
+        lossInput.value=loss!==null?loss:"";
+
+        const parts=[];
+        if(transporterQty!==null){
+            parts.push(
+                transporterQty>0
+                    ? `Transporter ${fmt(transporterQty)}`
+                    : "Flowmeter akhir harus lebih besar dari awal"
+            );
+        }
+        if(tankQty!==null){
+            parts.push(
+                tankQty>0
+                    ? `Masuk tangki ${fmt(tankQty)}`
+                    : "Sonding tangki sesudah harus lebih tinggi dari sebelum"
+            );
+        }
+        if(loss!==null)parts.push(`Loss ${fmtSigned(loss)}`);
+
+        document.getElementById("receiptStatus").textContent=
+            parts.length?"🧮 "+parts.join(" • "):"";
+
+        return {
+            meterStart,
+            meterEnd,
+            transporterQty,
+            tankBefore,
+            tankAfter,
+            tankQty,
+            loss
+        };
+    }catch(error){
+        qtyInput.value="";
+        tankQtyInput.value="";
+        lossInput.value="";
+        document.getElementById("receiptStatus").textContent="❌ "+error.message;
+        return null;
+    }
+}
+
+async function loadTransporterOptions(){
+    const receiptSelect=document.getElementById("receiptTransporter");
+    const historySelect=document.getElementById("receiptHistoryTransporter");
+    const editSelect=document.getElementById("editTransporter");
+    const selected=receiptSelect.value;
+    const historySelected=historySelect.value;
+    const editSelected=editSelect.value;
+    const fallback=["PT. SHA","PT. DKA"];
+
+    const {data,error}=await db
+        .from("master_transporters")
+        .select("name,active")
+        .order("name",{ascending:true});
+
+    const allNames=error
+        ? fallback
+        : (data||[]).map(row=>String(row.name||"").trim()).filter(Boolean);
+    const activeNames=error
+        ? fallback
+        : (data||[])
+            .filter(row=>row.active!==false)
+            .map(row=>String(row.name||"").trim())
+            .filter(Boolean);
+
+    receiptSelect.innerHTML='<option value="">Pilih transportir</option>'+
+        activeNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    historySelect.innerHTML='<option value="">SEMUA TRANSPORTIR</option>'+
+        allNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    editSelect.innerHTML='<option value="">Pilih transportir</option>'+
+        allNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
+
+    if(selected && activeNames.includes(selected))receiptSelect.value=selected;
+    if(historySelected && allNames.includes(historySelected))historySelect.value=historySelected;
+    if(editSelected && allNames.includes(editSelected))editSelect.value=editSelected;
+
+    if(error){
+        console.warn("Master Transportir belum tersedia:",error.message);
+        document.getElementById("receiptStatus").textContent=
+            "⚠️ Master Transportir belum tersedia; sementara memakai vendor bawaan.";
+    }
+}
+
+async function loadReceiptHistory(){
+    const body=document.getElementById("receiptHistoryBody");
+    const status=document.getElementById("receiptHistoryStatus");
+    const dateFrom=document.getElementById("receiptHistoryDateFrom").value;
+    const dateTo=document.getElementById("receiptHistoryDateTo").value;
+    const transporter=document.getElementById("receiptHistoryTransporter").value;
+    const reference=document.getElementById("receiptHistoryReference").value.trim();
+
+    body.innerHTML='<tr><td colspan="8">Memuat history penerimaan...</td></tr>';
+    status.textContent="";
+
+    let query=db.from("stock_movements")
+        .select("id,tanggal,jam,arrival_at,document_reference,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .eq("jenis","RECEIPT")
+        .order("tanggal",{ascending:false})
+        .order("jam",{ascending:false})
+        .limit(500);
+
+    if(dateFrom)query=query.gte("tanggal",dateFrom);
+    if(dateTo)query=query.lte("tanggal",dateTo);
+    if(transporter)query=query.eq("transporter",transporter);
+    if(reference)query=query.ilike("document_reference","%"+reference+"%");
+
+    const {data,error}=await query;
+
+    if(error){
+        body.innerHTML=`<tr><td colspan="8">❌ ${esc(error.message)}</td></tr>`;
+        status.textContent="Jalankan SQL audit PO/LO sebelum memakai History Penerimaan.";
+        return;
+    }
+
+    if(!data?.length){
+        body.innerHTML='<tr><td colspan="8">Belum ada penerimaan pada filter ini.</td></tr>';
+        status.textContent="0 kedatangan ditemukan.";
+        return;
+    }
+
+    body.innerHTML=data.map(row=>{
+        const transporterQty=
+            row.transporter_measured_qty!==null && row.transporter_measured_qty!==undefined
+                ? n(row.transporter_measured_qty)
+                : r1(n(row.meter_end_liter)-n(row.meter_start_liter));
+        const tankQty=
+            row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+                ? n(row.destination_measured_qty)
+                : n(row.qty);
+        const loss=
+            row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
+                ? n(row.measurement_loss_qty)
+                : r1(transporterQty-tankQty);
+        const arrival=row.arrival_at
+            ? new Date(row.arrival_at).toLocaleString("id-ID",{
+                timeZone:"Asia/Jakarta",
+                day:"2-digit",month:"2-digit",year:"numeric",
+                hour:"2-digit",minute:"2-digit"
+            })
+            : `${row.tanggal||"-"} ${String(row.jam||"").slice(0,5)}`;
+
+        return `<tr>
+            <td>${esc(arrival)}</td>
+            <td><b>${esc(row.document_reference||"-")}</b></td>
+            <td>${esc(row.transporter||"-")}</td>
+            <td>${esc(row.destination_storage||"-")}</td>
+            <td>${fmt(transporterQty)}</td>
+            <td>${fmt(tankQty)}</td>
+            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${fmtSigned(loss)}</td>
+            <td>${esc(row.operator||"-")}</td>
+        </tr>`;
+    }).join("");
+
+    status.textContent=`${data.length} kedatangan ditemukan (maksimum 500 data).`;
+}
+
+function clearTransferMeasurements(){
+    document.getElementById("transferQty").value="";
+    document.getElementById("transferDestinationMeasured").textContent="- L";
+    document.getElementById("transferSourceMeasured").textContent="- L";
+    document.getElementById("transferLoss").textContent="- L";
+    document.getElementById("transferLossBox").classList.remove("loss-positive","loss-negative");
+}
+
+function updateTransferCalculation(){
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination").value;
+    const qtyInput=document.getElementById("transferQty");
+    const status=document.getElementById("transferStatus");
+    const lossBox=document.getElementById("transferLossBox");
+
+    try{
+        const destinationBefore=teraFromInput(destination,"transferDestinationHeightBefore");
+        const destinationAfter=teraFromInput(destination,"transferDestinationHeightAfter");
+        let destinationQty=null;
+
+        if(destinationBefore && destinationAfter){
+            destinationQty=destinationAfter.liters-destinationBefore.liters;
+            qtyInput.value=destinationQty>0?destinationQty:"";
+            document.getElementById("transferDestinationMeasured").textContent=fmtSigned(destinationQty);
+            status.textContent=destinationQty>0
+                ? `📏 ${destination}: ${fmt(destinationAfter.liters)} − ${fmt(destinationBefore.liters)} = ${fmt(destinationQty)}`
+                : "❌ Sonding tujuan sesudah harus lebih tinggi dari sebelum.";
+        }else{
+            qtyInput.value="";
+            document.getElementById("transferDestinationMeasured").textContent="- L";
+            status.textContent="";
+        }
+
+        const sourceBefore=teraFromInput(source,"transferSourceHeightBefore");
+        const sourceAfter=teraFromInput(source,"transferSourceHeightAfter");
+        let sourceQty=null;
+
+        if(sourceBefore && sourceAfter){
+            sourceQty=sourceBefore.liters-sourceAfter.liters;
+            document.getElementById("transferSourceMeasured").textContent=fmtSigned(sourceQty);
+        }else{
+            document.getElementById("transferSourceMeasured").textContent="- L";
+        }
+
+        lossBox.classList.remove("loss-positive","loss-negative");
+        if(destinationQty!==null && sourceQty!==null){
+            const loss=sourceQty-destinationQty;
+            document.getElementById("transferLoss").textContent=fmtSigned(loss);
+            if(loss>0)lossBox.classList.add("loss-positive");
+            if(loss<0)lossBox.classList.add("loss-negative");
+        }else{
+            document.getElementById("transferLoss").textContent="- L";
+        }
+
+        return {destinationBefore,destinationAfter,destinationQty,sourceBefore,sourceAfter,sourceQty};
+    }catch(error){
+        clearTransferMeasurements();
+        status.textContent="❌ "+error.message;
+        return null;
+    }
 }
 
 function getPeriod(){
@@ -1335,6 +1849,7 @@ const openingStorage=document.getElementById("openingStorage");
         openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck;
         openingStorage.disabled=true;
         openingStorage.classList.add("locked-field");
+        updateOpeningConversion();
     }
 
     document.getElementById("sessionFuelman").textContent=name||"-";
@@ -1425,12 +1940,24 @@ async function loadStock(){
 
     (m.data||[]).forEach(row=>{
         if(row.jenis==="RECEIPT" && row.destination_storage){
-            stock[row.destination_storage]+=n(row.qty);
+            const receivedQty=
+                row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+                    ? n(row.destination_measured_qty)
+                    : n(row.qty);
+            stock[row.destination_storage]+=receivedQty;
         }
 
         if(row.jenis==="TRANSFER"){
-            if(row.source_storage) stock[row.source_storage]-=n(row.qty);
-            if(row.destination_storage) stock[row.destination_storage]+=n(row.qty);
+            const sourceQty=
+                row.source_measured_qty!==null && row.source_measured_qty!==undefined
+                    ? n(row.source_measured_qty)
+                    : n(row.qty);
+            const destinationQty=
+                row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+                    ? n(row.destination_measured_qty)
+                    : n(row.qty);
+            if(row.source_storage) stock[row.source_storage]-=sourceQty;
+            if(row.destination_storage) stock[row.destination_storage]+=destinationQty;
         }
     });
 
@@ -1528,6 +2055,9 @@ function renderClosing(stock,savedClosing){
     closingStorages.forEach(storage=>{
         const saved=savedMap[storage];
         const actualValue=saved?saved.actual_qty:"";
+        const heightValue=saved&&saved.sonding_height_cm!==null&&saved.sonding_height_cm!==undefined
+            ? saved.sonding_height_cm
+            : "";
 
         body.innerHTML+=`
         <tr>
@@ -1536,14 +2066,18 @@ function renderClosing(stock,savedClosing){
             <td>
                 <input
                     type="number"
-                    id="actual-${storage}"
+                    id="height-${storage}"
+                    class="sonding-height"
                     min="0"
                     step="0.1"
-                    value="${actualValue}"
-                    placeholder="Liter fisik"
-                    oninput="updateClosingDifference()"
+                    inputmode="decimal"
+                    value="${heightValue}"
+                    placeholder="Tinggi CM"
+                    oninput="updateClosingFromHeight('${storage}')"
                 >
+                <span class="tera-inline" id="tera-info-${storage}">${heightValue!==""?"Tera tersimpan":"Masukkan tinggi sonding"}</span>
             </td>
+            <td><input type="number" id="actual-${storage}" class="auto-liter" value="${actualValue}" readonly placeholder="Otomatis"></td>
             <td id="diff-${storage}" class="diff-zero">-</td>
         </tr>`;
     });
@@ -1566,7 +2100,37 @@ function renderClosing(stock,savedClosing){
     }
 
     applyFuelmanIdentity();
+    closingStorages.forEach(storage=>{
+        const height=document.getElementById(`height-${storage}`);
+        if(height && height.value!=="")updateClosingFromHeight(storage,false);
+    });
     updateClosingDifference();
+}
+
+function updateClosingFromHeight(storage,refreshDifference=true){
+    const heightInput=document.getElementById(`height-${storage}`);
+    const actualInput=document.getElementById(`actual-${storage}`);
+    const info=document.getElementById(`tera-info-${storage}`);
+
+    if(!heightInput || !actualInput)return;
+
+    if(heightInput.value===""){
+        actualInput.value="";
+        if(info)info.textContent="Masukkan tinggi sonding";
+        if(refreshDifference)updateClosingDifference();
+        return;
+    }
+
+    try{
+        const tera=TERA.lookup(storage,heightInput.value);
+        actualInput.value=tera.liters;
+        if(info)info.textContent=`${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`;
+    }catch(error){
+        actualInput.value="";
+        if(info)info.textContent="❌ "+error.message;
+    }
+
+    if(refreshDifference)updateClosingDifference();
 }
 
 function updateClosingDifference(){
@@ -1648,7 +2212,9 @@ function renderMovement(movementData,fuelData){
             ke:row.destination_storage||"-",
             qty:n(row.qty),
             operator:row.operator||"-",
-            note:row.transporter||row.note||"-"
+            note:row.document_reference
+                ? `${row.document_reference} • ${row.transporter||"-"}`
+                : row.transporter||row.note||"-"
         });
     });
 
@@ -1711,7 +2277,6 @@ function renderMovement(movementData,fuelData){
 async function saveOpening(){
     const {tanggal,shift}=getPeriod();
     let storage=document.getElementById("openingStorage").value;
-    const qty=n(document.getElementById("openingQty").value);
     let operator=document.getElementById("openingOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
@@ -1723,10 +2288,20 @@ async function saveOpening(){
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
 
-    if(!tanggal||!storage||qty<0){
-        alert("Lengkapi stock opening.");
+    let openingTera;
+    try{
+        openingTera=teraFromInput(storage,"openingHeight");
+    }catch(error){
+        alert("Konversi Stock Opening gagal.\n\n"+error.message);
         return;
     }
+
+    if(!tanggal||!storage||!openingTera){
+        alert("Isi tinggi sonding Stock Opening terlebih dahulu.");
+        return;
+    }
+
+    const qty=openingTera.liters;
 
     if(!validateCapacityHard(storage,qty,"Stock Opening"))return;
     if(!confirmNearCapacity(storage,qty,"Stock Opening"))return;
@@ -1734,7 +2309,15 @@ async function saveOpening(){
     if(!beginStockSave("Menyimpan Stock Opening..."))return;
 
     const {error}=await db.from("stock_opening").upsert(
-        {tanggal,shift,storage,qty,operator},
+        {
+            tanggal,
+            shift,
+            storage,
+            qty,
+            operator,
+            sonding_height_cm:openingTera.matchedHeightCm,
+            tera_version:TERA.version
+        },
         {onConflict:"tanggal,shift,storage"}
     );
 
@@ -1753,8 +2336,10 @@ async function saveOpening(){
 async function saveReceipt(){
     const {tanggal,shift}=getPeriod();
     const destination_storage=document.getElementById("receiptDestination").value;
-    const qty=n(document.getElementById("receiptQty").value);
+    const measurement=updateReceiptCalculation();
     const transporter=document.getElementById("receiptTransporter").value.trim();
+    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase();
+    const arrivalTime=document.getElementById("receiptArrivalTime").value;
     let operator=document.getElementById("receiptOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
@@ -1765,8 +2350,33 @@ async function saveReceipt(){
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
 
-    if(qty<=0){
-        alert("Qty penerimaan harus lebih dari 0.");
+    if(!document_reference){
+        alert("Masukkan Nomor PO / LO sebagai referensi penerimaan.");
+        return;
+    }
+
+    if(!arrivalTime){
+        alert("Masukkan jam kedatangan transporter.");
+        return;
+    }
+
+    if(!measurement || measurement.meterStart===null || measurement.meterEnd===null){
+        alert("Isi Flowmeter Awal dan Flowmeter Akhir transporter.");
+        return;
+    }
+
+    if(!measurement.transporterQty || measurement.transporterQty<=0){
+        alert("Flowmeter Akhir harus lebih besar dari Flowmeter Awal.");
+        return;
+    }
+
+    if(!measurement.tankBefore || !measurement.tankAfter){
+        alert("Isi sonding tangki tujuan sebelum dan sesudah bongkar.");
+        return;
+    }
+
+    if(!measurement.tankQty || measurement.tankQty<=0){
+        alert("Sonding tangki sesudah harus lebih tinggi dari sebelum bongkar.");
         return;
     }
 
@@ -1775,8 +2385,7 @@ async function saveReceipt(){
         return;
     }
 
-    const projectedDestination=
-        n(CURRENT_SYSTEM_STOCK[destination_storage])+qty;
+    const projectedDestination=measurement.tankAfter.liters;
 
     if(!validateCapacityHard(
         destination_storage,
@@ -1790,32 +2399,68 @@ async function saveReceipt(){
         "Penerimaan Solar"
     ))return;
 
+    const lossLimit=Math.max(
+        LOSS_WARNING_LITERS,
+        measurement.transporterQty*(LOSS_WARNING_PERCENT/100)
+    );
+
+    if(Math.abs(measurement.loss)>lossLimit){
+        const lanjut=confirm(
+            "⚠️ SELISIH BONGKARAN PERLU DICEK\n\n"+
+            "PO/LO: "+document_reference+"\n"+
+            "Transporter: "+fmt(measurement.transporterQty)+"\n"+
+            "Masuk tangki: "+fmt(measurement.tankQty)+"\n"+
+            "Selisih/loss: "+fmtSigned(measurement.loss)+"\n\n"+
+            "Tetap simpan untuk audit?"
+        );
+        if(!lanjut)return;
+    }
+
     // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
     if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
 
     const {error}=await db.from("stock_movements").insert({
         tanggal,
-        jam:localTime(),
+        jam:arrivalTime,
+        arrival_at:new Date(`${tanggal}T${arrivalTime}+07:00`).toISOString(),
         shift,
         jenis:"RECEIPT",
         source_storage:null,
         destination_storage,
-        qty,
+        qty:measurement.tankQty,
         operator,
-        transporter
+        transporter,
+        document_reference,
+        note:`PO/LO ${document_reference} | Flowmeter ${measurement.meterStart} → ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} → ${measurement.tankAfter.matchedHeightCm} cm`,
+        calculation_method:"RECEIPT_FLOWMETER_VS_DESTINATION_TERA",
+        meter_start_liter:measurement.meterStart,
+        meter_end_liter:measurement.meterEnd,
+        transporter_measured_qty:measurement.transporterQty,
+        destination_height_before_cm:measurement.tankBefore.matchedHeightCm,
+        destination_liter_before:measurement.tankBefore.liters,
+        destination_height_after_cm:measurement.tankAfter.matchedHeightCm,
+        destination_liter_after:measurement.tankAfter.liters,
+        destination_measured_qty:measurement.tankQty,
+        measurement_loss_qty:measurement.loss,
+        tera_version:TERA.version
     });
 
     document.getElementById("receiptStatus").textContent=
-        error?"❌ "+error.message:"✅ Penerimaan tersimpan dan stock bertambah.";
+        error?"❌ "+error.message:`✅ Penerimaan ${document_reference} tersimpan dan masuk ke history.`;
 
     if(error){
         await finishStockSave(false,error.message);
         return;
     }
 
-    document.getElementById("receiptQty").value="";
+    [
+        "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
+        "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
+    ].forEach(id=>{document.getElementById(id).value="";});
+    document.getElementById("receiptArrivalTime").value=localTime();
     await loadStock();
-    await finishStockSave(true,"Penerimaan Solar sudah tersimpan.");
+    await loadReceiptHistory();
+    await finishStockSave(true,"Penerimaan Solar "+document_reference+" sudah tersimpan.");
 }
 
 
@@ -1831,13 +2476,16 @@ function syncTransferDestination(){
         const firstAvailable=Array.from(destination.options).find(option=>!option.disabled);
         if(firstAvailable) destination.value=firstAvailable.value;
     }
+
+    updateTransferCalculation();
 }
 
 async function saveTransfer(){
     const {tanggal,shift}=getPeriod();
     const source_storage=document.getElementById("transferSource").value;
     const destination_storage=document.getElementById("transferDestination").value;
-    const qty=n(document.getElementById("transferQty").value);
+    const measurement=updateTransferCalculation();
+    const qty=measurement?n(measurement.destinationQty):0;
     let operator=document.getElementById("transferOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
@@ -1848,8 +2496,23 @@ async function saveTransfer(){
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
 
+    if(!measurement || !measurement.destinationBefore || !measurement.destinationAfter){
+        alert("Isi Sonding Tujuan Sebelum dan Sesudah transfer.");
+        return;
+    }
+
     if(qty<=0){
-        alert("Qty transfer harus lebih dari 0.");
+        alert("Sonding tujuan sesudah harus lebih tinggi dari sebelum.");
+        return;
+    }
+
+    if(!measurement.sourceBefore || !measurement.sourceAfter){
+        alert("Isi Sonding Sumber Sebelum dan Sesudah transfer.");
+        return;
+    }
+
+    if(n(measurement.sourceQty)<=0){
+        alert("Sonding sumber sebelum harus lebih tinggi dari sesudah.");
         return;
     }
 
@@ -1858,32 +2521,57 @@ async function saveTransfer(){
         return;
     }
 
-    if(qty>n(CURRENT_SYSTEM_STOCK[source_storage])){
+    if(n(measurement.sourceQty)>n(CURRENT_SYSTEM_STOCK[source_storage])){
         const lanjut=confirm(
-            "⚠️ Qty transfer lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
+            "⚠️ Qty keluar menurut sonding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
         );
         if(!lanjut)return;
     }
 
-    const projectedDestination=
-        n(CURRENT_SYSTEM_STOCK[destination_storage])+qty;
+    const projectedDestination=measurement.destinationAfter.liters;
 
     if(!validateCapacityHard(
         destination_storage,
         projectedDestination,
-        "Transfer "+source_storage+" → "+destination_storage
+        "Sonding setelah Transfer "+source_storage+" → "+destination_storage
     ))return;
 
     if(!confirmNearCapacity(
         destination_storage,
         projectedDestination,
-        "Transfer "+source_storage+" → "+destination_storage
+        "Sonding setelah Transfer "+source_storage+" → "+destination_storage
     ))return;
 
     // LOCK sebelum request pertama dikirim.
     if(!beginStockSave(
         "Menyimpan Transfer "+source_storage+" → "+destination_storage+"..."
     ))return;
+
+    const lossQty=r1(n(measurement.sourceQty)-qty);
+
+    const lossLimit=Math.max(
+        LOSS_WARNING_LITERS,
+        n(measurement.sourceQty)*(LOSS_WARNING_PERCENT/100)
+    );
+
+    if(Math.abs(lossQty)>lossLimit){
+        const lanjut=confirm(
+            "⚠️ SELISIH TRANSFER PERLU DICEK\n\n"+
+            "Keluar "+source_storage+": "+fmt(measurement.sourceQty)+"\n"+
+            "Masuk "+destination_storage+": "+fmt(qty)+"\n"+
+            "Selisih/loss: "+fmtSigned(lossQty)+"\n\n"+
+            "Tetap simpan untuk audit?"
+        );
+        if(!lanjut)return;
+    }
+
+    const noteParts=[
+        `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) → ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
+    ];
+
+    noteParts.push(
+        `Sumber ${source_storage}: ${measurement.sourceBefore.matchedHeightCm} cm (${measurement.sourceBefore.liters} L) → ${measurement.sourceAfter.matchedHeightCm} cm (${measurement.sourceAfter.liters} L); selisih/loss ${lossQty} L`
+    );
 
     const {error}=await db.from("stock_movements").insert({
         tanggal,
@@ -1893,20 +2581,41 @@ async function saveTransfer(){
         source_storage,
         destination_storage,
         qty,
-        operator
+        operator,
+        note:noteParts.join(" | "),
+        calculation_method:"TRANSFER_SOURCE_AND_DESTINATION_TERA",
+        source_height_before_cm:measurement.sourceBefore.matchedHeightCm,
+        source_liter_before:measurement.sourceBefore.liters,
+        source_height_after_cm:measurement.sourceAfter.matchedHeightCm,
+        source_liter_after:measurement.sourceAfter.liters,
+        destination_height_before_cm:measurement.destinationBefore.matchedHeightCm,
+        destination_liter_before:measurement.destinationBefore.liters,
+        destination_height_after_cm:measurement.destinationAfter.matchedHeightCm,
+        destination_liter_after:measurement.destinationAfter.liters,
+        source_measured_qty:measurement.sourceQty,
+        destination_measured_qty:qty,
+        measurement_loss_qty:lossQty,
+        tera_version:TERA.version
     });
 
     document.getElementById("transferStatus").textContent=
         error
             ?"❌ "+error.message
-            :"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Total WHS tidak berubah.";
+            :"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Loss "+fmtSigned(lossQty)+" tercatat.";
 
     if(error){
         await finishStockSave(false,error.message);
         return;
     }
 
-    document.getElementById("transferQty").value="";
+    [
+        "transferDestinationHeightBefore",
+        "transferDestinationHeightAfter",
+        "transferSourceHeightBefore",
+        "transferSourceHeightAfter",
+        "transferQty"
+    ].forEach(id=>{document.getElementById(id).value="";});
+    clearTransferMeasurements();
     await loadStock();
     await finishStockSave(
         true,
@@ -1949,18 +2658,27 @@ async function saveClosing(){
     const closingRows=[];
 
     for(const storage of closingStorages){
+        const heightInput=document.getElementById(`height-${storage}`);
         const input=document.getElementById(`actual-${storage}`);
 
-        if(!input || input.value===""){
+        if(!heightInput || heightInput.value==="" || !input || input.value===""){
             alert(
                 isFuelman
-                    ? "Isi Stock Fisik / Sonding "+storage+" terlebih dahulu."
-                    : "Isi Stock Fisik / Sonding untuk semua storage terlebih dahulu."
+                    ? "Isi tinggi sonding "+storage+" terlebih dahulu."
+                    : "Isi tinggi sonding untuk semua storage terlebih dahulu."
             );
             return;
         }
 
-        const actualQty=n(input.value);
+        let closingTera;
+        try{
+            closingTera=TERA.lookup(storage,heightInput.value);
+        }catch(error){
+            alert("Konversi Closing "+storage+" gagal.\n\n"+error.message);
+            return;
+        }
+
+        const actualQty=closingTera.liters;
 
         if(actualQty<0){
             alert("Stock fisik tidak boleh negatif.");
@@ -1984,6 +2702,8 @@ async function saveClosing(){
             difference_qty:actualQty-systemQty,
             operator,
             note,
+            sonding_height_cm:closingTera.matchedHeightCm,
+            tera_version:TERA.version,
 
             session_id:
                 isFuelman
@@ -2040,7 +2760,9 @@ async function saveClosing(){
             shift:nextPeriod.shift,
             storage:row.storage,
             qty:row.actual_qty,
-            operator
+            operator,
+            sonding_height_cm:row.sonding_height_cm,
+            tera_version:row.tera_version
         }));
 
         const {error:openingError}=await db.from("stock_opening").upsert(
@@ -2089,14 +2811,27 @@ STORAGES.forEach(storage=>{
     openingStorage.appendChild(option);
 });
 
-document.getElementById("tanggal").value=localDate();
+const TODAY=localDate();
+document.getElementById("tanggal").value=TODAY;
+document.getElementById("receiptArrivalTime").value=localTime();
+document.getElementById("receiptHistoryDateFrom").value=TODAY.slice(0,8)+"01";
+document.getElementById("receiptHistoryDateTo").value=TODAY;
+document.getElementById("receiptReference").addEventListener("input",event=>{
+    event.target.value=event.target.value.toUpperCase();
+});
 document.getElementById("tanggal").addEventListener("change",loadStock);
 document.getElementById("shift").addEventListener("change",loadStock);
+document.getElementById("openingStorage").addEventListener("change",updateOpeningConversion);
+document.getElementById("transferDestination").addEventListener("change",updateTransferCalculation);
+document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
 
 syncTransferDestination();
+updateQuickConverter();
 
 document.addEventListener("kpp-auth-ready",async(event)=>{
     CURRENT_PROFILE=event.detail.profile;
+
+    await loadTransporterOptions();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
         const ok=await loadFuelmanSession();
@@ -2106,6 +2841,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     applyFuelmanIdentity();
     setAdminMovementTools();
     await loadStock();
+    await loadReceiptHistory();
 });
 
 </script>
