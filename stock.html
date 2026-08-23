@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.3: stock cards include estimated sounding height -->
+<!-- KPP-FMS STOCK v9.4: receipt periods and polished Excel history export -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -174,6 +174,11 @@ th{background:#e5e7eb}
 .edit-btn{background:#2563eb;color:#fff}
 .pending-ref{display:inline-block;padding:4px 7px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:bold;white-space:nowrap}
 .ref-audit{display:block;margin-top:4px;color:#64748b;font-size:10px;line-height:1.35}
+.period-badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:10px;font-weight:900;white-space:nowrap}
+.period-one{background:#dbeafe;color:#1d4ed8}
+.period-two{background:#ede9fe;color:#6d28d9}
+.history-actions{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.history-actions button{min-height:39px}
 .checkbox-cell input{width:auto}
 
 .stock-edit-overlay{
@@ -222,6 +227,8 @@ th{background:#e5e7eb}
     .edit-grid .wide{grid-column:auto}
     .admin-tools{align-items:stretch}
     .admin-tools button{width:100%}
+    .history-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+    .history-actions button{width:100%;padding:10px 8px;font-size:11px}
 }
 
 
@@ -943,11 +950,20 @@ th{background:#f8fafc;color:#475569}
 <div class="panel">
     <h3>📚 History Penerimaan Transportir</h3>
     <div class="note" style="margin-bottom:12px">
-        Riwayat kedatangan, referensi PO/LO, hasil flowmeter, hasil sounding tangki, dan loss bongkaran.
+        Riwayat kedatangan, PO/LO, flowmeter, sounding tangki, dan loss bongkaran.
+        Periode 1 otomatis tanggal 1–14; Periode 2 otomatis tanggal 15–akhir bulan.
     </div>
     <div class="grid">
         <div><label>Dari Tanggal</label><input type="date" id="receiptHistoryDateFrom"></div>
         <div><label>Sampai Tanggal</label><input type="date" id="receiptHistoryDateTo"></div>
+        <div>
+            <label>Periode Penerimaan</label>
+            <select id="receiptHistoryPeriod">
+                <option value="all">SEMUA PERIODE</option>
+                <option value="1">PERIODE 1 (1–14)</option>
+                <option value="2">PERIODE 2 (15–AKHIR BULAN)</option>
+            </select>
+        </div>
         <div>
             <label>Transportir</label>
             <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
@@ -961,17 +977,20 @@ th{background:#f8fafc;color:#475569}
                 <option value="complete">SUDAH DIISI</option>
             </select>
         </div>
-        <div style="align-self:end"><button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN HISTORY</button></div>
+        <div class="history-actions">
+            <button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN</button>
+            <button class="green" id="receiptHistoryDownloadBtn" type="button" onclick="downloadReceiptHistoryExcel()">⬇️ DOWNLOAD EXCEL</button>
+        </div>
     </div>
     <div class="table-wrap" style="margin-top:14px">
-        <table style="min-width:1220px">
+        <table style="min-width:1320px">
             <thead>
                 <tr>
-                    <th>KEDATANGAN</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
+                    <th>KEDATANGAN</th><th>PERIODE</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
                     <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI PO / LO</th>
                 </tr>
             </thead>
-            <tbody id="receiptHistoryBody"><tr><td colspan="9">Memuat history penerimaan...</td></tr></tbody>
+            <tbody id="receiptHistoryBody"><tr><td colspan="10">Memuat history penerimaan...</td></tr></tbody>
         </table>
     </div>
     <div class="status" id="receiptHistoryStatus"></div>
@@ -1029,6 +1048,7 @@ let STOCK_SAVE_TIMER_2=null;
 let CURRENT_MOVEMENTS=[];
 let CURRENT_RECEIPT_HISTORY=[];
 let COPY_TOAST_TIMER=null;
+let EXCELJS_LOAD_PROMISE=null;
 const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:""};
 
 
@@ -1654,6 +1674,52 @@ function reportDateTime(timeValue=""){
     return `${tanggal} ${time}`;
 }
 
+function receiptPeriodFromDate(value){
+    const match=String(value||"").match(/^\d{4}-\d{2}-(\d{2})/);
+    if(!match)return null;
+    const day=Number(match[1]);
+    if(day<1 || day>31)return null;
+    return day<=14?1:2;
+}
+
+function receiptPeriodLabel(value){
+    const period=receiptPeriodFromDate(value);
+    return period===1?"PERIODE 1":period===2?"PERIODE 2":"-";
+}
+
+function receiptPeriodDetail(value){
+    const period=receiptPeriodFromDate(value);
+    return period===1
+        ? "PERIODE 1 (1–14)"
+        : period===2
+            ? "PERIODE 2 (15–AKHIR BULAN)"
+            : "-";
+}
+
+function syncReceiptHistoryPeriodDates(){
+    const period=document.getElementById("receiptHistoryPeriod").value;
+    if(period==="all")return;
+
+    const toInput=document.getElementById("receiptHistoryDateTo");
+    const fromInput=document.getElementById("receiptHistoryDateFrom");
+    const base=toInput.value||localDate();
+    const [year,month]=base.split("-").map(Number);
+    if(!year || !month)return;
+
+    const prefix=`${year}-${String(month).padStart(2,"0")}-`;
+    if(period==="1"){
+        fromInput.value=prefix+"01";
+        toInput.value=prefix+"14";
+        return;
+    }
+
+    const lastDay=String(new Date(year,month,0).getDate()).padStart(2,"0");
+    const periodEnd=prefix+lastDay;
+    const today=localDate();
+    fromInput.value=prefix+"15";
+    toInput.value=prefix===today.slice(0,8)?today:periodEnd;
+}
+
 function safeTeraFromInput(storage,inputId){
     try{
         return teraFromInput(storage,inputId);
@@ -1696,6 +1762,7 @@ function buildReceiptCopyReport(measurement=null,operatorOverride="",dateTimeOve
         `PO/LO: ${reference}`,
         `Tujuan: ${destination}`,
         `Shift: ${shift}`,
+        `Periode: ${receiptPeriodDetail(document.getElementById("tanggal").value)}`,
         "",
         soundingReportBlock(destination,"SEBELUM BONGKAR",data.tankBefore,operator,dateTime),
         "",
@@ -2029,6 +2096,22 @@ async function loadTransporterOptions(){
     }
 }
 
+function receiptHistoryQuantities(row){
+    const transporterQty=
+        row.transporter_measured_qty!==null && row.transporter_measured_qty!==undefined
+            ? n(row.transporter_measured_qty)
+            : r1(n(row.meter_end_liter)-n(row.meter_start_liter));
+    const tankQty=
+        row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+            ? n(row.destination_measured_qty)
+            : n(row.qty);
+    const loss=
+        row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
+            ? n(row.measurement_loss_qty)
+            : r1(transporterQty-tankQty);
+    return {transporterQty,tankQty,loss};
+}
+
 async function loadReceiptHistory(){
     const body=document.getElementById("receiptHistoryBody");
     const status=document.getElementById("receiptHistoryStatus");
@@ -2037,13 +2120,14 @@ async function loadReceiptHistory(){
     const transporter=document.getElementById("receiptHistoryTransporter").value;
     const reference=document.getElementById("receiptHistoryReference").value.trim();
     const referenceStatus=document.getElementById("receiptHistoryReferenceStatus").value;
+    const periodFilter=document.getElementById("receiptHistoryPeriod").value;
 
-    body.innerHTML='<tr><td colspan="9">Memuat history penerimaan...</td></tr>';
+    body.innerHTML='<tr><td colspan="10">Memuat history penerimaan...</td></tr>';
     status.textContent="";
     CURRENT_RECEIPT_HISTORY=[];
 
     let query=db.from("stock_movements")
-        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator")
         .eq("jenis","RECEIPT")
         .order("tanggal",{ascending:false})
         .order("jam",{ascending:false})
@@ -2057,39 +2141,29 @@ async function loadReceiptHistory(){
     const {data,error}=await query;
 
     if(error){
-        body.innerHTML=`<tr><td colspan="9">❌ ${esc(error.message)}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="10">❌ ${esc(error.message)}</td></tr>`;
         status.textContent="Jalankan SQL audit PO/LO sebelum memakai History Penerimaan.";
-        return;
+        return null;
     }
 
     const rows=(data||[]).filter(row=>{
         const hasReference=!!String(row.document_reference||"").trim();
-        if(referenceStatus==="pending")return !hasReference;
-        if(referenceStatus==="complete")return hasReference;
+        if(referenceStatus==="pending" && hasReference)return false;
+        if(referenceStatus==="complete" && !hasReference)return false;
+        if(periodFilter!=="all" && receiptPeriodFromDate(row.tanggal)!==Number(periodFilter))return false;
         return true;
     });
 
     CURRENT_RECEIPT_HISTORY=rows.map(row=>({...row}));
 
     if(!rows.length){
-        body.innerHTML='<tr><td colspan="9">Belum ada penerimaan pada filter ini.</td></tr>';
+        body.innerHTML='<tr><td colspan="10">Belum ada penerimaan pada filter ini.</td></tr>';
         status.textContent="0 kedatangan ditemukan.";
-        return;
+        return [];
     }
 
     body.innerHTML=rows.map(row=>{
-        const transporterQty=
-            row.transporter_measured_qty!==null && row.transporter_measured_qty!==undefined
-                ? n(row.transporter_measured_qty)
-                : r1(n(row.meter_end_liter)-n(row.meter_start_liter));
-        const tankQty=
-            row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
-                ? n(row.destination_measured_qty)
-                : n(row.qty);
-        const loss=
-            row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
-                ? n(row.measurement_loss_qty)
-                : r1(transporterQty-tankQty);
+        const {transporterQty,tankQty,loss}=receiptHistoryQuantities(row);
         const arrival=row.arrival_at
             ? new Date(row.arrival_at).toLocaleString("id-ID",{
                 timeZone:"Asia/Jakarta",
@@ -2104,9 +2178,11 @@ async function loadReceiptHistory(){
                 hour:"2-digit",minute:"2-digit"
             })} oleh ${row.reference_updated_by_name||"Admin/GL"}`
             : "";
+        const period=receiptPeriodFromDate(row.tanggal);
 
         return `<tr>
             <td>${esc(arrival)}</td>
+            <td><span class="period-badge ${period===1?"period-one":"period-two"}">${esc(receiptPeriodLabel(row.tanggal))}</span></td>
             <td>${
                 hasReference
                     ? `<b>${esc(row.document_reference)}</b>${referenceAudit?`<span class="ref-audit">${esc(referenceAudit)}</span>`:""}`
@@ -2115,7 +2191,12 @@ async function loadReceiptHistory(){
             <td>${esc(row.transporter||"-")}</td>
             <td>${esc(row.destination_storage||"-")}</td>
             <td>${fmt(transporterQty)}</td>
-            <td>${fmt(tankQty)}</td>
+            <td>
+                <b>${fmt(tankQty)}</b>
+                ${row.destination_height_before_cm!==null && row.destination_height_after_cm!==null
+                    ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} → ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
+                    : ""}
+            </td>
             <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${fmtSigned(loss)}</td>
             <td>${esc(row.operator||"-")}</td>
             <td>${
@@ -2127,8 +2208,269 @@ async function loadReceiptHistory(){
     }).join("");
 
     const pendingCount=rows.filter(row=>!String(row.document_reference||"").trim()).length;
+    const periodOneCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===1).length;
+    const periodTwoCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===2).length;
     status.textContent=
-        `${rows.length} kedatangan ditemukan (maksimum 500 data) • ${pendingCount} PO/LO belum diisi.`;
+        `${rows.length} kedatangan (maks. 500) • Periode 1: ${periodOneCount} • `+
+        `Periode 2: ${periodTwoCount} • ${pendingCount} PO/LO belum diisi.`;
+    return rows;
+}
+
+function loadExcelJs(){
+    if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+    if(EXCELJS_LOAD_PROMISE)return EXCELJS_LOAD_PROMISE;
+
+    EXCELJS_LOAD_PROMISE=new Promise((resolve,reject)=>{
+        const script=document.createElement("script");
+        script.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+        script.async=true;
+        script.onload=()=>window.ExcelJS
+            ? resolve(window.ExcelJS)
+            : reject(new Error("ExcelJS tidak tersedia"));
+        script.onerror=()=>reject(new Error("Library Excel gagal dimuat. Periksa koneksi internet."));
+        document.head.appendChild(script);
+    }).catch(error=>{
+        EXCELJS_LOAD_PROMISE=null;
+        throw error;
+    });
+
+    return EXCELJS_LOAD_PROMISE;
+}
+
+function excelReceiptDate(row){
+    const dateParts=String(row.tanggal||"").split("-").map(Number);
+    const timeParts=String(row.jam||"00:00:00").split(":").map(Number);
+    if(dateParts.length!==3 || dateParts.some(value=>!Number.isFinite(value)))return "";
+    return new Date(Date.UTC(
+        dateParts[0],dateParts[1]-1,dateParts[2],
+        timeParts[0]||0,timeParts[1]||0,timeParts[2]||0
+    ));
+}
+
+function receiptHistoryFilterText(){
+    const from=document.getElementById("receiptHistoryDateFrom").value||"AWAL";
+    const to=document.getElementById("receiptHistoryDateTo").value||"AKHIR";
+    const period=document.getElementById("receiptHistoryPeriod").value;
+    const transporter=document.getElementById("receiptHistoryTransporter").value||"SEMUA TRANSPORTIR";
+    const referenceStatus=document.getElementById("receiptHistoryReferenceStatus");
+    const reference=document.getElementById("receiptHistoryReference").value.trim()||"SEMUA PO/LO";
+    const periodText=period==="1"
+        ? "PERIODE 1 (1–14)"
+        : period==="2"
+            ? "PERIODE 2 (15–AKHIR BULAN)"
+            : "SEMUA PERIODE";
+    return `${from} s.d. ${to} | ${periodText} | ${transporter} | `+
+        `${referenceStatus.options[referenceStatus.selectedIndex].text} | ${reference}`;
+}
+
+async function downloadReceiptHistoryExcel(){
+    const button=document.getElementById("receiptHistoryDownloadBtn");
+    const originalText=button.textContent;
+    button.disabled=true;
+    button.textContent="⏳ MEMBUAT EXCEL...";
+
+    try{
+        const rows=await loadReceiptHistory();
+        if(rows===null)return;
+        if(!rows.length){
+            showCopyToast("Tidak ada data History untuk didownload.",true);
+            return;
+        }
+
+        const Excel=await loadExcelJs();
+
+        const workbook=new Excel.Workbook();
+        workbook.creator="KPP Fuel Management System";
+        workbook.company="PT. KALIMANTAN PRIMA PERSADA";
+        workbook.subject="History Penerimaan Transportir";
+        workbook.created=new Date();
+
+        const ws=workbook.addWorksheet("PENERIMAAN TRANSPORTIR",{
+            views:[{state:"frozen",ySplit:8}]
+        });
+        ws.properties.defaultRowHeight=20;
+        ws.views=[{state:"frozen",ySplit:8,showGridLines:false}];
+
+        const headers=[
+            "NO","KEDATANGAN","PERIODE","PO / LO","STATUS PO / LO",
+            "TRANSPORTIR","TUJUAN","FLOWMETER AWAL (L)","FLOWMETER AKHIR (L)",
+            "QTY TRANSPORTER (L)","SONDING SEBELUM (CM)","VOLUME SEBELUM (L)",
+            "SONDING SESUDAH (CM)","VOLUME SESUDAH (L)","MASUK TANGKI (L)",
+            "SELISIH / LOSS (L)","OPERATOR","PO/LO DIPERBARUI OLEH","PO/LO DIPERBARUI PADA"
+        ];
+        const widths=[6,20,15,20,16,22,12,19,19,21,20,19,20,19,19,20,18,23,21];
+        widths.forEach((width,index)=>{ws.getColumn(index+1).width=width});
+
+        ws.mergeCells("A1:S1");
+        ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
+        ws.getCell("A1").font={name:"Calibri",size:18,bold:true,color:{argb:"FF0F766E"}};
+        ws.getCell("A1").alignment={vertical:"middle",horizontal:"center"};
+        ws.getRow(1).height=28;
+
+        ws.mergeCells("A2:S2");
+        ws.getCell("A2").value="INTEGRATED MINING SERVICES";
+        ws.getCell("A2").font={name:"Calibri",size:11,bold:true,color:{argb:"FF475569"}};
+        ws.getCell("A2").alignment={vertical:"middle",horizontal:"center"};
+
+        ws.mergeCells("A4:S4");
+        ws.getCell("A4").value="HISTORY PENERIMAAN TRANSPORTIR";
+        ws.getCell("A4").font={name:"Calibri",size:16,bold:true,color:{argb:"FFFFFFFF"}};
+        ws.getCell("A4").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0F172A"}};
+        ws.getCell("A4").alignment={vertical:"middle",horizontal:"center"};
+        ws.getRow(4).height=26;
+
+        ws.mergeCells("A5:S5");
+        ws.getCell("A5").value="FILTER: "+receiptHistoryFilterText();
+        ws.getCell("A5").font={name:"Calibri",size:10,italic:true,color:{argb:"FF334155"}};
+        ws.getCell("A5").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF1F5F9"}};
+        ws.getCell("A5").alignment={vertical:"middle",horizontal:"left"};
+
+        const periodOneCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===1).length;
+        const periodTwoCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===2).length;
+        const pendingCount=rows.filter(row=>!String(row.document_reference||"").trim()).length;
+        const totals=rows.reduce((summary,row)=>{
+            const qty=receiptHistoryQuantities(row);
+            summary.transporter+=qty.transporterQty;
+            summary.tank+=qty.tankQty;
+            summary.loss+=qty.loss;
+            return summary;
+        },{transporter:0,tank:0,loss:0});
+
+        const summaryValues=[
+            ["TOTAL KEDATANGAN",rows.length],
+            ["PERIODE 1",periodOneCount],
+            ["PERIODE 2",periodTwoCount],
+            ["QTY TRANSPORTER",r1(totals.transporter)],
+            ["MASUK TANGKI",r1(totals.tank)],
+            ["TOTAL LOSS",r1(totals.loss)],
+            ["PO/LO BELUM DIISI",pendingCount]
+        ];
+        const summaryStarts=[1,3,5,7,10,13,16];
+        const summaryEnds=[2,4,6,9,12,15,19];
+        summaryValues.forEach((item,index)=>{
+            const start=summaryStarts[index];
+            const end=summaryEnds[index];
+            ws.mergeCells(6,start,6,end);
+            const cell=ws.getCell(6,start);
+            cell.value=`${item[0]}: ${index>=3 && index<=5
+                ? Number(item[1]).toLocaleString("id-ID",{maximumFractionDigits:1})+" L"
+                : item[1]}`;
+            cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FF0F172A"}};
+            cell.fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:index===1?"FFDBEAFE":index===2?"FFEDE9FE":index===6?"FFFEF3C7":"FFECFDF5"}
+            };
+            cell.alignment={vertical:"middle",horizontal:"center"};
+            cell.border={bottom:{style:"thin",color:{argb:"FFCBD5E1"}}};
+        });
+        ws.getRow(6).height=24;
+
+        const headerRow=ws.getRow(8);
+        headers.forEach((header,index)=>{
+            const cell=headerRow.getCell(index+1);
+            cell.value=header;
+            cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FFFFFFFF"}};
+            cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1E3A5F"}};
+            cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};
+            cell.border={
+                top:{style:"thin",color:{argb:"FF94A3B8"}},
+                bottom:{style:"thin",color:{argb:"FF94A3B8"}},
+                left:{style:"thin",color:{argb:"FF94A3B8"}},
+                right:{style:"thin",color:{argb:"FF94A3B8"}}
+            };
+        });
+        headerRow.height=32;
+
+        rows.forEach((item,index)=>{
+            const qty=receiptHistoryQuantities(item);
+            const hasReference=!!String(item.document_reference||"").trim();
+            const row=ws.addRow([
+                index+1,
+                excelReceiptDate(item),
+                receiptPeriodLabel(item.tanggal),
+                hasReference?String(item.document_reference).trim().toUpperCase():"BELUM DIISI",
+                hasReference?"SUDAH DIISI":"BELUM DIISI",
+                item.transporter||"-",
+                item.destination_storage||"-",
+                n(item.meter_start_liter),
+                n(item.meter_end_liter),
+                qty.transporterQty,
+                item.destination_height_before_cm??"",
+                item.destination_liter_before??"",
+                item.destination_height_after_cm??"",
+                item.destination_liter_after??"",
+                qty.tankQty,
+                qty.loss,
+                item.operator||"-",
+                item.reference_updated_by_name||"-",
+                item.reference_updated_at?new Date(item.reference_updated_at):"-"
+            ]);
+            row.height=21;
+            row.eachCell({includeEmpty:true},cell=>{
+                cell.font={name:"Calibri",size:10,color:{argb:"FF0F172A"}};
+                cell.alignment={vertical:"middle",horizontal:"center",wrapText:false};
+                cell.border={bottom:{style:"hair",color:{argb:"FFD7DEE8"}}};
+            });
+            row.getCell(2).numFmt="dd/mm/yyyy hh:mm";
+            [8,9,10,11,12,13,14,15,16].forEach(column=>{row.getCell(column).numFmt="#,##0.0"});
+            if(item.reference_updated_at)row.getCell(19).numFmt="dd/mm/yyyy hh:mm";
+            row.getCell(3).fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:receiptPeriodFromDate(item.tanggal)===1?"FFDBEAFE":"FFEDE9FE"}
+            };
+            row.getCell(3).font={
+                name:"Calibri",size:10,bold:true,
+                color:{argb:receiptPeriodFromDate(item.tanggal)===1?"FF1D4ED8":"FF6D28D9"}
+            };
+            row.getCell(5).fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:hasReference?"FFDCFCE7":"FFFEF3C7"}
+            };
+            row.getCell(5).font={
+                name:"Calibri",size:10,bold:true,
+                color:{argb:hasReference?"FF166534":"FF92400E"}
+            };
+            if(qty.loss!==0){
+                row.getCell(16).font={
+                    name:"Calibri",size:10,bold:true,
+                    color:{argb:qty.loss>0?"FFB91C1C":"FF15803D"}
+                };
+            }
+        });
+
+        ws.autoFilter={from:{row:8,column:1},to:{row:8,column:19}};
+        ws.pageSetup={
+            orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9,
+            margins:{left:.25,right:.25,top:.5,bottom:.5,header:.2,footer:.2}
+        };
+        ws.pageSetup.printTitlesRow="1:8";
+
+        const dateFrom=document.getElementById("receiptHistoryDateFrom").value||"AWAL";
+        const dateTo=document.getElementById("receiptHistoryDateTo").value||"AKHIR";
+        const selectedPeriod=document.getElementById("receiptHistoryPeriod").value;
+        const periodSuffix=selectedPeriod==="all"?"SEMUA_PERIODE":"PERIODE_"+selectedPeriod;
+        const filename=`KPP_History_Penerimaan_${dateFrom}_sd_${dateTo}_${periodSuffix}.xlsx`;
+
+        const buffer=await workbook.xlsx.writeBuffer();
+        const blob=new Blob([buffer],{
+            type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+        const url=URL.createObjectURL(blob);
+        const link=document.createElement("a");
+        link.href=url;
+        link.download=filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        showCopyToast(`✅ Excel History berhasil didownload (${rows.length} data).`);
+    }catch(error){
+        console.error(error);
+        showCopyToast("❌ Gagal membuat Excel: "+(error?.message||error),true);
+    }finally{
+        button.disabled=false;
+        button.textContent=originalText;
+    }
 }
 
 async function updateReceiptReference(id){
@@ -3362,10 +3704,13 @@ STORAGES.forEach(storage=>{
 });
 
 const TODAY=localDate();
+const CURRENT_RECEIPT_PERIOD=Number(TODAY.slice(8,10))<=14?1:2;
 document.getElementById("tanggal").value=TODAY;
 document.getElementById("receiptArrivalTime").value=localTime();
-document.getElementById("receiptHistoryDateFrom").value=TODAY.slice(0,8)+"01";
+document.getElementById("receiptHistoryDateFrom").value=
+    TODAY.slice(0,8)+(CURRENT_RECEIPT_PERIOD===1?"01":"15");
 document.getElementById("receiptHistoryDateTo").value=TODAY;
+document.getElementById("receiptHistoryPeriod").value=String(CURRENT_RECEIPT_PERIOD);
 document.getElementById("receiptReference").addEventListener("input",event=>{
     event.target.value=event.target.value.toUpperCase();
     updateReceiptCalculation();
@@ -3387,6 +3732,10 @@ document.getElementById("transferDestination").addEventListener("change",updateT
 document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
 document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
 document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
+document.getElementById("receiptHistoryPeriod").addEventListener("change",async()=>{
+    syncReceiptHistoryPeriodDates();
+    await loadReceiptHistory();
+});
 
 syncTransferDestination();
 updateQuickConverter();
