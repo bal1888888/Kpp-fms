@@ -636,6 +636,7 @@ window.KPP = {
       logsheet: "Daily Fuel Logsheet",
       "logsheet-editor": "Logsheet Editor",
       "daily-report": "Daily Fuel Report",
+      "stock-history": "History & Audit Stock",
       ccr: "CCR Fuel Allocation",
       "ccr-approval": "Approval CCR",
       riwayat: "Riwayat Fuel",
@@ -740,7 +741,7 @@ window.KPP = {
           ["Pilih Tanggal dan Shift", "Di Periode Stock pilih tanggal dan Shift 1/2, lalu klik REFRESH STOCK."],
           ["Cek Stock Saat Ini", "Lihat Total Stock dan masing-masing MT/FT sebelum melakukan transaksi."],
           ["Isi Opening bila diperlukan", "Pada Stock Opening pilih Storage, isi Qty Opening dan nama Fuelman/Operator, lalu SIMPAN OPENING."],
-          ["Catat Penerimaan", "Kalau ada solar masuk, pilih storage tujuan, isi Qty, pilih transportir PT. SHA/PT. DKA, isi operator, lalu SIMPAN PENERIMAAN."],
+          ["Catat Penerimaan", "Kalau ada solar masuk, pilih storage tujuan, isi flowmeter dan sounding, pilih vendor aktif dari Master Transportir, lalu SIMPAN PENERIMAAN."],
           ["Catat Transfer", "Kalau pindah fuel, pilih Dari Storage dan Ke Storage, isi Qty dan operator, lalu SIMPAN TRANSFER."],
           ["Isi Stock Closing", "Di akhir shift masukkan hasil stock taking/closing untuk storage yang diwajibkan dan nama Fuelman/Operator Closing."],
           ["Simpan Closing", "Periksa angka closing lalu tekan SIMPAN STOCK CLOSING. Fuelman baru boleh END SHIFT setelah closing selesai."],
@@ -782,6 +783,16 @@ window.KPP = {
           ["Baca Ringkasan Usage", "Cek Usage Yesterday, Usage MTD, AVG MTD, dan ITO. ITO / Days of Cover dihitung dari Total Stock ÷ Total Pemakaian Kemarin."],
           ["Baca Usage per FT / Shift", "Lihat pemakaian masing-masing Fuel Truck dan Shift untuk menemukan perbedaan yang perlu ditelusuri."],
           ["Copy Report", "Kalau angka sudah benar, gunakan COPY REPORT pada format laporan siap copy."],
+        ]
+      },
+      "stock-history": {
+        title: "History Stock",
+        steps: [
+          ["Pilih Jenis History", "Gunakan tab Penerimaan, Transfer, atau Stock Closing sesuai audit yang ingin diperiksa."],
+          ["Atur Filter", "Pilih rentang tanggal, shift, storage, transportir, PO/LO, atau petugas sesuai kebutuhan."],
+          ["Tampilkan Data", "Klik TAMPILKAN untuk memuat data terbaru dari Stock."],
+          ["Salin Laporan", "Klik SALIN pada baris untuk menyalin hasil penerimaan, transfer, atau sonding akhir."],
+          ["Download Excel", "Klik EXCEL untuk mengunduh data pada tab dan filter yang sedang aktif."],
         ]
       },
       ccr: {
@@ -1168,6 +1179,7 @@ window.KPP = {
       const blocked = [
         "dashboard.html",
         "daily-report.html",
+        "stock-history.html",
         "admin.html",
         "gl.html",
         "ccr.html",
@@ -1219,6 +1231,7 @@ window.KPP = {
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
+        ["stock-history", "stock-history.html", "📚 History Stock"],
         ["ccr", "ccr.html", "🎯 CCR Jatah"],
         ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
@@ -1235,6 +1248,7 @@ window.KPP = {
         ["logsheet", "logsheet.html", "📄 Logsheet"],
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
+        ["stock-history", "stock-history.html", "📚 History Stock"],
         ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
         ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
