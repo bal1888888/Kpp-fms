@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.1: dynamic destination sounding labels + history at bottom -->
+<!-- KPP-FMS STOCK v9.2: mobile copy reports + account-linked sounding officer -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -382,9 +382,67 @@ th{background:#f8fafc;color:#475569}
 .closing-table .sonding-height{min-width:125px}
 .closing-table .auto-liter{min-width:135px}
 .tera-inline{display:block;margin-top:4px;font-size:9px;color:#64748b;white-space:nowrap}
+.copy-report-card{
+  margin-top:12px;
+  border:1px solid #dbe3ee;
+  border-radius:11px;
+  background:#f8fafc;
+  overflow:hidden;
+}
+.copy-report-card summary{
+  padding:11px 13px;
+  cursor:pointer;
+  color:#334155;
+  font-size:12px;
+  font-weight:900;
+  list-style-position:inside;
+}
+.copy-report-content{padding:0 12px 12px}
+.copy-report-preview{
+  margin:0;
+  max-height:240px;
+  overflow:auto;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  border-radius:9px;
+  padding:12px;
+  background:#111827;
+  color:#f8fafc;
+  font-family:Consolas,"Courier New",monospace;
+  font-size:11px;
+  line-height:1.5;
+}
+.copy-report-btn{margin-top:9px;padding:9px 11px;background:#475569;color:#fff;font-size:11px}
+.copy-toast{
+  position:fixed;
+  left:50%;
+  bottom:22px;
+  z-index:100000;
+  transform:translate(-50%,18px);
+  width:max-content;
+  max-width:calc(100vw - 28px);
+  padding:10px 14px;
+  border-radius:9px;
+  background:#166534;
+  color:#fff;
+  box-shadow:0 10px 30px rgba(15,23,42,.25);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.35;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease;
+}
+.copy-toast.show{opacity:1;transform:translate(-50%,0)}
+.copy-toast.error{background:#b91c1c}
 @media(max-width:700px){
   .measurement-summary{grid-template-columns:1fr}
   .tera-result strong{font-size:20px}
+  .copy-report-card summary{padding:10px 11px;font-size:11px}
+  .copy-report-content{padding:0 10px 10px}
+  .copy-report-preview{max-height:210px;padding:10px;font-size:11px;line-height:1.45}
+  .copy-report-btn{width:100%;font-size:11px}
+  .copy-toast{bottom:14px;font-size:11px;text-align:center}
 }
 
 </style>
@@ -570,7 +628,7 @@ th{background:#f8fafc;color:#475569}
             <select id="openingStorage"></select>
         </div>
         <div>
-            <label>Tinggi Sonding Opening (CM)</label>
+            <label id="openingHeightLabel">Sonding MT01 Awal Shift (CM)</label>
             <input type="number" id="openingHeight" min="0" step="0.1" inputmode="decimal" oninput="updateOpeningConversion()" placeholder="Tinggi hasil sonding">
         </div>
         <div>
@@ -578,14 +636,22 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="openingQty" class="auto-liter" readonly placeholder="Otomatis dari tera">
         </div>
         <div>
-            <label>Fuelman / Operator</label>
-            <input id="openingOperator" placeholder="Nama fuelman">
+            <label>Petugas Sonding (Akun Login)</label>
+            <input id="openingOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
+            <span class="field-hint">Nama tidak diketik manual; otomatis mengikuti akun yang sedang masuk.</span>
         </div>
         <div style="align-self:end">
             <button class="green" onclick="saveOpening()">SIMPAN OPENING</button>
         </div>
     </div>
     <div class="status" id="openingStatus"></div>
+    <details class="copy-report-card">
+        <summary>📋 Format Laporan Awal Shift Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="openingCopyPreview" class="copy-report-preview">Lengkapi tinggi sounding awal shift.</pre>
+            <button class="copy-report-btn" type="button" onclick="copyOpeningReport()">📋 SALIN LAPORAN AWAL SHIFT</button>
+        </div>
+    </details>
 </div>
 
 <div class="panel">
@@ -652,14 +718,22 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter − tangki">
         </div>
         <div>
-            <label>Operator</label>
-            <input id="receiptOperator" placeholder="Nama fuelman">
+            <label>Petugas Sonding (Akun Login)</label>
+            <input id="receiptOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
+            <span class="field-hint">Contoh: akun Tegar akan tercatat sebagai Tegar.</span>
         </div>
         <div style="align-self:end">
             <button class="orange" onclick="saveReceipt()">SIMPAN PENERIMAAN</button>
         </div>
     </div>
     <div class="status" id="receiptStatus"></div>
+    <details class="copy-report-card">
+        <summary>📋 Format Penerimaan Transportir Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="receiptCopyPreview" class="copy-report-preview">Lengkapi flowmeter dan sounding sebelum/sesudah bongkar.</pre>
+            <button class="copy-report-btn" type="button" onclick="copyReceiptReport()">📋 SALIN LAPORAN PENERIMAAN</button>
+        </div>
+    </details>
 </div>
 
 <div class="panel">
@@ -672,7 +746,7 @@ th{background:#f8fafc;color:#475569}
 
     <div class="grid">
         <div>
-            <label>Dari Storage</label>
+            <label>Storage Sumber (Solar Keluar)</label>
             <select id="transferSource" onchange="syncTransferDestination()">
                 <option value="MT01">MT01</option>
                 <option value="MT02">MT02</option>
@@ -684,7 +758,7 @@ th{background:#f8fafc;color:#475569}
         </div>
 
         <div>
-            <label>Ke Storage</label>
+            <label>Storage Tujuan (Solar Masuk)</label>
             <select id="transferDestination">
                 <option value="MT01">MT01</option>
                 <option value="MT02">MT02</option>
@@ -696,23 +770,23 @@ th{background:#f8fafc;color:#475569}
         </div>
 
         <div>
-            <label>Sonding Tujuan Sebelum (CM)</label>
+            <label id="transferDestinationBeforeLabel">Sonding Tujuan Sebelum Menerima (CM)</label>
             <input type="number" id="transferDestinationHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sebelum menerima">
         </div>
 
         <div>
-            <label>Sonding Tujuan Sesudah (CM)</label>
+            <label id="transferDestinationAfterLabel">Sonding Tujuan Sesudah Menerima (CM)</label>
             <input type="number" id="transferDestinationHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Setelah menerima">
         </div>
 
         <div>
-            <label>Qty Transfer Otomatis (Liter)</label>
+            <label id="transferQtyLabel">Qty Masuk Tujuan Menurut Tera (Liter)</label>
             <input type="number" id="transferQty" class="auto-liter" readonly placeholder="Sesudah − Sebelum">
         </div>
 
         <div>
-            <label>Operator</label>
-            <input id="transferOperator" placeholder="Nama fuelman">
+            <label>Petugas Sonding (Akun Login)</label>
+            <input id="transferOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
         </div>
 
         <div style="align-self:end">
@@ -721,24 +795,24 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="measure-section">
-        <h4>Audit Sonding Sumber — wajib untuk menghitung qty keluar dan loss transfer</h4>
+        <h4 id="transferSourceAuditTitle">Audit Sonding Sumber — wajib untuk menghitung qty keluar dan loss transfer</h4>
         <div class="grid">
             <div>
-                <label>Sonding Sumber Sebelum (CM)</label>
+                <label id="transferSourceBeforeLabel">Sonding Sumber Sebelum Transfer (CM)</label>
                 <input type="number" id="transferSourceHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sebelum keluar">
             </div>
             <div>
-                <label>Sonding Sumber Sesudah (CM)</label>
+                <label id="transferSourceAfterLabel">Sonding Sumber Sesudah Transfer (CM)</label>
                 <input type="number" id="transferSourceHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Setelah keluar">
             </div>
         </div>
         <div class="measurement-summary">
             <div class="measurement-box">
-                <small>MASUK MENURUT TUJUAN</small>
+                <small id="transferDestinationSummaryLabel">MASUK MENURUT TUJUAN</small>
                 <strong id="transferDestinationMeasured">- L</strong>
             </div>
             <div class="measurement-box">
-                <small>KELUAR MENURUT SUMBER</small>
+                <small id="transferSourceSummaryLabel">KELUAR MENURUT SUMBER</small>
                 <strong id="transferSourceMeasured">- L</strong>
             </div>
             <div class="measurement-box" id="transferLossBox">
@@ -749,6 +823,13 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="status" id="transferStatus"></div>
+    <details class="copy-report-card">
+        <summary>📋 Format Transfer & Konversi Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="transferCopyPreview" class="copy-report-preview">Lengkapi sounding sumber dan tujuan sebelum/sesudah transfer.</pre>
+            <button class="copy-report-btn" type="button" onclick="copyTransferReport()">📋 SALIN LAPORAN TRANSFER</button>
+        </div>
+    </details>
 </div>
 
 <div class="panel">
@@ -791,8 +872,8 @@ th{background:#f8fafc;color:#475569}
 
     <div class="grid">
         <div>
-            <label>Fuelman / Operator Closing</label>
-            <input id="closingOperator" placeholder="Nama fuelman">
+            <label>Petugas Sonding Closing (Akun Login)</label>
+            <input id="closingOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
         </div>
         <div>
             <label>Keterangan</label>
@@ -889,6 +970,8 @@ th{background:#f8fafc;color:#475569}
     <a href="logsheet.html" class="btn gray">📋 Logsheet</a>
 </div>
 
+<div id="copyToast" class="copy-toast" role="status" aria-live="polite"></div>
+
 </div>
 
 <script>
@@ -932,6 +1015,8 @@ let STOCK_SAVE_TIMER_1=null;
 let STOCK_SAVE_TIMER_2=null;
 let CURRENT_MOVEMENTS=[];
 let CURRENT_RECEIPT_HISTORY=[];
+let COPY_TOAST_TIMER=null;
+const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:""};
 
 
 
@@ -1512,6 +1597,250 @@ function fmtCm(value){
     return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" cm";
 }
 
+function soundingOfficerName(){
+    const fuelmanName=ACTIVE_FUELMAN_SESSION?.fuelman_name;
+    const profileName=CURRENT_PROFILE?.display_name||CURRENT_PROFILE?.name||CURRENT_PROFILE?.username;
+    const emailName=window.KPP_SESSION?.user?.email?.split("@")[0];
+    return String(fuelmanName||profileName||emailName||"").trim();
+}
+
+function reportStorageName(storage){
+    const value=String(storage||"-").toUpperCase();
+    return /^MT\d{2}$/.test(value)
+        ? `MT ${value.slice(2)}`
+        : value;
+}
+
+function reportNumber(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1});
+}
+
+function reportLiters(value){
+    const formatted=reportNumber(value);
+    return formatted==="-"?"-":formatted+" Liter";
+}
+
+function reportKiloliters(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    return (Number(value)/1000).toLocaleString("id-ID",{
+        minimumFractionDigits:1,
+        maximumFractionDigits:1
+    })+" KL";
+}
+
+function reportSignedLiters(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=Number(value);
+    return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" Liter";
+}
+
+function reportDateTime(timeValue=""){
+    const tanggal=document.getElementById("tanggal")?.value||localDate();
+    const time=String(timeValue||localTime()).slice(0,5);
+    return `${tanggal} ${time}`;
+}
+
+function safeTeraFromInput(storage,inputId){
+    try{
+        return teraFromInput(storage,inputId);
+    }catch{
+        return null;
+    }
+}
+
+function soundingReportBlock(storage,phase,tera,operator,dateTime){
+    return [
+        `${reportStorageName(storage)} ${phase}`,
+        `High: ${tera?reportNumber(tera.matchedHeightCm)+" cm":"-"}`,
+        `Volume: ${tera?reportLiters(tera.liters):"-"}`,
+        `Volume KL: ${tera?reportKiloliters(tera.liters):"-"}`,
+        `Operator: ${operator||"-"}`,
+        `Tanggal: ${dateTime}`
+    ].join("\n");
+}
+
+function buildOpeningCopyReport(openingTera=null,timeValue=""){
+    const {shift}=getPeriod();
+    const storage=document.getElementById("openingStorage").value;
+    const tera=openingTera||safeTeraFromInput(storage,"openingHeight");
+    const operator=document.getElementById("openingOperator").value.trim()||soundingOfficerName();
+    return soundingReportBlock(storage,`AWAL SHIFT ${shift}`,tera,operator,reportDateTime(timeValue));
+}
+
+function buildReceiptCopyReport(measurement=null,operatorOverride="",dateTimeOverride=""){
+    const {shift}=getPeriod();
+    const destination=document.getElementById("receiptDestination").value;
+    const transporter=document.getElementById("receiptTransporter").value||"-";
+    const reference=document.getElementById("receiptReference").value.trim().toUpperCase()||"BELUM DIISI";
+    const operator=operatorOverride||document.getElementById("receiptOperator").value.trim()||soundingOfficerName();
+    const dateTime=dateTimeOverride||reportDateTime(document.getElementById("receiptArrivalTime").value);
+    const data=measurement||{};
+
+    return [
+        "PENERIMAAN TRANSPORTIR",
+        `Transportir: ${transporter}`,
+        `PO/LO: ${reference}`,
+        `Tujuan: ${destination}`,
+        `Shift: ${shift}`,
+        "",
+        soundingReportBlock(destination,"SEBELUM BONGKAR",data.tankBefore,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SETELAH BONGKAR",data.tankAfter,operator,dateTime),
+        "",
+        "HASIL BONGKARAN",
+        `Flowmeter Awal: ${reportLiters(data.meterStart)}`,
+        `Flowmeter Akhir: ${reportLiters(data.meterEnd)}`,
+        `Qty Menurut Transporter: ${reportLiters(data.transporterQty)}`,
+        `Qty Masuk ${destination}: ${reportLiters(data.tankQty)}`,
+        `Selisih / Loss: ${reportSignedLiters(data.loss)}`
+    ].join("\n");
+}
+
+function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOverride=""){
+    const {shift}=getPeriod();
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination").value;
+    const operator=operatorOverride||document.getElementById("transferOperator").value.trim()||soundingOfficerName();
+    const dateTime=dateTimeOverride||reportDateTime();
+    const data=measurement||{};
+    const loss=
+        data.sourceQty!==null && data.sourceQty!==undefined &&
+        data.destinationQty!==null && data.destinationQty!==undefined
+            ? r1(n(data.sourceQty)-n(data.destinationQty))
+            : null;
+
+    return [
+        `TRANSFER ${source} KE ${destination}`,
+        `Shift: ${shift}`,
+        "",
+        soundingReportBlock(source,"SEBELUM TRANSFER",data.sourceBefore,operator,dateTime),
+        "",
+        soundingReportBlock(source,"SETELAH TRANSFER",data.sourceAfter,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SEBELUM MENERIMA",data.destinationBefore,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SETELAH MENERIMA",data.destinationAfter,operator,dateTime),
+        "",
+        "HASIL TRANSFER",
+        `Keluar Menurut ${source}: ${reportLiters(data.sourceQty)}`,
+        `Masuk Menurut ${destination}: ${reportLiters(data.destinationQty)}`,
+        `Selisih / Loss: ${reportSignedLiters(loss)}`
+    ].join("\n");
+}
+
+function setCopyPreview(id,text){
+    const el=document.getElementById(id);
+    if(el)el.textContent=text;
+}
+
+function renderOpeningCopyPreview(tera=null){
+    setCopyPreview("openingCopyPreview",buildOpeningCopyReport(tera));
+}
+
+function renderReceiptCopyPreview(measurement=null){
+    const hasCurrent=[
+        "receiptMeterStart","receiptMeterEnd","receiptTankHeightBefore","receiptTankHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    setCopyPreview(
+        "receiptCopyPreview",
+        !hasCurrent && LAST_COPY_REPORTS.receipt
+            ? LAST_COPY_REPORTS.receipt
+            : buildReceiptCopyReport(measurement)
+    );
+}
+
+function renderTransferCopyPreview(measurement=null){
+    const hasCurrent=[
+        "transferDestinationHeightBefore","transferDestinationHeightAfter",
+        "transferSourceHeightBefore","transferSourceHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    setCopyPreview(
+        "transferCopyPreview",
+        !hasCurrent && LAST_COPY_REPORTS.transfer
+            ? LAST_COPY_REPORTS.transfer
+            : buildTransferCopyReport(measurement)
+    );
+}
+
+function showCopyToast(message,isError=false){
+    const toast=document.getElementById("copyToast");
+    if(!toast)return;
+    clearTimeout(COPY_TOAST_TIMER);
+    toast.textContent=message;
+    toast.classList.toggle("error",isError);
+    toast.classList.add("show");
+    COPY_TOAST_TIMER=setTimeout(()=>toast.classList.remove("show"),2800);
+}
+
+async function copyReportText(text,label){
+    try{
+        if(navigator.clipboard && window.isSecureContext){
+            await navigator.clipboard.writeText(text);
+        }else{
+            const textarea=document.createElement("textarea");
+            textarea.value=text;
+            textarea.style.position="fixed";
+            textarea.style.opacity="0";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const copied=document.execCommand("copy");
+            textarea.remove();
+            if(!copied)throw new Error("Copy gagal");
+        }
+        showCopyToast(`✅ ${label} berhasil di-copy.`);
+    }catch{
+        showCopyToast("❌ Browser tidak mengizinkan copy otomatis.",true);
+    }
+}
+
+function copyOpeningReport(){
+    const storage=document.getElementById("openingStorage").value;
+    const tera=safeTeraFromInput(storage,"openingHeight");
+    const text=tera?buildOpeningCopyReport(tera):LAST_COPY_REPORTS.opening;
+    if(!text){
+        showCopyToast("Lengkapi sounding awal shift terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan awal shift");
+}
+
+function copyReceiptReport(){
+    const hasCurrent=[
+        "receiptMeterStart","receiptMeterEnd","receiptTankHeightBefore","receiptTankHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    const measurement=updateReceiptCalculation();
+    const complete=!!(
+        measurement?.tankBefore && measurement?.tankAfter &&
+        measurement?.meterStart!==null && measurement?.meterEnd!==null
+    );
+    const text=complete?buildReceiptCopyReport(measurement):(!hasCurrent?LAST_COPY_REPORTS.receipt:"");
+    if(!text){
+        showCopyToast("Lengkapi flowmeter dan sounding penerimaan terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan penerimaan");
+}
+
+function copyTransferReport(){
+    const hasCurrent=[
+        "transferDestinationHeightBefore","transferDestinationHeightAfter",
+        "transferSourceHeightBefore","transferSourceHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    const measurement=updateTransferCalculation();
+    const complete=!!(
+        measurement?.sourceBefore && measurement?.sourceAfter &&
+        measurement?.destinationBefore && measurement?.destinationAfter
+    );
+    const text=complete?buildTransferCopyReport(measurement):(!hasCurrent?LAST_COPY_REPORTS.transfer:"");
+    if(!text){
+        showCopyToast("Lengkapi sounding sumber dan tujuan terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan transfer");
+}
+
 function teraFromInput(storage,inputId){
     const input=document.getElementById(inputId);
     if(!input || input.value==="")return null;
@@ -1544,15 +1873,21 @@ function updateQuickConverter(){
 function updateOpeningConversion(){
     const storage=document.getElementById("openingStorage").value;
     const qty=document.getElementById("openingQty");
+    document.getElementById("openingHeightLabel").textContent=
+        `Sonding ${storage} Awal Shift (CM)`;
+    document.getElementById("openingHeight").placeholder=
+        `Tinggi sounding ${storage}`;
     try{
         const tera=teraFromInput(storage,"openingHeight");
         qty.value=tera?tera.liters:"";
         document.getElementById("openingStatus").textContent=tera
             ? `📏 ${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`
             : "";
+        renderOpeningCopyPreview(tera);
     }catch(error){
         qty.value="";
         document.getElementById("openingStatus").textContent="❌ "+error.message;
+        renderOpeningCopyPreview(null);
     }
 }
 
@@ -1618,7 +1953,7 @@ function updateReceiptCalculation(){
         document.getElementById("receiptStatus").textContent=
             parts.length?"🧮 "+parts.join(" • "):"";
 
-        return {
+        const result={
             meterStart,
             meterEnd,
             transporterQty,
@@ -1627,11 +1962,14 @@ function updateReceiptCalculation(){
             tankQty,
             loss
         };
+        renderReceiptCopyPreview(result);
+        return result;
     }catch(error){
         qtyInput.value="";
         tankQtyInput.value="";
         lossInput.value="";
         document.getElementById("receiptStatus").textContent="❌ "+error.message;
+        renderReceiptCopyPreview(null);
         return null;
     }
 }
@@ -1853,22 +2191,49 @@ function updateTransferCalculation(){
     const status=document.getElementById("transferStatus");
     const lossBox=document.getElementById("transferLossBox");
 
+    document.getElementById("transferDestinationBeforeLabel").textContent=
+        `Sonding ${destination} Sebelum Menerima (CM)`;
+    document.getElementById("transferDestinationAfterLabel").textContent=
+        `Sonding ${destination} Sesudah Menerima (CM)`;
+    document.getElementById("transferQtyLabel").textContent=
+        `Qty Masuk ${destination} Menurut Tera (Liter)`;
+    document.getElementById("transferSourceAuditTitle").textContent=
+        `Audit Sonding ${source} — wajib untuk menghitung qty keluar dan loss transfer`;
+    document.getElementById("transferSourceBeforeLabel").textContent=
+        `Sonding ${source} Sebelum Transfer (CM)`;
+    document.getElementById("transferSourceAfterLabel").textContent=
+        `Sonding ${source} Sesudah Transfer (CM)`;
+    document.getElementById("transferDestinationSummaryLabel").textContent=
+        `MASUK MENURUT ${destination}`;
+    document.getElementById("transferSourceSummaryLabel").textContent=
+        `KELUAR MENURUT ${source}`;
+    document.getElementById("transferDestinationHeightBefore").placeholder=
+        `Sebelum ${destination} menerima`;
+    document.getElementById("transferDestinationHeightAfter").placeholder=
+        `Sesudah ${destination} menerima`;
+    document.getElementById("transferSourceHeightBefore").placeholder=
+        `Sebelum keluar dari ${source}`;
+    document.getElementById("transferSourceHeightAfter").placeholder=
+        `Sesudah keluar dari ${source}`;
+
     try{
+        const parts=[];
         const destinationBefore=teraFromInput(destination,"transferDestinationHeightBefore");
         const destinationAfter=teraFromInput(destination,"transferDestinationHeightAfter");
         let destinationQty=null;
 
         if(destinationBefore && destinationAfter){
-            destinationQty=destinationAfter.liters-destinationBefore.liters;
+            destinationQty=r1(destinationAfter.liters-destinationBefore.liters);
             qtyInput.value=destinationQty>0?destinationQty:"";
             document.getElementById("transferDestinationMeasured").textContent=fmtSigned(destinationQty);
-            status.textContent=destinationQty>0
-                ? `📏 ${destination}: ${fmt(destinationAfter.liters)} − ${fmt(destinationBefore.liters)} = ${fmt(destinationQty)}`
-                : "❌ Sonding tujuan sesudah harus lebih tinggi dari sebelum.";
+            parts.push(
+                destinationQty>0
+                    ? `${destination} masuk ${fmt(destinationQty)}`
+                    : `Sonding ${destination} sesudah harus lebih tinggi dari sebelum`
+            );
         }else{
             qtyInput.value="";
             document.getElementById("transferDestinationMeasured").textContent="- L";
-            status.textContent="";
         }
 
         const sourceBefore=teraFromInput(source,"transferSourceHeightBefore");
@@ -1876,26 +2241,41 @@ function updateTransferCalculation(){
         let sourceQty=null;
 
         if(sourceBefore && sourceAfter){
-            sourceQty=sourceBefore.liters-sourceAfter.liters;
+            sourceQty=r1(sourceBefore.liters-sourceAfter.liters);
             document.getElementById("transferSourceMeasured").textContent=fmtSigned(sourceQty);
+            parts.push(
+                sourceQty>0
+                    ? `${source} keluar ${fmt(sourceQty)}`
+                    : `Sonding ${source} sebelum harus lebih tinggi dari sesudah`
+            );
         }else{
             document.getElementById("transferSourceMeasured").textContent="- L";
         }
 
         lossBox.classList.remove("loss-positive","loss-negative");
+        let loss=null;
         if(destinationQty!==null && sourceQty!==null){
-            const loss=sourceQty-destinationQty;
+            loss=r1(sourceQty-destinationQty);
             document.getElementById("transferLoss").textContent=fmtSigned(loss);
             if(loss>0)lossBox.classList.add("loss-positive");
             if(loss<0)lossBox.classList.add("loss-negative");
+            parts.push(`Selisih/loss ${fmtSigned(loss)}`);
         }else{
             document.getElementById("transferLoss").textContent="- L";
         }
 
-        return {destinationBefore,destinationAfter,destinationQty,sourceBefore,sourceAfter,sourceQty};
+        status.textContent=parts.length?"📐 "+parts.join(" • "):"";
+
+        const result={
+            destinationBefore,destinationAfter,destinationQty,
+            sourceBefore,sourceAfter,sourceQty,loss
+        };
+        renderTransferCopyPreview(result);
+        return result;
     }catch(error){
         clearTransferMeasurements();
         status.textContent="❌ "+error.message;
+        renderTransferCopyPreview(null);
         return null;
     }
 }
@@ -1935,12 +2315,10 @@ function setFieldLocked(id,locked){
     el.classList.toggle("locked-field",!!locked);
 }
 
-function applyFuelmanIdentity(){
-    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION){
-        return;
-    }
-
-    const name=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||"";
+function applyAccountSoundingIdentity(){
+    if(!CURRENT_PROFILE)return;
+    const name=soundingOfficerName();
+    if(!name)return;
 
     ["openingOperator","receiptOperator","transferOperator","closingOperator"].forEach(id=>{
         const el=document.getElementById(id);
@@ -1950,6 +2328,23 @@ function applyFuelmanIdentity(){
             el.classList.add("locked-field");
         }
     });
+
+    renderOpeningCopyPreview(safeTeraFromInput(
+        document.getElementById("openingStorage").value,
+        "openingHeight"
+    ));
+    updateReceiptCalculation();
+    updateTransferCalculation();
+}
+
+function applyFuelmanIdentity(){
+    applyAccountSoundingIdentity();
+
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION){
+        return;
+    }
+
+    const name=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||"";
 
     fillStorageSelect("editSource",true);
 fillStorageSelect("editDestination",false);
@@ -2387,7 +2782,7 @@ function renderMovement(movementData,fuelData){
 async function saveOpening(){
     const {tanggal,shift}=getPeriod();
     let storage=document.getElementById("openingStorage").value;
-    let operator=document.getElementById("openingOperator").value.trim();
+    let operator=soundingOfficerName()||document.getElementById("openingOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
         if(!ACTIVE_FUELMAN_SESSION){
@@ -2416,6 +2811,8 @@ async function saveOpening(){
     if(!validateCapacityHard(storage,qty,"Stock Opening"))return;
     if(!confirmNearCapacity(storage,qty,"Stock Opening"))return;
 
+    const openingReport=buildOpeningCopyReport(openingTera,localTime());
+
     if(!beginStockSave("Menyimpan Stock Opening..."))return;
 
     const {error}=await db.from("stock_opening").upsert(
@@ -2439,6 +2836,8 @@ async function saveOpening(){
         return;
     }
 
+    LAST_COPY_REPORTS.opening=openingReport;
+    setCopyPreview("openingCopyPreview",openingReport);
     await loadStock();
     await finishStockSave(true,"Stock Opening sudah tersimpan.");
 }
@@ -2450,7 +2849,7 @@ async function saveReceipt(){
     const transporter=document.getElementById("receiptTransporter").value.trim();
     const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase()||null;
     const arrivalTime=document.getElementById("receiptArrivalTime").value;
-    let operator=document.getElementById("receiptOperator").value.trim();
+    let operator=soundingOfficerName()||document.getElementById("receiptOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
         if(!ACTIVE_FUELMAN_SESSION){
@@ -2521,6 +2920,12 @@ async function saveReceipt(){
         if(!lanjut)return;
     }
 
+    const receiptReport=buildReceiptCopyReport(
+        measurement,
+        operator,
+        reportDateTime(arrivalTime)
+    );
+
     // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
     if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
 
@@ -2561,6 +2966,8 @@ async function saveReceipt(){
         return;
     }
 
+    LAST_COPY_REPORTS.receipt=receiptReport;
+    setCopyPreview("receiptCopyPreview",receiptReport);
     [
         "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
         "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
@@ -2599,7 +3006,7 @@ async function saveTransfer(){
     const destination_storage=document.getElementById("transferDestination").value;
     const measurement=updateTransferCalculation();
     const qty=measurement?n(measurement.destinationQty):0;
-    let operator=document.getElementById("transferOperator").value.trim();
+    let operator=soundingOfficerName()||document.getElementById("transferOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
         if(!ACTIVE_FUELMAN_SESSION){
@@ -2610,22 +3017,22 @@ async function saveTransfer(){
     }
 
     if(!measurement || !measurement.destinationBefore || !measurement.destinationAfter){
-        alert("Isi Sonding Tujuan Sebelum dan Sesudah transfer.");
+        alert(`Isi sounding ${destination_storage} sebelum dan sesudah menerima transfer.`);
         return;
     }
 
     if(qty<=0){
-        alert("Sonding tujuan sesudah harus lebih tinggi dari sebelum.");
+        alert(`Sonding ${destination_storage} sesudah harus lebih tinggi dari sebelum menerima.`);
         return;
     }
 
     if(!measurement.sourceBefore || !measurement.sourceAfter){
-        alert("Isi Sonding Sumber Sebelum dan Sesudah transfer.");
+        alert(`Isi sounding ${source_storage} sebelum dan sesudah mengirim transfer.`);
         return;
     }
 
     if(n(measurement.sourceQty)<=0){
-        alert("Sonding sumber sebelum harus lebih tinggi dari sesudah.");
+        alert(`Sonding ${source_storage} sebelum harus lebih tinggi dari sesudah transfer.`);
         return;
     }
 
@@ -2655,11 +3062,6 @@ async function saveTransfer(){
         "Sonding setelah Transfer "+source_storage+" → "+destination_storage
     ))return;
 
-    // LOCK sebelum request pertama dikirim.
-    if(!beginStockSave(
-        "Menyimpan Transfer "+source_storage+" → "+destination_storage+"..."
-    ))return;
-
     const lossQty=r1(n(measurement.sourceQty)-qty);
 
     const lossLimit=Math.max(
@@ -2678,6 +3080,18 @@ async function saveTransfer(){
         if(!lanjut)return;
     }
 
+    const transferTime=localTime();
+    const transferReport=buildTransferCopyReport(
+        measurement,
+        operator,
+        reportDateTime(transferTime)
+    );
+
+    // LOCK setelah seluruh validasi/konfirmasi selesai dan sebelum request dikirim.
+    if(!beginStockSave(
+        "Menyimpan Transfer "+source_storage+" → "+destination_storage+"..."
+    ))return;
+
     const noteParts=[
         `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) → ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
     ];
@@ -2688,7 +3102,7 @@ async function saveTransfer(){
 
     const {error}=await db.from("stock_movements").insert({
         tanggal,
-        jam:localTime(),
+        jam:transferTime,
         shift,
         jenis:"TRANSFER",
         source_storage,
@@ -2721,6 +3135,8 @@ async function saveTransfer(){
         return;
     }
 
+    LAST_COPY_REPORTS.transfer=transferReport;
+    setCopyPreview("transferCopyPreview",transferReport);
     [
         "transferDestinationHeightBefore",
         "transferDestinationHeightAfter",
@@ -2738,7 +3154,7 @@ async function saveTransfer(){
 
 async function saveClosing(){
     const {tanggal,shift}=getPeriod();
-    let operator=document.getElementById("closingOperator").value.trim();
+    let operator=soundingOfficerName()||document.getElementById("closingOperator").value.trim();
     const note=document.getElementById("closingNote").value.trim();
 
     const isFuelman=
@@ -2931,15 +3347,30 @@ document.getElementById("receiptHistoryDateFrom").value=TODAY.slice(0,8)+"01";
 document.getElementById("receiptHistoryDateTo").value=TODAY;
 document.getElementById("receiptReference").addEventListener("input",event=>{
     event.target.value=event.target.value.toUpperCase();
+    updateReceiptCalculation();
 });
 document.getElementById("tanggal").addEventListener("change",loadStock);
+document.getElementById("tanggal").addEventListener("change",()=>{
+    updateOpeningConversion();
+    updateReceiptCalculation();
+    updateTransferCalculation();
+});
 document.getElementById("shift").addEventListener("change",loadStock);
+document.getElementById("shift").addEventListener("change",()=>{
+    updateOpeningConversion();
+    updateReceiptCalculation();
+    updateTransferCalculation();
+});
 document.getElementById("openingStorage").addEventListener("change",updateOpeningConversion);
 document.getElementById("transferDestination").addEventListener("change",updateTransferCalculation);
 document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
+document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
+document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
 
 syncTransferDestination();
 updateQuickConverter();
+updateOpeningConversion();
+updateReceiptCalculation();
 
 document.addEventListener("kpp-auth-ready",async(event)=>{
     CURRENT_PROFILE=event.detail.profile;
