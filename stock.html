@@ -172,6 +172,8 @@ th{background:#e5e7eb}
 .danger{background:#dc2626;color:#fff}
 .small-btn{padding:7px 9px;font-size:11px}
 .edit-btn{background:#2563eb;color:#fff}
+.pending-ref{display:inline-block;padding:4px 7px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:bold;white-space:nowrap}
+.ref-audit{display:block;margin-top:4px;color:#64748b;font-size:10px;line-height:1.35}
 .checkbox-cell input{width:auto}
 
 .stock-edit-overlay{
@@ -611,7 +613,7 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Nomor PO / LO</label>
             <input id="receiptReference" autocomplete="off" placeholder="Contoh: PO/LO-2026-001">
-            <span class="field-hint">Referensi dokumen wajib untuk audit penerimaan.</span>
+            <span class="field-hint">Boleh dikosongkan saat penerimaan. Admin/GL dapat melengkapinya dari History Penerimaan.</span>
         </div>
         <div>
             <label>Transportir</label>
@@ -672,17 +674,25 @@ th{background:#f8fafc;color:#475569}
             <select id="receiptHistoryTransporter"><option value="">SEMUA TRANSPORTIR</option></select>
         </div>
         <div><label>Cari PO / LO</label><input id="receiptHistoryReference" placeholder="Ketik nomor referensi"></div>
+        <div>
+            <label>Status PO / LO</label>
+            <select id="receiptHistoryReferenceStatus">
+                <option value="all">SEMUA STATUS</option>
+                <option value="pending">BELUM DIISI</option>
+                <option value="complete">SUDAH DIISI</option>
+            </select>
+        </div>
         <div style="align-self:end"><button class="primary" type="button" onclick="loadReceiptHistory()">TAMPILKAN HISTORY</button></div>
     </div>
     <div class="table-wrap" style="margin-top:14px">
-        <table style="min-width:1100px">
+        <table style="min-width:1220px">
             <thead>
                 <tr>
                     <th>KEDATANGAN</th><th>PO / LO</th><th>TRANSPORTIR</th><th>TUJUAN</th>
-                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th>
+                    <th>FLOWMETER</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI PO / LO</th>
                 </tr>
             </thead>
-            <tbody id="receiptHistoryBody"><tr><td colspan="8">Memuat history penerimaan...</td></tr></tbody>
+            <tbody id="receiptHistoryBody"><tr><td colspan="9">Memuat history penerimaan...</td></tr></tbody>
         </table>
     </div>
     <div class="status" id="receiptHistoryStatus"></div>
@@ -920,6 +930,7 @@ let STOCK_SAVE_LOCK=false;
 let STOCK_SAVE_TIMER_1=null;
 let STOCK_SAVE_TIMER_2=null;
 let CURRENT_MOVEMENTS=[];
+let CURRENT_RECEIPT_HISTORY=[];
 
 
 
@@ -1662,12 +1673,14 @@ async function loadReceiptHistory(){
     const dateTo=document.getElementById("receiptHistoryDateTo").value;
     const transporter=document.getElementById("receiptHistoryTransporter").value;
     const reference=document.getElementById("receiptHistoryReference").value.trim();
+    const referenceStatus=document.getElementById("receiptHistoryReferenceStatus").value;
 
-    body.innerHTML='<tr><td colspan="8">Memuat history penerimaan...</td></tr>';
+    body.innerHTML='<tr><td colspan="9">Memuat history penerimaan...</td></tr>';
     status.textContent="";
+    CURRENT_RECEIPT_HISTORY=[];
 
     let query=db.from("stock_movements")
-        .select("id,tanggal,jam,arrival_at,document_reference,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_measured_qty,measurement_loss_qty,qty,operator")
         .eq("jenis","RECEIPT")
         .order("tanggal",{ascending:false})
         .order("jam",{ascending:false})
@@ -1681,18 +1694,27 @@ async function loadReceiptHistory(){
     const {data,error}=await query;
 
     if(error){
-        body.innerHTML=`<tr><td colspan="8">❌ ${esc(error.message)}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="9">❌ ${esc(error.message)}</td></tr>`;
         status.textContent="Jalankan SQL audit PO/LO sebelum memakai History Penerimaan.";
         return;
     }
 
-    if(!data?.length){
-        body.innerHTML='<tr><td colspan="8">Belum ada penerimaan pada filter ini.</td></tr>';
+    const rows=(data||[]).filter(row=>{
+        const hasReference=!!String(row.document_reference||"").trim();
+        if(referenceStatus==="pending")return !hasReference;
+        if(referenceStatus==="complete")return hasReference;
+        return true;
+    });
+
+    CURRENT_RECEIPT_HISTORY=rows.map(row=>({...row}));
+
+    if(!rows.length){
+        body.innerHTML='<tr><td colspan="9">Belum ada penerimaan pada filter ini.</td></tr>';
         status.textContent="0 kedatangan ditemukan.";
         return;
     }
 
-    body.innerHTML=data.map(row=>{
+    body.innerHTML=rows.map(row=>{
         const transporterQty=
             row.transporter_measured_qty!==null && row.transporter_measured_qty!==undefined
                 ? n(row.transporter_measured_qty)
@@ -1712,20 +1734,96 @@ async function loadReceiptHistory(){
                 hour:"2-digit",minute:"2-digit"
             })
             : `${row.tanggal||"-"} ${String(row.jam||"").slice(0,5)}`;
+        const hasReference=!!String(row.document_reference||"").trim();
+        const referenceAudit=row.reference_updated_at
+            ? `Diperbarui ${new Date(row.reference_updated_at).toLocaleString("id-ID",{
+                timeZone:"Asia/Jakarta",day:"2-digit",month:"2-digit",year:"numeric",
+                hour:"2-digit",minute:"2-digit"
+            })} oleh ${row.reference_updated_by_name||"Admin/GL"}`
+            : "";
 
         return `<tr>
             <td>${esc(arrival)}</td>
-            <td><b>${esc(row.document_reference||"-")}</b></td>
+            <td>${
+                hasReference
+                    ? `<b>${esc(row.document_reference)}</b>${referenceAudit?`<span class="ref-audit">${esc(referenceAudit)}</span>`:""}`
+                    : '<span class="pending-ref">BELUM DIISI</span>'
+            }</td>
             <td>${esc(row.transporter||"-")}</td>
             <td>${esc(row.destination_storage||"-")}</td>
             <td>${fmt(transporterQty)}</td>
             <td>${fmt(tankQty)}</td>
             <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${fmtSigned(loss)}</td>
             <td>${esc(row.operator||"-")}</td>
+            <td>${
+                isStockEditor()
+                    ? `<button class="edit-btn small-btn" type="button" onclick="updateReceiptReference(${Number(row.id)})">${hasReference?"EDIT":"ISI"} PO/LO</button>`
+                    : "-"
+            }</td>
         </tr>`;
     }).join("");
 
-    status.textContent=`${data.length} kedatangan ditemukan (maksimum 500 data).`;
+    const pendingCount=rows.filter(row=>!String(row.document_reference||"").trim()).length;
+    status.textContent=
+        `${rows.length} kedatangan ditemukan (maksimum 500 data) • ${pendingCount} PO/LO belum diisi.`;
+}
+
+async function updateReceiptReference(id){
+    if(!isStockEditor()){
+        alert("Pengisian atau perubahan PO/LO khusus Admin/GL.");
+        return;
+    }
+
+    const row=CURRENT_RECEIPT_HISTORY.find(item=>String(item.id)===String(id));
+    if(!row){
+        alert("Data penerimaan tidak ditemukan. Tampilkan ulang History Penerimaan lalu coba lagi.");
+        return;
+    }
+
+    const current=String(row.document_reference||"").trim().toUpperCase();
+    const input=prompt(
+        current
+            ? "Perbarui Nomor PO / LO untuk penerimaan ini:"
+            : "Masukkan Nomor PO / LO untuk penerimaan yang masih kosong:",
+        current
+    );
+
+    if(input===null)return;
+
+    const next=String(input).trim().toUpperCase();
+    if(!next){
+        alert("Nomor PO / LO tidak boleh kosong. Jika dokumen belum tersedia, biarkan berstatus BELUM DIISI.");
+        return;
+    }
+
+    if(next===current)return;
+
+    const action=current?"mengubah":"mengisi";
+    if(!confirm(
+        `Yakin ${action} PO/LO menjadi ${next}?\n\n`+
+        "Angka flowmeter, sounding, qty, dan loss tidak akan berubah."
+    ))return;
+
+    if(!beginStockSave("Menyimpan referensi PO/LO tanpa mengubah angka penerimaan..."))return;
+
+    const updatedBy=CURRENT_PROFILE?.display_name||"Admin/GL";
+    const {error}=await db.from("stock_movements")
+        .update({
+            document_reference:next,
+            reference_updated_at:new Date().toISOString(),
+            reference_updated_by_name:updatedBy
+        })
+        .eq("id",id)
+        .eq("jenis","RECEIPT");
+
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    await loadStock();
+    await loadReceiptHistory();
+    await finishStockSave(true,`PO/LO ${next} berhasil disimpan. Data volume penerimaan tetap terkunci.`);
 }
 
 function clearTransferMeasurements(){
@@ -2338,7 +2436,7 @@ async function saveReceipt(){
     const destination_storage=document.getElementById("receiptDestination").value;
     const measurement=updateReceiptCalculation();
     const transporter=document.getElementById("receiptTransporter").value.trim();
-    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase();
+    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase()||null;
     const arrivalTime=document.getElementById("receiptArrivalTime").value;
     let operator=document.getElementById("receiptOperator").value.trim();
 
@@ -2348,11 +2446,6 @@ async function saveReceipt(){
             return;
         }
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
-    }
-
-    if(!document_reference){
-        alert("Masukkan Nomor PO / LO sebagai referensi penerimaan.");
-        return;
     }
 
     if(!arrivalTime){
@@ -2407,7 +2500,7 @@ async function saveReceipt(){
     if(Math.abs(measurement.loss)>lossLimit){
         const lanjut=confirm(
             "⚠️ SELISIH BONGKARAN PERLU DICEK\n\n"+
-            "PO/LO: "+document_reference+"\n"+
+            "PO/LO: "+(document_reference||"BELUM DIISI")+"\n"+
             "Transporter: "+fmt(measurement.transporterQty)+"\n"+
             "Masuk tangki: "+fmt(measurement.tankQty)+"\n"+
             "Selisih/loss: "+fmtSigned(measurement.loss)+"\n\n"+
@@ -2431,7 +2524,7 @@ async function saveReceipt(){
         operator,
         transporter,
         document_reference,
-        note:`PO/LO ${document_reference} | Flowmeter ${measurement.meterStart} → ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} → ${measurement.tankAfter.matchedHeightCm} cm`,
+        note:`PO/LO ${document_reference||"BELUM DIISI"} | Flowmeter ${measurement.meterStart} → ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} → ${measurement.tankAfter.matchedHeightCm} cm`,
         calculation_method:"RECEIPT_FLOWMETER_VS_DESTINATION_TERA",
         meter_start_liter:measurement.meterStart,
         meter_end_liter:measurement.meterEnd,
@@ -2446,7 +2539,10 @@ async function saveReceipt(){
     });
 
     document.getElementById("receiptStatus").textContent=
-        error?"❌ "+error.message:`✅ Penerimaan ${document_reference} tersimpan dan masuk ke history.`;
+        error?"❌ "+error.message:
+            document_reference
+                ? `✅ Penerimaan ${document_reference} tersimpan dan masuk ke history.`
+                : "✅ Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL.";
 
     if(error){
         await finishStockSave(false,error.message);
@@ -2460,7 +2556,12 @@ async function saveReceipt(){
     document.getElementById("receiptArrivalTime").value=localTime();
     await loadStock();
     await loadReceiptHistory();
-    await finishStockSave(true,"Penerimaan Solar "+document_reference+" sudah tersimpan.");
+    await finishStockSave(
+        true,
+        document_reference
+            ? "Penerimaan Solar "+document_reference+" sudah tersimpan."
+            : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL dari History Penerimaan."
+    );
 }
 
 
