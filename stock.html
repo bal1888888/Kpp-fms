@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.4: receipt periods and polished Excel history export -->
+<!-- KPP-FMS STOCK v9.6: copyable final sounding report for every Stock role -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -51,6 +51,10 @@ th{background:#e5e7eb}
 .status{margin-top:10px;font-size:13px;font-weight:bold}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .closing-table input{min-width:115px}
+.closing-system-reading{min-width:145px;line-height:1.35}
+.closing-system-reading>strong{display:block;font-size:12px;color:#0f172a}
+.closing-system-reading>small{display:block;margin-top:5px;color:#475569;font-size:10px;font-weight:700;white-space:nowrap}
+.closing-system-reading>small b{color:#1d4ed8;font-size:11px}
 .diff-positive{color:#15803d;font-weight:bold}
 .diff-negative{color:#dc2626;font-weight:bold}
 .diff-zero{color:#475569;font-weight:bold}
@@ -857,7 +861,8 @@ th{background:#f8fafc;color:#475569}
 
     <div class="note" style="margin-bottom:12px">
         Masukkan tinggi sonding akhir shift. Stock Fisik dikonversi otomatis dari tabel tera.
-        Selisih = Stock Fisik − Stock Sistem.
+        Estimasi sonding pada Stock Sistem dihitung dari jumlah liter sistem sebagai pembanding;
+        hasil sonding fisik tetap menjadi acuan Stock Closing. Selisih = Stock Fisik − Stock Sistem.
     </div>
 
     <div class="table-wrap">
@@ -914,6 +919,14 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="status" id="closingStatus"></div>
+
+    <details class="copy-report-card">
+        <summary>📋 Format Sonding Akhir Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="closingCopyPreview" class="copy-report-preview">Lengkapi tinggi sonding akhir untuk menampilkan laporan.</pre>
+            <button class="copy-report-btn" type="button" onclick="copyClosingReport()">📋 SALIN HASIL SONDING AKHIR</button>
+        </div>
+    </details>
 </div>
 
 <div class="panel">
@@ -1049,7 +1062,7 @@ let CURRENT_MOVEMENTS=[];
 let CURRENT_RECEIPT_HISTORY=[];
 let COPY_TOAST_TIMER=null;
 let EXCELJS_LOAD_PROMISE=null;
-const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:""};
+const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:"",closing:""};
 
 
 
@@ -1809,6 +1822,84 @@ function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOv
     ].join("\n");
 }
 
+function closingStoragesForAccount(){
+    return CURRENT_PROFILE &&
+        CURRENT_PROFILE.role==="fuelman" &&
+        ACTIVE_FUELMAN_SESSION
+            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
+            : STORAGES;
+}
+
+function buildClosingCopyReport(){
+    const {tanggal,shift}=getPeriod();
+    const operator=document.getElementById("closingOperator").value.trim()||soundingOfficerName()||"-";
+    const note=document.getElementById("closingNote").value.trim();
+    const storages=closingStoragesForAccount();
+    let complete=true;
+    let systemTotal=0;
+    let actualTotal=0;
+
+    const blocks=storages.map(storage=>{
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        const heightInput=document.getElementById(`height-${storage}`);
+        const actualInput=document.getElementById(`actual-${storage}`);
+        systemTotal+=systemQty;
+
+        if(!heightInput || heightInput.value==="" || !actualInput || actualInput.value===""){
+            complete=false;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                "High: BELUM DISONDING",
+                "Volume: -",
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                "Selisih: -"
+            ].join("\n");
+        }
+
+        try{
+            const tera=TERA.lookup(storage,heightInput.value);
+            const actualQty=n(tera.liters);
+            const difference=r1(actualQty-systemQty);
+            actualTotal+=actualQty;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                `High: ${reportNumber(tera.matchedHeightCm)} cm`,
+                `Volume: ${reportLiters(actualQty)}`,
+                `Volume KL: ${reportKiloliters(actualQty)}`,
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                `Selisih: ${reportSignedLiters(difference)}`
+            ].join("\n");
+        }catch{
+            complete=false;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                "High: DATA TIDAK VALID",
+                "Volume: -",
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                "Selisih: -"
+            ].join("\n");
+        }
+    });
+
+    const totalDifference=complete?r1(actualTotal-systemTotal):null;
+    const text=[
+        "HASIL SONDING AKHIR / STOCK CLOSING",
+        `Tanggal: ${tanggal}`,
+        `Shift: ${shift}`,
+        `Petugas Sonding: ${operator}`,
+        "",
+        blocks.join("\n\n"),
+        "",
+        "TOTAL STOCK CLOSING",
+        `Total Stock Sistem: ${reportLiters(systemTotal)}`,
+        `Total Stock Fisik: ${complete?reportLiters(actualTotal):"BELUM LENGKAP"}`,
+        `Total Selisih: ${complete?reportSignedLiters(totalDifference):"BELUM LENGKAP"}`,
+        `Keterangan: ${note||"-"}`
+    ].join("\n");
+
+    return {text,complete};
+}
+
 function setCopyPreview(id,text){
     const el=document.getElementById(id);
     if(el)el.textContent=text;
@@ -1840,6 +1931,16 @@ function renderTransferCopyPreview(measurement=null){
         !hasCurrent && LAST_COPY_REPORTS.transfer
             ? LAST_COPY_REPORTS.transfer
             : buildTransferCopyReport(measurement)
+    );
+}
+
+function renderClosingCopyPreview(){
+    const report=buildClosingCopyReport();
+    setCopyPreview(
+        "closingCopyPreview",
+        !report.complete && LAST_COPY_REPORTS.closing
+            ? LAST_COPY_REPORTS.closing
+            : report.text
     );
 }
 
@@ -1919,6 +2020,17 @@ function copyTransferReport(){
         return;
     }
     copyReportText(text,"Laporan transfer");
+}
+
+function copyClosingReport(){
+    const report=buildClosingCopyReport();
+    if(!report.complete){
+        showCopyToast("Lengkapi semua sonding akhir terlebih dahulu.",true);
+        return;
+    }
+    LAST_COPY_REPORTS.closing=report.text;
+    renderClosingCopyPreview();
+    copyReportText(report.text,"Hasil sonding akhir");
 }
 
 function teraFromInput(storage,inputId){
@@ -2913,12 +3025,7 @@ function renderClosing(stock,savedClosing){
     const body=document.getElementById("closingBody");
     body.innerHTML="";
 
-    const closingStorages=
-        CURRENT_PROFILE &&
-        CURRENT_PROFILE.role==="fuelman" &&
-        ACTIVE_FUELMAN_SESSION
-            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
-            : STORAGES;
+    const closingStorages=closingStoragesForAccount();
 
     closingStorages.forEach(storage=>{
         const saved=savedMap[storage];
@@ -2926,11 +3033,20 @@ function renderClosing(stock,savedClosing){
         const heightValue=saved&&saved.sonding_height_cm!==null&&saved.sonding_height_cm!==undefined
             ? saved.sonding_height_cm
             : "";
+        const estimatedSystemHeight=TERA.heightForLiters(
+            storage,
+            Math.max(0,n(stock[storage]))
+        );
 
         body.innerHTML+=`
         <tr>
             <td><b>${storage}</b></td>
-            <td>${fmt(stock[storage])}</td>
+            <td>
+                <div class="closing-system-reading">
+                    <strong>${fmt(stock[storage])}</strong>
+                    <small>📏 Estimasi sonding: <b>≈ ${fmtCm(estimatedSystemHeight)}</b></small>
+                </div>
+            </td>
             <td>
                 <input
                     type="number"
@@ -2973,6 +3089,7 @@ function renderClosing(stock,savedClosing){
         if(height && height.value!=="")updateClosingFromHeight(storage,false);
     });
     updateClosingDifference();
+    renderClosingCopyPreview();
 }
 
 function updateClosingFromHeight(storage,refreshDifference=true){
@@ -2986,6 +3103,7 @@ function updateClosingFromHeight(storage,refreshDifference=true){
         actualInput.value="";
         if(info)info.textContent="Masukkan tinggi sonding";
         if(refreshDifference)updateClosingDifference();
+        renderClosingCopyPreview();
         return;
     }
 
@@ -2999,6 +3117,7 @@ function updateClosingFromHeight(storage,refreshDifference=true){
     }
 
     if(refreshDifference)updateClosingDifference();
+    renderClosingCopyPreview();
 }
 
 function updateClosingDifference(){
@@ -3006,12 +3125,7 @@ function updateClosingDifference(){
     let actualTotal=0;
     let hasAllActual=true;
 
-    const closingStorages=
-        CURRENT_PROFILE &&
-        CURRENT_PROFILE.role==="fuelman" &&
-        ACTIVE_FUELMAN_SESSION
-            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
-            : STORAGES;
+    const closingStorages=closingStoragesForAccount();
 
     closingStorages.forEach(storage=>{
         const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
@@ -3644,6 +3758,8 @@ async function saveClosing(){
         return;
     }
 
+    LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+
     if(document.getElementById("carryForward").checked){
         const nextPeriod=getNextPeriod(tanggal,shift);
 
@@ -3732,6 +3848,7 @@ document.getElementById("transferDestination").addEventListener("change",updateT
 document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
 document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
 document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
+document.getElementById("closingNote").addEventListener("input",renderClosingCopyPreview);
 document.getElementById("receiptHistoryPeriod").addEventListener("change",async()=>{
     syncReceiptHistoryPeriodDates();
     await loadReceiptHistory();
