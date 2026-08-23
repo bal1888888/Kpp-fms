@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- KPP-FMS DAILY REPORT: stock liters + estimated sounding from TERA -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -12,6 +13,7 @@ window.KPP_ALLOWED_ROLES=["gl","admin"];
 window.KPP_ACTIVE_PAGE="daily-report";
 </script>
 <script src="auth.js"></script>
+<script src="tera-data_v1_aug2026.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -129,6 +131,12 @@ td:first-child,th:first-child{text-align:left}
 .card.capacity-low{border-color:#fbbf24;background:#fffbeb}
 .card.capacity-critical{border-color:#f87171;background:#fef2f2}
 .card.capacity-high{border-color:#fb923c;background:#fff7ed}
+.stock-sounding-estimate{margin-top:7px;display:flex;justify-content:space-between;gap:8px;color:#475569;font-size:10px;line-height:1.35}
+.stock-sounding-estimate b{color:#1e3a5f;font-size:11px;white-space:nowrap}
+.stock-sounding-note{margin-top:10px;color:#64748b;font-size:10px;line-height:1.45}
+.copy-toast{position:fixed;left:50%;bottom:20px;z-index:100000;transform:translate(-50%,16px);max-width:calc(100vw - 28px);padding:10px 14px;border-radius:9px;background:#166534;color:#fff;box-shadow:0 10px 30px rgba(15,23,42,.25);font-size:12px;font-weight:bold;line-height:1.35;text-align:center;opacity:0;pointer-events:none;transition:.2s ease}
+.copy-toast.show{opacity:1;transform:translate(-50%,0)}
+.copy-toast.error{background:#b91c1c}
 .stock-alert-banner{display:none;margin:0 0 12px;padding:11px 13px;border-radius:9px;font-size:12px;font-weight:bold;line-height:1.5}
 .stock-alert-banner.show{display:block}
 .stock-alert-banner.danger{background:#fee2e2;border:1px solid #ef4444;color:#991b1b}
@@ -279,6 +287,10 @@ th{background:#f8fafc;color:#475569}
     <div id="stockAlertBanner" class="stock-alert-banner"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
     <div id="stockCards" class="cards"></div>
+    <div class="stock-sounding-note">
+      📏 Tinggi CM adalah estimasi sounding dari jumlah Stock Sistem menggunakan tabel tera.
+      Hasil sounding fisik Fuelman tetap menjadi acuan lapangan.
+    </div>
   </div>
 
   <div class="panel">
@@ -350,10 +362,13 @@ th{background:#f8fafc;color:#475569}
     </div>
   </div>
 
+  <div id="copyToast" class="copy-toast" role="status" aria-live="polite"></div>
+
 </div>
 
 <script>
 const db=KPP.db;
+const TERA=window.KPP_TERA;
 const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
 const FT_MAP={
   FT0073:"FT02",
@@ -438,6 +453,27 @@ function fmt(v){
 function fmtIto(v){
   if(!Number.isFinite(v))return "0";
   return new Intl.NumberFormat("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
+}
+function estimatedSonding(storage,qty){
+  if(!TERA || typeof TERA.heightForLiters!=="function")return null;
+  return TERA.heightForLiters(storage,Math.max(0,n(qty)));
+}
+function fmtSonding(value){
+  if(value===null || value===undefined || !Number.isFinite(Number(value)))return "-";
+  return new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(Number(value));
+}
+function stockReportLine(label,storage,qty){
+  const height=estimatedSonding(storage,qty);
+  return `${label} = ${fmt(qty)} LTR | SOUNDING ≈ ${fmtSonding(height)} CM`;
+}
+let copyToastTimer=null;
+function showCopyToast(message,isError=false){
+  const toast=document.getElementById("copyToast");
+  clearTimeout(copyToastTimer);
+  toast.textContent=message;
+  toast.classList.toggle("error",isError);
+  toast.classList.add("show");
+  copyToastTimer=setTimeout(()=>toast.classList.remove("show"),2800);
 }
 function sourceFromFuel(row){
   const ft=String(row.fuel_truck||"").trim().toUpperCase();
@@ -582,6 +618,7 @@ function renderStock(stock){
     const pct=capacityPct(storage,stock[storage]);
     const cls=capacityClass(pct);
     const width=Math.max(0,Math.min(pct,100));
+    const sounding=estimatedSonding(storage,stock[storage]);
     if(cls==="critical")criticalList.push(`${storage} ${pctFmt(pct)}%`);
     if(cls==="high")highList.push(`${storage} ${pctFmt(pct)}%`);
     const cardClass=`capacity-${cls}`;
@@ -591,6 +628,10 @@ function renderStock(stock){
       <div class="card ${cardClass}">
         <small>${storage}${suffix}</small>
         <strong>${fmt(stock[storage])} L</strong>
+        <div class="stock-sounding-estimate">
+          <span>📏 Estimasi sounding</span>
+          <b>≈ ${fmtSonding(sounding)} cm</b>
+        </div>
         <div class="capacity-wrap">
           <div class="capacity-row">
             <span>Kapasitas ${fmt(cap)} L</span>
@@ -686,12 +727,12 @@ function makeReportText({
   return `UPDATE STOCK FUEL
 ${formatDateID(reportDate)}
 
-MT01 = ${fmt(stock.MT01)} LTR
-MT02 = ${fmt(stock.MT02)} LTR
-MT03 = ${fmt(stock.MT03)} LTR
-MT04 = ${fmt(stock.MT04)} LTR
-FT0073 / WH FT02 = ${fmt(stock.FT0073)} LTR
-FT0075 / WH FT01 = ${fmt(stock.FT0075)} LTR
+${stockReportLine("MT01","MT01",stock.MT01)}
+${stockReportLine("MT02","MT02",stock.MT02)}
+${stockReportLine("MT03","MT03",stock.MT03)}
+${stockReportLine("MT04","MT04",stock.MT04)}
+${stockReportLine("FT0073 / WH FT02","FT0073",stock.FT0073)}
+${stockReportLine("FT0075 / WH FT01","FT0075",stock.FT0075)}
 
 TOTAL STOCK FUEL = ${fmt(totalStock)} LTR
 
@@ -818,8 +859,10 @@ document.getElementById("copyBtn").addEventListener("click",async()=>{
   try{
     await navigator.clipboard.writeText(text);
     document.getElementById("status").textContent="✅ Report berhasil dicopy.";
+    showCopyToast("✅ Daily Report berhasil di-copy.");
   }catch{
     document.getElementById("status").textContent="❌ Browser tidak mengizinkan copy otomatis.";
+    showCopyToast("❌ Browser tidak mengizinkan copy otomatis.",true);
   }
 });
 
