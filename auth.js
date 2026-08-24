@@ -1,4 +1,4 @@
-// KPP-FMS AUTH V25 — stable mobile scroll + profile dropdown
+// KPP-FMS AUTH V26 - hardened role navigation and consolidated history menu
 const KPP_SUPABASE_URL = "https://pwowtyfybfqsveuvqrsb.supabase.co";
 const KPP_SUPABASE_KEY = "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const kppDb = supabase.createClient(KPP_SUPABASE_URL, KPP_SUPABASE_KEY);
@@ -706,7 +706,7 @@ window.KPP = {
         title: "Menu GL",
         steps: [
           ["Buka Dashboard", "Mulai dari Dashboard untuk melihat kondisi fuel secara umum."],
-          ["Pilih menu kerja", "Gunakan menu atas: Pengisian, Stock, Logsheet, Logsheet Editor, Daily Report, CCR, Approval, Riwayat, atau Master Unit & HM."],
+          ["Pilih menu kerja", "Gunakan menu atas: Pengisian, Stock, Logsheet, Logsheet Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
           ["Approval bila ada", "Kalau ada jatah CCR ritasi berikutnya berstatus PENDING GL, buka Approval CCR lalu periksa dan setujui/tolak."],
           ["Rapikan data bila perlu", "Gunakan Logsheet/Editor untuk histori, dan HM Master untuk menetapkan HM resmi unit."],
           ["Kelola akun", "Kalau perlu tambah anggota atau reset password, buka Kelola Akun."],
@@ -716,7 +716,8 @@ window.KPP = {
         title: "Menu Admin",
         steps: [
           ["Buka Dashboard", "Mulai dari Dashboard untuk melihat usage, stock, dan kondisi harian."],
-          ["Pilih menu kerja", "Gunakan menu atas sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, Riwayat, atau Master Unit & HM."],
+          ["Pilih menu kerja", "Gunakan menu atas sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
+          ["Kelola akun", "Gunakan Kelola Akun untuk menambah anggota atau reset password bila diperlukan."],
           ["Rapikan histori", "Kalau HM/data lama perlu diperbaiki, buka Logsheet atau Logsheet Editor."],
           ["Tetapkan HM resmi", "Kalau HM live unit harus dibetulkan, gunakan HM Master/Bulk Fix, bukan edit histori biasa."],
         ]
@@ -1247,7 +1248,6 @@ window.KPP = {
         ["stock-history", "stock-history.html", "📚 History Stock"],
         ["ccr", "ccr.html", "🎯 CCR Jatah"],
         ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
-        ["riwayat", "riwayat.html", "📋 Riwayat"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
         ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
         ["akun", "akun.html", "👥 Kelola Akun"],
@@ -1262,9 +1262,11 @@ window.KPP = {
         ["logsheet-editor", "logsheet-editor.html", "📝 Logsheet Editor"],
         ["daily-report", "daily-report.html", "📈 Daily Report"],
         ["stock-history", "stock-history.html", "📚 History Stock"],
-        ["riwayat", "riwayat.html", "📋 Riwayat"],
+        ["ccr", "ccr.html", "🎯 CCR Jatah"],
+        ["ccr-approval", "ccr-approval.html", "✅ Approval CCR"],
         ["hm-master", "hm-master.html", "⚙️ Master Unit & HM"],
         ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
+        ["akun", "akun.html", "👥 Kelola Akun"],
       ];
     } else if (profile.role === "ccr") {
       items = [
