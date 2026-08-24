@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Login - KPP TRAM Fuel Management System</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
 body{margin:0;min-height:100vh;background:radial-gradient(circle at 14% 10%,rgba(37,99,235,.34),transparent 28%),radial-gradient(circle at 86% 18%,rgba(14,165,233,.17),transparent 25%),linear-gradient(145deg,#050b15 0%,#0a1730 52%,#10284a 100%);display:flex;align-items:center;justify-content:center;padding:18px;color:#111827}
@@ -38,6 +39,21 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-si
 #loginBtn:disabled{background:#94a3b8}
 .status{min-height:18px;text-align:center;font-size:13px;font-weight:bold;margin-top:13px}
 .note{margin-top:18px;padding:12px;background:#f8fafc;border:1px solid #dbe3ee;border-radius:10px;font-size:12px;color:#64748b;line-height:1.5}
+.operator-entry{margin:0 0 22px;padding:15px;border:1px solid #a7f3d0;border-radius:14px;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);text-align:center}
+.operator-entry strong{display:block;color:#064e3b;font-size:14px;margin-bottom:5px}
+.operator-entry p{margin:0 0 11px;color:#47665d;font-size:11px;line-height:1.45}
+#openScannerBtn{width:100%;border:0;border-radius:10px;padding:12px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 8px 18px rgba(5,150,105,.22)}
+.login-divider{display:flex;align-items:center;gap:10px;margin:0 0 2px;color:#94a3b8;font-size:10px;font-weight:900;letter-spacing:.08em}
+.login-divider::before,.login-divider::after{content:"";height:1px;flex:1;background:#e2e8f0}
+.scanner-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(2,6,23,.86)}
+.scanner-overlay.open{display:flex}
+.scanner-panel{width:100%;max-width:460px;padding:18px;border-radius:18px;background:#fff;box-shadow:0 25px 70px rgba(0,0,0,.45)}
+.scanner-title{margin:0 0 5px;text-align:center;font-size:18px;color:#0f172a}
+.scanner-help{margin:0 0 13px;text-align:center;color:#64748b;font-size:12px;line-height:1.45}
+#qrReader{width:100%;overflow:hidden;border-radius:13px;background:#0f172a}
+#qrReader video{border-radius:13px}
+#scanStatus{min-height:20px;margin:10px 0;text-align:center;color:#334155;font-size:12px;font-weight:700}
+#closeScannerBtn{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px;background:#fff;color:#334155;font-weight:900;cursor:pointer}
 @media(max-width:480px){.box{padding:24px 20px}.brand-logo-shell{width:122px;height:70px}.brand h1{font-size:21px}.account-menu{max-height:245px}.account-option{grid-template-columns:30px minmax(0,1fr) auto;padding:8px}.account-role{font-size:8px}}
 </style>
 </head>
@@ -49,6 +65,13 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-si
     <h1>KPP TRAM FUEL MANAGEMENT SYSTEM</h1>
     <p>Fuel Operation • Integrated Mining Services</p>
   </div>
+
+  <div class="operator-entry">
+    <strong>OPERATOR UNIT — CHECK-IN HM AWAL</strong>
+    <p>Tidak perlu akun. Tekan tombol lalu arahkan kamera ke QR unit.</p>
+    <button id="openScannerBtn" type="button">📷 SCAN QR UNIT</button>
+  </div>
+  <div class="login-divider">LOGIN PETUGAS KPP</div>
 
   <label>Akun</label>
   <div class="account-picker" id="accountPicker">
@@ -73,9 +96,98 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-si
 
 </div>
 
+<div id="scannerOverlay" class="scanner-overlay" aria-hidden="true">
+  <div class="scanner-panel">
+    <h2 class="scanner-title">Scan QR Check-in Unit</h2>
+    <p class="scanner-help">Izinkan kamera, lalu arahkan QR unit ke kotak kamera.</p>
+    <div id="qrReader"></div>
+    <div id="scanStatus">Kamera belum dibuka.</div>
+    <button id="closeScannerBtn" type="button">TUTUP KAMERA</button>
+  </div>
+</div>
+
 <script>
 const db=supabase.createClient("https://pwowtyfybfqsveuvqrsb.supabase.co","sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0");
 let DIRECTORY=[];
+let loginQrScanner=null;
+let loginQrRunning=false;
+let loginQrLocked=false;
+
+function operatorCheckinUrlFromQr(decodedText){
+  const raw=String(decodedText||"").trim();
+  if(!raw)return null;
+
+  try{
+    const url=new URL(raw,window.location.href);
+    const allowedPath=url.pathname.replace(/\/+$/,"").endsWith("/operator-checkin.html");
+    const unit=url.searchParams.get("unit");
+    const token=url.searchParams.get("token");
+    if(!allowedPath||!unit||!token)return null;
+
+    // Selalu buka halaman milik deployment yang sedang digunakan.
+    const safe=new URL("operator-checkin.html",window.location.href);
+    safe.searchParams.set("unit",unit);
+    safe.searchParams.set("token",token);
+    return safe.href;
+  }catch(_){
+    return null;
+  }
+}
+
+async function stopLoginQrScanner(){
+  try{
+    if(loginQrScanner&&loginQrRunning)await loginQrScanner.stop();
+    if(loginQrScanner)try{await loginQrScanner.clear()}catch(_){}
+  }catch(error){console.warn("Stop scanner:",error)}
+  loginQrScanner=null;
+  loginQrRunning=false;
+  loginQrLocked=false;
+  document.getElementById("scannerOverlay").classList.remove("open");
+  document.getElementById("scannerOverlay").setAttribute("aria-hidden","true");
+}
+
+async function startLoginQrScanner(){
+  const overlay=document.getElementById("scannerOverlay");
+  const status=document.getElementById("scanStatus");
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden","false");
+  status.textContent="Meminta izin kamera...";
+
+  if(typeof Html5Qrcode==="undefined"){
+    status.textContent="Scanner belum termuat. Refresh halaman lalu coba lagi.";
+    return;
+  }
+
+  try{
+    loginQrScanner=new Html5Qrcode("qrReader",{formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE]});
+    await loginQrScanner.start(
+      {facingMode:"environment"},
+      {fps:10,qrbox:(w,h)=>{const size=Math.floor(Math.min(w,h)*.72);return{width:size,height:size}},aspectRatio:1.333333},
+      async decodedText=>{
+        if(loginQrLocked)return;
+        loginQrLocked=true;
+        const target=operatorCheckinUrlFromQr(decodedText);
+        if(!target){
+          status.textContent="QR ini bukan QR Check-in Operator. Cetak QR baru dari menu QR Unit.";
+          loginQrLocked=false;
+          return;
+        }
+        status.textContent="QR valid. Membuka Check-in HM Awal...";
+        try{
+          if(loginQrRunning)await loginQrScanner.stop();
+        }catch(_){}
+        window.location.href=target;
+      },
+      ()=>{}
+    );
+    loginQrRunning=true;
+    status.textContent="Kamera aktif. Arahkan ke QR Check-in unit.";
+  }catch(error){
+    loginQrScanner=null;
+    loginQrRunning=false;
+    status.textContent="Kamera tidak bisa dibuka. Izinkan Camera untuk website ini, lalu coba lagi.";
+  }
+}
 
 function esc(value){
   return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -220,6 +332,8 @@ document.addEventListener("click",event=>{if(!event.target.closest("#accountPick
 document.addEventListener("keydown",event=>{if(event.key==="Escape")closeAccountMenu()});
 document.getElementById("loginBtn").addEventListener("click",login);
 document.getElementById("password").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
+document.getElementById("openScannerBtn").addEventListener("click",startLoginQrScanner);
+document.getElementById("closeScannerBtn").addEventListener("click",stopLoginQrScanner);
 
 route().catch(()=>{});
 loadDirectory();
