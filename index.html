@@ -47,7 +47,7 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-si
     <div class="brand-logo-shell"><img class="brand-logo" src="kpp-logo.png" alt="KPP Mining"></div>
     <div class="brand-kicker">TRAM SITE</div>
     <h1>KPP TRAM FUEL MANAGEMENT SYSTEM</h1>
-    <p>Fuel Operation â€¢ Integrated Mining Services</p>
+    <p>Fuel Operation • Integrated Mining Services</p>
   </div>
 
   <label>Akun</label>
@@ -55,7 +55,7 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-si
     <input type="hidden" id="account" value="">
     <button type="button" class="account-picker-button" id="accountPickerButton" aria-expanded="false">
       <span id="accountPickerText">Memuat daftar akun...</span>
-      <span class="chevron">âŒ„</span>
+      <span class="chevron">⌄</span>
     </button>
     <div class="account-menu" id="accountMenu" role="listbox"></div>
   </div>
@@ -98,7 +98,7 @@ async function loadDirectory(){
   if(error){
     pickerText.textContent="Gagal memuat akun";
     menu.innerHTML='<div class="account-empty">Daftar akun tidak tersedia.</div>';
-    status.textContent="âŒ "+error.message;
+    status.textContent="❌ "+error.message;
     return;
   }
 
@@ -125,7 +125,7 @@ function selectAccount(username){
   const row=DIRECTORY.find(x=>x.username===username);
   if(!row)return;
   document.getElementById("account").value=row.username;
-  document.getElementById("accountPickerText").textContent=`${row.display_name} â€” ${row.jabatan||labelRole(row.role)}`;
+  document.getElementById("accountPickerText").textContent=`${row.display_name} — ${row.jabatan||labelRole(row.role)}`;
   document.querySelectorAll(".account-option").forEach(option=>option.classList.toggle("selected",option.dataset.username===username));
   closeAccountMenu();
   showPreview();
@@ -177,12 +177,12 @@ async function login(){
   const btn=document.getElementById("loginBtn");
 
   if(!username){
-    status.textContent="âŒ Pilih akun.";
+    status.textContent="❌ Pilih akun.";
     return;
   }
 
   if(!password){
-    status.textContent="âŒ Masukkan password.";
+    status.textContent="❌ Masukkan password.";
     return;
   }
 
@@ -198,7 +198,7 @@ async function login(){
 
     await route();
   }catch(error){
-    status.textContent="âŒ Password salah atau akun tidak dapat digunakan.";
+    status.textContent="❌ Password salah atau akun tidak dapat digunakan.";
     btn.disabled=false;
     btn.textContent="MASUK";
   }
