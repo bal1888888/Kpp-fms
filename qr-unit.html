@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- KPP-FMS QR UNIT v2.0: permanent operator check-in link -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -125,9 +126,9 @@ button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:poin
 
 <div class="container">
   <div class="info">
-    QR ini hanya menyimpan <b>Code Unit</b>. Contoh QR HD7441 hanya berisi teks <b>HD7441</b>.
-    Operator, NRP, HM, jatah dan toleransi tetap dibaca dari jatah CCR ACTIVE saat Fuelman melakukan scan.
-    Jadi QR unit cukup dibuat sekali dan bisa ditempel permanen di unit.
+    QR ini membuka halaman <b>Check-in Operator</b> tanpa akun. Code Unit langsung terkunci dari hasil scan.
+    Operator hanya mengisi nama, NRP (opsional), dan <b>HM awal</b>. Data ini menjadi gambaran CCR,
+    bukan HM transaksi pengisian dan tidak langsung mengubah HM Master. QR cukup dicetak sekali dan ditempel permanen.
   </div>
 
   <div id="selectionBanner" class="selection-banner" style="display:none"></div>
@@ -217,9 +218,9 @@ async function syncSelectedGeneratedStatus(){
   const {error}=await db
     .from("unit_master")
     .update({
-      qr_generated:true,
-      qr_generated_at:generatedAt,
-      qr_generated_by_name:generatedBy
+      checkin_qr_generated:true,
+      checkin_qr_generated_at:generatedAt,
+      checkin_qr_generated_by_name:generatedBy
     })
     .in("code_unit",SELECTED_FROM_MASTER);
 
@@ -235,10 +236,7 @@ async function loadUnits(){
   const status=document.getElementById("status");
   status.textContent="Memuat Master Unit...";
 
-  const {data,error}=await db
-    .from("unit_master")
-    .select("code_unit,egi,active,qr_generated,qr_generated_at,qr_generated_by_name")
-    .order("code_unit",{ascending:true});
+  const {data,error}=await db.rpc("list_unit_checkin_qr");
 
   if(error){
     status.textContent="❌ "+error.message;
@@ -251,7 +249,8 @@ async function loadUnits(){
     active:r.active!==false,
     qr_generated:r.qr_generated===true,
     qr_generated_at:r.qr_generated_at||null,
-    qr_generated_by_name:r.qr_generated_by_name||null
+    qr_generated_by_name:r.qr_generated_by_name||null,
+    checkin_token:r.checkin_token||null
   }));
 
   if(SELECTED_FROM_MASTER.length){
@@ -305,7 +304,7 @@ function render(){
       <div class="qr-holder" id="qr-${i}"></div>
       <h3>${esc(r.code_unit)}</h3>
       <div class="egi">${esc(r.egi||"-")}</div>
-      <div class="unit-code">QR DATA: ${esc(r.code_unit)}</div>
+      <div class="unit-code">TUJUAN: CHECK-IN OPERATOR</div>
 
       <span class="qr-status-badge ${r.qr_generated?"yes":"no"}">
         ${r.qr_generated?"SUDAH ADA QR":"BELUM QR"}
@@ -335,10 +334,10 @@ function render(){
     const host=document.getElementById(`qr-${i}`);
 
     new QRCode(host,{
-      text:r.code_unit,
+      text:operatorCheckinUrl(r),
       width:160,
       height:160,
-      correctLevel:QRCode.CorrectLevel.H
+      correctLevel:QRCode.CorrectLevel.M
     });
   });
 
@@ -363,9 +362,9 @@ async function setQrStatus(codes,value){
   if(!codes?.length)return;
 
   const payload={
-    qr_generated:value,
-    qr_generated_at:value ? new Date().toISOString() : null,
-    qr_generated_by_name:
+    checkin_qr_generated:value,
+    checkin_qr_generated_at:value ? new Date().toISOString() : null,
+    checkin_qr_generated_by_name:
       value
         ? (PROFILE?.display_name||window.KPP_PROFILE?.display_name||"GL/Admin")
         : null
@@ -384,8 +383,8 @@ async function setQrStatus(codes,value){
   ALL_UNITS.forEach(row=>{
     if(codes.includes(row.code_unit)){
       row.qr_generated=value;
-      row.qr_generated_at=payload.qr_generated_at;
-      row.qr_generated_by_name=payload.qr_generated_by_name;
+      row.qr_generated_at=payload.checkin_qr_generated_at;
+      row.qr_generated_by_name=payload.checkin_qr_generated_by_name;
     }
   });
 
@@ -393,7 +392,14 @@ async function setQrStatus(codes,value){
   return true;
 }
 
-function getQrDataUrl(code){
+function operatorCheckinUrl(row){
+  const url=new URL("operator-checkin.html",window.location.href);
+  url.searchParams.set("unit",row.code_unit);
+  url.searchParams.set("token",row.checkin_token||"");
+  return url.href;
+}
+
+function getQrDataUrl(row){
   return new Promise(resolve=>{
     const tmp=document.createElement("div");
     tmp.style.position="fixed";
@@ -402,10 +408,10 @@ function getQrDataUrl(code){
     document.body.appendChild(tmp);
 
     new QRCode(tmp,{
-      text:code,
+      text:operatorCheckinUrl(row),
       width:220,
       height:220,
-      correctLevel:QRCode.CorrectLevel.H
+      correctLevel:QRCode.CorrectLevel.M
     });
 
     setTimeout(()=>{
@@ -439,14 +445,14 @@ async function printUnits(units){
   grid.innerHTML="";
 
   for(const r of units){
-    const qr=await getQrDataUrl(r.code_unit);
+    const qr=await getQrDataUrl(r);
 
     grid.insertAdjacentHTML("beforeend",`
       <div class="print-card">
         <img src="${qr}" alt="QR ${esc(r.code_unit)}">
         <div class="print-unit">${esc(r.code_unit)}</div>
         <div class="print-egi">${esc(r.egi||"")}</div>
-        <div style="font-size:8pt;margin-top:2mm">KPP-FMS • QR UNIT</div>
+        <div style="font-size:8pt;margin-top:2mm">SCAN UNTUK CHECK-IN HM AWAL</div>
       </div>
     `);
   }
