@@ -262,7 +262,7 @@ th{background:#f8fafc;color:#475569}
 
   <div class="panel">
     <div class="notice">
-      Stock tetap dihitung berdasarkan <b>Tanggal Report + Shift Stock</b>. Usage MTD memakai periode operasional <b>tanggal 26 sampai 25</b> dan tetap dihitung sampai <b>H-1</b>. ITO / Days of Cover = <b>Total Stock Ã· Total Pemakaian Kemarin</b>. Kapasitas: MT = 40.000 L/unit, FT = 20.000 L/unit.
+      Stock tetap dihitung berdasarkan <b>Tanggal Report + Shift Stock</b>. Usage MTD memakai periode operasional <b>tanggal 26 sampai 25</b> dan tetap dihitung sampai <b>H-1</b>. ITO / Days of Cover = <b>Total Stock / Total Pemakaian Kemarin</b>. Kapasitas: MT = 40.000 L/unit, FT = 20.000 L/unit.
     </div>
 
     <div class="controls">
@@ -277,24 +277,24 @@ th{background:#f8fafc;color:#475569}
           <option value="2">Shift 2</option>
         </select>
       </div>
-      <button class="btn-blue" id="refreshBtn">â†» REFRESH REPORT</button>
+      <button class="btn-blue" id="refreshBtn">REFRESH REPORT</button>
     </div>
     <div id="status" class="status"></div>
   </div>
 
   <div class="panel">
-    <h2 class="section-title">ðŸ›¢ï¸ Stock Fuel</h2>
+    <h2 class="section-title">Stock Fuel</h2>
     <div id="stockAlertBanner" class="stock-alert-banner"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
     <div id="stockCards" class="cards"></div>
     <div class="stock-sounding-note">
-      ðŸ“ Tinggi CM adalah estimasi sounding dari jumlah Stock Sistem menggunakan tabel tera.
+      Tinggi CM adalah estimasi sounding dari jumlah Stock Sistem menggunakan tabel tera.
       Hasil sounding fisik Fuelman tetap menjadi acuan lapangan.
     </div>
   </div>
 
   <div class="panel">
-    <h2 class="section-title">ðŸ“Š Ringkasan Usage</h2>
+    <h2 class="section-title">Ringkasan Usage</h2>
     <div class="metrics">
       <div class="metric blue" id="usageYesterdayCard">
         <div class="label">USAGE YESTERDAY</div>
@@ -326,7 +326,7 @@ th{background:#f8fafc;color:#475569}
       <div class="metric purple" id="itoCard">
         <div class="label">ITO / DAYS OF COVER</div>
         <div class="value" id="ito">0 hari</div>
-        <div class="sub">Total Stock Ã· Usage Yesterday</div>
+        <div class="sub">Total Stock / Usage Yesterday</div>
         <div class="trend-line">
           <span class="trend-pill neutral" id="itoTrend">Belum ada pembanding</span>
           <div class="metric-note" id="itoNote">Aman stock</div>
@@ -337,7 +337,7 @@ th{background:#f8fafc;color:#475569}
   </div>
 
   <div class="panel">
-    <h2 class="section-title">â›½ Usage Yesterday per FT / Shift</h2>
+    <h2 class="section-title">Usage Yesterday per FT / Shift</h2>
     <div class="table-wrap">
       <table>
         <thead>
@@ -355,10 +355,10 @@ th{background:#f8fafc;color:#475569}
   </div>
 
   <div class="panel">
-    <h2 class="section-title">ðŸ“‹ Format Report Siap Copy</h2>
+    <h2 class="section-title">Format Report Siap Copy</h2>
     <div id="reportText" class="report-box">Memuat...</div>
     <div style="margin-top:12px">
-      <button class="btn-gray" id="copyBtn">ðŸ“‹ COPY REPORT</button>
+      <button class="btn-gray" id="copyBtn">COPY REPORT</button>
     </div>
   </div>
 
@@ -580,7 +580,7 @@ function trendData(current,previous,preferLower=false){
   }
   const delta=((current-previous)/previous)*100;
   if(Math.abs(delta)<0.05){
-    return {cls:"neutral",text:"â€¢ Stabil",delta};
+    return {cls:"neutral",text:"- Stabil",delta};
   }
   const goingUp=delta>0;
   let cls;
@@ -589,7 +589,7 @@ function trendData(current,previous,preferLower=false){
   }else{
     cls=goingUp?"up-good":"down-bad";
   }
-  const arrow=goingUp?"â–²":"â–¼";
+  const arrow=goingUp?"NAIK":"TURUN";
   return {cls,text:`${arrow} ${pctFmt(Math.abs(delta))}%`,delta};
 }
 function applyTrend(id,text,cls){
@@ -598,7 +598,7 @@ function applyTrend(id,text,cls){
   el.textContent=text;
 }
 function itoState(days){
-  if(days<2)return {state:"danger",note:"Alarm: stock menipis",alert:"âš ï¸ Stock menipis. Segera rencanakan supply / transfer tambahan."};
+  if(days<2)return {state:"danger",note:"Alarm: stock menipis",alert:"PERINGATAN: Stock menipis. Segera rencanakan supply / transfer tambahan."};
   if(days<3)return {state:"warn",note:"Perhatian: stock mulai turun",alert:"Perhatian: cover stock kurang dari 3 hari."};
   return {state:"safe",note:"Aman stock",alert:""};
 }
@@ -628,13 +628,13 @@ function renderStock(stock){
         <small>${storage}${suffix}</small>
         <strong>${fmt(stock[storage])} L</strong>
         <div class="stock-sounding-estimate">
-          <span>ðŸ“ Estimasi sounding</span>
-          <b>â‰ˆ ${fmtSonding(sounding)} cm</b>
+          <span>Estimasi sounding</span>
+          <b>~ ${fmtSonding(sounding)} cm</b>
         </div>
         <div class="capacity-wrap">
           <div class="capacity-row">
             <span>Kapasitas ${fmt(cap)} L</span>
-            <span class="capacity-text ${cls}">${pctFmt(pct)}% â€¢ ${statusText}</span>
+            <span class="capacity-text ${cls}">${pctFmt(pct)}% - ${statusText}</span>
           </div>
           <div class="capacity-bar">
             <div class="capacity-fill ${cls}" style="width:${width}%"></div>
@@ -646,10 +646,10 @@ function renderStock(stock){
 
   if(criticalList.length){
     alertHost.className="stock-alert-banner show danger";
-    alertHost.textContent=`âš ï¸ Stock menipis: ${criticalList.join(" â€¢ ")}. Segera rencanakan penerimaan / transfer.`;
+    alertHost.textContent=`PERINGATAN: Stock menipis: ${criticalList.join(" - ")}. Segera rencanakan penerimaan / transfer.`;
   }else if(highList.length){
     alertHost.className="stock-alert-banner show warn";
-    alertHost.textContent=`â„¹ï¸ Stock mendekati penuh: ${highList.join(" â€¢ ")}. Perhatikan kapasitas sebelum penerimaan / transfer.`;
+    alertHost.textContent=`INFO: Stock mendekati penuh: ${highList.join(" - ")}. Perhatikan kapasitas sebelum penerimaan / transfer.`;
   }else{
     alertHost.className="stock-alert-banner";
     alertHost.textContent="";
@@ -844,10 +844,10 @@ async function loadReport(){
     });
 
     document.getElementById("reportText").textContent=reportText;
-    status.textContent="âœ… Daily Report berhasil dihitung.";
+    status.textContent="Daily Report berhasil dihitung.";
   }catch(error){
     console.error(error);
-    status.textContent="âŒ "+error.message;
+    status.textContent="ERROR: "+error.message;
   }
 }
 
@@ -857,11 +857,11 @@ document.getElementById("copyBtn").addEventListener("click",async()=>{
   const text=document.getElementById("reportText").textContent;
   try{
     await navigator.clipboard.writeText(text);
-    document.getElementById("status").textContent="âœ… Report berhasil dicopy.";
-    showCopyToast("âœ… Daily Report berhasil di-copy.");
+    document.getElementById("status").textContent="Report berhasil dicopy.";
+    showCopyToast("Daily Report berhasil di-copy.");
   }catch{
-    document.getElementById("status").textContent="âŒ Browser tidak mengizinkan copy otomatis.";
-    showCopyToast("âŒ Browser tidak mengizinkan copy otomatis.",true);
+    document.getElementById("status").textContent="ERROR: Browser tidak mengizinkan copy otomatis.";
+    showCopyToast("Browser tidak mengizinkan copy otomatis.",true);
   }
 });
 
