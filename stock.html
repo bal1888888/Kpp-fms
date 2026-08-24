@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.8: audit history moved to dedicated History Stock page -->
+<!-- KPP-FMS STOCK v9.9: clear LOSS / GAIN receipt audit wording -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -488,7 +488,7 @@ th{background:#f8fafc;color:#475569}
 <div id="stockSaveOverlay" class="stock-save-overlay hidden">
     <div class="stock-save-card">
         <div id="stockSaveSpinner" class="stock-spinner"></div>
-        <h3 id="stockSaveTitle">⏳ SEDANG MENYIMPAN</h3>
+        <h3 id="stockSaveTitle">â³ SEDANG MENYIMPAN</h3>
         <p id="stockSaveMessage">
             Data sedang dikirim ke server. Jangan tekan tombol lagi dan jangan pindah halaman.
         </p>
@@ -502,10 +502,10 @@ th{background:#f8fafc;color:#475569}
     <div class="stock-edit-card">
         <div class="stock-edit-head">
             <div>
-                <h3>✏️ Edit Transaksi Stock</h3>
+                <h3>âœï¸ Edit Transaksi Stock</h3>
                 <div class="note">Khusus GL/Admin. Perubahan tersimpan di audit log.</div>
             </div>
-            <button type="button" class="icon-close" onclick="closeMovementEditor()">✕</button>
+            <button type="button" class="icon-close" onclick="closeMovementEditor()">âœ•</button>
         </div>
 
         <input type="hidden" id="editMovementId">
@@ -571,7 +571,7 @@ th{background:#f8fafc;color:#475569}
         </div>
 
         <div class="actions" style="margin-top:14px">
-            <button class="primary" type="button" onclick="saveMovementEdit()">💾 SIMPAN PERUBAHAN</button>
+            <button class="primary" type="button" onclick="saveMovementEdit()">ðŸ’¾ SIMPAN PERUBAHAN</button>
             <button class="gray" type="button" onclick="closeMovementEditor()">BATAL</button>
         </div>
     </div>
@@ -580,7 +580,7 @@ th{background:#f8fafc;color:#475569}
 <div class="container">
 
 <div id="fuelmanSessionInfo" class="session-info hidden">
-    <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
+    <strong>ðŸŸ¢ SHIFT FUELMAN AKTIF</strong><br>
     Fuelman: <span id="sessionFuelman">-</span><br>
     Shift: <span id="sessionShift">-</span><br>
     Fuel Truck: <span id="sessionTruck">-</span><br>
@@ -613,16 +613,16 @@ th{background:#f8fafc;color:#475569}
     <div id="stockTotalWide" class="stock-total-wide"></div>
     <div class="cards" id="stockCards"></div>
     <div class="note" style="margin-top:12px">
-        Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk − Transfer Keluar − Pengisian Unit.
+        Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk âˆ’ Transfer Keluar âˆ’ Pengisian Unit.
         Tinggi CM pada kartu adalah <b>estimasi sounding dari Stock Sistem menggunakan tabel tera</b>;
         sounding fisik Fuelman tetap menjadi acuan pengecekan lapangan.
     </div>
 </div>
 
 <div class="panel">
-    <h3>📏 Konverter Tera MT & FT</h3>
+    <h3>ðŸ“ Konverter Tera MT & FT</h3>
     <div class="note" style="margin-bottom:12px">
-        Masukkan tinggi sondingan dalam CM. Sistem memakai tabel <b>TERA MT01</b> untuk MT01–MT04
+        Masukkan tinggi sondingan dalam CM. Sistem memakai tabel <b>TERA MT01</b> untuk MT01â€“MT04
         dan <b>TERA FT</b> untuk FT0073/FT0075 dari Daily Report Agustus 2026.
     </div>
     <div class="grid">
@@ -676,10 +676,10 @@ th{background:#f8fafc;color:#475569}
     </div>
     <div class="status" id="openingStatus"></div>
     <details class="copy-report-card">
-        <summary>📋 Format Laporan Awal Shift Siap Salin</summary>
+        <summary>ðŸ“‹ Format Laporan Awal Shift Siap Salin</summary>
         <div class="copy-report-content">
             <pre id="openingCopyPreview" class="copy-report-preview">Lengkapi tinggi sounding awal shift.</pre>
-            <button class="copy-report-btn" type="button" onclick="copyOpeningReport()">📋 SALIN LAPORAN AWAL SHIFT</button>
+            <button class="copy-report-btn" type="button" onclick="copyOpeningReport()">ðŸ“‹ SALIN LAPORAN AWAL SHIFT</button>
         </div>
     </details>
 </div>
@@ -728,12 +728,12 @@ th{background:#f8fafc;color:#475569}
         </div>
         <div>
             <label>Qty Menurut Transporter (Liter)</label>
-            <input type="number" id="receiptQty" class="auto-liter" readonly placeholder="Flowmeter akhir − awal">
+            <input type="number" id="receiptQty" class="auto-liter" readonly placeholder="Flowmeter akhir âˆ’ awal">
         </div>
         <div>
             <label id="receiptTankBeforeLabel">Sonding MT01 Sebelum Bongkar (CM)</label>
             <input type="number" id="receiptTankHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Sebelum bongkar">
-            <span class="field-hint">Tangki tujuan kita yang dipilih pada bagian “Masuk ke”.</span>
+            <span class="field-hint">Tangki tujuan kita yang dipilih pada bagian â€œMasuk keâ€.</span>
         </div>
         <div>
             <label id="receiptTankAfterLabel">Sonding MT01 Sesudah Bongkar (CM)</label>
@@ -741,11 +741,12 @@ th{background:#f8fafc;color:#475569}
         </div>
         <div>
             <label id="receiptTankQtyLabel">Qty Masuk MT01 Menurut Tera (Liter)</label>
-            <input type="number" id="receiptTankQty" class="auto-liter" readonly placeholder="Liter sesudah − sebelum">
+            <input type="number" id="receiptTankQty" class="auto-liter" readonly placeholder="Liter sesudah âˆ’ sebelum">
         </div>
         <div>
-            <label>Selisih / Loss Bongkaran</label>
-            <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter − tangki">
+            <label id="receiptLossLabel">Hasil Audit Bongkaran (Transportir âˆ’ Aktual)</label>
+            <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter âˆ’ tangki">
+            <span class="field-hint">Positif = LOSS, negatif = GAIN/LEBIH. Stock bertambah mengikuti aktual hasil sonding.</span>
         </div>
         <div>
             <label>Petugas Sonding (Akun Login)</label>
@@ -758,10 +759,10 @@ th{background:#f8fafc;color:#475569}
     </div>
     <div class="status" id="receiptStatus"></div>
     <details class="copy-report-card">
-        <summary>📋 Format Penerimaan Transportir Siap Salin</summary>
+        <summary>ðŸ“‹ Format Penerimaan Transportir Siap Salin</summary>
         <div class="copy-report-content">
             <pre id="receiptCopyPreview" class="copy-report-preview">Lengkapi flowmeter dan sounding sebelum/sesudah bongkar.</pre>
-            <button class="copy-report-btn" type="button" onclick="copyReceiptReport()">📋 SALIN LAPORAN PENERIMAAN</button>
+            <button class="copy-report-btn" type="button" onclick="copyReceiptReport()">ðŸ“‹ SALIN LAPORAN PENERIMAAN</button>
         </div>
     </details>
 </div>
@@ -811,7 +812,7 @@ th{background:#f8fafc;color:#475569}
 
         <div>
             <label id="transferQtyLabel">Qty Masuk Tujuan Menurut Tera (Liter)</label>
-            <input type="number" id="transferQty" class="auto-liter" readonly placeholder="Sesudah − Sebelum">
+            <input type="number" id="transferQty" class="auto-liter" readonly placeholder="Sesudah âˆ’ Sebelum">
         </div>
 
         <div>
@@ -825,7 +826,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="measure-section">
-        <h4 id="transferSourceAuditTitle">Audit Sonding Sumber — wajib untuk menghitung qty keluar dan loss transfer</h4>
+        <h4 id="transferSourceAuditTitle">Audit Sonding Sumber â€” wajib untuk menghitung qty keluar dan loss transfer</h4>
         <div class="grid">
             <div>
                 <label id="transferSourceBeforeLabel">Sonding Sumber Sebelum Transfer (CM)</label>
@@ -854,10 +855,10 @@ th{background:#f8fafc;color:#475569}
 
     <div class="status" id="transferStatus"></div>
     <details class="copy-report-card">
-        <summary>📋 Format Transfer & Konversi Siap Salin</summary>
+        <summary>ðŸ“‹ Format Transfer & Konversi Siap Salin</summary>
         <div class="copy-report-content">
             <pre id="transferCopyPreview" class="copy-report-preview">Lengkapi sounding sumber dan tujuan sebelum/sesudah transfer.</pre>
-            <button class="copy-report-btn" type="button" onclick="copyTransferReport()">📋 SALIN LAPORAN TRANSFER</button>
+            <button class="copy-report-btn" type="button" onclick="copyTransferReport()">ðŸ“‹ SALIN LAPORAN TRANSFER</button>
         </div>
     </details>
 </div>
@@ -868,7 +869,7 @@ th{background:#f8fafc;color:#475569}
     <div class="note" style="margin-bottom:12px">
         Masukkan tinggi sonding akhir shift. Stock Fisik dikonversi otomatis dari tabel tera.
         Estimasi sonding pada Stock Sistem dihitung dari jumlah liter sistem sebagai pembanding;
-        hasil sonding fisik tetap menjadi acuan Stock Closing. Selisih = Stock Fisik − Stock Sistem.
+        hasil sonding fisik tetap menjadi acuan Stock Closing. Selisih = Stock Fisik âˆ’ Stock Sistem.
     </div>
 
     <div class="table-wrap">
@@ -916,7 +917,7 @@ th{background:#f8fafc;color:#475569}
         <input type="checkbox" id="carryForward" checked>
         <span>
             Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>.
-            Shift 1 → Opening Shift 2. Shift 2 → Opening Shift 1 tanggal berikutnya.
+            Shift 1 â†’ Opening Shift 2. Shift 2 â†’ Opening Shift 1 tanggal berikutnya.
         </span>
     </label>
 
@@ -927,10 +928,10 @@ th{background:#f8fafc;color:#475569}
     <div class="status" id="closingStatus"></div>
 
     <details class="copy-report-card">
-        <summary>📋 Format Sonding Akhir Siap Salin</summary>
+        <summary>ðŸ“‹ Format Sonding Akhir Siap Salin</summary>
         <div class="copy-report-content">
             <pre id="closingCopyPreview" class="copy-report-preview">Lengkapi tinggi sonding akhir untuk menampilkan laporan.</pre>
-            <button class="copy-report-btn" type="button" onclick="copyClosingReport()">📋 SALIN HASIL SONDING AKHIR</button>
+            <button class="copy-report-btn" type="button" onclick="copyClosingReport()">ðŸ“‹ SALIN HASIL SONDING AKHIR</button>
         </div>
     </details>
 </div>
@@ -938,17 +939,17 @@ th{background:#f8fafc;color:#475569}
 <div class="panel">
     <div class="panel-title-row">
         <h3>Pergerakan Fuel Shift Ini</h3>
-        <button class="gray panel-toggle-btn" id="movementPanelToggle" type="button" onclick="toggleStockPanel('movement')" aria-expanded="true">🙈 SEMBUNYIKAN</button>
+        <button class="gray panel-toggle-btn" id="movementPanelToggle" type="button" onclick="toggleStockPanel('movement')" aria-expanded="true">ðŸ™ˆ SEMBUNYIKAN</button>
     </div>
 
     <div id="movementPanelContent">
 
     <div id="stockAdminTools" class="admin-tools hidden">
         <div>
-            <b>🛠️ Mode Koreksi Stock — GL/Admin</b>
+            <b>ðŸ› ï¸ Mode Koreksi Stock â€” GL/Admin</b>
             <div class="note">Centang transaksi RECEIPT/TRANSFER yang salah atau spam, lalu hapus. Pengisian unit tidak dihapus dari menu ini.</div>
         </div>
-        <button class="danger" type="button" onclick="deleteSelectedMovements()">🗑️ HAPUS TERPILIH</button>
+        <button class="danger" type="button" onclick="deleteSelectedMovements()">ðŸ—‘ï¸ HAPUS TERPILIH</button>
     </div>
 
     <div class="table-wrap">
@@ -973,10 +974,10 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel actions">
-    <a href="pengisian.html" class="btn green">⛽ Pengisian Fuel</a>
-    <a href="dashboard.html" class="btn primary">📊 Dashboard</a>
-    <a href="stock-history.html" class="btn purple">📚 History Stock</a>
-    <a href="logsheet.html" class="btn gray">📋 Logsheet</a>
+    <a href="pengisian.html" class="btn green">â›½ Pengisian Fuel</a>
+    <a href="dashboard.html" class="btn primary">ðŸ“Š Dashboard</a>
+    <a href="stock-history.html" class="btn purple">ðŸ“š History Stock</a>
+    <a href="logsheet.html" class="btn gray">ðŸ“‹ Logsheet</a>
 </div>
 
 <div id="copyToast" class="copy-toast" role="status" aria-live="polite"></div>
@@ -1043,7 +1044,7 @@ function setStockPanelCollapsed(panelKey,collapsed,persist=false){
     if(!content || !button)return;
 
     content.classList.toggle("hidden",collapsed);
-    button.textContent=collapsed?"👁️ TAMPILKAN":"🙈 SEMBUNYIKAN";
+    button.textContent=collapsed?"ðŸ‘ï¸ TAMPILKAN":"ðŸ™ˆ SEMBUNYIKAN";
     button.setAttribute("aria-expanded",String(!collapsed));
 
     if(persist){
@@ -1115,7 +1116,7 @@ function validateCapacityHard(storage,projectedQty,context=""){
 
     if(projectedQty>cap){
         alert(
-            "⛔ KAPASITAS TERKUNCI\n\n"+
+            "â›” KAPASITAS TERKUNCI\n\n"+
             storage+" maksimal menurut tabel tera "+fmt(cap)+".\n"+
             "Perkiraan stock setelah "+context+": "+fmt(projectedQty)+".\n\n"+
             "Transaksi diblokir agar tangki tidak melewati kapasitas."
@@ -1132,8 +1133,8 @@ function confirmNearCapacity(storage,projectedQty,context=""){
     if(p<CAPACITY_WARNING_PCT)return true;
 
     const title=p>=100
-        ?"🔴 TANGKI MENCAPAI 100%"
-        :"⚠️ TANGKI MENDEKATI PENUH";
+        ?"ðŸ”´ TANGKI MENCAPAI 100%"
+        :"âš ï¸ TANGKI MENDEKATI PENUH";
 
     return confirm(
         title+"\n\n"+
@@ -1157,10 +1158,10 @@ function showCapacityAlertOnce(stock){
     if(banner){
         if(critical.length){
             banner.className="stock-level-alert show danger";
-            banner.innerHTML="⚠️ Stock menipis: "+critical.join(" • ")+". Rencanakan penerimaan / transfer.";
+            banner.innerHTML="âš ï¸ Stock menipis: "+critical.join(" â€¢ ")+". Rencanakan penerimaan / transfer.";
         }else if(high.length){
             banner.className="stock-level-alert show warn";
-            banner.innerHTML="ℹ️ Stock mendekati penuh: "+high.join(" • ")+". Cek kapasitas sebelum penerimaan / transfer.";
+            banner.innerHTML="â„¹ï¸ Stock mendekati penuh: "+high.join(" â€¢ ")+". Cek kapasitas sebelum penerimaan / transfer.";
         }else{
             banner.className="stock-level-alert";
             banner.textContent="";
@@ -1168,8 +1169,8 @@ function showCapacityAlertOnce(stock){
     }
 
     const warnings=[];
-    if(critical.length)warnings.push("🚨 STOCK MENIPIS\n"+critical.join("\n"));
-    if(high.length)warnings.push("⚠️ MENDEKATI PENUH\n"+high.join("\n"));
+    if(critical.length)warnings.push("ðŸš¨ STOCK MENIPIS\n"+critical.join("\n"));
+    if(high.length)warnings.push("âš ï¸ MENDEKATI PENUH\n"+high.join("\n"));
     if(!warnings.length){
         LAST_CAPACITY_ALERT_SIGNATURE="";
         return;
@@ -1248,7 +1249,7 @@ function beginStockSave(message){
     const spinner=document.getElementById("stockSaveSpinner");
     const note=document.getElementById("stockSignalNote");
 
-    title.textContent="⏳ SEDANG MENYIMPAN";
+    title.textContent="â³ SEDANG MENYIMPAN";
     msg.textContent=message || "Data sedang dikirim ke server. Jangan tekan tombol lagi dan jangan pindah halaman.";
     spinner.style.display="block";
     note.textContent="Jika sinyal lambat, tunggu sampai muncul konfirmasi berhasil/gagal.";
@@ -1259,14 +1260,14 @@ function beginStockSave(message){
 
     STOCK_SAVE_TIMER_1=setTimeout(()=>{
         if(STOCK_SAVE_LOCK){
-            msg.textContent="📡 Masih menunggu respon server...";
+            msg.textContent="ðŸ“¡ Masih menunggu respon server...";
             note.textContent="Jangan tekan SIMPAN lagi. Sistem masih menunggu koneksi agar tidak membuat transaksi ganda.";
         }
     },8000);
 
     STOCK_SAVE_TIMER_2=setTimeout(()=>{
         if(STOCK_SAVE_LOCK){
-            msg.textContent="📡 Sinyal sangat lambat — transaksi masih diproses.";
+            msg.textContent="ðŸ“¡ Sinyal sangat lambat â€” transaksi masih diproses.";
             note.textContent="Tetap tunggu sampai sistem menyatakan BERHASIL atau GAGAL. Tombol lain sengaja dikunci.";
         }
     },20000);
@@ -1285,7 +1286,7 @@ async function finishStockSave(success,message){
     const note=document.getElementById("stockSignalNote");
 
     spinner.style.display="none";
-    title.textContent=success?"✅ TERSIMPAN":"❌ GAGAL";
+    title.textContent=success?"âœ… TERSIMPAN":"âŒ GAGAL";
     msg.textContent=message || (success?"Data sudah masuk ke server.":"Data gagal disimpan.");
     note.textContent=success
         ?"Sekarang tombol dan navigasi sudah dibuka kembali."
@@ -1645,6 +1646,24 @@ function fmtSigned(value){
     return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
 }
 
+function receiptAuditLabel(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=r1(value);
+    const amount=Math.abs(number).toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+    if(number>0)return "LOSS "+amount;
+    if(number<0)return "GAIN/LEBIH "+amount;
+    return "SESUAI 0 L";
+}
+
+function receiptAuditReport(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=r1(value);
+    const amount=reportLiters(Math.abs(number));
+    if(number>0)return "LOSS "+amount;
+    if(number<0)return "GAIN/LEBIH "+amount;
+    return "SESUAI (0 Liter)";
+}
+
 function fmtCm(value){
     return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" cm";
 }
@@ -1709,9 +1728,9 @@ function receiptPeriodLabel(value){
 function receiptPeriodDetail(value){
     const period=receiptPeriodFromDate(value);
     return period===1
-        ? "PERIODE 1 (1–14)"
+        ? "PERIODE 1 (1â€“14)"
         : period===2
-            ? "PERIODE 2 (15–AKHIR BULAN)"
+            ? "PERIODE 2 (15â€“AKHIR BULAN)"
             : "-";
 }
 
@@ -1791,8 +1810,9 @@ function buildReceiptCopyReport(measurement=null,operatorOverride="",dateTimeOve
         `Flowmeter Awal: ${reportLiters(data.meterStart)}`,
         `Flowmeter Akhir: ${reportLiters(data.meterEnd)}`,
         `Qty Menurut Transporter: ${reportLiters(data.transporterQty)}`,
-        `Qty Masuk ${destination}: ${reportLiters(data.tankQty)}`,
-        `Selisih / Loss: ${reportSignedLiters(data.loss)}`
+        `Aktual Diterima ${destination}: ${reportLiters(data.tankQty)}`,
+        `Hasil Audit Bongkaran: ${receiptAuditReport(data.loss)}`,
+        `Stock Bertambah: ${reportLiters(data.tankQty)} (mengikuti hasil sonding)`
     ].join("\n");
 }
 
@@ -1976,9 +1996,9 @@ async function copyReportText(text,label){
             textarea.remove();
             if(!copied)throw new Error("Copy gagal");
         }
-        showCopyToast(`✅ ${label} berhasil di-copy.`);
+        showCopyToast(`âœ… ${label} berhasil di-copy.`);
     }catch{
-        showCopyToast("❌ Browser tidak mengizinkan copy otomatis.",true);
+        showCopyToast("âŒ Browser tidak mengizinkan copy otomatis.",true);
     }
 }
 
@@ -2058,7 +2078,7 @@ function updateQuickConverter(){
         }
 
         result.innerHTML=`
-            <small>${tera.curve} • TINGGI TERPAKAI ${fmtCm(tera.matchedHeightCm)}</small>
+            <small>${tera.curve} â€¢ TINGGI TERPAKAI ${fmtCm(tera.matchedHeightCm)}</small>
             <strong>${fmt(tera.liters)}</strong>
             <span>Maksimum tabel: ${fmtCm(tera.maxHeightCm)} = ${fmt(tera.maxLiters)}</span>
         `;
@@ -2079,12 +2099,12 @@ function updateOpeningConversion(){
         const tera=teraFromInput(storage,"openingHeight");
         qty.value=tera?tera.liters:"";
         document.getElementById("openingStatus").textContent=tera
-            ? `📏 ${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`
+            ? `ðŸ“ ${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`
             : "";
         renderOpeningCopyPreview(tera);
     }catch(error){
         qty.value="";
-        document.getElementById("openingStatus").textContent="❌ "+error.message;
+        document.getElementById("openingStatus").textContent="âŒ "+error.message;
         renderOpeningCopyPreview(null);
     }
 }
@@ -2146,10 +2166,10 @@ function updateReceiptCalculation(){
                     : `Sonding ${destination} sesudah harus lebih tinggi dari sebelum`
             );
         }
-        if(loss!==null)parts.push(`Loss ${fmtSigned(loss)}`);
+        if(loss!==null)parts.push(receiptAuditLabel(loss));
 
         document.getElementById("receiptStatus").textContent=
-            parts.length?"🧮 "+parts.join(" • "):"";
+            parts.length?"ðŸ§® "+parts.join(" â€¢ "):"";
 
         const result={
             meterStart,
@@ -2166,7 +2186,7 @@ function updateReceiptCalculation(){
         qtyInput.value="";
         tankQtyInput.value="";
         lossInput.value="";
-        document.getElementById("receiptStatus").textContent="❌ "+error.message;
+        document.getElementById("receiptStatus").textContent="âŒ "+error.message;
         renderReceiptCopyPreview(null);
         return null;
     }
@@ -2205,7 +2225,7 @@ async function loadTransporterOptions(){
     if(error){
         console.warn("Master Transportir belum tersedia:",error.message);
         document.getElementById("receiptStatus").textContent=
-            "⚠️ Master Transportir belum tersedia; sementara memakai vendor bawaan.";
+            "âš ï¸ Master Transportir belum tersedia; sementara memakai vendor bawaan.";
     }
 }
 
@@ -2254,7 +2274,7 @@ async function loadReceiptHistory(){
     const {data,error}=await query;
 
     if(error){
-        body.innerHTML=`<tr><td colspan="10">❌ ${esc(error.message)}</td></tr>`;
+        body.innerHTML=`<tr><td colspan="10">âŒ ${esc(error.message)}</td></tr>`;
         status.textContent="Jalankan SQL audit PO/LO sebelum memakai History Penerimaan.";
         return null;
     }
@@ -2307,10 +2327,10 @@ async function loadReceiptHistory(){
             <td>
                 <b>${fmt(tankQty)}</b>
                 ${row.destination_height_before_cm!==null && row.destination_height_after_cm!==null
-                    ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} → ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
+                    ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} â†’ ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
                     : ""}
             </td>
-            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${fmtSigned(loss)}</td>
+            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${receiptAuditLabel(loss)}</td>
             <td>${esc(row.operator||"-")}</td>
             <td>${
                 isStockEditor()
@@ -2324,8 +2344,8 @@ async function loadReceiptHistory(){
     const periodOneCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===1).length;
     const periodTwoCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===2).length;
     status.textContent=
-        `${rows.length} kedatangan (maks. 500) • Periode 1: ${periodOneCount} • `+
-        `Periode 2: ${periodTwoCount} • ${pendingCount} PO/LO belum diisi.`;
+        `${rows.length} kedatangan (maks. 500) â€¢ Periode 1: ${periodOneCount} â€¢ `+
+        `Periode 2: ${periodTwoCount} â€¢ ${pendingCount} PO/LO belum diisi.`;
     return rows;
 }
 
@@ -2368,9 +2388,9 @@ function receiptHistoryFilterText(){
     const referenceStatus=document.getElementById("receiptHistoryReferenceStatus");
     const reference=document.getElementById("receiptHistoryReference").value.trim()||"SEMUA PO/LO";
     const periodText=period==="1"
-        ? "PERIODE 1 (1–14)"
+        ? "PERIODE 1 (1â€“14)"
         : period==="2"
-            ? "PERIODE 2 (15–AKHIR BULAN)"
+            ? "PERIODE 2 (15â€“AKHIR BULAN)"
             : "SEMUA PERIODE";
     return `${from} s.d. ${to} | ${periodText} | ${transporter} | `+
         `${referenceStatus.options[referenceStatus.selectedIndex].text} | ${reference}`;
@@ -2380,7 +2400,7 @@ async function downloadReceiptHistoryExcel(){
     const button=document.getElementById("receiptHistoryDownloadBtn");
     const originalText=button.textContent;
     button.disabled=true;
-    button.textContent="⏳ MEMBUAT EXCEL...";
+    button.textContent="â³ MEMBUAT EXCEL...";
 
     try{
         const rows=await loadReceiptHistory();
@@ -2576,10 +2596,10 @@ async function downloadReceiptHistoryExcel(){
         link.click();
         link.remove();
         setTimeout(()=>URL.revokeObjectURL(url),1000);
-        showCopyToast(`✅ Excel History berhasil didownload (${rows.length} data).`);
+        showCopyToast(`âœ… Excel History berhasil didownload (${rows.length} data).`);
     }catch(error){
         console.error(error);
-        showCopyToast("❌ Gagal membuat Excel: "+(error?.message||error),true);
+        showCopyToast("âŒ Gagal membuat Excel: "+(error?.message||error),true);
     }finally{
         button.disabled=false;
         button.textContent=originalText;
@@ -2665,7 +2685,7 @@ function updateTransferCalculation(){
     document.getElementById("transferQtyLabel").textContent=
         `Qty Masuk ${destination} Menurut Tera (Liter)`;
     document.getElementById("transferSourceAuditTitle").textContent=
-        `Audit Sonding ${source} — wajib untuk menghitung qty keluar dan loss transfer`;
+        `Audit Sonding ${source} â€” wajib untuk menghitung qty keluar dan loss transfer`;
     document.getElementById("transferSourceBeforeLabel").textContent=
         `Sonding ${source} Sebelum Transfer (CM)`;
     document.getElementById("transferSourceAfterLabel").textContent=
@@ -2731,7 +2751,7 @@ function updateTransferCalculation(){
             document.getElementById("transferLoss").textContent="- L";
         }
 
-        status.textContent=parts.length?"📐 "+parts.join(" • "):"";
+        status.textContent=parts.length?"ðŸ“ "+parts.join(" â€¢ "):"";
 
         const result={
             destinationBefore,destinationAfter,destinationQty,
@@ -2741,7 +2761,7 @@ function updateTransferCalculation(){
         return result;
     }catch(error){
         clearTransferMeasurements();
-        status.textContent="❌ "+error.message;
+        status.textContent="âŒ "+error.message;
         renderTransferCopyPreview(null);
         return null;
     }
@@ -2851,13 +2871,13 @@ async function loadFuelmanSession(){
         .limit(1);
 
     if(error){
-        alert("❌ Gagal membaca shift Fuelman.\\n\\n"+error.message);
+        alert("âŒ Gagal membaca shift Fuelman.\\n\\n"+error.message);
         window.location.replace("fuelman.html");
         return false;
     }
 
     if(!data || !data.length){
-        alert("⚠️ Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
+        alert("âš ï¸ Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
         window.location.replace("fuelman.html");
         return false;
     }
@@ -2974,14 +2994,14 @@ function renderStockCards(stock){
             <small>${storage}${suffix}</small>
             <strong>${fmt(stock[storage])}</strong>
             <div class="stock-sounding-estimate">
-                <span>📏 Estimasi sounding sistem</span>
-                <b>≈ ${fmtCm(estimatedHeight)}</b>
+                <span>ðŸ“ Estimasi sounding sistem</span>
+                <b>â‰ˆ ${fmtCm(estimatedHeight)}</b>
             </div>
 
             <div class="stock-capacity">
                 <div class="stock-capacity-line">
                     <span>Max ${fmt(cap)}</span>
-                    <span class="${textClass}">${pct(p)}% • ${statusText}</span>
+                    <span class="${textClass}">${pct(p)}% â€¢ ${statusText}</span>
                 </div>
                 <div class="stock-capacity-bar">
                     <div class="stock-capacity-fill ${state}" style="width:${width}%"></div>
@@ -3005,7 +3025,7 @@ function renderStockCards(stock){
             <div class="stock-capacity">
                 <div class="stock-capacity-line">
                     <span>Total Max ${fmt(TOTAL_CAPACITY)}</span>
-                    <span class="capacity-${totalState}-text">${pct(totalPct)}% • ${totalStatus}</span>
+                    <span class="capacity-${totalState}-text">${pct(totalPct)}% â€¢ ${totalStatus}</span>
                 </div>
                 <div class="stock-capacity-bar">
                     <div class="stock-capacity-fill ${totalState}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
@@ -3044,7 +3064,7 @@ function renderClosing(stock,savedClosing){
             <td>
                 <div class="closing-system-reading">
                     <strong>${fmt(stock[storage])}</strong>
-                    <small>📏 Estimasi sonding: <b>≈ ${fmtCm(estimatedSystemHeight)}</b></small>
+                    <small>ðŸ“ Estimasi sonding: <b>â‰ˆ ${fmtCm(estimatedSystemHeight)}</b></small>
                 </div>
             </td>
             <td>
@@ -3074,7 +3094,7 @@ function renderClosing(stock,savedClosing){
         }
         document.getElementById("closingNote").value=firstSaved.note||"";
         document.getElementById("closingStatus").textContent=
-            "✅ Stock closing periode ini sudah pernah disimpan. Bisa diperbarui bila perlu.";
+            "âœ… Stock closing periode ini sudah pernah disimpan. Bisa diperbarui bila perlu.";
     }else{
         if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman")){
             document.getElementById("closingOperator").value="";
@@ -3113,7 +3133,7 @@ function updateClosingFromHeight(storage,refreshDifference=true){
         if(info)info.textContent=`${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`;
     }catch(error){
         actualInput.value="";
-        if(info)info.textContent="❌ "+error.message;
+        if(info)info.textContent="âŒ "+error.message;
     }
 
     if(refreshDifference)updateClosingDifference();
@@ -3195,7 +3215,7 @@ function renderMovement(movementData,fuelData){
             qty:n(row.qty),
             operator:row.operator||"-",
             note:row.document_reference
-                ? `${row.document_reference} • ${row.transporter||"-"}`
+                ? `${row.document_reference} â€¢ ${row.transporter||"-"}`
                 : row.transporter||row.note||"-"
         });
     });
@@ -3306,7 +3326,7 @@ async function saveOpening(){
     );
 
     document.getElementById("openingStatus").textContent=
-        error?"❌ "+error.message:"✅ Stock opening tersimpan.";
+        error?"âŒ "+error.message:"âœ… Stock opening tersimpan.";
 
     if(error){
         await finishStockSave(false,error.message);
@@ -3387,11 +3407,11 @@ async function saveReceipt(){
 
     if(Math.abs(measurement.loss)>lossLimit){
         const lanjut=confirm(
-            "⚠️ SELISIH BONGKARAN PERLU DICEK\n\n"+
+            "âš ï¸ SELISIH BONGKARAN PERLU DICEK\n\n"+
             "PO/LO: "+(document_reference||"BELUM DIISI")+"\n"+
             "Transporter: "+fmt(measurement.transporterQty)+"\n"+
-            "Masuk tangki: "+fmt(measurement.tankQty)+"\n"+
-            "Selisih/loss: "+fmtSigned(measurement.loss)+"\n\n"+
+            "Aktual diterima tangki: "+fmt(measurement.tankQty)+"\n"+
+            "Hasil audit: "+receiptAuditLabel(measurement.loss)+"\n\n"+
             "Tetap simpan untuk audit?"
         );
         if(!lanjut)return;
@@ -3418,7 +3438,7 @@ async function saveReceipt(){
         operator,
         transporter,
         document_reference,
-        note:`PO/LO ${document_reference||"BELUM DIISI"} | Flowmeter ${measurement.meterStart} → ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} → ${measurement.tankAfter.matchedHeightCm} cm`,
+        note:`PO/LO ${document_reference||"BELUM DIISI"} | Flowmeter ${measurement.meterStart} â†’ ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} â†’ ${measurement.tankAfter.matchedHeightCm} cm`,
         calculation_method:"RECEIPT_FLOWMETER_VS_DESTINATION_TERA",
         meter_start_liter:measurement.meterStart,
         meter_end_liter:measurement.meterEnd,
@@ -3433,10 +3453,10 @@ async function saveReceipt(){
     });
 
     document.getElementById("receiptStatus").textContent=
-        error?"❌ "+error.message:
+        error?"âŒ "+error.message:
             document_reference
-                ? `✅ Penerimaan ${document_reference} tersimpan dan masuk ke history.`
-                : "✅ Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL.";
+                ? `âœ… Penerimaan ${document_reference} tersimpan dan masuk ke history.`
+                : "âœ… Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL.";
 
     if(error){
         await finishStockSave(false,error.message);
@@ -3519,7 +3539,7 @@ async function saveTransfer(){
 
     if(n(measurement.sourceQty)>n(CURRENT_SYSTEM_STOCK[source_storage])){
         const lanjut=confirm(
-            "⚠️ Qty keluar menurut sonding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
+            "âš ï¸ Qty keluar menurut sonding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
         );
         if(!lanjut)return;
     }
@@ -3529,13 +3549,13 @@ async function saveTransfer(){
     if(!validateCapacityHard(
         destination_storage,
         projectedDestination,
-        "Sonding setelah Transfer "+source_storage+" → "+destination_storage
+        "Sonding setelah Transfer "+source_storage+" â†’ "+destination_storage
     ))return;
 
     if(!confirmNearCapacity(
         destination_storage,
         projectedDestination,
-        "Sonding setelah Transfer "+source_storage+" → "+destination_storage
+        "Sonding setelah Transfer "+source_storage+" â†’ "+destination_storage
     ))return;
 
     const lossQty=r1(n(measurement.sourceQty)-qty);
@@ -3547,7 +3567,7 @@ async function saveTransfer(){
 
     if(Math.abs(lossQty)>lossLimit){
         const lanjut=confirm(
-            "⚠️ SELISIH TRANSFER PERLU DICEK\n\n"+
+            "âš ï¸ SELISIH TRANSFER PERLU DICEK\n\n"+
             "Keluar "+source_storage+": "+fmt(measurement.sourceQty)+"\n"+
             "Masuk "+destination_storage+": "+fmt(qty)+"\n"+
             "Selisih/loss: "+fmtSigned(lossQty)+"\n\n"+
@@ -3565,15 +3585,15 @@ async function saveTransfer(){
 
     // LOCK setelah seluruh validasi/konfirmasi selesai dan sebelum request dikirim.
     if(!beginStockSave(
-        "Menyimpan Transfer "+source_storage+" → "+destination_storage+"..."
+        "Menyimpan Transfer "+source_storage+" â†’ "+destination_storage+"..."
     ))return;
 
     const noteParts=[
-        `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) → ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
+        `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) â†’ ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
     ];
 
     noteParts.push(
-        `Sumber ${source_storage}: ${measurement.sourceBefore.matchedHeightCm} cm (${measurement.sourceBefore.liters} L) → ${measurement.sourceAfter.matchedHeightCm} cm (${measurement.sourceAfter.liters} L); selisih/loss ${lossQty} L`
+        `Sumber ${source_storage}: ${measurement.sourceBefore.matchedHeightCm} cm (${measurement.sourceBefore.liters} L) â†’ ${measurement.sourceAfter.matchedHeightCm} cm (${measurement.sourceAfter.liters} L); selisih/loss ${lossQty} L`
     );
 
     const {error}=await db.from("stock_movements").insert({
@@ -3603,8 +3623,8 @@ async function saveTransfer(){
 
     document.getElementById("transferStatus").textContent=
         error
-            ?"❌ "+error.message
-            :"✅ Transfer "+source_storage+" → "+destination_storage+" tersimpan. Loss "+fmtSigned(lossQty)+" tercatat.";
+            ?"âŒ "+error.message
+            :"âœ… Transfer "+source_storage+" â†’ "+destination_storage+" tersimpan. Loss "+fmtSigned(lossQty)+" tercatat.";
 
     if(error){
         await finishStockSave(false,error.message);
@@ -3624,7 +3644,7 @@ async function saveTransfer(){
     await loadStock();
     await finishStockSave(
         true,
-        "Transfer "+source_storage+" → "+destination_storage+" sudah tersimpan."
+        "Transfer "+source_storage+" â†’ "+destination_storage+" sudah tersimpan."
     );
 }
 
@@ -3733,7 +3753,7 @@ async function saveClosing(){
 
     if(nearFullClosing.length){
         const lanjut=confirm(
-            "⚠️ CLOSING MENDEKATI KAPASITAS\n\n"+
+            "âš ï¸ CLOSING MENDEKATI KAPASITAS\n\n"+
             nearFullClosing
                 .map(row=>capacityMessage(row.storage,row.actual_qty))
                 .join("\n")+
@@ -3752,7 +3772,7 @@ async function saveClosing(){
 
     if(closingError){
         document.getElementById("closingStatus").textContent=
-            "❌ Gagal simpan closing: "+closingError.message;
+            "âŒ Gagal simpan closing: "+closingError.message;
         await finishStockSave(false,"Gagal simpan closing: "+closingError.message);
         return;
     }
@@ -3779,7 +3799,7 @@ async function saveClosing(){
 
         if(openingError){
             document.getElementById("closingStatus").textContent=
-                "✅ Closing tersimpan, tapi gagal membuat opening berikutnya: "+openingError.message;
+                "âœ… Closing tersimpan, tapi gagal membuat opening berikutnya: "+openingError.message;
             await loadStock();
             await finishStockSave(
                 false,
@@ -3790,16 +3810,16 @@ async function saveClosing(){
 
         document.getElementById("closingStatus").textContent=
             isFuelman
-                ? "✅ Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                ? "âœ… Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
                   " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
-                : "✅ Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
+                : "âœ… Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
                   nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
     }else{
         document.getElementById("closingStatus").textContent=
             isFuelman
-                ? "✅ Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                ? "âœ… Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
                   " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
-                : "✅ Stock closing tersimpan.";
+                : "âœ… Stock closing tersimpan.";
     }
 
     await loadStock();
