@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- KPP-FMS OPERATOR CHECK-IN v1.0: public QR form, no account required -->
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Check-in Operator - KPP TRAM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;min-height:100vh;padding:16px;background:radial-gradient(circle at 15% 8%,rgba(37,99,235,.28),transparent 30%),linear-gradient(145deg,#06101f,#0d2342);color:#0f172a;display:grid;place-items:center}
+.card{width:min(470px,100%);background:#fff;border:1px solid rgba(147,197,253,.5);border-radius:20px;padding:24px;box-shadow:0 24px 65px rgba(2,6,23,.4)}
+.brand{text-align:center;padding-bottom:17px;border-bottom:1px solid #e2e8f0;margin-bottom:19px}.brand img{width:120px;height:64px;object-fit:contain;background:#000;border-radius:11px}.brand h1{margin:12px 0 4px;font-size:21px}.brand p{margin:0;color:#64748b;font-size:12px;line-height:1.45}
+.unit-card{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:13px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;margin-bottom:16px}.unit-card small{display:block;color:#64748b;font-size:10px;font-weight:800}.unit-card strong{display:block;margin-top:3px;color:#1d4ed8;font-size:23px}.shift{padding:7px 9px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:10px;font-weight:900;text-align:center}
+label{display:block;margin:13px 0 6px;color:#334155;font-size:12px;font-weight:900}input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font-size:15px}input[readonly]{background:#f8fafc;font-weight:800}.hint{margin-top:5px;color:#64748b;font-size:10px;line-height:1.4}
+.submit{width:100%;margin-top:19px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 10px 20px rgba(5,150,105,.22)}.submit:disabled{background:#94a3b8;box-shadow:none}.status{min-height:18px;margin-top:13px;text-align:center;font-size:12px;font-weight:800;line-height:1.5}.error{color:#b91c1c}.success{color:#166534}
+.done{display:none;text-align:center;padding:12px 0}.done .check{width:58px;height:58px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;background:#dcfce7;color:#15803d;font-size:28px;font-weight:900}.done h2{margin:0 0 7px}.done pre{text-align:left;white-space:pre-wrap;padding:13px;border-radius:10px;background:#0f172a;color:#e2e8f0;font-size:11px;line-height:1.55}.again{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer}
+@media(max-width:430px){body{padding:10px}.card{padding:19px;border-radius:16px}.brand h1{font-size:19px}.brand img{width:108px;height:58px}}
+</style>
+</head>
+<body>
+<main class="card">
+  <section id="formView">
+    <div class="brand"><img src="kpp-logo.png" alt="KPP Mining"><h1>CHECK-IN OPERATOR UNIT</h1><p>Scan QR unit, isi identitas dan HM awal sebelum mulai membawa unit.</p></div>
+    <div class="unit-card"><div><small>UNIT HASIL SCAN</small><strong id="unitDisplay">Memeriksa...</strong><small id="egiDisplay">-</small></div><div class="shift" id="shiftDisplay">-</div></div>
+    <input type="hidden" id="unit"><input type="hidden" id="token">
+    <label>Nama Operator</label><input id="operatorName" maxlength="80" autocomplete="name" placeholder="Nama lengkap operator">
+    <label>NRP (Opsional)</label><input id="nrp" maxlength="30" inputmode="numeric" placeholder="Nomor NRP jika tersedia">
+    <label>HM Awal</label><input type="number" id="hmAwal" min="0" max="9999999" step="0.1" inputmode="decimal" placeholder="HM saat mulai membawa unit">
+    <div class="hint">HM awal ini hanya menjadi referensi CCR. Bukan HM transaksi pengisian dan tidak langsung mengubah HM Master.</div>
+    <button class="submit" id="submitBtn" disabled>KIRIM CHECK-IN</button><div class="status" id="status">Memvalidasi QR unit...</div>
+  </section>
+  <section class="done" id="doneView"><div class="check">OK</div><h2>Check-in Berhasil</h2><p>Data HM awal sudah diterima CCR.</p><pre id="doneReport"></pre><button class="again" id="againBtn">PERBAIKI / CHECK-IN ULANG</button></section>
+</main>
+<script>
+const db=supabase.createClient("https://pwowtyfybfqsveuvqrsb.supabase.co","sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0");
+const params=new URLSearchParams(location.search);let UNIT_INFO=null;
+function clean(v){return String(v??"").trim()}function fmt(v){return Number(v||0).toLocaleString("id-ID",{maximumFractionDigits:1})}
+async function validateQr(){const unit=clean(params.get("unit")).toUpperCase();const token=clean(params.get("token"));document.getElementById("unit").value=unit;document.getElementById("token").value=token;if(!unit||!token)throw new Error("QR tidak lengkap. Minta Admin/GL mencetak ulang QR unit.");const{data,error}=await db.rpc("operator_checkin_unit_info",{p_unit:unit,p_token:token});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error("QR unit tidak valid atau unit sudah tidak aktif.");UNIT_INFO=row;document.getElementById("unitDisplay").textContent=row.code_unit;document.getElementById("egiDisplay").textContent=row.egi||"Unit aktif";document.getElementById("shiftDisplay").textContent=`${row.shift}\n${row.tanggal}`;document.getElementById("status").textContent="QR valid. Silakan isi data check-in.";document.getElementById("status").className="status success";document.getElementById("submitBtn").disabled=false}
+async function submit(){const button=document.getElementById("submitBtn");const status=document.getElementById("status");const operator=clean(document.getElementById("operatorName").value);const nrp=clean(document.getElementById("nrp").value);const hmRaw=document.getElementById("hmAwal").value;const hm=hmRaw===""?null:Number(hmRaw);if(operator.length<2){status.textContent="Nama operator wajib diisi.";status.className="status error";return}if(hm===null||!Number.isFinite(hm)||hm<0){status.textContent="HM awal wajib diisi dengan angka yang benar.";status.className="status error";return}button.disabled=true;button.textContent="MENGIRIM...";status.textContent="Menyimpan check-in...";status.className="status";try{const{data,error}=await db.rpc("submit_operator_unit_checkin",{p_unit:document.getElementById("unit").value,p_token:document.getElementById("token").value,p_operator_name:operator,p_nrp:nrp||null,p_hm_awal:hm});if(error)throw error;const row=Array.isArray(data)?data[0]:data;document.getElementById("doneReport").textContent=[`Unit: ${row.unit}`,`Operator: ${row.operator_name}`,`NRP: ${row.nrp||"-"}`,`HM Awal: ${fmt(row.hm_awal)}`,`Tanggal: ${row.tanggal}`,`Jam: ${String(row.jam||"").slice(0,5)}`,`Shift: ${row.shift}`].join("\n");document.getElementById("formView").style.display="none";document.getElementById("doneView").style.display="block"}catch(error){status.textContent=error.message||"Check-in gagal.";status.className="status error";button.disabled=false;button.textContent="KIRIM CHECK-IN"}}
+document.getElementById("submitBtn").addEventListener("click",submit);document.getElementById("hmAwal").addEventListener("keydown",e=>{if(e.key==="Enter")submit()});document.getElementById("againBtn").addEventListener("click",()=>location.reload());validateQr().catch(error=>{document.getElementById("unitDisplay").textContent="QR TIDAK VALID";document.getElementById("status").textContent=error.message;document.getElementById("status").className="status error"});
+</script>
+</body>
+</html>
