@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- KPP-FMS PENGISIAN v13: accepts legacy unit QR and operator check-in URL QR -->
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -1260,6 +1261,18 @@ function normalisasiUnit(value) {
         .toUpperCase();
 }
 
+function unitDariQr(value){
+    const raw=String(value||"").trim();
+    try{
+        const url=new URL(raw);
+        const fromLink=url.searchParams.get("unit");
+        if(fromLink)return normalisasiUnit(fromLink);
+    }catch(error){
+        // QR lama hanya berisi Code Unit; tetap didukung.
+    }
+    return normalisasiUnit(raw);
+}
+
 function normalisasiCari(value) {
     return normalisasiUnit(value)
         .replace(/[^A-Z0-9]/g, "");
@@ -1615,7 +1628,7 @@ async function startQrScanner() {
 
                 qrScanLocked = true;
 
-                const unit = normalisasiUnit(decodedText);
+                const unit = unitDariQr(decodedText);
 
                 status.textContent = "QR terbaca: " + unit;
 
