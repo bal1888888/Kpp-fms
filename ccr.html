@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS CCR v7.2: CCR enters actual HM; refueling estimate disabled -->
+<!-- KPP-FMS CCR v7.3: actual HM only; estimation engine removed -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-window.KPP_ALLOWED_ROLES=["ccr","gl"];
+window.KPP_ALLOWED_ROLES=["ccr","gl","admin"];
 window.KPP_ACTIVE_PAGE="ccr";
 </script>
 <script src="auth.js"></script>
@@ -82,7 +82,6 @@ td.left{text-align:left}
 .hm-mini small{display:block;font-size:10px;font-weight:bold;color:#64748b;margin-bottom:6px}
 .hm-mini strong{display:block;font-size:20px;color:#0f172a;line-height:1.15}
 .hm-mini .mini-sub{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
-.hm-mini.estimate{display:none}
 .hm-mini.work{border-color:#bbf7d0;background:#f0fdf4}.hm-mini.work strong{color:#166534}
 .hm-warning{margin-top:9px;padding:9px 10px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;line-height:1.45;display:none}
 .input-help{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
@@ -216,11 +215,6 @@ td.left{text-align:left}
           <strong id="hmWorkCard">-</strong>
           <div class="mini-sub">Selisih HM CCR − HM sebelumnya</div>
         </div>
-        <div class="hm-mini estimate">
-          <small>ESTIMASI PERCOBAAN (TIDAK MENGUNCI)</small>
-          <strong id="hmEstimateCard">-</strong>
-          <div class="mini-sub" id="hmEstimateNote">Menunggu HM & jam pengambilan</div>
-        </div>
       </div>
       <div class="hm-warning" id="hmIntelWarning"></div>
     </div>
@@ -316,7 +310,6 @@ let ROWS=[];
 let CURRENT_HM_REF={hm:0,source:"Belum ada HM sebelumnya"};
 let CURRENT_OPERATOR_CHECKIN=null;
 let OPERATOR_CHECKINS=[];
-let HM_ESTIMATE_TIMER=null;
 
 const MASTER_LAST_HM = {
         "CB1019": 587,
@@ -610,17 +603,6 @@ async function loadHmReference(){
   }
   updateHmIntel();
 }
-function estimateHmNow(){
-  const hm=num(document.getElementById("hm").value);
-  const tanggal=document.getElementById("tanggal").value;
-  const shift=document.getElementById("shift").value;
-  const taken=document.getElementById("hmTakenTime").value;
-  if(hm===null||!tanggal||!shift||!taken)return null;
-  const start=operationalTimestamp(tanggal,shift,taken);
-  if(!start)return null;
-  const elapsed=Math.max(0,(Date.now()-start.getTime())/3600000);
-  return {hm:Math.round((hm+elapsed)*10)/10,elapsed:Math.round(elapsed*10)/10,start};
-}
 function updateHmIntel(){
   const prev=Number(CURRENT_HM_REF.hm)||0;
   const hm=num(document.getElementById("hm").value);
@@ -647,14 +629,6 @@ function updateHmIntel(){
   if(taken&&shift&&!shiftAcceptsTime(shift,taken)){
     warning.textContent=`⚠️ Jam pengambilan HM ${taken} tidak sesuai ${shift}.`;
     warning.style.display="block";
-  }
-  const est=estimateHmNow();
-  if(est){
-    document.getElementById("hmEstimateCard").textContent=fmt(est.hm);
-    document.getElementById("hmEstimateNote").textContent=`+${fmt(est.elapsed)} HM dari jam pengambilan • terus bertambah sampai refueling`;
-  }else{
-    document.getElementById("hmEstimateCard").textContent="-";
-    document.getElementById("hmEstimateNote").textContent="Menunggu HM & jam pengambilan";
   }
 }
 
@@ -871,7 +845,7 @@ async function save(){
 
 
 function openGlEdit(id){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
 
   const r=ROWS.find(x=>String(x.id)===String(id));
   if(!r)return;
@@ -896,7 +870,7 @@ function closeGlEdit(){
   document.getElementById("glEditOverlay").classList.add("hidden");
 }
 async function saveGlEdit(){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
 
   const id=Number(document.getElementById("editId").value);
   const operator=clean(document.getElementById("editOperator").value);
@@ -932,7 +906,7 @@ async function saveGlEdit(){
   alert("✅ Jatah CCR berhasil diedit.");
 }
 async function glDelete(id){
-  if(PROFILE?.role!=="gl"){alert("Khusus GL.");return;}
+  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
 
   const r=ROWS.find(x=>String(x.id)===String(id));
   if(!r)return;
@@ -1011,12 +985,12 @@ async function loadRows(){
         const canCancel=
           ["ACTIVE","PENDING_GL"].includes(r.status) &&
           (
-            PROFILE?.role==="gl" ||
+            ["gl","admin"].includes(PROFILE?.role) ||
             String(r.created_by||"")===String(window.KPP_SESSION?.user?.id||"")
           );
 
         const canGlControl=
-          PROFILE?.role==="gl" &&
+          ["gl","admin"].includes(PROFILE?.role) &&
           r.status!=="USED";
 
         return `
@@ -1030,7 +1004,7 @@ async function loadRows(){
             <td class="table-hm"><b>${fmt(r.hm_ccr)}</b></td>
             <td>${String(r.hm_taken_time||"-").slice(0,5)}</td>
             <td>${r.hm_work_since_previous===null||r.hm_work_since_previous===undefined?"-":fmt(r.hm_work_since_previous)+" jam"}</td>
-            <td>${r.used_actual_hm!==null&&r.used_actual_hm!==undefined?fmt(r.used_actual_hm):(r.used_estimated_hm===null||r.used_estimated_hm===undefined?"-":fmt(r.used_estimated_hm))}</td>
+            <td>${r.used_actual_hm===null||r.used_actual_hm===undefined?"-":fmt(r.used_actual_hm)}</td>
             <td>${fmt(r.max_qty)} L</td>
             <td>${fmt(r.tolerance_qty)} L</td>
             <td><b>${fmt(limit)} L</b></td>
@@ -1098,8 +1072,6 @@ document.addEventListener("kpp-auth-ready",async e=>{
   document.getElementById("tanggal").value=op.tanggal;
   document.getElementById("shift").value=op.shift;
   document.getElementById("hmTakenTime").value=localTimeHm();
-  if(HM_ESTIMATE_TIMER)clearInterval(HM_ESTIMATE_TIMER);
-  HM_ESTIMATE_TIMER=setInterval(updateHmIntel,60000);
 
   try{
     await expireStale();
