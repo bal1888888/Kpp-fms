@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS PENGISIAN v13.3: HM actual is entered by CCR and estimate is disabled -->
+<!-- KPP-FMS PENGISIAN v13.4: compact CCR panel without repeated information -->
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -614,12 +614,9 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
   .ccr-item{min-width:0;padding:8px!important;border-radius:8px!important}
   .ccr-item small{margin-bottom:3px!important;font-size:8px!important;line-height:1.25!important;letter-spacing:.025em}
   .ccr-item strong{font-size:14px!important;line-height:1.25!important}
-  .ccr-item:nth-child(3),.ccr-estimate,.ccr-limit{grid-column:1/-1!important}
-  .ccr-item:nth-child(3){display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:center!important;gap:8px!important}
-  .ccr-item:nth-child(3) small{margin:0!important}
-  .ccr-estimate{padding:10px!important;background:#ecfdf5!important;border-color:#86efac!important}
-  .ccr-estimate strong{font-size:19px!important;color:#166534!important}
-  .ccr-time-note{margin-top:3px!important;font-size:8px!important;line-height:1.35!important}
+  .ccr-operator,.ccr-limit{grid-column:1/-1!important}
+  .ccr-operator{display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:center!important;gap:8px!important}
+  .ccr-operator small{margin:0!important}
   .ccr-limit strong{font-size:17px!important}
 }
 </style>
@@ -677,20 +674,14 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
         <div id="fuelingModeBox" class="fueling-mode-box fueling-mode-manual hidden"></div>
 
         <div id="ccrAllocationBox" class="ccr-allocation-box hidden">
-          <h3>✅ JATAH CCR ACTIVE DITEMUKAN</h3>
+          <h3>✅ JATAH CCR ACTIVE</h3>
           <div class="ccr-grid">
-            <div class="ccr-item"><small>UNIT / QR</small><strong id="ccrUnit">-</strong></div>
             <div class="ccr-item"><small>PENGISIAN KE-</small><strong id="ccrFillingNo">-</strong></div>
-            <div class="ccr-item"><small>NAMA OPERATOR</small><strong id="ccrOperator">-</strong></div>
-            <div class="ccr-item"><small>HM SEBELUMNYA</small><strong id="ccrHmPrevious">-</strong></div>
-            <div class="ccr-item"><small>HM DIBACA CCR</small><strong id="ccrHm">-</strong></div>
-            <div class="ccr-item"><small>JAM PENGAMBILAN HM</small><strong id="ccrHmTaken">-</strong></div>
-            <div class="ccr-item"><small>JAM KERJA SEJAK REFERENSI</small><strong id="ccrHmWork">-</strong></div>
-            <div class="ccr-item ccr-estimate"><small>ESTIMASI HM SAAT REFUELING</small><strong id="ccrHmEstimate">-</strong><div class="ccr-time-note" id="ccrHmEstimateNote">Dihitung otomatis sampai saat pengisian disimpan.</div></div>
+            <div class="ccr-item"><small>HM AKTUAL CCR</small><strong id="ccrHm">-</strong></div>
+            <div class="ccr-item ccr-operator"><small>NAMA OPERATOR</small><strong id="ccrOperator">-</strong></div>
             <div class="ccr-item"><small>JATAH</small><strong id="ccrQuota">-</strong></div>
             <div class="ccr-item"><small>TOLERANSI</small><strong id="ccrTolerance">-</strong></div>
-            <div class="ccr-item"><small>SHIFT CCR</small><strong id="ccrShift">-</strong></div>
-            <div class="ccr-item ccr-limit"><small>BATAS FINAL YANG BOLEH DIISI</small><strong id="ccrFinalLimit">-</strong></div>
+            <div class="ccr-item ccr-limit"><small>BATAS MAKSIMAL PENGISIAN</small><strong id="ccrFinalLimit">-</strong></div>
           </div>
         </div>
         <div id="ccrErrorBox" class="ccr-error-box hidden"></div>
@@ -1009,7 +1000,6 @@ let fuelingMode = "manual";
 let unitScannedByQr = false;
 let currentCCRAllocation = null;
 let currentCCRLimit = 0;
-let ccrHmEstimateTimer = null;
 
 let selectedFuelTruck = "";
 let selectedWH = "";
@@ -1903,7 +1893,6 @@ function setCcrError(message) {
 
     currentCCRAllocation = null;
     currentCCRLimit = 0;
-    stopCcrHmEstimateTimer();
 
     okBox.classList.add("hidden");
     form.classList.add("hidden");
@@ -1931,62 +1920,6 @@ function numberShiftToCcr(value) {
     if (Number(value) === 1) return "Shift 1";
     if (Number(value) === 2) return "Shift 2";
     return "";
-}
-
-function ccrOperationalTimestamp(tanggal, shift, timeValue) {
-    if (!tanggal || !shift || !timeValue) return null;
-    const parts = String(timeValue).split(":");
-    const hh = Number(parts[0] || 0);
-    const mm = Number(parts[1] || 0);
-    const ss = Number(parts[2] || 0);
-    const dateParts = String(tanggal).split("-").map(Number);
-    const dt = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hh, mm, ss, 0);
-    if (String(shift) === "Shift 2" && (hh * 60 + mm) < 390) {
-        dt.setDate(dt.getDate() + 1);
-    }
-    return dt;
-}
-
-function estimateCcrHm(row, refuelJam) {
-    if (!row) return null;
-    const base = Number(row.hm_ccr);
-    if (!Number.isFinite(base) || !row.hm_taken_time) return null;
-
-    const start = ccrOperationalTimestamp(row.tanggal, row.shift, row.hm_taken_time);
-    let finish;
-
-    if (refuelJam) {
-        finish = ccrOperationalTimestamp(row.tanggal, row.shift, refuelJam);
-    } else {
-        finish = new Date();
-    }
-
-    if (!start || !finish) return null;
-    const elapsed = Math.max(0, (finish.getTime() - start.getTime()) / 3600000);
-    return {
-        hm: Math.round((base + elapsed) * 10) / 10,
-        elapsed: Math.round(elapsed * 10) / 10
-    };
-}
-
-function refreshCcrHmEstimate() {
-    if (!currentCCRAllocation || fuelingMode !== "ccr") return;
-    const estimateEl = document.getElementById("ccrHmEstimate");
-    const estimateNote = document.getElementById("ccrHmEstimateNote");
-    if (estimateEl) estimateEl.textContent = "DINONAKTIFKAN";
-    if (estimateNote) estimateNote.textContent = "Sistem memakai HM aktual yang dimasukkan CCR tanpa tambahan estimasi waktu.";
-}
-
-function stopCcrHmEstimateTimer() {
-    if (ccrHmEstimateTimer) {
-        clearInterval(ccrHmEstimateTimer);
-        ccrHmEstimateTimer = null;
-    }
-}
-
-function startCcrHmEstimateTimer() {
-    stopCcrHmEstimateTimer();
-    refreshCcrHmEstimate();
 }
 
 async function ambilKontrolCcrHariIni(unit) {
@@ -2040,7 +1973,6 @@ async function ambilKontrolCcrHariIni(unit) {
 function siapkanFormManual() {
     currentCCRAllocation = null;
     currentCCRLimit = 0;
-    stopCcrHmEstimateTimer();
 
     document.getElementById("ccrAllocationBox")
         .classList.add("hidden");
@@ -2101,26 +2033,14 @@ function tampilkanJatahCcr(row) {
         Number(row.max_qty || 0) +
         Number(row.tolerance_qty || 0);
 
-    document.getElementById("ccrUnit").textContent = row.unit || "-";
     document.getElementById("ccrFillingNo").textContent = row.filling_no || "-";
     document.getElementById("ccrOperator").textContent = row.operator_unit || "-";
-    document.getElementById("ccrHmPrevious").textContent =
-        row.hm_previous_ref !== null && row.hm_previous_ref !== undefined
-            ? Number(row.hm_previous_ref).toLocaleString("id-ID", {maximumFractionDigits:1})
-            : "-";
     document.getElementById("ccrHm").textContent =
         Number(row.hm_ccr).toLocaleString("id-ID", {maximumFractionDigits:1});
-    document.getElementById("ccrHmTaken").textContent =
-        row.hm_taken_time ? String(row.hm_taken_time).slice(0,5) : "-";
-    document.getElementById("ccrHmWork").textContent =
-        row.hm_work_since_previous !== null && row.hm_work_since_previous !== undefined
-            ? Number(row.hm_work_since_previous).toLocaleString("id-ID", {maximumFractionDigits:1}) + " jam"
-            : "-";
     document.getElementById("ccrQuota").textContent =
         Number(row.max_qty || 0).toLocaleString("id-ID") + " L";
     document.getElementById("ccrTolerance").textContent =
         Number(row.tolerance_qty || 0).toLocaleString("id-ID") + " L";
-    document.getElementById("ccrShift").textContent = row.shift || "-";
     document.getElementById("ccrFinalLimit").textContent =
         currentCCRLimit.toLocaleString("id-ID") + " L";
 
@@ -2153,7 +2073,6 @@ function tampilkanJatahCcr(row) {
         "MODE CCR - QR unit, operator, HM aktual dan batas liter dikunci dari data CCR. Estimasi HM dinonaktifkan."
     );
 
-    startCcrHmEstimateTimer();
 }
 
 async function cekUnit() {
@@ -2307,7 +2226,6 @@ async function cekUnit() {
                 document.getElementById("warning").style.display = "none";
             }
 
-            refreshCcrHmEstimate();
             return;
         }
 
@@ -2767,7 +2685,6 @@ document
                         "Jatah berubah menjadi USED ✅"
                     );
 
-                    stopCcrHmEstimateTimer();
                     location.reload();
 
                 } catch (error) {
