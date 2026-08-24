@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS PENGISIAN v13.1: compact CCR allocation panel on mobile -->
+<!-- KPP-FMS PENGISIAN v13.3: HM actual is entered by CCR and estimate is disabled -->
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -1887,7 +1887,7 @@ function setFuelingMode(mode, message) {
         box.classList.add("fueling-mode-ccr");
         box.textContent =
             message ||
-            "🔒 MODE CCR — QR wajib, data Operator/HM/Jatah mengikuti CCR.";
+            "MODE CCR - QR, operator, HM aktual dan batas liter mengikuti data CCR.";
     } else {
         box.classList.add("fueling-mode-manual");
         box.textContent =
@@ -1971,22 +1971,10 @@ function estimateCcrHm(row, refuelJam) {
 
 function refreshCcrHmEstimate() {
     if (!currentCCRAllocation || fuelingMode !== "ccr") return;
-    const est = estimateCcrHm(currentCCRAllocation);
-    if (!est) return;
-
     const estimateEl = document.getElementById("ccrHmEstimate");
     const estimateNote = document.getElementById("ccrHmEstimateNote");
-    const hmInput = document.getElementById("currentHm");
-
-    if (estimateEl) estimateEl.textContent = est.hm.toLocaleString("id-ID", {maximumFractionDigits:1});
-    if (estimateNote) estimateNote.textContent = `+${est.elapsed.toLocaleString("id-ID", {maximumFractionDigits:1})} HM sejak jam pengambilan • terus diperbarui sampai simpan`;
-    if (hmInput) hmInput.value = est.hm;
-
-    if (previousHM > 0 && est.hm >= previousHM) {
-        document.getElementById("hmDifference").textContent =
-            (est.hm - previousHM).toLocaleString("id-ID", {maximumFractionDigits:1}) + " HM";
-        document.getElementById("warning").style.display = "none";
-    }
+    if (estimateEl) estimateEl.textContent = "DINONAKTIFKAN";
+    if (estimateNote) estimateNote.textContent = "Sistem memakai HM aktual yang dimasukkan CCR tanpa tambahan estimasi waktu.";
 }
 
 function stopCcrHmEstimateTimer() {
@@ -1999,7 +1987,6 @@ function stopCcrHmEstimateTimer() {
 function startCcrHmEstimateTimer() {
     stopCcrHmEstimateTimer();
     refreshCcrHmEstimate();
-    ccrHmEstimateTimer = setInterval(refreshCcrHmEstimate, 30000);
 }
 
 async function ambilKontrolCcrHariIni(unit) {
@@ -2146,11 +2133,12 @@ function tampilkanJatahCcr(row) {
     operatorInput.placeholder = "Otomatis dari CCR";
 
     const hmInput = document.getElementById("currentHm");
+    hmInput.value = Number(row.hm_ccr).toFixed(1).replace(/\.0$/, "");
     hmInput.readOnly = true;
     hmInput.classList.add("ccr-locked");
-    hmInput.placeholder = "Estimasi otomatis dari CCR";
+    hmInput.placeholder = "HM aktual dari CCR";
     const hmLabel = hmInput.closest(".form-group").querySelector("label");
-    if (hmLabel) hmLabel.textContent = "HM Sekarang / Estimasi Refueling";
+    if (hmLabel) hmLabel.textContent = "HM Aktual dari CCR";
 
     const fuel = document.getElementById("fuelQty");
     fuel.value = "";
@@ -2162,7 +2150,7 @@ function tampilkanJatahCcr(row) {
 
     setFuelingMode(
         "ccr",
-        "🔒 MODE CCR — QR unit wajib. Operator, jatah dan estimasi HM dikunci dari data CCR."
+        "MODE CCR - QR unit, operator, HM aktual dan batas liter dikunci dari data CCR. Estimasi HM dinonaktifkan."
     );
 
     startCcrHmEstimateTimer();
@@ -2303,17 +2291,16 @@ async function cekUnit() {
                 applyShiftSelection(allocationShift, true);
             }
 
-            const est = estimateCcrHm(allocation);
-            const effectiveHm = est && Number.isFinite(est.hm) ? est.hm : Number(allocation.hm_ccr);
+            const effectiveHm = Number(allocation.hm_ccr);
 
             if (previousHM > 0 && Number.isFinite(effectiveHm) && effectiveHm >= previousHM) {
                 document.getElementById("hmDifference").textContent =
                     (effectiveHm - previousHM).toLocaleString("id-ID", {maximumFractionDigits:1}) + " HM";
                 document.getElementById("warning").style.display = "none";
             } else if (previousHM > 0 && Number.isFinite(effectiveHm) && effectiveHm < previousHM) {
-                document.getElementById("hmDifference").textContent = "HM ESTIMASI < HM REFERENSI";
+                document.getElementById("hmDifference").textContent = "HM CCR < HM REFERENSI";
                 document.getElementById("warning").textContent =
-                    "⚠️ HM estimasi lebih kecil dari HM referensi. Cek data HM CCR sebelum pengisian.";
+                    "⚠️ HM aktual dari CCR lebih kecil dari HM referensi. Cek kembali data HM CCR sebelum pengisian.";
                 document.getElementById("warning").style.display = "block";
             } else {
                 document.getElementById("hmDifference").textContent = "Data awal";
@@ -2670,6 +2657,7 @@ document
 
                 const baseHm = Number(currentCCRAllocation.hm_ccr);
                 const operator = String(currentCCRAllocation.operator_unit || "").trim();
+                const actualHm = baseHm;
 
                 if (!Number.isFinite(baseHm)) {
                     alert("HM CCR tidak valid.");
@@ -2714,7 +2702,7 @@ document
                 try {
                     const { data, error } =
                         await supabaseClient.rpc(
-                            "submit_ccr_fueling",
+                            "submit_ccr_fueling_actual_hm",
                             {
                                 p_allocation_id:
                                     currentCCRAllocation.id,
@@ -2735,6 +2723,9 @@ document
                                     previousHM > 0
                                         ? previousHM
                                         : null,
+
+                                p_actual_hm:
+                                    actualHm,
 
                                 p_session_id:
                                     activeFuelmanSession
@@ -2761,8 +2752,8 @@ document
                         "Jam Ambil HM: " +
                         String(currentCCRAllocation.hm_taken_time || "-").slice(0,5) +
                         "\n" +
-                        "HM Estimasi Refueling: " +
-                        Number(data?.hm_estimated ?? document.getElementById("currentHm").value).toLocaleString("id-ID", {maximumFractionDigits:1}) +
+                        "HM Aktual dari CCR: " +
+                        actualHm.toLocaleString("id-ID", {maximumFractionDigits:1}) +
                         "\n" +
                         "Pengisian Ke: " +
                         currentCCRAllocation.filling_no +
