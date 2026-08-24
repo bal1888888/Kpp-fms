@@ -10,43 +10,55 @@
 body{margin:0;min-height:100vh;background:radial-gradient(circle at 14% 10%,rgba(37,99,235,.34),transparent 28%),radial-gradient(circle at 86% 18%,rgba(14,165,233,.17),transparent 25%),linear-gradient(145deg,#050b15 0%,#0a1730 52%,#10284a 100%);display:flex;align-items:center;justify-content:center;padding:18px;color:#111827}
 .box{width:100%;max-width:470px;background:rgba(255,255,255,.98);border:1px solid rgba(147,197,253,.42);border-radius:20px;padding:30px;box-shadow:0 24px 70px rgba(2,6,23,.42),0 0 0 1px rgba(255,255,255,.12)}
 .brand{text-align:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid #e2e8f0}
-.brand-marks{display:flex;align-items:center;justify-content:center;gap:15px;margin:0 auto 13px}
-.brand-logo-shell{width:128px;height:74px;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 22px rgba(2,6,23,.18)}
+.brand-logo-shell{width:128px;height:74px;margin:0 auto 13px;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 8px 22px rgba(2,6,23,.18)}
 .brand-logo{width:100%;height:100%;display:block;object-fit:contain}
-.brand-sm-shell{width:70px;height:78px;display:grid;place-items:center}
-.brand-sm-logo{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 9px rgba(15,23,42,.22))}
 .brand-kicker{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;margin-bottom:10px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:10px;font-weight:900;letter-spacing:.10em}
 .brand-kicker::before{content:"";width:7px;height:7px;border-radius:50%;background:#16a34a}
 .brand h1{margin:0 0 7px;font-size:23px;color:#0f172a;letter-spacing:.2px;line-height:1.18}
 .brand p{margin:0;color:#64748b;font-size:13px}
 label{display:block;font-size:13px;font-weight:bold;margin:15px 0 7px}
-select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;background:#fff}
+input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;background:#fff}
+.account-picker{position:relative}
+.account-picker-button{width:100%;min-height:45px;margin:0;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;box-shadow:none;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:14px;font-weight:700;cursor:pointer}
+.account-picker-button:hover,.account-picker-button.open{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.account-picker-button .chevron{color:#64748b;font-size:12px;transition:transform .18s}
+.account-picker-button.open .chevron{transform:rotate(180deg)}
+.account-menu{position:absolute;left:0;right:0;top:calc(100% + 7px);z-index:30;display:none;max-height:280px;overflow-y:auto;padding:7px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;box-shadow:0 18px 45px rgba(15,23,42,.22)}
+.account-menu.open{display:grid;gap:4px}
+.account-option{width:100%;margin:0;padding:9px 10px;border:0;border-radius:9px;background:#fff;color:#0f172a;box-shadow:none;display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;text-align:left;font-size:13px;cursor:pointer}
+.account-option:hover,.account-option.selected{background:#eff6ff}
+.account-initial{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;font-size:11px;font-weight:900}
+.account-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.account-role{padding:4px 7px;border-radius:999px;background:#e2e8f0;color:#475569;font-size:9px;font-weight:900;letter-spacing:.04em}
+.account-empty{padding:12px;text-align:center;color:#64748b;font-size:12px}
 .account-preview{margin-top:12px;padding:13px;border-radius:10px;background:#eff6ff;border:1px solid #93c5fd;display:none}
 .account-preview strong{display:block;margin-bottom:5px}
 .account-preview span{font-size:12px;color:#475569}
-button{width:100%;border:0;border-radius:10px;padding:13px;margin-top:20px;background:linear-gradient(135deg,#1d4ed8,#2563eb 58%,#3b82f6);color:#fff;font-size:15px;font-weight:bold;cursor:pointer;box-shadow:0 10px 22px rgba(37,99,235,.24)}
-button:disabled{background:#94a3b8}
+#loginBtn{width:100%;border:0;border-radius:10px;padding:13px;margin-top:20px;background:linear-gradient(135deg,#1d4ed8,#2563eb 58%,#3b82f6);color:#fff;font-size:15px;font-weight:bold;cursor:pointer;box-shadow:0 10px 22px rgba(37,99,235,.24)}
+#loginBtn:disabled{background:#94a3b8}
 .status{min-height:18px;text-align:center;font-size:13px;font-weight:bold;margin-top:13px}
 .note{margin-top:18px;padding:12px;background:#f8fafc;border:1px solid #dbe3ee;border-radius:10px;font-size:12px;color:#64748b;line-height:1.5}
-@media(max-width:480px){.box{padding:24px 20px}.brand-marks{gap:11px}.brand-logo-shell{width:112px;height:66px}.brand-sm-shell{width:60px;height:68px}.brand h1{font-size:21px}}
+@media(max-width:480px){.box{padding:24px 20px}.brand-logo-shell{width:122px;height:70px}.brand h1{font-size:21px}.account-menu{max-height:245px}.account-option{grid-template-columns:30px minmax(0,1fr) auto;padding:8px}.account-role{font-size:8px}}
 </style>
 </head>
 <body>
 <div class="box">
   <div class="brand">
-    <div class="brand-marks">
-      <div class="brand-logo-shell"><img class="brand-logo" src="kpp-logo.png" alt="KPP Mining"></div>
-      <div class="brand-sm-shell"><img class="brand-sm-logo" src="kpp-tram-sm.png" alt="SM KPP TRAM"></div>
-    </div>
+    <div class="brand-logo-shell"><img class="brand-logo" src="kpp-logo.png" alt="KPP Mining"></div>
     <div class="brand-kicker">TRAM SITE</div>
     <h1>KPP TRAM FUEL MANAGEMENT SYSTEM</h1>
-    <p>Fuel Operation • Integrated Mining Services</p>
+    <p>Fuel Operation â€¢ Integrated Mining Services</p>
   </div>
 
   <label>Akun</label>
-  <select id="account">
-    <option value="">Memuat daftar akun...</option>
-  </select>
+  <div class="account-picker" id="accountPicker">
+    <input type="hidden" id="account" value="">
+    <button type="button" class="account-picker-button" id="accountPickerButton" aria-expanded="false">
+      <span id="accountPickerText">Memuat daftar akun...</span>
+      <span class="chevron">âŒ„</span>
+    </button>
+    <div class="account-menu" id="accountMenu" role="listbox"></div>
+  </div>
 
   <div id="preview" class="account-preview">
     <strong id="previewName">-</strong>
@@ -65,6 +77,10 @@ button:disabled{background:#94a3b8}
 const db=supabase.createClient("https://pwowtyfybfqsveuvqrsb.supabase.co","sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0");
 let DIRECTORY=[];
 
+function esc(value){
+  return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
 function labelRole(r){
   if(r==="gl")return "GL";
   if(r==="admin")return "ADMIN";
@@ -73,25 +89,47 @@ function labelRole(r){
 }
 
 async function loadDirectory(){
-  const select=document.getElementById("account");
+  const menu=document.getElementById("accountMenu");
+  const pickerText=document.getElementById("accountPickerText");
   const status=document.getElementById("status");
 
   const {data,error}=await db.rpc("login_directory");
 
   if(error){
-    select.innerHTML='<option value="">Gagal memuat akun</option>';
-    status.textContent="❌ "+error.message;
+    pickerText.textContent="Gagal memuat akun";
+    menu.innerHTML='<div class="account-empty">Daftar akun tidak tersedia.</div>';
+    status.textContent="âŒ "+error.message;
     return;
   }
 
   DIRECTORY=data||[];
 
-  select.innerHTML='<option value="">-- Pilih Akun --</option>'+
-    DIRECTORY.map(row=>`
-      <option value="${row.username}">
-        ${row.display_name} — ${row.jabatan || labelRole(row.role)}
-      </option>
-    `).join("");
+  pickerText.textContent="-- Pilih Akun --";
+  menu.innerHTML=DIRECTORY.length
+    ? DIRECTORY.map(row=>{const role=row.jabatan||labelRole(row.role);const initial=String(row.display_name||row.username||"?").trim().slice(0,1).toUpperCase();return`
+      <button type="button" class="account-option" data-username="${esc(row.username)}" role="option">
+        <span class="account-initial">${esc(initial)}</span>
+        <span class="account-name">${esc(row.display_name||row.username)}</span>
+        <span class="account-role">${esc(role)}</span>
+      </button>`}).join("")
+    : '<div class="account-empty">Belum ada akun aktif.</div>';
+}
+
+function closeAccountMenu(){
+  document.getElementById("accountMenu").classList.remove("open");
+  document.getElementById("accountPickerButton").classList.remove("open");
+  document.getElementById("accountPickerButton").setAttribute("aria-expanded","false");
+}
+
+function selectAccount(username){
+  const row=DIRECTORY.find(x=>x.username===username);
+  if(!row)return;
+  document.getElementById("account").value=row.username;
+  document.getElementById("accountPickerText").textContent=`${row.display_name} â€” ${row.jabatan||labelRole(row.role)}`;
+  document.querySelectorAll(".account-option").forEach(option=>option.classList.toggle("selected",option.dataset.username===username));
+  closeAccountMenu();
+  showPreview();
+  document.getElementById("password").focus();
 }
 
 function showPreview(){
@@ -139,12 +177,12 @@ async function login(){
   const btn=document.getElementById("loginBtn");
 
   if(!username){
-    status.textContent="❌ Pilih akun.";
+    status.textContent="âŒ Pilih akun.";
     return;
   }
 
   if(!password){
-    status.textContent="❌ Masukkan password.";
+    status.textContent="âŒ Masukkan password.";
     return;
   }
 
@@ -160,13 +198,26 @@ async function login(){
 
     await route();
   }catch(error){
-    status.textContent="❌ Password salah atau akun tidak dapat digunakan.";
+    status.textContent="âŒ Password salah atau akun tidak dapat digunakan.";
     btn.disabled=false;
     btn.textContent="MASUK";
   }
 }
 
-document.getElementById("account").addEventListener("change",showPreview);
+document.getElementById("accountPickerButton").addEventListener("click",()=>{
+  const menu=document.getElementById("accountMenu");
+  const button=document.getElementById("accountPickerButton");
+  const open=!menu.classList.contains("open");
+  menu.classList.toggle("open",open);
+  button.classList.toggle("open",open);
+  button.setAttribute("aria-expanded",open?"true":"false");
+});
+document.getElementById("accountMenu").addEventListener("click",event=>{
+  const option=event.target.closest(".account-option");
+  if(option)selectAccount(option.dataset.username);
+});
+document.addEventListener("click",event=>{if(!event.target.closest("#accountPicker"))closeAccountMenu()});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")closeAccountMenu()});
 document.getElementById("loginBtn").addEventListener("click",login);
 document.getElementById("password").addEventListener("keydown",e=>{if(e.key==="Enter")login();});
 
