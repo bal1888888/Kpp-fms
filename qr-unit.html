@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS QR UNIT v2.0: permanent operator check-in link -->
+<!-- KPP-FMS QR UNIT v2.1: centered print cards with cutting space -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -70,23 +70,39 @@ button{border:0;border-radius:9px;padding:11px 15px;font-weight:bold;cursor:poin
 }
 
 @media print{
-  body{background:#fff}
+  @page{size:A4 portrait;margin:10mm}
+  html,body{margin:0!important;padding:0!important;background:#fff}
   body > *{display:none!important}
-  #printArea{display:block!important}
+  #printArea{display:block!important;width:100%!important;margin:0!important;padding:0!important}
   #printArea .print-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10mm;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-content:flex-start;
+    gap:8mm 10mm;
+    width:100%;
+    margin:0 auto;
   }
   #printArea .print-card{
-    border:1px solid #000;
-    padding:6mm;
+    width:82mm;
+    min-height:78mm;
+    border:.4mm dashed #666;
+    padding:5mm;
     text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    box-sizing:border-box;
     page-break-inside:avoid;
+    break-inside:avoid;
   }
   #printArea .print-card img{
     width:42mm;
     height:42mm;
+    display:block;
+    margin:0 auto;
+    object-fit:contain;
   }
   #printArea .print-unit{
     font-size:18pt;
