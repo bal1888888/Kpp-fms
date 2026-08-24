@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- KPP-FMS CCR v7.0: operator HM awal check-in reference -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -86,8 +87,10 @@ td.left{text-align:left}
 .hm-warning{margin-top:9px;padding:9px 10px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11px;line-height:1.45;display:none}
 .input-help{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
 .table-hm{white-space:nowrap}
+.checkin-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.checkin-head h2{margin:0 0 5px}.checkin-head p{margin:0;color:#64748b;font-size:11px;line-height:1.45}.checkin-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:13px}.checkin-card{border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;padding:11px}.checkin-card.selected{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}.checkin-card-top{display:flex;justify-content:space-between;gap:8px}.checkin-card strong{font-size:17px;color:#1d4ed8}.checkin-card small{color:#64748b;font-size:9px}.checkin-line{margin-top:6px;color:#334155;font-size:11px;line-height:1.4}.checkin-hm{font-size:19px;font-weight:900;color:#166534}.checkin-use{width:100%;margin-top:9px;padding:8px;background:#2563eb;color:#fff;font-size:10px}.checkin-empty{grid-column:1/-1;padding:15px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;font-size:11px}.checkin-selected{display:none;margin-top:12px;padding:11px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:11px;line-height:1.5}
 @media(max-width:900px){.hm-intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.hm-intel-grid{grid-template-columns:1fr}.hm-intel-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}}
+@media(max-width:900px){.checkin-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.hm-intel-grid,.checkin-list{grid-template-columns:1fr}.hm-intel-head,.checkin-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}.checkin-head button{width:100%;margin-top:10px}}
 
 </style>
 </head>
@@ -104,9 +107,9 @@ td.left{text-align:left}
 <div class="container">
 
   <div class="qr-box">
-    <b>QR = CODE UNIT.</b><br>
-    Contoh QR ditempel di HD7441 dan isinya hanya <b>HD7441</b>.
-    CCR menentukan <b>operator, HM, jam pengambilan HM, jatah dan toleransi</b>. Identitas kontrol pengisian tetap <b>UNIT / QR Unit</b>.
+    <b>QR UNIT = CHECK-IN OPERATOR TANPA AKUN.</b><br>
+    Operator scan QR, lalu mengirim nama, NRP (opsional), dan <b>HM awal operasional</b>.
+    CCR dapat memakai identitasnya dari panel check-in. HM awal tetap terpisah dari HM transaksi pengisian.
   </div>
 
   <div class="info">
@@ -118,6 +121,15 @@ td.left{text-align:left}
   <div class="shift-clock">
     <b>Jam Shift:</b> Shift 1 = 06:30–18:30 • Shift 2 = 18:30–06:30.
     Jatah ACTIVE/PENDING yang lewat akhir shift otomatis menjadi <b>EXPIRED</b>.
+  </div>
+
+  <div class="panel">
+    <div class="checkin-head">
+      <div><h2>Check-in HM Awal Operator</h2><p>Masuk otomatis dari QR unit. HM awal hanya referensi operasional dan tidak mengganti HM pengisian.</p></div>
+      <button type="button" class="btn-outline" id="refreshCheckinBtn">REFRESH CHECK-IN</button>
+    </div>
+    <div class="checkin-list" id="checkinList"><div class="checkin-empty">Memuat check-in operator...</div></div>
+    <div class="checkin-selected" id="checkinSelected"></div>
   </div>
 
   <div class="panel">
@@ -302,6 +314,8 @@ const db=window.KPP.db;
 let PROFILE=null;
 let ROWS=[];
 let CURRENT_HM_REF={hm:0,source:"Belum ada HM sebelumnya"};
+let CURRENT_OPERATOR_CHECKIN=null;
+let OPERATOR_CHECKINS=[];
 let HM_ESTIMATE_TIMER=null;
 
 const MASTER_LAST_HM = {
@@ -457,6 +471,48 @@ function esc(v){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+function showSelectedCheckin(row){
+  CURRENT_OPERATOR_CHECKIN=row||null;
+  const host=document.getElementById("checkinSelected");
+  document.querySelectorAll(".checkin-card").forEach(card=>card.classList.toggle("selected",row&&Number(card.dataset.id)===Number(row.id)));
+  if(!row){host.style.display="none";host.textContent="";return}
+  host.style.display="block";
+  host.innerHTML=`<b>Referensi terpilih:</b> ${esc(row.unit)} - ${esc(row.operator_name)} - HM Awal ${fmt(row.hm_awal)} - ${esc(String(row.jam||"").slice(0,5))}. <b>HM ini tidak mengganti HM pengisian.</b>`;
+}
+
+async function useOperatorCheckin(id){
+  const row=OPERATOR_CHECKINS.find(item=>Number(item.id)===Number(id));
+  if(!row)return;
+  showSelectedCheckin(row);
+  document.getElementById("tanggal").value=row.tanggal;
+  document.getElementById("shift").value=row.shift;
+  document.getElementById("unit").value=row.unit;
+  document.getElementById("operator").value=row.operator_name||"";
+  updateQrDisplay();
+  await loadHmReference();
+  await refreshFillingNo();
+  updateHmIntel();
+  document.getElementById("maxQty").focus();
+}
+
+async function loadOperatorCheckins(){
+  const host=document.getElementById("checkinList");
+  host.innerHTML='<div class="checkin-empty">Memuat check-in operator...</div>';
+  const op=currentOperationalShift();
+  const {data,error}=await db.from("operator_unit_checkins")
+    .select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status")
+    .eq("tanggal",op.tanggal).eq("shift",op.shift).eq("status","ACTIVE")
+    .order("created_at",{ascending:false}).limit(100);
+  if(error){host.innerHTML=`<div class="checkin-empty">Check-in belum tersedia: ${esc(error.message)}</div>`;return}
+  OPERATOR_CHECKINS=data||[];
+  if(!OPERATOR_CHECKINS.length){host.innerHTML='<div class="checkin-empty">Belum ada operator check-in pada shift aktif.</div>';showSelectedCheckin(null);return}
+  host.innerHTML=OPERATOR_CHECKINS.map(row=>`<div class="checkin-card" data-id="${row.id}"><div class="checkin-card-top"><strong>${esc(row.unit)}</strong><small>${esc(String(row.jam||"").slice(0,5))}</small></div><div class="checkin-line">${esc(row.operator_name)}${row.nrp?` - NRP ${esc(row.nrp)}`:""}</div><div class="checkin-hm">HM Awal ${fmt(row.hm_awal)}</div><div class="checkin-line">${esc(row.egi||"-")} - ${esc(row.shift)}</div><button type="button" class="checkin-use" data-id="${row.id}">PAKAI IDENTITAS</button></div>`).join("");
+  host.querySelectorAll(".checkin-use").forEach(button=>button.addEventListener("click",()=>useOperatorCheckin(button.dataset.id)));
+  const current=upper(document.getElementById("unit").value);
+  const matching=OPERATOR_CHECKINS.find(row=>upper(row.unit)===current);
+  if(matching)showSelectedCheckin(matching);
 }
 
 function hmOperationalKey(tanggal,jam,id){
@@ -691,6 +747,11 @@ function validate(next){
   if(!["Shift 1","Shift 2"].includes(shift))return "Shift wajib.";
   if(!unit)return "Unit wajib.";
   if(!operator)return "Nama Operator wajib.";
+  if(CURRENT_OPERATOR_CHECKIN && (
+    upper(CURRENT_OPERATOR_CHECKIN.unit)!==unit ||
+    CURRENT_OPERATOR_CHECKIN.tanggal!==tanggal ||
+    CURRENT_OPERATOR_CHECKIN.shift!==shift
+  ))return "Referensi check-in tidak sesuai Unit/Tanggal/Shift. Pilih ulang check-in operator.";
   if(hm===null)return "HM CCR wajib.";
   if(!hmTaken)return "Jam pengambilan HM wajib.";
   if(!shiftAcceptsTime(shift,hmTaken))return `Jam pengambilan HM ${hmTaken} tidak sesuai ${shift}.`;
@@ -741,7 +802,10 @@ async function save(){
       note:clean(document.getElementById("note").value)||null,
       created_by:window.KPP_SESSION?.user?.id||null,
       created_by_name:PROFILE?.display_name||null,
-      created_by_role:PROFILE?.role||null
+      created_by_role:PROFILE?.role||null,
+      operator_checkin_id:CURRENT_OPERATOR_CHECKIN?.id||null,
+      operator_hm_awal:CURRENT_OPERATOR_CHECKIN?.hm_awal??null,
+      operator_checkin_at:CURRENT_OPERATOR_CHECKIN?.created_at||null
     };
 
     const {data,error}=await db
@@ -1007,11 +1071,13 @@ document.getElementById("unit").addEventListener("input",()=>{
 });
 document.getElementById("unit").addEventListener("change",async()=>{
   updateQrDisplay();
+  const matching=OPERATOR_CHECKINS.find(row=>upper(row.unit)===upper(document.getElementById("unit").value));
+  showSelectedCheckin(matching||null);
   await loadHmReference();
   await refreshFillingNo();
 });
-document.getElementById("tanggal").addEventListener("change",async()=>{await refreshFillingNo();updateHmIntel();});
-document.getElementById("shift").addEventListener("change",async()=>{await refreshFillingNo();updateHmIntel();});
+document.getElementById("tanggal").addEventListener("change",async()=>{if(CURRENT_OPERATOR_CHECKIN?.tanggal!==document.getElementById("tanggal").value)showSelectedCheckin(null);await refreshFillingNo();updateHmIntel();});
+document.getElementById("shift").addEventListener("change",async()=>{if(CURRENT_OPERATOR_CHECKIN?.shift!==document.getElementById("shift").value)showSelectedCheckin(null);await refreshFillingNo();updateHmIntel();});
 document.getElementById("hm").addEventListener("input",updateHmIntel);
 document.getElementById("hmTakenTime").addEventListener("input",updateHmIntel);
 document.getElementById("maxQty").addEventListener("input",updateLimit);
@@ -1019,6 +1085,7 @@ document.getElementById("toleranceQty").addEventListener("input",updateLimit);
 document.getElementById("refreshNoBtn").addEventListener("click",refreshFillingNo);
 document.getElementById("saveBtn").addEventListener("click",save);
 document.getElementById("refreshBtn").addEventListener("click",loadRows);
+document.getElementById("refreshCheckinBtn").addEventListener("click",loadOperatorCheckins);
 document.getElementById("statusFilter").addEventListener("change",loadRows);
 document.getElementById("closeEditBtn").addEventListener("click",closeGlEdit);
 document.getElementById("cancelEditBtn").addEventListener("click",closeGlEdit);
@@ -1037,6 +1104,7 @@ document.addEventListener("kpp-auth-ready",async e=>{
   try{
     await expireStale();
     await loadUnits();
+    await loadOperatorCheckins();
     await loadRows();
     await refreshFillingNo();
     updateLimit();
