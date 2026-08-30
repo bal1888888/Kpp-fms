@@ -689,7 +689,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
         <div id="formArea" class="fuel-form-area hidden">
           <div class="form-area-stack">
             <section class="fuel-card">
-              <div class="step-side blue"><div class="step-no">4</div><div class="step-copy"><h3>✏️ Isi Data Pengisian</h3><p>Masukkan HM sekarang, operator dan jumlah fuel.</p></div></div>
+              <div class="step-side blue"><div class="step-no">4</div><div class="step-copy"><h3>✏️ Isi Data Pengisian</h3><p>Periksa HM/operator dari sistem, lalu masukkan jumlah fuel.</p></div></div>
               <div class="step-content">
                 <div class="data-grid">
                   <div class="form-group"><label>HM Sekarang / Estimasi Refueling</label><input type="number" id="currentHm" placeholder="Masukkan HM sekarang" step="0.1"></div>
@@ -731,7 +731,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
           <div class="guide-item"><div class="guide-dot">1</div><b>Pilih Shift & Fuel Truck</b><span>Tentukan shift aktif dan sumber pengisian.</span></div>
           <div class="guide-item"><div class="guide-dot">2</div><b>Pilih / Cari Code Unit</b><span>Ketik atau scan QR unit lalu ambil data.</span></div>
           <div class="guide-item"><div class="guide-dot">3</div><b>Cek Informasi Unit</b><span>Pastikan unit dan HM sebelumnya sudah sesuai.</span></div>
-          <div class="guide-item"><div class="guide-dot">4</div><b>Isi Data Pengisian</b><span>Masukkan HM, operator dan jumlah liter.</span></div>
+          <div class="guide-item"><div class="guide-dot">4</div><b>Isi Data Pengisian</b><span>Periksa HM/operator dari sistem lalu isi jumlah liter.</span></div>
           <div class="guide-item"><div class="guide-dot">5</div><b>Simpan Data</b><span>Review ringkasan lalu simpan transaksi.</span></div>
         </div>
         <button type="button" class="guide-open" onclick="window.KPP?.openGuide('pengisian',window.KPP_PROFILE||null)">📘 BUKA PANDUAN LENGKAP</button>
@@ -1000,6 +1000,7 @@ let fuelingMode = "manual";
 let unitScannedByQr = false;
 let currentCCRAllocation = null;
 let currentCCRLimit = 0;
+let currentOperatorCheckin = null;
 
 let selectedFuelTruck = "";
 let selectedWH = "";
@@ -1533,14 +1534,6 @@ document
         }
     );
 
-function hmOperationalKey(row) {
-    if (!row) return "0000-00-00T00:00:00";
-    const tanggal = String(row.tanggal || "0000-00-00");
-    let jam = String(row.jam || "00:00:00");
-    jam = jam.slice(0, 8);
-    return `${tanggal}T${jam}`;
-}
-
 function hmOperationalKey(tanggal,jam,id){
     const d=String(tanggal||"");
     const t=jam ? String(jam).slice(0,8) : "00:00:00";
@@ -1893,6 +1886,7 @@ function setCcrError(message) {
 
     currentCCRAllocation = null;
     currentCCRLimit = 0;
+    currentOperatorCheckin = null;
 
     okBox.classList.add("hidden");
     form.classList.add("hidden");
@@ -1970,9 +1964,37 @@ async function ambilKontrolCcrHariIni(unit) {
     };
 }
 
-function siapkanFormManual() {
+async function ambilHmOperatorSiap(unit) {
+    const selectedShift =
+        Number(document.getElementById("shift").value || 0);
+
+    if (!selectedShift) {
+        throw new Error("Pilih shift terlebih dahulu.");
+    }
+
+    const { data, error } =
+        await supabaseClient.rpc(
+            "get_ready_operator_checkin",
+            {
+                p_unit: unit,
+                p_tanggal: getOperationalDateForFueling(),
+                p_shift: numberShiftToCcr(selectedShift)
+            }
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    return Array.isArray(data)
+        ? data[0] || null
+        : data || null;
+}
+
+function siapkanFormManual(checkin) {
     currentCCRAllocation = null;
     currentCCRLimit = 0;
+    currentOperatorCheckin = checkin;
 
     document.getElementById("ccrAllocationBox")
         .classList.add("hidden");
@@ -1980,30 +2002,33 @@ function siapkanFormManual() {
     document.getElementById("ccrErrorBox")
         .classList.add("hidden");
 
-    document.getElementById("operatorNrp").value = "";
+    document.getElementById("operatorNrp").value =
+        checkin.nrp || "";
 
     const operatorInput =
         document.getElementById("operator");
 
-    operatorInput.value = "";
-    operatorInput.readOnly = false;
-    operatorInput.classList.remove("ccr-locked");
-    operatorInput.placeholder = "Masukkan nama operator";
+    operatorInput.value = checkin.operator_name || "";
+    operatorInput.readOnly = true;
+    operatorInput.classList.add("ccr-locked");
+    operatorInput.placeholder = "Otomatis dari HM operator";
 
     const hmInput =
         document.getElementById("currentHm");
 
-    hmInput.value = "";
-    hmInput.readOnly = false;
-    hmInput.classList.remove("ccr-locked");
-    hmInput.placeholder = "Masukkan HM sekarang";
+    hmInput.value = Number(checkin.hm_actual)
+        .toFixed(1)
+        .replace(/\.0$/, "");
+    hmInput.readOnly = true;
+    hmInput.classList.add("ccr-locked");
+    hmInput.placeholder = "Otomatis dari operator";
 
     const hmLabel =
         hmInput.closest(".form-group")
             .querySelector("label");
 
     if (hmLabel) {
-        hmLabel.textContent = "HM Sekarang";
+        hmLabel.textContent = "HM Aktual dari Operator";
     }
 
     const fuelInput =
@@ -2012,8 +2037,12 @@ function siapkanFormManual() {
     fuelInput.value = "";
     fuelInput.removeAttribute("max");
 
+    const actualHm = Number(checkin.hm_actual);
     document.getElementById("hmDifference")
-        .textContent = "0 HM";
+        .textContent = previousHM > 0
+            ? (actualHm - previousHM)
+                .toLocaleString("id-ID", { maximumFractionDigits: 1 }) + " HM"
+            : "Data awal";
 
     document.getElementById("warning")
         .style.display = "none";
@@ -2023,12 +2052,13 @@ function siapkanFormManual() {
 
     setFuelingMode(
         "manual",
-        "✍️ MODE MANUAL — unit ini tidak punya kontrol/jatah CCR pada shift ini. QR tidak wajib."
+        "✅ NON-JATAH SIAP — HM dan operator sudah dikirim operator. Fuelman hanya mengisi Qty."
     );
 }
 
 function tampilkanJatahCcr(row) {
     currentCCRAllocation = row;
+    currentOperatorCheckin = null;
     currentCCRLimit =
         Number(row.max_qty || 0) +
         Number(row.tolerance_qty || 0);
@@ -2264,8 +2294,22 @@ async function cekUnit() {
 
         // ----------------------------------------------------
         // D. TIDAK ADA KONTROL CCR
-        //    -> MODE MANUAL, QR TIDAK WAJIB
+        //    -> WAJIB ADA HM AKTUAL DARI OPERATOR
         // ----------------------------------------------------
+        const operatorCheckin =
+            await ambilHmOperatorSiap(inputUnit);
+
+        if (!operatorCheckin) {
+            const msg =
+                `⏳ ${inputUnit} belum mengirim HM aktual sebelum rest. ` +
+                `Minta operator scan QR unit dan kirim HM aktual terlebih dahulu.`;
+
+            setFuelingMode("manual", msg);
+            setCcrError(msg);
+            alert(msg);
+            return;
+        }
+
         const hmData =
             await ambilHmTerakhir(inputUnit);
 
@@ -2301,7 +2345,7 @@ async function cekUnit() {
         document.getElementById("hmSource").textContent =
             "Sumber HM: " + currentHmSource;
 
-        siapkanFormManual();
+        siapkanFormManual(operatorCheckin);
 
     } catch (error) {
         console.error(error);
@@ -2706,6 +2750,14 @@ document
             // =================================================
             // MODE MANUAL — UNIT TIDAK DIJATAH CCR
             // =================================================
+            if (!currentOperatorCheckin) {
+                alert(
+                    "HM aktual operator belum tersedia. " +
+                    "Tekan CEK UNIT / AMBIL DATA kembali."
+                );
+                return;
+            }
+
             const currentHM =
                 parseFloat(
                     document.getElementById("currentHm").value
@@ -2743,80 +2795,30 @@ document
 
             saveButton.disabled = true;
             saveButton.textContent =
-                "MENYIMPAN MANUAL...";
+                "MENYIMPAN HM OPERATOR...";
 
             const { error } =
-                await supabaseClient
-                    .from("fuel_history")
-                    .insert({
-                        tanggal:
-                            waktu.tanggal,
-
-                        jam:
+                await supabaseClient.rpc(
+                    "submit_manual_fueling_from_checkin",
+                    {
+                        p_checkin_id:
+                            currentOperatorCheckin.checkin_id,
+                        p_jam:
                             waktu.jam,
-
-                        fuel_truck:
-                            selectedFuelTruck,
-
-                        wh:
-                            selectedWH,
-
-                        unit:
-                            currentUnit,
-
-                        operator:
-                            operator,
-
-                        hm_awal:
-                            previousHM,
-
-                        hm_akhir:
-                            currentHM,
-
-                        hm_jalan:
-                            hmJalan,
-
-                        fuel:
+                        p_fuel:
                             fuel,
-
-                        shift:
-                            Number(shift),
-
-                        session_id:
+                        p_fuel_truck:
+                            selectedFuelTruck,
+                        p_previous_hm:
+                            previousHM > 0
+                                ? previousHM
+                                : null,
+                        p_session_id:
                             activeFuelmanSession
                                 ? activeFuelmanSession.id
-                                : null,
-
-                        fuelman_user_id:
-                            activeFuelmanSession
-                                ? activeFuelmanSession.user_id
-                                : null,
-
-                        fuelman_username:
-                            activeFuelmanSession
-                                ? activeFuelmanSession.username
-                                : null,
-
-                        fuelman_name:
-                            activeFuelmanSession
-                                ? activeFuelmanSession.fuelman_name
-                                : null,
-
-                        ccr_allocation_id:
-                            null,
-
-                        operator_nrp:
-                            null,
-
-                        ccr_filling_no:
-                            null,
-
-                        ccr_max_qty:
-                            null,
-
-                        ccr_tolerance_qty:
-                            null
-                    });
+                                : null
+                    }
+                );
 
             if (error) {
                 console.error(error);
@@ -2834,7 +2836,7 @@ document
             }
 
             alert(
-                "✅ DATA MANUAL BERHASIL DISIMPAN!\n\n" +
+                "✅ PENGISIAN NON-JATAH BERHASIL!\n\n" +
                 "Unit: " +
                 currentUnit +
                 "\n" +
@@ -2844,7 +2846,7 @@ document
                 "HM Sebelumnya: " +
                 (previousHM > 0 ? previousHM : "-") +
                 "\n" +
-                "HM Sekarang: " +
+                "HM Aktual Operator: " +
                 currentHM +
                 "\n" +
                 "HM Jalan: " +

@@ -1154,8 +1154,8 @@ window.KPP = {
       <div class="kpp-user-menu">
         <button type="button" class="kpp-user-pill" id="kppUserMenuBtn" aria-expanded="false">
           <span class="kpp-user-avatar">👤</span>
-          <span class="kpp-user-name">${displayName}</span>
-          <span class="kpp-user-role">• ${roleText}</span>
+          <span class="kpp-user-name"></span>
+          <span class="kpp-user-role"></span>
           <span class="kpp-user-chevron">⌄</span>
         </button>
         <div class="kpp-user-dropdown" id="kppUserDropdown">
@@ -1165,6 +1165,11 @@ window.KPP = {
         </div>
       </div>
     `;
+
+    const userName = side.querySelector(".kpp-user-name");
+    const userRole = side.querySelector(".kpp-user-role");
+    if (userName) userName.textContent = displayName;
+    if (userRole) userRole.textContent = `• ${roleText}`;
 
     const menuBtn = document.getElementById("kppUserMenuBtn");
     const menu = document.getElementById("kppUserDropdown");
