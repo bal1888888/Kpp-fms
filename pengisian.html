@@ -1533,14 +1533,6 @@ document
         }
     );
 
-function hmOperationalKey(row) {
-    if (!row) return "0000-00-00T00:00:00";
-    const tanggal = String(row.tanggal || "0000-00-00");
-    let jam = String(row.jam || "00:00:00");
-    jam = jam.slice(0, 8);
-    return `${tanggal}T${jam}`;
-}
-
 function hmOperationalKey(tanggal,jam,id){
     const d=String(tanggal||"");
     const t=jam ? String(jam).slice(0,8) : "00:00:00";
