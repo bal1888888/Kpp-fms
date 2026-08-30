@@ -210,6 +210,20 @@ tbody tr:hover{background:#f8fafc}
                         <option value="true">SUDAH ADA QR</option>
                     </select>
                 </div>
+                <div>
+                    <label>Wajib Check-in Operator</label>
+                    <select id="masterOperatorCheckinRequired">
+                        <option value="true">YA — UNIT BEROPERATOR</option>
+                        <option value="false">TIDAK — UNIT TANPA OPERATOR</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Wajib Catat HM</label>
+                    <select id="masterHmRequired">
+                        <option value="true">YA — HM WAJIB</option>
+                        <option value="false">TIDAK — HM OPSIONAL</option>
+                    </select>
+                </div>
             </div>
 
             <div style="margin-top:12px">
@@ -281,13 +295,14 @@ tbody tr:hover{background:#f8fafc}
                             <th>EGI</th>
                             <th>CODE ELLIPS</th>
                             <th>STATUS UNIT</th>
+                            <th>ALUR OPERATOR</th>
                             <th>STATUS QR</th>
                             <th>KETERANGAN</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody id="unitMasterBody">
-                        <tr><td colspan="8">Mengambil master unit...</td></tr>
+                        <tr><td colspan="9">Mengambil master unit...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -863,7 +878,9 @@ function mergeUnitMasterRows(rows){
             note:"",
             qr_generated:false,
             qr_generated_at:null,
-            qr_generated_by_name:null
+            qr_generated_by_name:null,
+            operator_checkin_required:true,
+            hm_required:true
         }
     ]));
 
@@ -878,7 +895,10 @@ function mergeUnitMasterRows(rows){
             note:row.note||"",
             qr_generated:row.qr_generated===true,
             qr_generated_at:row.qr_generated_at||null,
-            qr_generated_by_name:row.qr_generated_by_name||null
+            qr_generated_by_name:row.qr_generated_by_name||null,
+            operator_checkin_required:
+                row.operator_checkin_required!==false,
+            hm_required:row.hm_required!==false
         });
     });
 
@@ -897,7 +917,7 @@ function mergeUnitMasterRows(rows){
 async function loadUnitMaster(){
     const {data,error}=await db
         .from("unit_master")
-        .select("code_unit,egi,code_ellips,active,note,qr_generated,qr_generated_at,qr_generated_by_name")
+        .select("code_unit,egi,code_ellips,active,note,qr_generated,qr_generated_at,qr_generated_by_name,operator_checkin_required,hm_required")
         .order("code_unit",{ascending:true});
 
     if(error){
@@ -960,7 +980,7 @@ function renderUnitTable(){
         UNIT_MASTER_ROWS.filter(r=>r.qr_generated).length;
 
     if(!filtered.length){
-        body.innerHTML='<tr><td colspan="8">Unit tidak ditemukan.</td></tr>';
+        body.innerHTML='<tr><td colspan="9">Unit tidak ditemukan.</td></tr>';
         return;
     }
 
@@ -984,6 +1004,16 @@ function renderUnitTable(){
             <td>${esc(row.code_ellips||row.code_unit)}</td>
             <td class="${row.active?"badge-active":"badge-off"}">
                 ${row.active?"AKTIF":"TIDAK AKTIF"}
+            </td>
+            <td>
+                <span class="badge-qr ${row.operator_checkin_required?"yes":"no"}">
+                    ${row.operator_checkin_required
+                        ?"WAJIB CHECK-IN"
+                        :"TANPA OPERATOR"}
+                </span>
+                <div style="font-size:10px;color:#64748b;margin-top:4px">
+                    ${row.hm_required?"HM WAJIB":"HM OPSIONAL"}
+                </div>
             </td>
             <td title="${esc(qrTitle)}">
                 <span class="badge-qr ${row.qr_generated?"yes":"no"}">
@@ -1089,6 +1119,10 @@ function editUnitMaster(code){
     document.getElementById("masterEllipse").value=row.code_ellips||row.code_unit;
     document.getElementById("masterActive").value=row.active?"true":"false";
     document.getElementById("masterQrGenerated").value=row.qr_generated?"true":"false";
+    document.getElementById("masterOperatorCheckinRequired").value=
+        row.operator_checkin_required?"true":"false";
+    document.getElementById("masterHmRequired").value=
+        row.hm_required?"true":"false";
     document.getElementById("masterNote").value=row.note||"";
     window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -1099,6 +1133,8 @@ function resetUnitForm(){
     document.getElementById("masterEllipse").value="";
     document.getElementById("masterActive").value="true";
     document.getElementById("masterQrGenerated").value="false";
+    document.getElementById("masterOperatorCheckinRequired").value="true";
+    document.getElementById("masterHmRequired").value="true";
     document.getElementById("masterNote").value="";
     document.getElementById("unitSaveStatus").textContent="";
 }
@@ -1109,6 +1145,10 @@ async function saveUnitMaster(){
     const ellipse=normalizeUnit(document.getElementById("masterEllipse").value)||code;
     const active=document.getElementById("masterActive").value==="true";
     const qrGenerated=document.getElementById("masterQrGenerated").value==="true";
+    const operatorCheckinRequired=
+        document.getElementById("masterOperatorCheckinRequired").value==="true";
+    const hmRequired=
+        document.getElementById("masterHmRequired").value==="true";
     const note=document.getElementById("masterNote").value.trim();
     const status=document.getElementById("unitSaveStatus");
 
@@ -1131,6 +1171,8 @@ async function saveUnitMaster(){
             active,
             note,
             qr_generated:qrGenerated,
+            operator_checkin_required:operatorCheckinRequired,
+            hm_required:hmRequired,
             qr_generated_at:qrGenerated ? new Date().toISOString() : null,
             qr_generated_by_name:
                 qrGenerated

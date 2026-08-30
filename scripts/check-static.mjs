@@ -123,6 +123,21 @@ if (!fillingSource.includes('"get_ready_operator_checkin"')) {
 if (!fillingSource.includes('"submit_manual_fueling_from_checkin"')) {
   fail(fillingPath, "penyimpanan atomik pengisian non-jatah tidak ditemukan");
 }
+if (!fillingSource.includes('"submit_operatorless_fueling"')) {
+  fail(fillingPath, "alur aman unit tanpa operator tidak ditemukan");
+}
+if (!fillingSource.includes("operator_checkin_required")) {
+  fail(fillingPath, "kebijakan wajib check-in per unit tidak ditemukan");
+}
+
+const hmMasterPath = path.join(projectRoot, "hm-master.html");
+const hmMasterSource = fs.readFileSync(hmMasterPath, "utf8");
+if (!hmMasterSource.includes('id="masterOperatorCheckinRequired"')) {
+  fail(hmMasterPath, "pengaturan wajib check-in operator tidak ditemukan");
+}
+if (!hmMasterSource.includes("operator_checkin_required:operatorCheckinRequired")) {
+  fail(hmMasterPath, "penyimpanan kebijakan check-in unit tidak ditemukan");
+}
 
 const operatorCheckinPath = path.join(projectRoot, "operator-checkin.html");
 const operatorCheckinSource = fs.readFileSync(operatorCheckinPath, "utf8");
