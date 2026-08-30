@@ -1001,6 +1001,7 @@ let unitScannedByQr = false;
 let currentCCRAllocation = null;
 let currentCCRLimit = 0;
 let currentOperatorCheckin = null;
+let currentUnitPolicy = null;
 
 let selectedFuelTruck = "";
 let selectedWH = "";
@@ -1032,7 +1033,9 @@ async function loadUnitMasterOnline() {
         const { data, error } =
             await supabaseClient
                 .from("unit_master")
-                .select("code_unit,active")
+                .select(
+                    "code_unit,active,operator_checkin_required,hm_required"
+                )
                 .order("code_unit",{ascending:true});
 
         if (error) {
@@ -1092,6 +1095,20 @@ async function loadUnitMasterOnline() {
 
 renderUnitOptions();
 loadUnitMasterOnline();
+
+function getUnitFuelingPolicy(unit) {
+    const code = normalisasiUnit(unit);
+    const row = UNIT_MASTER_ONLINE.find(function(item) {
+        return normalisasiUnit(item.code_unit) === code;
+    });
+
+    return {
+        operator_checkin_required:
+            row ? row.operator_checkin_required !== false : true,
+        hm_required:
+            row ? row.hm_required !== false : true
+    };
+}
 
 
 function shiftSessionToNumber(value) {
@@ -2056,6 +2073,64 @@ function siapkanFormManual(checkin) {
     );
 }
 
+function siapkanFormTanpaOperator() {
+    currentCCRAllocation = null;
+    currentCCRLimit = 0;
+    currentOperatorCheckin = null;
+
+    document.getElementById("ccrAllocationBox")
+        .classList.add("hidden");
+
+    document.getElementById("ccrErrorBox")
+        .classList.add("hidden");
+
+    document.getElementById("operatorNrp").value = "";
+
+    const operatorInput =
+        document.getElementById("operator");
+
+    operatorInput.value = "NON-OPERATOR";
+    operatorInput.readOnly = true;
+    operatorInput.classList.add("ccr-locked");
+    operatorInput.placeholder = "Peralatan tanpa operator";
+
+    const hmInput =
+        document.getElementById("currentHm");
+
+    hmInput.value = "";
+    hmInput.readOnly = false;
+    hmInput.classList.remove("ccr-locked");
+    hmInput.placeholder = "Masukkan HM aktual dari display unit";
+
+    const hmLabel =
+        hmInput.closest(".form-group")
+            .querySelector("label");
+
+    if (hmLabel) {
+        hmLabel.textContent = "HM Aktual Unit";
+    }
+
+    const fuelInput =
+        document.getElementById("fuelQty");
+
+    fuelInput.value = "";
+    fuelInput.removeAttribute("max");
+
+    document.getElementById("hmDifference")
+        .textContent = "Isi HM aktual";
+
+    document.getElementById("warning")
+        .style.display = "none";
+
+    document.getElementById("formArea")
+        .classList.remove("hidden");
+
+    setFuelingMode(
+        "manual",
+        "💡 UNIT TANPA OPERATOR — check-in tidak diperlukan. Fuelman wajib mengisi HM aktual dan Qty."
+    );
+}
+
 function tampilkanJatahCcr(row) {
     currentCCRAllocation = row;
     currentOperatorCheckin = null;
@@ -2141,6 +2216,9 @@ async function cekUnit() {
         alert(pesan);
         return;
     }
+
+    currentUnitPolicy =
+        getUnitFuelingPolicy(inputUnit);
 
     const button =
         document.getElementById("checkUnitButton");
@@ -2293,7 +2371,51 @@ async function cekUnit() {
         }
 
         // ----------------------------------------------------
-        // D. TIDAK ADA KONTROL CCR
+        // D. UNIT TANPA OPERATOR
+        //    -> TIDAK MEMERLUKAN CHECK-IN
+        // ----------------------------------------------------
+        if (
+            currentUnitPolicy &&
+            currentUnitPolicy.operator_checkin_required === false
+        ) {
+            const hmData =
+                await ambilHmTerakhir(inputUnit);
+
+            previousHM = hmData.hm;
+            currentHmSource = hmData.source;
+
+            currentUnit = inputUnit;
+            checkedUnit = inputUnit;
+
+            document.getElementById("unitInput").value =
+                currentUnit;
+
+            document.getElementById("unitDisplay").textContent =
+                currentUnit;
+
+            document.getElementById("unitResult")
+                .classList.remove("hidden");
+
+            document.getElementById("previousHmBox")
+                .classList.remove("hidden");
+
+            document.getElementById("suggestionBox")
+                .classList.add("hidden");
+
+            document.getElementById("previousHm").textContent =
+                previousHM > 0
+                    ? previousHM.toLocaleString("id-ID")
+                    : "Belum ada data";
+
+            document.getElementById("hmSource").textContent =
+                "Sumber HM: " + currentHmSource;
+
+            siapkanFormTanpaOperator();
+            return;
+        }
+
+        // ----------------------------------------------------
+        // E. UNIT BEROPERATOR TANPA KONTROL CCR
         //    -> WAJIB ADA HM AKTUAL DARI OPERATOR
         // ----------------------------------------------------
         const operatorCheckin =
@@ -2750,7 +2872,11 @@ document
             // =================================================
             // MODE MANUAL — UNIT TIDAK DIJATAH CCR
             // =================================================
-            if (!currentOperatorCheckin) {
+            const operatorless =
+                currentUnitPolicy &&
+                currentUnitPolicy.operator_checkin_required === false;
+
+            if (!currentOperatorCheckin && !operatorless) {
                 alert(
                     "HM aktual operator belum tersedia. " +
                     "Tekan CEK UNIT / AMBIL DATA kembali."
@@ -2795,10 +2921,40 @@ document
 
             saveButton.disabled = true;
             saveButton.textContent =
-                "MENYIMPAN HM OPERATOR...";
+                operatorless
+                    ? "MENYIMPAN UNIT TANPA OPERATOR..."
+                    : "MENYIMPAN HM OPERATOR...";
 
-            const { error } =
-                await supabaseClient.rpc(
+            let saveResult;
+
+            if (operatorless) {
+                saveResult =
+                    await supabaseClient.rpc(
+                        "submit_operatorless_fueling",
+                        {
+                            p_unit:
+                                currentUnit,
+                            p_jam:
+                                waktu.jam,
+                            p_actual_hm:
+                                currentHM,
+                            p_fuel:
+                                fuel,
+                            p_fuel_truck:
+                                selectedFuelTruck,
+                            p_previous_hm:
+                                previousHM > 0
+                                    ? previousHM
+                                    : null,
+                            p_session_id:
+                                activeFuelmanSession
+                                    ? activeFuelmanSession.id
+                                    : null
+                        }
+                    );
+            } else {
+                saveResult =
+                    await supabaseClient.rpc(
                     "submit_manual_fueling_from_checkin",
                     {
                         p_checkin_id:
@@ -2819,6 +2975,9 @@ document
                                 : null
                     }
                 );
+            }
+
+            const { error } = saveResult;
 
             if (error) {
                 console.error(error);
@@ -2846,7 +3005,9 @@ document
                 "HM Sebelumnya: " +
                 (previousHM > 0 ? previousHM : "-") +
                 "\n" +
-                "HM Aktual Operator: " +
+                (operatorless
+                    ? "HM Aktual Unit: "
+                    : "HM Aktual Operator: ") +
                 currentHM +
                 "\n" +
                 "HM Jalan: " +
