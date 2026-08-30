@@ -46,6 +46,7 @@ sebelum diterapkan.
 - [`AGENTS.md`](AGENTS.md) — aturan kerja untuk Codex dan kontributor.
 - [`KPP_FMS_CONTEXT.md`](KPP_FMS_CONTEXT.md) — konteks serta batas verifikasi.
 - [`AUDIT_PLAN.md`](AUDIT_PLAN.md) — urutan audit dan perbaikan bertahap.
+- [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) — gerbang review, pengujian, merge, dan release.
 
 Jangan menyimpan token, password, secret key, atau kredensial database di commit,
 log, dokumentasi, maupun hasil pemeriksaan.
