@@ -117,6 +117,18 @@ const hmHelperCount = fillingSource.match(/function\s+hmOperationalKey\s*\(/g)?.
 if (hmHelperCount !== 1) {
   fail(fillingPath, `hmOperationalKey harus satu deklarasi, ditemukan ${hmHelperCount}`);
 }
+if (!fillingSource.includes('"get_ready_operator_checkin"')) {
+  fail(fillingPath, "pengambilan HM aktual operator tidak ditemukan");
+}
+if (!fillingSource.includes('"submit_manual_fueling_from_checkin"')) {
+  fail(fillingPath, "penyimpanan atomik pengisian non-jatah tidak ditemukan");
+}
+
+const operatorCheckinPath = path.join(projectRoot, "operator-checkin.html");
+const operatorCheckinSource = fs.readFileSync(operatorCheckinPath, "utf8");
+if (!operatorCheckinSource.includes('"submit_operator_actual_hm"')) {
+  fail(operatorCheckinPath, "pengiriman HM aktual sebelum rest tidak ditemukan");
+}
 
 if (failures.length) {
   console.error("Static checks gagal:\n");
