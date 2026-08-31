@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-static.mjs"
+    "check": "node scripts/check-static.mjs && node --test scripts/test-ccr-monitor.mjs"
   }
 }
+
