@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS CCR v7.3: actual HM only; estimation engine removed -->
+<!-- KPP-FMS CCR: check-in monitoring, historical filters and Excel export -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -12,6 +12,8 @@ window.KPP_ALLOWED_ROLES=["ccr","gl","admin"];
 window.KPP_ACTIVE_PAGE="ccr";
 </script>
 <script src="auth.js"></script>
+<script src="ccr-monitor.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -87,6 +89,7 @@ td.left{text-align:left}
 .input-help{font-size:10px;color:#64748b;margin-top:5px;line-height:1.35}
 .table-hm{white-space:nowrap}
 .checkin-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.checkin-head h2{margin:0 0 5px}.checkin-head p{margin:0;color:#64748b;font-size:11px;line-height:1.45}.checkin-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:13px}.checkin-card{border:1px solid #dbeafe;background:#f8fbff;border-radius:12px;padding:11px}.checkin-card.selected{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.12)}.checkin-card-top{display:flex;justify-content:space-between;gap:8px}.checkin-card strong{font-size:17px;color:#1d4ed8}.checkin-card small{color:#64748b;font-size:9px}.checkin-line{margin-top:6px;color:#334155;font-size:11px;line-height:1.4}.checkin-hm{font-size:19px;font-weight:900;color:#166534}.checkin-use{width:100%;margin-top:9px;padding:8px;background:#2563eb;color:#fff;font-size:10px}.checkin-empty{grid-column:1/-1;padding:15px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;font-size:11px}.checkin-selected{display:none;margin-top:12px;padding:11px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#166534;font-size:11px;line-height:1.5}
+.monitor-filters{margin-top:14px}.monitor-table{margin-top:12px;max-height:520px}.monitor-table table{min-width:1700px}.monitor-selected{background:#eff6ff}.monitor-pick{min-width:92px}.monitor-table td{vertical-align:top}.monitor-table .input-help{max-width:190px}button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:900px){.hm-intel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.checkin-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.hm-intel-grid,.checkin-list{grid-template-columns:1fr}.hm-intel-head,.checkin-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}.checkin-head button{width:100%;margin-top:10px}}
@@ -124,10 +127,10 @@ td.left{text-align:left}
 
   <div class="panel">
     <div class="checkin-head">
-      <div><h2>Check-in HM Awal Operator</h2><p>Masuk otomatis dari QR unit. HM awal hanya referensi operasional dan tidak mengganti HM pengisian.</p></div>
+      <div><h2>Monitoring Check-in & HM Operator</h2><p>Klik kode unit untuk memakai identitas di form jatah. Riwayat shift lama tetap tersimpan dan dapat diunduh.</p></div>
       <button type="button" class="btn-outline" id="refreshCheckinBtn">REFRESH CHECK-IN</button>
     </div>
-    <div class="checkin-list" id="checkinList"><div class="checkin-empty">Memuat check-in operator...</div></div>
+    <div id="checkinMonitor"></div>
     <div class="checkin-selected" id="checkinSelected"></div>
   </div>
 
@@ -309,7 +312,9 @@ let PROFILE=null;
 let ROWS=[];
 let CURRENT_HM_REF={hm:0,source:"Belum ada HM sebelumnya"};
 let CURRENT_OPERATOR_CHECKIN=null;
-let OPERATOR_CHECKINS=[];
+const CHECKIN_MONITOR=window.KPPCCRMonitor.create({db,host:document.getElementById("checkinMonitor"),onSelect:useOperatorCheckin});
+let HM_REFERENCE_REQUEST=0;
+let HM_REFERENCE_LOADING=false;
 
 const MASTER_LAST_HM = {
         "CB1019": 587,
@@ -419,20 +424,7 @@ function isoLocalDate(d){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
 function currentOperationalShift(){
-  const now=new Date();
-  const mins=now.getHours()*60+now.getMinutes();
-
-  if(mins<390){
-    const prev=new Date(now);
-    prev.setDate(prev.getDate()-1);
-    return {tanggal:isoLocalDate(prev),shift:"Shift 2"};
-  }
-
-  if(mins<1110){
-    return {tanggal:isoLocalDate(now),shift:"Shift 1"};
-  }
-
-  return {tanggal:isoLocalDate(now),shift:"Shift 2"};
+  return window.KPPCCRMonitor.operationalShift();
 }
 async function expireStale(){
   const {error}=await db.rpc("expire_ccr_allocations");
@@ -469,43 +461,35 @@ function esc(v){
 function showSelectedCheckin(row){
   CURRENT_OPERATOR_CHECKIN=row||null;
   const host=document.getElementById("checkinSelected");
-  document.querySelectorAll(".checkin-card").forEach(card=>card.classList.toggle("selected",row&&Number(card.dataset.id)===Number(row.id)));
   if(!row){host.style.display="none";host.textContent="";return}
   host.style.display="block";
-  host.innerHTML=`<b>Referensi terpilih:</b> ${esc(row.unit)} - ${esc(row.operator_name)} - HM Awal ${fmt(row.hm_awal)} - ${esc(String(row.jam||"").slice(0,5))}. <b>HM ini tidak mengganti HM pengisian.</b>`;
+  host.innerHTML=`<b>Referensi terpilih:</b> ${esc(row.unit)} - ${esc(row.operator_name)} - NRP ${esc(row.nrp||"—")} - HM Awal ${row.hm_awal==null?"—":fmt(row.hm_awal)}. HM aktual operator: ${row.hm_actual==null?"belum dikirim":fmt(row.hm_actual)}. <b>HM awal tidak mengganti HM pengisian. Pada paket ini HM dibaca CCR tetap diisi terpisah.</b>`;
 }
 
-async function useOperatorCheckin(id){
-  const row=OPERATOR_CHECKINS.find(item=>Number(item.id)===Number(id));
+async function useOperatorCheckin(row){
   if(!row)return;
   showSelectedCheckin(row);
   document.getElementById("tanggal").value=row.tanggal;
   document.getElementById("shift").value=row.shift;
   document.getElementById("unit").value=row.unit;
   document.getElementById("operator").value=row.operator_name||"";
+  document.getElementById("hm").value="";
+  document.getElementById("hmTakenTime").value="";
+  document.getElementById("maxQty").value="";
+  document.getElementById("toleranceQty").value="0";
+  document.getElementById("requestReason").value="";
+  document.getElementById("note").value="";
+  document.getElementById("formStatus").textContent="Identitas terisi. Isi HM dibaca CCR dan jam pembacaan, lalu Qty jatah.";
+  updateLimit();
   updateQrDisplay();
   await loadHmReference();
   await refreshFillingNo();
   updateHmIntel();
-  document.getElementById("maxQty").focus();
+  document.getElementById("hm").focus();
 }
 
 async function loadOperatorCheckins(){
-  const host=document.getElementById("checkinList");
-  host.innerHTML='<div class="checkin-empty">Memuat check-in operator...</div>';
-  const op=currentOperationalShift();
-  const {data,error}=await db.from("operator_unit_checkins")
-    .select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status")
-    .eq("tanggal",op.tanggal).eq("shift",op.shift).eq("status","ACTIVE")
-    .order("created_at",{ascending:false}).limit(100);
-  if(error){host.innerHTML=`<div class="checkin-empty">Check-in belum tersedia: ${esc(error.message)}</div>`;return}
-  OPERATOR_CHECKINS=data||[];
-  if(!OPERATOR_CHECKINS.length){host.innerHTML='<div class="checkin-empty">Belum ada operator check-in pada shift aktif.</div>';showSelectedCheckin(null);return}
-  host.innerHTML=OPERATOR_CHECKINS.map(row=>`<div class="checkin-card" data-id="${row.id}"><div class="checkin-card-top"><strong>${esc(row.unit)}</strong><small>${esc(String(row.jam||"").slice(0,5))}</small></div><div class="checkin-line">${esc(row.operator_name)}${row.nrp?` - NRP ${esc(row.nrp)}`:""}</div><div class="checkin-hm">HM Awal ${fmt(row.hm_awal)}</div><div class="checkin-line">${esc(row.egi||"-")} - ${esc(row.shift)}</div><button type="button" class="checkin-use" data-id="${row.id}">PAKAI IDENTITAS</button></div>`).join("");
-  host.querySelectorAll(".checkin-use").forEach(button=>button.addEventListener("click",()=>useOperatorCheckin(button.dataset.id)));
-  const current=upper(document.getElementById("unit").value);
-  const matching=OPERATOR_CHECKINS.find(row=>upper(row.unit)===current);
-  if(matching)showSelectedCheckin(matching);
+  await CHECKIN_MONITOR.load();
 }
 
 function hmOperationalKey(tanggal,jam,id){
@@ -515,16 +499,14 @@ function hmOperationalKey(tanggal,jam,id){
   return `${d} ${t} ${i}`;
 }
 function localTimeHm(){
-  const d=new Date();
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return window.KPPCCRMonitor.siteParts().time.slice(0,5);
 }
 function operationalTimestamp(tanggal,shift,timeValue){
   if(!tanggal||!shift||!timeValue)return null;
   const parts=String(timeValue).split(":");
   const hh=Number(parts[0]||0),mm=Number(parts[1]||0),ss=Number(parts[2]||0);
-  const [y,m,d]=String(tanggal).split("-").map(Number);
-  const dt=new Date(y,m-1,d,hh,mm,ss,0);
-  if(shift==="Shift 2" && (hh*60+mm)<390)dt.setDate(dt.getDate()+1);
+  const dt=new Date(`${tanggal}T${pad(hh)}:${pad(mm)}:${pad(ss)}+08:00`);
+  if(shift==="Shift 2" && (hh*60+mm)<390)dt.setTime(dt.getTime()+86400000);
   return dt;
 }
 function shiftAcceptsTime(shift,timeValue){
@@ -582,8 +564,11 @@ async function ambilHmTerakhir(unit){
   return candidates[0];
 }
 async function loadHmReference(){
+  const request=++HM_REFERENCE_REQUEST;
   const unit=upper(document.getElementById("unit").value);
   const input=document.getElementById("hmPreviousInput");
+  CURRENT_HM_REF={hm:0,source:"Memuat referensi untuk unit terpilih"};
+  HM_REFERENCE_LOADING=Boolean(unit);
   if(!unit){
     CURRENT_HM_REF={hm:0,source:"Belum pilih unit"};
     input.value="";
@@ -593,13 +578,18 @@ async function loadHmReference(){
   }
   input.value="Memuat...";
   try{
-    CURRENT_HM_REF=await ambilHmTerakhir(unit);
+    const reference=await ambilHmTerakhir(unit);
+    if(request!==HM_REFERENCE_REQUEST || unit!==upper(document.getElementById("unit").value))return;
+    CURRENT_HM_REF=reference;
     input.value=CURRENT_HM_REF.hm>0?fmt(CURRENT_HM_REF.hm):"Belum ada";
     document.getElementById("hmPreviousSource").textContent=CURRENT_HM_REF.source;
   }catch(err){
+    if(request!==HM_REFERENCE_REQUEST || unit!==upper(document.getElementById("unit").value))return;
     CURRENT_HM_REF={hm:0,source:"Gagal membaca referensi HM"};
     input.value="Gagal membaca";
     document.getElementById("hmPreviousSource").textContent=err.message;
+  }finally{
+    if(request===HM_REFERENCE_REQUEST)HM_REFERENCE_LOADING=false;
   }
   updateHmIntel();
 }
@@ -708,6 +698,7 @@ async function refreshFillingNo(){
 }
 
 function validate(next){
+  if(HM_REFERENCE_LOADING)return "Tunggu referensi HM unit selesai dimuat.";
   const tanggal=document.getElementById("tanggal").value;
   const shift=document.getElementById("shift").value;
   const unit=upper(document.getElementById("unit").value);
@@ -724,7 +715,8 @@ function validate(next){
   if(CURRENT_OPERATOR_CHECKIN && (
     upper(CURRENT_OPERATOR_CHECKIN.unit)!==unit ||
     CURRENT_OPERATOR_CHECKIN.tanggal!==tanggal ||
-    CURRENT_OPERATOR_CHECKIN.shift!==shift
+    CURRENT_OPERATOR_CHECKIN.shift!==shift ||
+    clean(CURRENT_OPERATOR_CHECKIN.operator_name)!==operator
   ))return "Referensi check-in tidak sesuai Unit/Tanggal/Shift. Pilih ulang check-in operator.";
   if(hm===null)return "HM CCR wajib.";
   if(!hmTaken)return "Jam pengambilan HM wajib.";
@@ -749,6 +741,11 @@ async function save(){
   status.textContent="Memeriksa ritasi...";
 
   try{
+    if(CURRENT_OPERATOR_CHECKIN){
+      const fresh=await CHECKIN_MONITOR.verify(CURRENT_OPERATOR_CHECKIN.id);
+      if(upper(fresh.unit)!==upper(document.getElementById("unit").value) || fresh.tanggal!==document.getElementById("tanggal").value || fresh.shift!==document.getElementById("shift").value)throw new Error("Pilihan unit/tanggal/shift berubah. Pilih ulang check-in.");
+      showSelectedCheckin(fresh);
+    }
     const next=await refreshFillingNo();
     const err=validate(next);
     if(err)throw new Error(err);
@@ -760,7 +757,7 @@ async function save(){
       shift:document.getElementById("shift").value,
       unit,
       barcode_code:unit,
-      nrp:null,
+      nrp:CURRENT_OPERATOR_CHECKIN?.nrp||null,
       operator_unit:clean(document.getElementById("operator").value),
       hm_previous_ref:CURRENT_HM_REF.hm>0?Number(CURRENT_HM_REF.hm):null,
       hm_previous_source:CURRENT_HM_REF.source||null,
@@ -821,6 +818,9 @@ async function save(){
     }
 
     await loadRows();
+    showSelectedCheckin(null);
+    CHECKIN_MONITOR.clearSelection();
+    await loadOperatorCheckins();
 
     document.getElementById("operator").value="";
     document.getElementById("hm").value="";
@@ -1041,12 +1041,16 @@ async function loadRows(){
 }
 
 document.getElementById("unit").addEventListener("input",()=>{
+  showSelectedCheckin(null);
+  CHECKIN_MONITOR.clearSelection();
+  HM_REFERENCE_REQUEST++;
+  HM_REFERENCE_LOADING=Boolean(upper(document.getElementById("unit").value));
+  CURRENT_HM_REF={hm:0,source:"Pilih unit lalu tunggu referensi HM dimuat"};
   updateQrDisplay();
 });
 document.getElementById("unit").addEventListener("change",async()=>{
   updateQrDisplay();
-  const matching=OPERATOR_CHECKINS.find(row=>upper(row.unit)===upper(document.getElementById("unit").value));
-  showSelectedCheckin(matching||null);
+  showSelectedCheckin(null);
   await loadHmReference();
   await refreshFillingNo();
 });
@@ -1061,9 +1065,11 @@ document.getElementById("saveBtn").addEventListener("click",save);
 document.getElementById("refreshBtn").addEventListener("click",loadRows);
 document.getElementById("refreshCheckinBtn").addEventListener("click",loadOperatorCheckins);
 document.getElementById("statusFilter").addEventListener("change",loadRows);
-document.getElementById("closeEditBtn").addEventListener("click",closeGlEdit);
-document.getElementById("cancelEditBtn").addEventListener("click",closeGlEdit);
-document.getElementById("saveEditBtn").addEventListener("click",saveGlEdit);
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("closeEditBtn").addEventListener("click",closeGlEdit);
+  document.getElementById("cancelEditBtn").addEventListener("click",closeGlEdit);
+  document.getElementById("saveEditBtn").addEventListener("click",saveGlEdit);
+});
 
 document.addEventListener("kpp-auth-ready",async e=>{
   PROFILE=e.detail.profile;
