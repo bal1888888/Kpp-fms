@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 24740)
-Total output lines: 2987
-
 <!DOCTYPE html>
 <!-- KPP-FMS PENGISIAN v13.4: compact CCR panel without repeated information -->
 <html lang="id">
@@ -1261,7 +1258,137 @@ document
         "change",
         function() {
             selectedFuelTruck =
-                t…740 tokens truncated…               } else {
+                this.value;
+
+            selectedWH =
+                FUEL_TRUCK_MAP[selectedFuelTruck] || "";
+
+            const whBox =
+                document.getElementById("whBox");
+
+            if (selectedWH) {
+                document
+                    .getElementById("whDisplay")
+                    .textContent =
+                    selectedWH;
+
+                whBox.classList.remove("hidden");
+            } else {
+                whBox.classList.add("hidden");
+            }
+        }
+    );
+
+function normalisasiUnit(value) {
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+}
+
+function unitDariQr(value){
+    const raw=String(value||"").trim();
+    try{
+        const url=new URL(raw);
+        const fromLink=url.searchParams.get("unit");
+        if(fromLink)return normalisasiUnit(fromLink);
+    }catch(error){
+        // QR lama hanya berisi Code Unit; tetap didukung.
+    }
+    return normalisasiUnit(raw);
+}
+
+function normalisasiCari(value) {
+    return normalisasiUnit(value)
+        .replace(/[^A-Z0-9]/g, "");
+}
+
+function unitTerdaftar(unit) {
+    return MASTER_UNITS.includes(
+        normalisasiUnit(unit)
+    );
+}
+
+function levenshtein(a, b) {
+    a = normalisasiCari(a);
+    b = normalisasiCari(b);
+
+    const matrix = [];
+
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b[i - 1] === a[j - 1]) {
+                matrix[i][j] =
+                    matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] =
+                    Math.min(
+                        matrix[i - 1][j - 1] + 1,
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
+                    );
+            }
+        }
+    }
+
+    return matrix[b.length][a.length];
+}
+
+function cariUnitTerdekat(input) {
+    const query =
+        normalisasiCari(input);
+
+    if (!query) {
+        return [];
+    }
+
+    return MASTER_UNITS
+        .map(function(unit) {
+            const candidate =
+                normalisasiCari(unit);
+
+            let score =
+                levenshtein(
+                    query,
+                    candidate
+                );
+
+            if (
+                candidate.startsWith(query)
+            ) {
+                score -= 2;
+            }
+
+            if (
+                query.startsWith(candidate)
+            ) {
+                score -= 1;
+            }
+
+            let prefix = 0;
+            const maxPrefix =
+                Math.min(
+                    query.length,
+                    candidate.length
+                );
+
+            for (
+                let i = 0;
+                i < maxPrefix;
+                i++
+            ) {
+                if (
+                    query[i] === candidate[i]
+                ) {
+                    prefix++;
+                } else {
                     break;
                 }
             }
