@@ -26,13 +26,13 @@ test("missing HM stays blank, zero remains numeric",()=>{
   assert.equal(m.number(0),0); assert.equal(m.number("123.4"),123.4);
 });
 test("historical/terminal/pending check-ins cannot be selected",()=>{
-  assert.equal(m.selectionIssue(base,now),"");
-  assert.equal(m.selectionIssue({...base,status:"READY"},now),"");
+  assert.match(m.selectionIssue(base,now),/Menunggu/);
+  assert.equal(m.selectionIssue({...base,status:"READY",hm_actual:28010,hm_actual_at:now.toISOString()},now),"");
   for (const status of ["EXPIRED","REPLACED","FUELED","CANCELLED"]) assert.ok(m.selectionIssue({...base,status},now));
   assert.ok(m.selectionIssue({...base,tanggal:"2026-08-30"},now));
   assert.ok(m.selectionIssue({...base,allocations:[{status:"PENDING_GL"}]},now));
   assert.ok(m.selectionIssue({...base,allocations:[{status:"ACTIVE"}]},now));
-  assert.equal(m.selectionIssue({...base,allocations:[{status:"USED"}]},now),"");
+  assert.ok(m.selectionIssue({...base,status:"READY",hm_actual:28010,hm_actual_at:now.toISOString(),allocations:[{status:"USED"}]},now));
 });
 test("join uses exact bigint string AND unit/date/shift; no unit-only guesses",()=>{
   const allocation = {id:"1",operator_checkin_id:base.id,unit:base.unit,tanggal:base.tanggal,shift:base.shift};
@@ -93,7 +93,7 @@ test("CCR page integration: initialize, pick identity, preserve selection across
   const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
   const main=scripts.find(match=>match[2].includes("const db=window.KPP.db"));
   register(html.slice(0,main.index));
-  const row={...base,id:"1",...m.operationalShift(),created_at:new Date(Date.now()-60000).toISOString(),jam:"07:00:00"};
+  const row={...base,status:"READY",hm_actual:28010,hm_actual_at:new Date().toISOString(),id:"1",...m.operationalShift(),created_at:new Date(Date.now()-60000).toISOString(),jam:"07:00:00"};
   const tables={operator_unit_checkins:[row],ccr_allocations:[],unit_master:[],hm_corrections:[],fuel_history:[]};
   const db={rpc:async()=>({data:null,error:null}),from(table){
     const q={filters:[],one:false,select(){return this;},order(){return this;},limit(){return this;},not(){return this;},single(){this.one=true;return this;}};
@@ -113,7 +113,7 @@ test("CCR page integration: initialize, pick identity, preserve selection across
   await vm.runInContext("useOperatorCheckin(fixtureRow)",context);
   assert.equal(elements.get("unit").value,row.unit);
   assert.equal(elements.get("operator").value,row.operator_name);
-  assert.equal(elements.get("hm").value,"");assert.equal(elements.get("maxQty").value,"");
+  assert.equal(elements.get("hm").value,"28010");assert.equal(elements.get("hm").readOnly,true);assert.equal(elements.get("maxQty").value,"");
   elements.get("monitorFrom").value="2026-08-01";
   elements.get("monitorFrom").listeners.change();
   assert.equal(vm.runInContext("CURRENT_OPERATOR_CHECKIN.id",context),"1");

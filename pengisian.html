@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 24740)
+Total output lines: 2987
+
 <!DOCTYPE html>
 <!-- KPP-FMS PENGISIAN v13.4: compact CCR panel without repeated information -->
 <html lang="id">
@@ -677,7 +680,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
           <h3>✅ JATAH CCR ACTIVE</h3>
           <div class="ccr-grid">
             <div class="ccr-item"><small>PENGISIAN KE-</small><strong id="ccrFillingNo">-</strong></div>
-            <div class="ccr-item"><small>HM AKTUAL CCR</small><strong id="ccrHm">-</strong></div>
+            <div class="ccr-item"><small>HM AKTUAL JATAH</small><strong id="ccrHm">-</strong></div>
             <div class="ccr-item ccr-operator"><small>NAMA OPERATOR</small><strong id="ccrOperator">-</strong></div>
             <div class="ccr-item"><small>JATAH</small><strong id="ccrQuota">-</strong></div>
             <div class="ccr-item"><small>TOLERANSI</small><strong id="ccrTolerance">-</strong></div>
@@ -1258,137 +1261,7 @@ document
         "change",
         function() {
             selectedFuelTruck =
-                this.value;
-
-            selectedWH =
-                FUEL_TRUCK_MAP[selectedFuelTruck] || "";
-
-            const whBox =
-                document.getElementById("whBox");
-
-            if (selectedWH) {
-                document
-                    .getElementById("whDisplay")
-                    .textContent =
-                    selectedWH;
-
-                whBox.classList.remove("hidden");
-            } else {
-                whBox.classList.add("hidden");
-            }
-        }
-    );
-
-function normalisasiUnit(value) {
-    return String(value || "")
-        .trim()
-        .toUpperCase();
-}
-
-function unitDariQr(value){
-    const raw=String(value||"").trim();
-    try{
-        const url=new URL(raw);
-        const fromLink=url.searchParams.get("unit");
-        if(fromLink)return normalisasiUnit(fromLink);
-    }catch(error){
-        // QR lama hanya berisi Code Unit; tetap didukung.
-    }
-    return normalisasiUnit(raw);
-}
-
-function normalisasiCari(value) {
-    return normalisasiUnit(value)
-        .replace(/[^A-Z0-9]/g, "");
-}
-
-function unitTerdaftar(unit) {
-    return MASTER_UNITS.includes(
-        normalisasiUnit(unit)
-    );
-}
-
-function levenshtein(a, b) {
-    a = normalisasiCari(a);
-    b = normalisasiCari(b);
-
-    const matrix = [];
-
-    for (let i = 0; i <= b.length; i++) {
-        matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= a.length; j++) {
-        matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-            if (b[i - 1] === a[j - 1]) {
-                matrix[i][j] =
-                    matrix[i - 1][j - 1];
-            } else {
-                matrix[i][j] =
-                    Math.min(
-                        matrix[i - 1][j - 1] + 1,
-                        matrix[i][j - 1] + 1,
-                        matrix[i - 1][j] + 1
-                    );
-            }
-        }
-    }
-
-    return matrix[b.length][a.length];
-}
-
-function cariUnitTerdekat(input) {
-    const query =
-        normalisasiCari(input);
-
-    if (!query) {
-        return [];
-    }
-
-    return MASTER_UNITS
-        .map(function(unit) {
-            const candidate =
-                normalisasiCari(unit);
-
-            let score =
-                levenshtein(
-                    query,
-                    candidate
-                );
-
-            if (
-                candidate.startsWith(query)
-            ) {
-                score -= 2;
-            }
-
-            if (
-                query.startsWith(candidate)
-            ) {
-                score -= 1;
-            }
-
-            let prefix = 0;
-            const maxPrefix =
-                Math.min(
-                    query.length,
-                    candidate.length
-                );
-
-            for (
-                let i = 0;
-                i < maxPrefix;
-                i++
-            ) {
-                if (
-                    query[i] === candidate[i]
-                ) {
-                    prefix++;
-                } else {
+                t…740 tokens truncated…               } else {
                     break;
                 }
             }
@@ -2161,9 +2034,9 @@ function tampilkanJatahCcr(row) {
     hmInput.value = Number(row.hm_ccr).toFixed(1).replace(/\.0$/, "");
     hmInput.readOnly = true;
     hmInput.classList.add("ccr-locked");
-    hmInput.placeholder = "HM aktual dari CCR";
+    hmInput.placeholder = "HM aktual operator / petugas";
     const hmLabel = hmInput.closest(".form-group").querySelector("label");
-    if (hmLabel) hmLabel.textContent = "HM Aktual dari CCR";
+    if (hmLabel) hmLabel.textContent = "HM Aktual Operator / Petugas";
 
     const fuel = document.getElementById("fuelQty");
     fuel.value = "";
@@ -2327,7 +2200,7 @@ async function cekUnit() {
             } else if (previousHM > 0 && Number.isFinite(effectiveHm) && effectiveHm < previousHM) {
                 document.getElementById("hmDifference").textContent = "HM CCR < HM REFERENSI";
                 document.getElementById("warning").textContent =
-                    "⚠️ HM aktual dari CCR lebih kecil dari HM referensi. Cek kembali data HM CCR sebelum pengisian.";
+                    "⚠️ HM aktual operator / petugas lebih kecil dari HM referensi. Cek kembali data HM CCR sebelum pengisian.";
                 document.getElementById("warning").style.display = "block";
             } else {
                 document.getElementById("hmDifference").textContent = "Data awal";
@@ -2561,85 +2434,16 @@ document
     );
 
 function getLocalDateTime() {
-    const now =
-        new Date();
-
-    const y =
-        now.getFullYear();
-
-    const m =
-        String(
-            now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const d =
-        String(
-            now.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const h =
-        String(
-            now.getHours()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const min =
-        String(
-            now.getMinutes()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    const s =
-        String(
-            now.getSeconds()
-        ).padStart(
-            2,
-            "0"
-        );
-
-    return {
-        tanggal:
-            `${y}-${m}-${d}`,
-        jam:
-            `${h}:${min}:${s}`
-    };
+    const parts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).map(p=>[p.type,p.value]));
+    return {tanggal:`${parts.year}-${parts.month}-${parts.day}`,jam:`${parts.hour}:${parts.minute}:${parts.second}`};
 }
 
 function getOperationalDateForFueling(){
-    if (
-        activeFuelmanSession &&
-        activeFuelmanSession.tanggal
-    ) {
-        return activeFuelmanSession.tanggal;
-    }
-
-    const now = new Date();
-    const minutes = now.getHours()*60 + now.getMinutes();
-    const selectedShift =
-        Number(document.getElementById("shift").value || 0);
-
-    if (selectedShift === 2 && minutes < 390) {
-        const prev = new Date(now);
-        prev.setDate(prev.getDate()-1);
-
-        return (
-            prev.getFullYear() + "-" +
-            String(prev.getMonth()+1).padStart(2,"0") + "-" +
-            String(prev.getDate()).padStart(2,"0")
-        );
-    }
-
-    return getLocalDateTime().tanggal;
+    if(activeFuelmanSession?.tanggal)return activeFuelmanSession.tanggal;
+    const now=getLocalDateTime();
+    return now.jam < "06:30:00"
+      ? new Date(Date.parse(now.tanggal+"T00:00:00Z")-86400000).toISOString().slice(0,10)
+      : now.tanggal;
 }
 
 async function expireStaleCcr(){
@@ -2786,7 +2590,7 @@ document
                 try {
                     const { data, error } =
                         await supabaseClient.rpc(
-                            "submit_ccr_fueling_actual_hm",
+                            "submit_ccr_fueling",
                             {
                                 p_allocation_id:
                                     currentCCRAllocation.id,
@@ -2808,9 +2612,6 @@ document
                                         ? previousHM
                                         : null,
 
-                                p_actual_hm:
-                                    actualHm,
-
                                 p_session_id:
                                     activeFuelmanSession
                                         ? activeFuelmanSession.id
@@ -2830,14 +2631,14 @@ document
                         "Operator: " +
                         operator +
                         "\n" +
-                        "HM CCR Dibaca: " +
+                        "HM Aktual Jatah: " +
                         Number(currentCCRAllocation.hm_ccr).toLocaleString("id-ID", {maximumFractionDigits:1}) +
                         "\n" +
                         "Jam Ambil HM: " +
                         String(currentCCRAllocation.hm_taken_time || "-").slice(0,5) +
                         "\n" +
-                        "HM Aktual dari CCR: " +
-                        actualHm.toLocaleString("id-ID", {maximumFractionDigits:1}) +
+                        "HM Aktual Operator / Petugas: " +
+                        Number(data.hm_actual).toLocaleString("id-ID", {maximumFractionDigits:1}) +
                         "\n" +
                         "Pengisian Ke: " +
                         currentCCRAllocation.filling_no +
