@@ -50,7 +50,9 @@
     const op = operationalShift(now);
     if (row.tanggal !== op.tanggal || row.shift !== op.shift) return "Riwayat shift lain hanya untuk dilihat, bukan dipakai membuat jatah shift sekarang.";
     if (!OPEN.has(row.status)) return "Check-in ini sudah selesai, diganti, atau kedaluwarsa.";
-    if ((row.allocations || []).some(a => BUSY.has(a.status))) return "Unit ini masih punya jatah ACTIVE/PENDING_GL. Selesaikan jatah tersebut dahulu.";
+    if (row.status !== "READY" || number(row.hm_actual) === null || !row.hm_actual_at || !siteParts(row.hm_actual_at)) return "Menunggu operator mengirim HM aktual. Pilih setelah status READY.";
+    if (row.fuel_history_id != null) return "HM operator sudah dipakai untuk pengisian.";
+    if ((row.allocations || []).some(a => BUSY.has(a.status) || a.status === "USED")) return "Unit ini masih punya jatah ACTIVE/PENDING_GL. Selesaikan jatah tersebut dahulu.";
     return "";
   }
   function filterRows(rows, search, status) {
@@ -81,8 +83,8 @@
     }
     throw new Error("Terlalu banyak halaman. Persempit rentang tanggal.");
   }
-  const CHECKIN_HEADERS = ["ID Check-in","Tanggal Operasional","Shift","Jam Check-in","Unit","EGI","Operator","NRP","HM Awal Operator","HM Aktual Operator","Waktu HM Aktual (WIB)","Diterima Server (WIB)","Status Check-in","Jumlah Jatah Terkait","ID Pengisian Non-jatah","Waktu Pengisian Non-jatah (WIB)","Kedaluwarsa (WIB)","Alasan Kedaluwarsa"];
-  const ALLOCATION_HEADERS = ["ID Jatah","ID Check-in","Tanggal Operasional","Shift","Unit","Operator","NRP","Ritasi","Status Jatah","HM Referensi Saat Jatah","Sumber Referensi HM","HM Dibaca CCR","Jam HM CCR","Qty Jatah (L)","Toleransi (L)","HM Aktual Saat Jatah Dipakai","Waktu Jatah Dipakai (WIB)","ID Pengisian Jatah","Catatan"];
+  const CHECKIN_HEADERS = ["ID Check-in","Tanggal Operasional","Shift","Jam Check-in","Unit","EGI","Operator","NRP","HM Awal Operator","HM Aktual Operator","Waktu HM Aktual (WIB)","Diterima Server (WIB)","Status Check-in","Jumlah Jatah Terkait","ID Pengisian Check-in","Waktu Pengisian Check-in (WIB)","Kedaluwarsa (WIB)","Alasan Kedaluwarsa"];
+  const ALLOCATION_HEADERS = ["ID Jatah","ID Check-in","Tanggal Operasional","Shift","Unit","Operator","NRP","Ritasi","Status Jatah","HM Referensi Saat Jatah","Sumber Referensi HM","HM Aktual Jatah (Operator / Petugas)","Jam HM CCR","Qty Jatah (L)","Toleransi (L)","HM Aktual Saat Jatah Dipakai","Waktu Jatah Dipakai (WIB)","ID Pengisian Jatah","Catatan"];
   function exportData(rows) {
     return {
       checkins:rows.map(r => [text(r.id),r.tanggal,r.shift,text(r.jam),r.unit,r.egi,r.operator_name,text(r.nrp),number(r.hm_awal),number(r.hm_actual),timestamp(r.hm_actual_at),timestamp(r.hm_actual_received_at),r.status,r.allocations.length,text(r.fuel_history_id),timestamp(r.fueled_at),timestamp(r.expired_at),text(r.expired_reason)]),
@@ -97,7 +99,7 @@
       <div><label for="monitorSearch">Unit / Operator / NRP</label><input id="monitorSearch" placeholder="Cari di data yang dimuat"></div>
       <div><label for="monitorStatus">Status check-in</label><select id="monitorStatus"><option value="">Semua Status</option>${Object.entries(LABELS).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
     </div><div class="actions"><button type="button" class="btn-outline" id="monitorLoad">TAMPILKAN</button><button type="button" class="btn-outline" id="monitorCurrent">SHIFT AKTIF</button><button type="button" class="btn-blue" id="monitorExport" disabled>DOWNLOAD EXCEL</button></div>
-    <p class="input-help">Waktu site: WIB. HM awal ≠ HM aktual operator ≠ HM dibaca CCR. Filter laporan tidak mengubah form jatah. Unit tanpa operator tidak muncul di daftar check-in.</p>
+    <p class="input-help">Waktu site: WIB. HM awal adalah referensi check-in; HM aktual operator dipakai untuk jatah dan pengisian. Filter laporan tidak mengubah form jatah. Unit tanpa operator tidak muncul di daftar check-in.</p>
     <div id="monitorMessage" class="status" role="status" aria-live="polite"></div>
     <div class="table-wrap monitor-table" tabindex="0" aria-label="Monitoring check-in; geser untuk melihat seluruh kolom"><table><thead><tr>${["Tanggal","Shift","Jam Masuk","Unit / Pilih","EGI","Operator","NRP","HM Awal","HM Aktual Operator","Waktu HM (WIB)","Status Check-in","Jatah Terkait (Ritasi / Status / Liter)","Alasan Kedaluwarsa"].map(h => `<th scope="col">${h}</th>`).join("")}</tr></thead><tbody id="monitorBody"></tbody></table></div>
     <div class="actions"><button type="button" class="btn-outline" id="monitorPrev">SEBELUMNYA</button><span id="monitorPage" class="input-help"></span><button type="button" class="btn-outline" id="monitorNext">BERIKUTNYA</button></div>`;
@@ -188,7 +190,7 @@
           sheet.eachRow((row,index) => {if(index>1)row.eachCell(cell => {if(typeof cell.value === "number")cell.numFmt="0.##";});});
         }
         const info = book.addWorksheet("Keterangan");
-        info.addRows([["KPP-FMS — Monitoring CCR"],["Tanggal awal",filters.from],["Tanggal akhir",filters.to],["Shift",filters.shift || "Semua Shift"],["Pencarian",el("monitorSearch").value],["Status check-in",el("monitorStatus").value || "Semua Status"],["Data diambil (WIB)",timestamp(loadedAt)],["Cakupan","Semua hasil filter, bukan hanya halaman tabel yang sedang terlihat."],["Sumber","operator_unit_checkins dan ccr_allocations; mengikuti izin akun login."],["HM","HM awal operator, HM aktual operator, dan HM CCR adalah pembacaan berbeda."],["Jatah","Hanya jatah yang tertaut lewat ID check-in dan cocok unit/tanggal/shift."],["Batasan","Tidak memuat seluruh unit master atau Qty aktual/Fuelman dari log pengisian."],["Waktu","Tanggal adalah tanggal operasional shift; timestamp ditampilkan dalam WIB."],["Catatan","Data dimuat bertahap, bukan snapshot transaksi database atomik."]]);
+        info.addRows([["KPP-FMS — Monitoring CCR"],["Tanggal awal",filters.from],["Tanggal akhir",filters.to],["Shift",filters.shift || "Semua Shift"],["Pencarian",el("monitorSearch").value],["Status check-in",el("monitorStatus").value || "Semua Status"],["Data diambil (WIB)",timestamp(loadedAt)],["Cakupan","Semua hasil filter, bukan hanya halaman tabel yang sedang terlihat."],["Sumber","operator_unit_checkins dan ccr_allocations; mengikuti izin akun login."],["HM","HM awal adalah referensi check-in. HM aktual jatah berasal dari operator, atau petugas untuk unit tanpa operator."],["Jatah","Hanya jatah yang tertaut lewat ID check-in dan cocok unit/tanggal/shift."],["Batasan","Tidak memuat seluruh unit master atau Qty aktual/Fuelman dari log pengisian."],["Waktu","Tanggal adalah tanggal operasional shift; timestamp ditampilkan dalam WIB."],["Catatan","Data dimuat bertahap, bukan snapshot transaksi database atomik."]]);
         info.getColumn(1).width=27; info.getColumn(2).width=105;
         const buffer = await book.xlsx.writeBuffer();
         const url = URL.createObjectURL(new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));

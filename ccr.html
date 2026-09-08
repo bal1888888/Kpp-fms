@@ -175,15 +175,15 @@ td.left{text-align:left}
       </div>
 
       <div>
-        <label>HM Aktual Dibaca CCR</label>
+        <label>HM Aktual Operator / Petugas</label>
         <input type="number" step="0.1" id="hm" placeholder="Contoh: 2950">
-        <div class="input-help">HM yang benar-benar dibaca CCR saat pengambilan HM.</div>
+        <div class="input-help">Pilih check-in READY untuk mengambil HM operator. Unit tanpa operator memakai pembacaan petugas.</div>
       </div>
 
       <div>
         <label>Jam Pengambilan HM</label>
-        <input type="time" step="60" id="hmTakenTime">
-        <div class="input-help">Waktu CCR membaca HM, disimpan untuk kebutuhan audit.</div>
+        <input type="time" step="1" id="hmTakenTime">
+        <div class="input-help">Waktu pembacaan HM dalam WIB, otomatis dari kiriman operator.</div>
       </div>
 
       <div>
@@ -209,7 +209,7 @@ td.left{text-align:left}
           <div class="mini-sub" id="hmPreviousCardSource">Belum pilih unit</div>
         </div>
         <div class="hm-mini">
-          <small>HM DIBACA CCR</small>
+          <small>HM AKTUAL</small>
           <strong id="hmCcrCard">-</strong>
           <div class="mini-sub" id="hmTakenCard">Jam ambil HM: -</div>
         </div>
@@ -459,33 +459,42 @@ function esc(v){
 }
 
 function showSelectedCheckin(row){
+  const hadSelection=!!CURRENT_OPERATOR_CHECKIN;
   CURRENT_OPERATOR_CHECKIN=row||null;
+  if(!row && hadSelection){
+    document.getElementById("operator").value="";
+    document.getElementById("hm").value="";
+    document.getElementById("hmTakenTime").value="";
+  }
   const host=document.getElementById("checkinSelected");
+  for(const id of ["hm","hmTakenTime","operator"])document.getElementById(id).readOnly=!!row;
   if(!row){host.style.display="none";host.textContent="";return}
   host.style.display="block";
-  host.innerHTML=`<b>Referensi terpilih:</b> ${esc(row.unit)} - ${esc(row.operator_name)} - NRP ${esc(row.nrp||"—")} - HM Awal ${row.hm_awal==null?"—":fmt(row.hm_awal)}. HM aktual operator: ${row.hm_actual==null?"belum dikirim":fmt(row.hm_actual)}. <b>HM awal tidak mengganti HM pengisian. Pada paket ini HM dibaca CCR tetap diisi terpisah.</b>`;
+  host.innerHTML=`<b>Referensi terpilih:</b> ${esc(row.unit)} - ${esc(row.operator_name)} - NRP ${esc(row.nrp||"—")} - HM Awal ${row.hm_awal==null?"—":fmt(row.hm_awal)}. HM aktual operator: ${row.hm_actual==null?"belum dikirim":fmt(row.hm_actual)}. <b>HM aktual operator dipakai untuk jatah dan pengisian; HM awal tetap sebagai referensi check-in.</b>`;
 }
 
 async function useOperatorCheckin(row){
   if(!row)return;
+  const issue=window.KPPCCRMonitor.selectionIssue(row);
+  if(issue)throw new Error(issue);
   showSelectedCheckin(row);
   document.getElementById("tanggal").value=row.tanggal;
   document.getElementById("shift").value=row.shift;
   document.getElementById("unit").value=row.unit;
   document.getElementById("operator").value=row.operator_name||"";
-  document.getElementById("hm").value="";
-  document.getElementById("hmTakenTime").value="";
+  document.getElementById("hm").value=String(row.hm_actual);
+  document.getElementById("hmTakenTime").value=window.KPPCCRMonitor.siteParts(row.hm_actual_at).time;
   document.getElementById("maxQty").value="";
   document.getElementById("toleranceQty").value="0";
   document.getElementById("requestReason").value="";
   document.getElementById("note").value="";
-  document.getElementById("formStatus").textContent="Identitas terisi. Isi HM dibaca CCR dan jam pembacaan, lalu Qty jatah.";
+  document.getElementById("formStatus").textContent="Identitas dan HM aktual operator sudah terisi. Masukkan Qty jatah.";
   updateLimit();
   updateQrDisplay();
   await loadHmReference();
   await refreshFillingNo();
   updateHmIntel();
-  document.getElementById("hm").focus();
+  document.getElementById("maxQty").focus();
 }
 
 async function loadOperatorCheckins(){
@@ -672,8 +681,7 @@ async function refreshFillingNo(){
       .select("filling_no,status")
       .eq("tanggal",tanggal)
       .eq("shift",shift)
-      .eq("unit",unit)
-      .not("status","in",'("CANCELLED","REJECTED","EXPIRED")');
+      .eq("unit",unit);
 
     if(!error && data?.length){
       next=Math.max(...data.map(x=>Number(x.filling_no)||0))+1;
@@ -745,6 +753,8 @@ async function save(){
       const fresh=await CHECKIN_MONITOR.verify(CURRENT_OPERATOR_CHECKIN.id);
       if(upper(fresh.unit)!==upper(document.getElementById("unit").value) || fresh.tanggal!==document.getElementById("tanggal").value || fresh.shift!==document.getElementById("shift").value)throw new Error("Pilihan unit/tanggal/shift berubah. Pilih ulang check-in.");
       showSelectedCheckin(fresh);
+      document.getElementById("hm").value=String(fresh.hm_actual);
+      document.getElementById("hmTakenTime").value=window.KPPCCRMonitor.siteParts(fresh.hm_actual_at).time;
     }
     const next=await refreshFillingNo();
     const err=validate(next);
@@ -857,7 +867,8 @@ function openGlEdit(id){
   document.getElementById("editOperator").value=r.operator_unit||"";
   document.getElementById("editHmPrevious").value=r.hm_previous_ref??"";
   document.getElementById("editHm").value=r.hm_ccr??"";
-  document.getElementById("editHmTakenTime").value=String(r.hm_taken_time||"").slice(0,5);
+  document.getElementById("editHmTakenTime").value=String(r.hm_taken_time||"");
+  for(const id of ["editOperator","editHm","editHmTakenTime"])document.getElementById(id).readOnly=r.operator_checkin_id!=null;
   document.getElementById("editMaxQty").value=r.max_qty??"";
   document.getElementById("editTolerance").value=r.tolerance_qty??0;
   document.getElementById("editStatus").value=r.status||"";
@@ -876,7 +887,8 @@ async function saveGlEdit(){
   const operator=clean(document.getElementById("editOperator").value);
   const hmPrevious=num(document.getElementById("editHmPrevious").value);
   const hm=num(document.getElementById("editHm").value);
-  const hmTaken=document.getElementById("editHmTakenTime").value;
+  const original=ROWS.find(r=>String(r.id)===String(id));
+  const hmTaken=original?.operator_checkin_id!=null?original.hm_taken_time:document.getElementById("editHmTakenTime").value;
   const maxQty=num(document.getElementById("editMaxQty").value);
   const tol=num(document.getElementById("editTolerance").value);
   const reason=clean(document.getElementById("editReason").value)||null;
