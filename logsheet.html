@@ -419,7 +419,8 @@ function buildHmAnomalyMap(data){
 
     if(item.hm_ref_excluded===true){
       map.set(rowKey,{text:"HISTORI HM — TIDAK JADI ACUAN",cls:"status-excluded",reason:item.hm_ref_excluded_reason||"Dikecualikan dari HM reference oleh Admin/GL.",kind:"excluded"});
-      return;
+      // Exclusion applies to live references, not report anomaly detection.
+      // Continue checking the displayed HM; real anomalies override this hidden label.
     }
 
     if(item.hm_akhir===null||item.hm_akhir===undefined||item.hm_akhir===""){
@@ -730,7 +731,7 @@ function applyFilter(data){
       if(hmAudit==="missing" && a?.kind!=="missing")return false;
       if(hmAudit==="down" && a?.kind!=="down")return false;
       if(hmAudit==="jump" && a?.kind!=="jump")return false;
-      if(hmAudit==="excluded" && a?.kind!=="excluded")return false;
+      if(hmAudit==="excluded" && item.hm_ref_excluded!==true)return false;
     }
     return true;
   });
@@ -828,12 +829,14 @@ function renderTable(data){
     label.textContent=status.text||"";
     wrap.appendChild(label);
     const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
-    const showExcluded=document.getElementById("filterHmAudit").value==="excluded";
-    if(anomaly&&(["missing","down","jump"].includes(anomaly.kind)||(showExcluded&&anomaly.kind==="excluded"))){
+    // Editing history must remain available even when its warning is hidden.
+    // This page is restricted to Admin/GL; the existing RPC enforces write access.
+    if(item.id!==null && item.id!==undefined){
       const btn=document.createElement("button");
       btn.type="button";
       btn.className="cleanup-btn";
       btn.textContent="🧹 RAPIKAN HM";
+      btn.title=`Rapikan HM ${unit} — Log No. ${item.id}`;
       btn.addEventListener("click",()=>openHmCleanup(item,anomaly));
       wrap.appendChild(btn);
     }
@@ -880,7 +883,7 @@ function renderFiltered(){
     if(anomaly?.kind==="missing") acc.hmMissing++;
     if(anomaly?.kind==="down") acc.hmDown++;
     if(anomaly?.kind==="jump") acc.hmJump++;
-    if(anomaly?.kind==="excluded") acc.excluded++;
+    if(item.hm_ref_excluded===true) acc.excluded++;
     if(getEditStatus(item)) acc.edit++;
 
     return acc;
