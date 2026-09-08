@@ -505,7 +505,7 @@ function operationalTimestamp(tanggal,shift,timeValue){
   if(!tanggal||!shift||!timeValue)return null;
   const parts=String(timeValue).split(":");
   const hh=Number(parts[0]||0),mm=Number(parts[1]||0),ss=Number(parts[2]||0);
-  const dt=new Date(`${tanggal}T${pad(hh)}:${pad(mm)}:${pad(ss)}+08:00`);
+  const dt=new Date(`${tanggal}T${pad(hh)}:${pad(mm)}:${pad(ss)}+07:00`);
   if(shift==="Shift 2" && (hh*60+mm)<390)dt.setTime(dt.getTime()+86400000);
   return dt;
 }

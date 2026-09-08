@@ -11,12 +11,12 @@ const now = new Date("2026-08-31T02:00:00Z");
 const base = {id:"9007199254740993",tanggal:"2026-08-31",shift:"Shift 1",unit:"DT7441",operator_name:"TEST",nrp:"00123",status:"ACTIVE",hm_awal:28000,hm_actual:null};
 const plain = v => JSON.parse(JSON.stringify(v));
 
-test("WITA shift boundaries, midnight, month/year rollover",()=>{
+test("WIB shift boundaries, midnight, month/year rollover",()=>{
   for (const [instant,tanggal,shift] of [
-    ["2026-08-30T22:29:59Z","2026-08-30","Shift 2"],
-    ["2026-08-30T22:30:00Z","2026-08-31","Shift 1"],
-    ["2026-08-31T10:29:59Z","2026-08-31","Shift 1"],
-    ["2026-08-31T10:30:00Z","2026-08-31","Shift 2"],
+    ["2026-08-30T23:29:59Z","2026-08-30","Shift 2"],
+    ["2026-08-30T23:30:00Z","2026-08-31","Shift 1"],
+    ["2026-08-31T11:29:59Z","2026-08-31","Shift 1"],
+    ["2026-08-31T11:30:00Z","2026-08-31","Shift 2"],
     ["2026-08-31T17:00:00Z","2026-08-31","Shift 2"],
     ["2026-12-31T20:00:00Z","2026-12-31","Shift 2"]
   ]) assert.deepEqual(plain(m.operationalShift(new Date(instant))),{tanggal,shift});
@@ -55,11 +55,11 @@ test("date range restricted to 31 days with real calendar dates",()=>{
   m.validateDates("2026-08-01","2026-08-31");
   for (const pair of [["2026-08-01","2026-09-01"],["2026-08-10","2026-08-09"],["2026-02-30","2026-03-01"],["","2026-08-01"]]) assert.throws(()=>m.validateDates(...pair));
 });
-test("event time and server received time exported separately in WITA",()=>{
+test("event time and server received time exported separately in WIB",()=>{
   const row = {...base,allocations:[],hm_actual_at:"2026-08-31T01:00:00Z",hm_actual_received_at:"2026-08-31T02:00:00Z"};
   const [exported] = m.exportData([row]).checkins;
-  assert.equal(exported[10],"2026-08-31 09:00:00");
-  assert.equal(exported[11],"2026-08-31 10:00:00");
+  assert.equal(exported[10],"2026-08-31 08:00:00");
+  assert.equal(exported[11],"2026-08-31 09:00:00");
 });
 test("pagination continues even when server returns fewer than 500 rows",async()=>{
   const calls = [];
@@ -121,5 +121,5 @@ test("CCR page integration: initialize, pick identity, preserve selection across
   assert.equal(elements.get("monitorExport").disabled,true);
   tables.operator_unit_checkins[0]={...row,status:"EXPIRED"};
   await assert.rejects(()=>vm.runInContext("CHECKIN_MONITOR.verify('1')",context),/kedaluwarsa/);
-  assert.equal(vm.runInContext("operationalTimestamp('2026-08-31','Shift 2','01:00').toISOString()",context),"2026-08-31T17:00:00.000Z");
+  assert.equal(vm.runInContext("operationalTimestamp('2026-08-31','Shift 2','01:00').toISOString()",context),"2026-08-31T18:00:00.000Z");
 });
