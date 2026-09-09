@@ -1,0 +1,3 @@
+.delivery-panel{padding:16px 18px;margin:16px 0;border:1px solid #b9cee8;border-radius:12px;background:#eff6ff;color:#183655;font:13px/1.6 Arial,sans-serif;overflow-wrap:anywhere}.delivery-panel p{margin:6px 0 12px}.delivery-actions{display:flex;gap:8px;flex-wrap:wrap}.delivery-actions button{border:1px solid #9eb9dc;border-radius:8px;background:#fff;color:#174fa0;padding:11px 14px;font-weight:700;min-height:44px;cursor:pointer}.delivery-actions button:disabled{opacity:.6;cursor:wait}.delivery-actions button[hidden]{display:none}.delivery-panel :focus-visible{outline:3px solid #245de0;outline-offset:2px}
+
+#fuelDelivery{max-width:1100px;margin:18px auto;width:calc(100% - 24px)}
