@@ -622,9 +622,10 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
 </style>
 <script src="reliable-submit.js"></script>
 <link rel="stylesheet" href="reliable-submit.css">
+<link rel="stylesheet" href="fuelman-ui.css?v=20260909">
 </head>
 
-<body>
+<body class="fuelman-workspace">
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Pengisian Fuel</p></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
@@ -632,16 +633,20 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
 
 <div class="container">
   <div class="form-box">
+    <section class="fuel-console-head" aria-label="Status input pengisian">
+      <div><span>FUELMAN / DISPENSE CONSOLE</span><h2>Input pengisian unit</h2><p>Pilih sumber, validasi unit, lalu kirim jumlah liter.</p></div>
+      <div class="fuel-console-meta"><b>WIB</b><b><i></i>ANTI-DOUBLE AKTIF</b></div>
+    </section>
     <div class="fuel-workspace">
       <main class="fuel-main">
 
         <div id="fuelmanSessionInfo" class="session-info hidden">
-          <strong>🟢 SHIFT FUELMAN AKTIF</strong><br>
+          <strong>SHIFT FUELMAN AKTIF</strong><br>
           Fuelman: <span id="sessionFuelman">-</span> · Shift: <span id="sessionShift">-</span> · Fuel Truck: <span id="sessionTruck">-</span>
         </div>
 
         <section class="fuel-card">
-          <div class="step-side"><div class="step-no">1</div><div class="step-copy"><h3>⛽ Pilih Shift & Fuel Truck</h3><p>Pilih shift aktif dan sumber pengisian yang digunakan.</p></div></div>
+          <div class="step-side"><div class="step-no">1</div><div class="step-copy"><h3>Pilih Shift &amp; Fuel Truck</h3><p>Pilih shift aktif dan sumber pengisian yang digunakan.</p></div></div>
           <div class="step-content">
             <div class="step-grid-3">
               <div class="form-group"><label>Shift Aktif</label><select id="shift"><option value="">-- Pilih Shift --</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
@@ -652,20 +657,20 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
         </section>
 
         <section class="fuel-card">
-          <div class="step-side blue"><div class="step-no">2</div><div class="step-copy"><h3>🔎 Pilih / Cari Code Unit</h3><p>Ketik atau scan unit, lalu ambil HM dan kontrol CCR.</p></div></div>
+          <div class="step-side blue"><div class="step-no">2</div><div class="step-copy"><h3>Pilih / Cari Code Unit</h3><p>Ketik atau scan unit, lalu ambil HM dan kontrol CCR.</p></div></div>
           <div class="step-content">
             <div class="step-grid-2">
               <div class="form-group"><label>CODE UNIT / QR UNIT</label><input type="text" id="unitInput" list="unitOptions" placeholder="Ketik / cari unit..." autocomplete="off"><datalist id="unitOptions"></datalist></div>
-              <div class="scan-actions"><button id="scanQrButton" type="button" class="scan-btn">📷 SCAN QR UNIT</button><button id="checkUnitButton" class="check-btn">CEK UNIT / AMBIL DATA</button></div>
+              <div class="scan-actions"><button id="scanQrButton" type="button" class="scan-btn">SCAN QR UNIT</button><button id="checkUnitButton" class="check-btn">CEK UNIT / AMBIL DATA</button></div>
             </div>
             <div class="unit-inline"><div id="unitResult" class="unit-result hidden"><span>✓ Unit Terpilih</span><strong id="unitDisplay">-</strong></div></div>
             <div id="qrScannerBox" class="hidden"><div id="qrReader"></div><div id="qrScanStatus" class="scan-status">QR hanya wajib untuk unit yang sedang punya jatah CCR.</div><div style="margin-top:10px"><button id="stopQrButton" type="button" class="scan-stop-btn">✖ TUTUP KAMERA</button></div></div>
-            <div id="suggestionBox" class="suggestion-box hidden"><div class="suggestion-title">🔎 Mungkin yang kamu maksud:</div><div id="suggestionList" class="suggestion-list"></div></div>
+            <div id="suggestionBox" class="suggestion-box hidden"><div class="suggestion-title">Mungkin yang kamu maksud:</div><div id="suggestionList" class="suggestion-list"></div></div>
           </div>
         </section>
 
         <section class="fuel-card">
-          <div class="step-side"><div class="step-no">3</div><div class="step-copy"><h3>🧭 Informasi Unit & HM</h3><p>Pastikan unit terpilih dan HM sebelumnya sudah sesuai.</p></div></div>
+          <div class="step-side"><div class="step-no">3</div><div class="step-copy"><h3>Informasi Unit &amp; HM</h3><p>Pastikan unit terpilih dan HM sebelumnya sudah sesuai.</p></div></div>
           <div class="step-content">
             <div class="hm-info-grid">
               <div class="unit-metric"><small>UNIT TERPILIH</small><strong id="unitDisplayMirror">-</strong></div>
@@ -692,7 +697,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
         <div id="formArea" class="fuel-form-area hidden">
           <div class="form-area-stack">
             <section class="fuel-card">
-              <div class="step-side blue"><div class="step-no">4</div><div class="step-copy"><h3>✏️ Isi Data Pengisian</h3><p>Periksa HM/operator dari sistem, lalu masukkan jumlah fuel.</p></div></div>
+              <div class="step-side blue"><div class="step-no">4</div><div class="step-copy"><h3>Isi Data Pengisian</h3><p>Periksa HM/operator dari sistem, lalu masukkan jumlah fuel.</p></div></div>
               <div class="step-content">
                 <div class="data-grid">
                   <div class="form-group"><label>HM Sekarang / Estimasi Refueling</label><input type="number" id="currentHm" placeholder="Masukkan HM sekarang" step="0.1"></div>
@@ -706,7 +711,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
             </section>
 
             <section class="fuel-card save-card">
-              <div class="step-side"><div class="step-no">5</div><div class="step-copy"><h3>💾 Simpan Data</h3><p>Review ringkasan lalu simpan transaksi.</p></div></div>
+              <div class="step-side"><div class="step-no">5</div><div class="step-copy"><h3>Simpan Data</h3><p>Review ringkasan lalu simpan transaksi.</p></div></div>
               <div class="step-content">
                 <div class="save-layout">
                   <div class="summary-box"><div class="summary-title">Ringkasan Pengisian</div><div class="summary-list">
@@ -718,7 +723,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
                     <div class="summary-row"><span>Operator</span><b id="sumOperator">-</b></div>
                     <div class="summary-row"><span>Shift</span><b id="sumShift">-</b></div>
                   </div></div>
-                  <div class="save-side"><button id="saveButton" class="save-btn">💾 SIMPAN DATA</button><div class="save-hint">Pastikan seluruh data sudah benar sebelum disimpan.</div></div>
+                  <div class="save-side"><button id="saveButton" class="save-btn">SIMPAN PENGISIAN</button><div class="save-hint">Tombol terkunci saat transaksi sedang dikirim.</div></div>
                 </div>
               </div>
             </section>
@@ -737,7 +742,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
           <div class="guide-item"><div class="guide-dot">4</div><b>Isi Data Pengisian</b><span>Periksa HM/operator dari sistem lalu isi jumlah liter.</span></div>
           <div class="guide-item"><div class="guide-dot">5</div><b>Simpan Data</b><span>Review ringkasan lalu simpan transaksi.</span></div>
         </div>
-        <button type="button" class="guide-open" onclick="window.KPP?.openGuide('pengisian',window.KPP_PROFILE||null)">📘 BUKA PANDUAN LENGKAP</button>
+        <button type="button" class="guide-open" onclick="window.KPP?.openGuide('pengisian',window.KPP_PROFILE||null)">BUKA PANDUAN LENGKAP</button>
       </aside>
     </div>
   </div>
