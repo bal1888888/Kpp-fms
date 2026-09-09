@@ -145,6 +145,15 @@ if (!operatorCheckinSource.includes('"submit_operator_actual_hm"')) {
   fail(operatorCheckinPath, "pengiriman HM aktual sebelum rest tidak ditemukan");
 }
 
+const stockPath = path.join(projectRoot, "stock.html");
+const stockSource = fs.readFileSync(stockPath, "utf8");
+if (!stockSource.includes('"TRANSFER_FLOWMETER_VS_DESTINATION_TERA"')) {
+  fail(stockPath, "transfer baru belum memakai audit flowmeter versus tera tujuan");
+}
+if (!stockSource.includes('id="transferMeterStart"') || !stockSource.includes('id="transferMeterEnd"')) {
+  fail(stockPath, "input flowmeter transfer sumber tidak ditemukan");
+}
+
 if (failures.length) {
   console.error("Static checks gagal:\n");
   failures.forEach((message) => console.error(`- ${message}`));
