@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-static.mjs && node --test scripts/test-ccr-monitor.mjs scripts/test-operator-hm.mjs scripts/test-reliable-submit.mjs scripts/test-security-hardening.mjs scripts/test-db-performance.mjs scripts/test-transfer-audit.mjs"
+    "check": "node scripts/check-static.mjs && node --test scripts/test-ccr-monitor.mjs scripts/test-operator-hm.mjs scripts/test-reliable-submit.mjs scripts/test-security-hardening.mjs scripts/test-db-performance.mjs scripts/test-transfer-audit.mjs scripts/test-atomic-stock-closing.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8"
