@@ -620,12 +620,15 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
   .ccr-limit strong{font-size:17px!important}
 }
 </style>
+<script src="reliable-submit.js"></script>
+<link rel="stylesheet" href="reliable-submit.css">
 </head>
 
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Pengisian Fuel</p></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
+<div id="fuelDelivery"></div>
 
 <div class="container">
   <div class="form-box">
@@ -1167,13 +1170,13 @@ async function loadActiveFuelmanSession() {
 
     if (error) {
         alert("❌ Gagal membaca shift Fuelman.\\n\\n" + error.message);
-        window.location.replace("fuelman.html");
+        if (!fuelDelivery?.read().request) window.location.replace("fuelman.html");
         return;
     }
 
     if (!data || data.length === 0) {
         alert("⚠️ Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
-        window.location.replace("fuelman.html");
+        if (!fuelDelivery?.read().request) window.location.replace("fuelman.html");
         return;
     }
 
@@ -1211,8 +1214,20 @@ window.addEventListener("pagehide", function() {
     }
 });
 
+let fuelDelivery = null;
+async function reliableFuelRpc(action,payload){
+ if(!fuelDelivery)return {error:{message:"Sesi pengiriman belum siap. Muat ulang setelah tersambung."}};
+ return fuelDelivery.send(action,payload);
+}
+
 document.addEventListener("kpp-auth-ready", async function(event) {
     currentStaffProfile = event.detail.profile;
+    if (window.KPP_SESSION?.user?.id && !fuelDelivery) {
+      fuelDelivery = KPPReliable.mount({scope:'fuel:'+window.KPP_SESSION.user.id, client:supabaseClient,
+        host:document.getElementById('fuelDelivery'), fields:['unitInput','fuelQty','currentHm'],
+        context:()=>({session:activeFuelmanSession?.id || null,truck:selectedFuelTruck,shift:document.getElementById('shift').value}),
+        restoreAllowed:c=>c && c.session===(activeFuelmanSession?.id || null) && c.truck===selectedFuelTruck && c.shift===document.getElementById('shift').value});
+    }
     await loadActiveFuelmanSession();
 });
 
@@ -2716,8 +2731,7 @@ document
 
                 try {
                     const { data, error } =
-                        await supabaseClient.rpc(
-                            "submit_ccr_fueling",
+                        await reliableFuelRpc("submit_ccr_fueling",
                             {
                                 p_allocation_id:
                                     currentCCRAllocation.id,
@@ -2857,8 +2871,7 @@ document
 
             if (operatorless) {
                 saveResult =
-                    await supabaseClient.rpc(
-                        "submit_operatorless_fueling",
+                    await reliableFuelRpc("submit_operatorless_fueling",
                         {
                             p_unit:
                                 currentUnit,
@@ -2882,8 +2895,7 @@ document
                     );
             } else {
                 saveResult =
-                    await supabaseClient.rpc(
-                    "submit_manual_fueling_from_checkin",
+                    await reliableFuelRpc("submit_manual_fueling_from_checkin",
                     {
                         p_checkin_id:
                             currentOperatorCheckin.checkin_id,
