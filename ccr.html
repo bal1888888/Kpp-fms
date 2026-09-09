@@ -95,8 +95,9 @@ td.left{text-align:left}
 @media(max-width:560px){.hm-intel-grid,.checkin-list{grid-template-columns:1fr}.hm-intel-head,.checkin-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}.checkin-head button{width:100%;margin-top:10px}}
 
 </style>
+<link rel="stylesheet" href="operations-ui.css?v=20260909">
 </head>
-<body>
+<body class="ccr-workspace">
 
 <div class="header">
   <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
@@ -107,6 +108,11 @@ td.left{text-align:left}
 <div id="kppRoleNav"></div>
 
 <div class="container">
+  <section class="workspace-intro" aria-label="Ruang kerja CCR">
+    <div><span class="eyebrow">OPERASIONAL / CCR</span><h2>Setiap unit, siap terpantau.</h2><p>Pantau HM operator, atur jatah, dan ikuti pengisian dalam satu tempat.</p></div>
+    <span class="site-time">WIB <span>UTC+07</span></span>
+  </section>
+  <details class="workflow-guide"><summary>Panduan jatah &amp; waktu shift</summary>
 
   <div class="qr-box">
     <b>QR UNIT = CHECK-IN OPERATOR TANPA AKUN.</b><br>
@@ -125,9 +131,11 @@ td.left{text-align:left}
     Jatah ACTIVE/PENDING yang lewat akhir shift otomatis menjadi <b>EXPIRED</b>.
   </div>
 
-  <div class="panel">
+  </details>
+
+  <div class="panel" id="monitorSection">
     <div class="checkin-head">
-      <div><h2>Monitoring Check-in & HM Operator</h2><p>Klik kode unit untuk memakai identitas di form jatah. Riwayat shift lama tetap tersimpan dan dapat diunduh.</p></div>
+      <div><span class="eyebrow">01 / MONITORING UNIT</span><h2>Check-in &amp; HM Operator</h2><p>Klik kode unit untuk memakai identitas di form jatah. Riwayat shift lama tetap tersimpan dan dapat diunduh.</p></div>
       <button type="button" class="btn-outline" id="refreshCheckinBtn">REFRESH CHECK-IN</button>
     </div>
     <div id="checkinMonitor"></div>
@@ -135,7 +143,7 @@ td.left{text-align:left}
   </div>
 
   <div class="panel">
-    <h2>🎯 Input Jatah Unit</h2>
+    <span class="eyebrow">02 / ALOKASI FUEL</span><h2>Input Jatah Unit</h2>
 
     <div class="grid">
       <div>
@@ -259,7 +267,7 @@ td.left{text-align:left}
 
   <div class="panel">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-      <h2 style="margin:0">📋 Riwayat Jatah CCR</h2>
+      <h2 style="margin:0">Riwayat Jatah CCR</h2>
       <div class="actions" style="margin:0">
         <select id="statusFilter" style="width:auto">
           <option value="ALL">SEMUA</option>
