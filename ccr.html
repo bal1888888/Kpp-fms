@@ -95,7 +95,7 @@ td.left{text-align:left}
 @media(max-width:560px){.hm-intel-grid,.checkin-list{grid-template-columns:1fr}.hm-intel-head,.checkin-head{display:block}.hm-intel-head span{display:block;text-align:left;margin-top:4px}.checkin-head button{width:100%;margin-top:10px}}
 
 </style>
-<link rel="stylesheet" href="operations-ui.css?v=20260909">
+<link rel="stylesheet" href="operations-ui.css?v=20260909-2">
 </head>
 <body class="ccr-workspace">
 
@@ -109,43 +109,57 @@ td.left{text-align:left}
 
 <div class="container">
   <section class="workspace-intro" aria-label="Ruang kerja CCR">
-    <div><span class="eyebrow">OPERASIONAL / CCR</span><h2>Setiap unit, siap terpantau.</h2><p>Pantau HM operator, atur jatah, dan ikuti pengisian dalam satu tempat.</p></div>
-    <span class="site-time">WIB <span>UTC+07</span></span>
+    <div class="intro-copy"><span class="eyebrow">CONTROL ROOM / CCR</span><h2>Kontrol unit dalam satu layar.</h2><p>Pantau kesiapan HM, pilih unit, lalu terbitkan jatah tanpa berpindah alur.</p></div>
+    <div class="command-meta" aria-label="Status ruang kerja">
+      <span class="live-pill"><i aria-hidden="true"></i>Sistem aktif</span>
+      <span class="site-time">WIB <b>UTC+07</b></span>
+      <span class="safe-pill">Submit terlindungi</span>
+    </div>
   </section>
-  <details class="workflow-guide"><summary>Panduan jatah &amp; waktu shift</summary>
+  <details class="workflow-guide"><summary><span>Aturan operasional</span><small>QR, ritasi, dan batas waktu shift</small></summary>
 
-  <div class="qr-box">
+  <div class="guide-grid">
+
+  <div class="qr-box guide-card">
     <b>QR UNIT = CHECK-IN OPERATOR TANPA AKUN.</b><br>
     Operator scan QR, lalu mengirim nama, NRP (opsional), dan <b>HM awal operasional</b>.
     CCR dapat memakai identitasnya dari panel check-in. HM awal tetap terpisah dari HM transaksi pengisian.
   </div>
 
-  <div class="info">
+  <div class="info guide-card">
     <b>1 jatah = 1 kali pengisian.</b>
     Pengisian ke-1 langsung ACTIVE.
     Pengisian ke-2 dan seterusnya otomatis PENDING_GL dan belum bisa dibaca Fuelman sampai GL menyetujui.
   </div>
 
-  <div class="shift-clock">
+  <div class="shift-clock guide-card">
     <b>Jam Shift:</b> Shift 1 = 06:30–18:30 • Shift 2 = 18:30–06:30.
     Jatah ACTIVE/PENDING yang lewat akhir shift otomatis menjadi <b>EXPIRED</b>.
-  </div>
+  </div></div>
 
   </details>
 
-  <div class="panel" id="monitorSection">
-    <div class="checkin-head">
-      <div><span class="eyebrow">01 / MONITORING UNIT</span><h2>Check-in &amp; HM Operator</h2><p>Klik kode unit untuk memakai identitas di form jatah. Riwayat shift lama tetap tersimpan dan dapat diunduh.</p></div>
+  <div class="panel panel-monitor" id="monitorSection">
+    <div class="panel-heading checkin-head">
+      <span class="section-index" aria-hidden="true">01</span>
+      <div><span class="eyebrow">MONITORING UNIT</span><h2>Check-in &amp; HM Operator</h2><p>Pilih unit berstatus HM tersedia untuk mengisi identitas ke form jatah. Riwayat shift tetap dapat dipantau dan diunduh.</p></div>
       <button type="button" class="btn-outline" id="refreshCheckinBtn">REFRESH CHECK-IN</button>
     </div>
     <div id="checkinMonitor"></div>
     <div class="checkin-selected" id="checkinSelected"></div>
   </div>
 
-  <div class="panel">
-    <span class="eyebrow">02 / ALOKASI FUEL</span><h2>Input Jatah Unit</h2>
+  <div class="panel panel-allocation">
+    <div class="panel-heading compact">
+      <span class="section-index" aria-hidden="true">02</span>
+      <div><span class="eyebrow">ALOKASI FUEL</span><h2>Input Jatah Unit</h2><p>Data unit dan HM yang dipilih akan menjadi dasar satu transaksi pengisian.</p></div>
+      <span class="panel-state">HM AKTUAL</span>
+    </div>
 
-    <div class="grid">
+    <div class="allocation-layout">
+      <div class="allocation-main">
+
+    <div class="grid allocation-fields">
       <div>
         <label>Tanggal</label>
         <input type="date" id="tanggal">
@@ -205,9 +219,23 @@ td.left{text-align:left}
       </div>
     </div>
 
+    <div class="note-field">
+      <label>Catatan CCR</label>
+      <textarea id="note" placeholder="Tambahkan catatan bila diperlukan"></textarea>
+    </div>
+
+    <div class="actions allocation-actions">
+      <button id="saveBtn" class="btn-green">SIMPAN JATAH</button>
+      <button id="refreshNoBtn" class="btn-outline">CEK RITASI</button>
+    </div>
+
+    <div id="formStatus" class="status"></div>
+    </div>
+
+    <aside class="allocation-rail" aria-label="Ringkasan alokasi">
     <div class="hm-intel">
       <div class="hm-intel-head">
-        <b>⏱️ Monitor HM Unit</b>
+        <b>Monitor HM Unit</b>
         <span>HM yang dibaca CCR menjadi HM aktual pengisian; estimasi waktu dinonaktifkan</span>
       </div>
       <div class="hm-intel-grid">
@@ -252,23 +280,15 @@ td.left{text-align:left}
       </div>
     </div>
 
-    <div style="margin-top:13px">
-      <label>Catatan CCR</label>
-      <textarea id="note" placeholder="Opsional"></textarea>
+    </aside>
     </div>
-
-    <div class="actions">
-      <button id="saveBtn" class="btn-green">💾 SIMPAN JATAH</button>
-      <button id="refreshNoBtn" class="btn-outline">↻ CEK RITASI</button>
-    </div>
-
-    <div id="formStatus" class="status"></div>
   </div>
 
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-      <h2 style="margin:0">Riwayat Jatah CCR</h2>
-      <div class="actions" style="margin:0">
+  <div class="panel panel-history">
+    <div class="panel-heading history-heading">
+      <span class="section-index" aria-hidden="true">03</span>
+      <div><span class="eyebrow">AUDIT JATAH</span><h2>Riwayat Jatah CCR</h2><p>Lacak status jatah aktif, menunggu persetujuan, terpakai, atau kedaluwarsa.</p></div>
+      <div class="actions history-actions">
         <select id="statusFilter" style="width:auto">
           <option value="ALL">SEMUA</option>
           <option value="ACTIVE">ACTIVE</option>
