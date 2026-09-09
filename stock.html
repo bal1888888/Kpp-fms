@@ -3759,49 +3759,29 @@ async function saveClosing(){
 
     if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
 
-    const {error:closingError}=await db.from("stock_closing").upsert(
-        closingRows,
-        {onConflict:"tanggal,shift,storage"}
+    const carryForward=document.getElementById("carryForward").checked;
+    const {data:closingResult,error:closingError}=await db.rpc(
+        "save_stock_closing_atomic",
+        {
+            p_rows:closingRows,
+            p_carry_forward:carryForward
+        }
     );
 
     if(closingError){
         document.getElementById("closingStatus").textContent=
-            "[GAGAL] Gagal simpan closing: "+closingError.message;
-        await finishStockSave(false,"Gagal simpan closing: "+closingError.message);
+            "[GAGAL] Closing dibatalkan: "+closingError.message;
+        await finishStockSave(false,"Closing dibatalkan: "+closingError.message);
         return;
     }
 
     LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
 
-    if(document.getElementById("carryForward").checked){
-        const nextPeriod=getNextPeriod(tanggal,shift);
-
-        const nextOpeningRows=closingRows.map(row=>({
-            tanggal:nextPeriod.tanggal,
-            shift:nextPeriod.shift,
-            storage:row.storage,
-            qty:row.actual_qty,
-            operator,
-            sonding_height_cm:row.sonding_height_cm,
-            tera_version:row.tera_version
-        }));
-
-        const {error:openingError}=await db.from("stock_opening").upsert(
-            nextOpeningRows,
-            {onConflict:"tanggal,shift,storage"}
-        );
-
-        if(openingError){
-            document.getElementById("closingStatus").textContent=
-                "[OK] Closing tersimpan, tapi gagal membuat opening berikutnya: "+openingError.message;
-            await loadStock();
-            await finishStockSave(
-                false,
-                "Closing masuk, tetapi Opening shift berikutnya gagal: "+openingError.message
-            );
-            return;
-        }
-
+    if(carryForward){
+        const nextPeriod={
+            tanggal:closingResult.next_opening_date,
+            shift:closingResult.next_opening_shift
+        };
         document.getElementById("closingStatus").textContent=
             isFuelman
                 ? "[OK] Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
