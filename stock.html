@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.10: ASCII-safe UI text prevents encoding corruption -->
+<!-- KPP-FMS STOCK v9.11: flowmeter plus source/destination sounding transfer audit -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <title>Stock Fuel - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-window.KPP_ALLOWED_ROLES=["gl", "admin", "fuelman"];
+window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan", "fuelman"];
 window.KPP_ACTIVE_PAGE="stock";
 </script>
 <script src="auth.js"></script>
@@ -504,7 +504,7 @@ th{background:#f8fafc;color:#475569}
         <div class="stock-edit-head">
             <div>
                 <h3> Edit Transaksi Stock</h3>
-                <div class="note">Khusus GL/Admin. Perubahan tersimpan di audit log.</div>
+                <div class="note">Khusus GL/Admin/Atasan. Perubahan tersimpan di audit log.</div>
             </div>
             <button type="button" class="icon-close" onclick="closeMovementEditor()">X</button>
         </div>
@@ -710,14 +710,14 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Nomor PO / LO</label>
             <input id="receiptReference" autocomplete="off" placeholder="Contoh: PO/LO-2026-001">
-            <span class="field-hint">Boleh dikosongkan saat penerimaan. Admin/GL dapat melengkapinya dari History Penerimaan.</span>
+            <span class="field-hint">Boleh dikosongkan saat penerimaan. Admin/GL/Atasan dapat melengkapinya dari History Penerimaan.</span>
         </div>
         <div>
             <label>Transportir</label>
             <select id="receiptTransporter">
                 <option value="">Memuat Master Transportir...</option>
             </select>
-            <span class="field-hint">Dikelola Admin/GL dari menu Master Unit & HM.</span>
+            <span class="field-hint">Dikelola Admin/GL/Atasan dari menu Master Unit & HM.</span>
         </div>
         <div>
             <label>Flowmeter Awal Transporter (Liter)</label>
@@ -773,7 +773,8 @@ th{background:#f8fafc;color:#475569}
 
     <div class="note" style="margin-bottom:12px">
         Solar keluar dihitung dari <b>selisih flowmeter sumber</b>. Solar masuk dihitung dari
-        <b>selisih sonding/tera storage tujuan</b>. Selisih keduanya dicatat sebagai loss transfer.
+        <b>selisih sonding/tera storage tujuan</b>. Sonding storage sumber sebelum dan sesudah
+        juga wajib dicatat sebagai pembanding fisik. Selisih flowmeter dan tujuan dicatat sebagai loss transfer.
     </div>
 
     <div class="grid">
@@ -827,7 +828,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="measure-section">
-        <h4 id="transferSourceAuditTitle">Audit Flowmeter Sumber - wajib untuk menghitung qty keluar dan loss transfer</h4>
+        <h4 id="transferSourceAuditTitle">Audit Sumber - flowmeter sebagai patokan qty keluar, sounding sebagai pembanding fisik</h4>
         <div class="grid">
             <div>
                 <label id="transferMeterStartLabel">Flowmeter Sumber Awal (Liter)</label>
@@ -837,8 +838,24 @@ th{background:#f8fafc;color:#475569}
                 <label id="transferMeterEndLabel">Flowmeter Sumber Akhir (Liter)</label>
                 <input type="number" id="transferMeterEnd" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Angka setelah transfer">
             </div>
+            <div>
+                <label id="transferSourceBeforeLabel">Sonding Sumber Sebelum Transfer (CM)</label>
+                <input type="number" id="transferSourceHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sebelum transfer">
+            </div>
+            <div>
+                <label id="transferSourceAfterLabel">Sonding Sumber Sesudah Transfer (CM)</label>
+                <input type="number" id="transferSourceHeightAfter" min="0" step="0.1" inputmode="decimal" oninput="updateTransferCalculation()" placeholder="Sesudah transfer">
+            </div>
+            <div>
+                <label id="transferSourceSoundingQtyLabel">Qty Turun Sumber Menurut Tera (Liter)</label>
+                <input type="number" id="transferSourceSoundingQty" class="auto-liter" readonly placeholder="Sebelum - Sesudah">
+            </div>
         </div>
         <div class="measurement-summary">
+            <div class="measurement-box">
+                <small id="transferSourceSoundingSummaryLabel">TURUN MENURUT SONDING SUMBER</small>
+                <strong id="transferSourceSoundingMeasured">- L</strong>
+            </div>
             <div class="measurement-box">
                 <small id="transferDestinationSummaryLabel">MASUK MENURUT TUJUAN</small>
                 <strong id="transferDestinationMeasured">- L</strong>
@@ -847,8 +864,12 @@ th{background:#f8fafc;color:#475569}
                 <small id="transferSourceSummaryLabel">KELUAR MENURUT FLOWMETER</small>
                 <strong id="transferSourceMeasured">- L</strong>
             </div>
+            <div class="measurement-box" id="transferSourceDifferenceBox">
+                <small>FLOWMETER VS SONDING SUMBER</small>
+                <strong id="transferSourceDifference">- L</strong>
+            </div>
             <div class="measurement-box" id="transferLossBox">
-                <small>SELISIH / LOSS</small>
+                <small>FLOWMETER VS TUJUAN / LOSS</small>
                 <strong id="transferLoss">- L</strong>
             </div>
         </div>
@@ -858,7 +879,7 @@ th{background:#f8fafc;color:#475569}
     <details class="copy-report-card">
         <summary> Format Transfer & Konversi Siap Salin</summary>
         <div class="copy-report-content">
-            <pre id="transferCopyPreview" class="copy-report-preview">Lengkapi flowmeter sumber dan sonding tujuan sebelum/sesudah transfer.</pre>
+            <pre id="transferCopyPreview" class="copy-report-preview">Lengkapi flowmeter, sounding sumber, dan sounding tujuan sebelum/sesudah transfer.</pre>
             <button class="copy-report-btn" type="button" onclick="copyTransferReport()"> SALIN LAPORAN TRANSFER</button>
         </div>
     </details>
@@ -947,7 +968,7 @@ th{background:#f8fafc;color:#475569}
 
     <div id="stockAdminTools" class="admin-tools hidden">
         <div>
-            <b> Mode Koreksi Stock - GL/Admin</b>
+            <b> Mode Koreksi Stock - GL/Admin/Atasan</b>
             <div class="note">Centang transaksi RECEIPT/TRANSFER yang salah atau spam, lalu hapus. Pengisian unit tidak dihapus dari menu ini.</div>
         </div>
         <button class="danger" type="button" onclick="deleteSelectedMovements()"> HAPUS TERPILIH</button>
@@ -1233,7 +1254,7 @@ function esc(value){
 function isStockEditor(){
     return !!(
         CURRENT_PROFILE &&
-        ["gl","admin"].includes(CURRENT_PROFILE.role)
+        ["gl","admin","atasan"].includes(CURRENT_PROFILE.role)
     );
 }
 
@@ -1372,7 +1393,7 @@ function syncEditMovementFields(){
 
 function openMovementEditor(id){
     if(!isStockEditor()){
-        alert("Khusus GL/Admin.");
+        alert("Khusus GL/Admin/Atasan.");
         return;
     }
 
@@ -1416,7 +1437,7 @@ function closeMovementEditor(){
 
 async function saveMovementEdit(){
     if(!isStockEditor()){
-        alert("Khusus GL/Admin.");
+        alert("Khusus GL/Admin/Atasan.");
         return;
     }
 
@@ -1551,7 +1572,7 @@ async function saveMovementEdit(){
 
 async function deleteMovement(id){
     if(!isStockEditor()){
-        alert("Khusus GL/Admin.");
+        alert("Khusus GL/Admin/Atasan.");
         return;
     }
 
@@ -1588,7 +1609,7 @@ async function deleteMovement(id){
 
 async function deleteSelectedMovements(){
     if(!isStockEditor()){
-        alert("Khusus GL/Admin.");
+        alert("Khusus GL/Admin/Atasan.");
         return;
     }
 
@@ -1830,6 +1851,10 @@ function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOv
         `TRANSFER ${source} KE ${destination}`,
         `Shift: ${shift}`,
         "",
+        soundingReportBlock(source,"SEBELUM TRANSFER",data.sourceBefore,operator,dateTime),
+        "",
+        soundingReportBlock(source,"SETELAH TRANSFER",data.sourceAfter,operator,dateTime),
+        "",
         soundingReportBlock(destination,"SEBELUM MENERIMA",data.destinationBefore,operator,dateTime),
         "",
         soundingReportBlock(destination,"SETELAH MENERIMA",data.destinationAfter,operator,dateTime),
@@ -1838,8 +1863,10 @@ function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOv
         `Flowmeter ${source} Awal: ${reportLiters(data.meterStart)}`,
         `Flowmeter ${source} Akhir: ${reportLiters(data.meterEnd)}`,
         `Keluar Menurut Flowmeter: ${reportLiters(data.sourceQty)}`,
+        `Turun Menurut Sonding ${source}: ${reportLiters(data.sourceSoundingQty)}`,
+        `Selisih Flowmeter vs Sonding ${source}: ${reportSignedLiters(data.sourceSoundingDifference)}`,
         `Masuk Menurut Tera ${destination}: ${reportLiters(data.destinationQty)}`,
-        `Selisih / Loss: ${reportSignedLiters(loss)}`
+        `Selisih Flowmeter vs Tujuan / Loss: ${reportSignedLiters(loss)}`
     ].join("\n");
 }
 
@@ -1944,6 +1971,7 @@ function renderReceiptCopyPreview(measurement=null){
 
 function renderTransferCopyPreview(measurement=null){
     const hasCurrent=[
+        "transferSourceHeightBefore","transferSourceHeightAfter",
         "transferDestinationHeightBefore","transferDestinationHeightAfter",
         "transferMeterStart","transferMeterEnd"
     ].some(id=>document.getElementById(id).value!=="");
@@ -2027,6 +2055,7 @@ function copyReceiptReport(){
 
 function copyTransferReport(){
     const hasCurrent=[
+        "transferSourceHeightBefore","transferSourceHeightAfter",
         "transferDestinationHeightBefore","transferDestinationHeightAfter",
         "transferMeterStart","transferMeterEnd"
     ].some(id=>document.getElementById(id).value!=="");
@@ -2034,11 +2063,13 @@ function copyTransferReport(){
     const complete=!!(
         measurement?.meterStart!==null && measurement?.meterEnd!==null &&
         measurement?.sourceQty>0 &&
+        measurement?.sourceBefore && measurement?.sourceAfter &&
+        measurement?.sourceSoundingQty>0 &&
         measurement?.destinationBefore && measurement?.destinationAfter
     );
     const text=complete?buildTransferCopyReport(measurement):(!hasCurrent?LAST_COPY_REPORTS.transfer:"");
     if(!text){
-        showCopyToast("Lengkapi flowmeter sumber dan sonding tujuan terlebih dahulu.",true);
+        showCopyToast("Lengkapi flowmeter, sounding sumber, dan sounding tujuan terlebih dahulu.",true);
         return;
     }
     copyReportText(text,"Laporan transfer");
@@ -2305,7 +2336,7 @@ async function loadReceiptHistory(){
             ? `Diperbarui ${new Date(row.reference_updated_at).toLocaleString("id-ID",{
                 timeZone:"Asia/Jakarta",day:"2-digit",month:"2-digit",year:"numeric",
                 hour:"2-digit",minute:"2-digit"
-            })} oleh ${row.reference_updated_by_name||"Admin/GL"}`
+            })} oleh ${row.reference_updated_by_name||"Admin/GL/Atasan"}`
             : "";
         const period=receiptPeriodFromDate(row.tanggal);
 
@@ -2604,7 +2635,7 @@ async function downloadReceiptHistoryExcel(){
 
 async function updateReceiptReference(id){
     if(!isStockEditor()){
-        alert("Pengisian atau perubahan PO/LO khusus Admin/GL.");
+        alert("Pengisian atau perubahan PO/LO khusus Admin/GL/Atasan.");
         return;
     }
 
@@ -2640,7 +2671,7 @@ async function updateReceiptReference(id){
 
     if(!beginStockSave("Menyimpan referensi PO/LO tanpa mengubah angka penerimaan..."))return;
 
-    const updatedBy=CURRENT_PROFILE?.display_name||"Admin/GL";
+    const updatedBy=CURRENT_PROFILE?.display_name||"Admin/GL/Atasan";
     const {error}=await db.from("stock_movements")
         .update({
             document_reference:next,
@@ -2661,9 +2692,13 @@ async function updateReceiptReference(id){
 
 function clearTransferMeasurements(){
     document.getElementById("transferQty").value="";
+    document.getElementById("transferSourceSoundingQty").value="";
+    document.getElementById("transferSourceSoundingMeasured").textContent="- L";
     document.getElementById("transferDestinationMeasured").textContent="- L";
     document.getElementById("transferSourceMeasured").textContent="- L";
+    document.getElementById("transferSourceDifference").textContent="- L";
     document.getElementById("transferLoss").textContent="- L";
+    document.getElementById("transferSourceDifferenceBox").classList.remove("loss-positive","loss-negative");
     document.getElementById("transferLossBox").classList.remove("loss-positive","loss-negative");
 }
 
@@ -2671,9 +2706,17 @@ function updateTransferCalculation(){
     const source=document.getElementById("transferSource").value;
     const destination=document.getElementById("transferDestination").value;
     const qtyInput=document.getElementById("transferQty");
+    const sourceSoundingQtyInput=document.getElementById("transferSourceSoundingQty");
     const status=document.getElementById("transferStatus");
     const lossBox=document.getElementById("transferLossBox");
+    const sourceDifferenceBox=document.getElementById("transferSourceDifferenceBox");
 
+    document.getElementById("transferSourceBeforeLabel").textContent=
+        `Sonding ${source} Sebelum Transfer (CM)`;
+    document.getElementById("transferSourceAfterLabel").textContent=
+        `Sonding ${source} Sesudah Transfer (CM)`;
+    document.getElementById("transferSourceSoundingQtyLabel").textContent=
+        `Qty Turun ${source} Menurut Tera (Liter)`;
     document.getElementById("transferDestinationBeforeLabel").textContent=
         `Sonding ${destination} Sebelum Menerima (CM)`;
     document.getElementById("transferDestinationAfterLabel").textContent=
@@ -2681,7 +2724,7 @@ function updateTransferCalculation(){
     document.getElementById("transferQtyLabel").textContent=
         `Qty Masuk ${destination} Menurut Tera (Liter)`;
     document.getElementById("transferSourceAuditTitle").textContent=
-        `Audit Flowmeter ${source} - patokan qty keluar dan loss transfer`;
+        `Audit ${source} - flowmeter patokan qty keluar, sounding pembanding fisik`;
     document.getElementById("transferMeterStartLabel").textContent=
         `Flowmeter ${source} Awal (Liter)`;
     document.getElementById("transferMeterEndLabel").textContent=
@@ -2690,6 +2733,12 @@ function updateTransferCalculation(){
         `MASUK MENURUT ${destination}`;
     document.getElementById("transferSourceSummaryLabel").textContent=
         `KELUAR MENURUT FLOWMETER ${source}`;
+    document.getElementById("transferSourceSoundingSummaryLabel").textContent=
+        `TURUN MENURUT SONDING ${source}`;
+    document.getElementById("transferSourceHeightBefore").placeholder=
+        `Sebelum ${source} transfer`;
+    document.getElementById("transferSourceHeightAfter").placeholder=
+        `Sesudah ${source} transfer`;
     document.getElementById("transferDestinationHeightBefore").placeholder=
         `Sebelum ${destination} menerima`;
     document.getElementById("transferDestinationHeightAfter").placeholder=
@@ -2701,6 +2750,24 @@ function updateTransferCalculation(){
 
     try{
         const parts=[];
+        const sourceBefore=teraFromInput(source,"transferSourceHeightBefore");
+        const sourceAfter=teraFromInput(source,"transferSourceHeightAfter");
+        let sourceSoundingQty=null;
+
+        if(sourceBefore && sourceAfter){
+            sourceSoundingQty=r1(sourceBefore.liters-sourceAfter.liters);
+            sourceSoundingQtyInput.value=sourceSoundingQty>0?sourceSoundingQty:"";
+            document.getElementById("transferSourceSoundingMeasured").textContent=fmtSigned(sourceSoundingQty);
+            parts.push(
+                sourceSoundingQty>0
+                    ? `Sonding ${source} turun ${fmt(sourceSoundingQty)}`
+                    : `Sonding ${source} sesudah harus lebih rendah dari sebelum`
+            );
+        }else{
+            sourceSoundingQtyInput.value="";
+            document.getElementById("transferSourceSoundingMeasured").textContent="- L";
+        }
+
         const destinationBefore=teraFromInput(destination,"transferDestinationHeightBefore");
         const destinationAfter=teraFromInput(destination,"transferDestinationHeightAfter");
         let destinationQty=null;
@@ -2722,15 +2789,26 @@ function updateTransferCalculation(){
         const audit=window.KPPTransferAudit.calculate({
             meterStart:document.getElementById("transferMeterStart").value,
             meterEnd:document.getElementById("transferMeterEnd").value,
+            sourceSoundingQty,
             destinationQty
         });
-        const {meterStart,meterEnd,sourceQty,loss}=audit;
+        const {meterStart,meterEnd,sourceQty,sourceSoundingDifference,loss}=audit;
 
         if(sourceQty!==null){
             document.getElementById("transferSourceMeasured").textContent=fmtSigned(sourceQty);
             parts.push(`Flowmeter ${source} keluar ${fmt(sourceQty)}`);
         }else{
             document.getElementById("transferSourceMeasured").textContent="- L";
+        }
+
+        sourceDifferenceBox.classList.remove("loss-positive","loss-negative");
+        if(sourceSoundingDifference!==null){
+            document.getElementById("transferSourceDifference").textContent=fmtSigned(sourceSoundingDifference);
+            if(sourceSoundingDifference>0)sourceDifferenceBox.classList.add("loss-positive");
+            if(sourceSoundingDifference<0)sourceDifferenceBox.classList.add("loss-negative");
+            parts.push(`Flowmeter vs sounding sumber ${fmtSigned(sourceSoundingDifference)}`);
+        }else{
+            document.getElementById("transferSourceDifference").textContent="- L";
         }
 
         lossBox.classList.remove("loss-positive","loss-negative");
@@ -2746,8 +2824,9 @@ function updateTransferCalculation(){
         status.textContent=parts.length?" "+parts.join("  |  "):"";
 
         const result={
+            sourceBefore,sourceAfter,sourceSoundingQty,
             destinationBefore,destinationAfter,destinationQty,
-            meterStart,meterEnd,sourceQty,loss
+            meterStart,meterEnd,sourceQty,sourceSoundingDifference,loss
         };
         renderTransferCopyPreview(result);
         return result;
@@ -3448,7 +3527,7 @@ async function saveReceipt(){
         error?"[GAGAL] "+error.message:
             document_reference
                 ? `[OK] Penerimaan ${document_reference} tersimpan dan masuk ke history.`
-                : "[OK] Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL.";
+                : "[OK] Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL/Atasan.";
 
     if(error){
         await finishStockSave(false,error.message);
@@ -3467,7 +3546,7 @@ async function saveReceipt(){
         true,
         document_reference
             ? "Penerimaan Solar "+document_reference+" sudah tersimpan."
-            : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL dari History Penerimaan."
+            : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL/Atasan dari History Penerimaan."
     );
 }
 
@@ -3506,6 +3585,16 @@ async function saveTransfer(){
 
     if(!measurement || !measurement.destinationBefore || !measurement.destinationAfter){
         alert(`Isi sounding ${destination_storage} sebelum dan sesudah menerima transfer.`);
+        return;
+    }
+
+    if(!measurement.sourceBefore || !measurement.sourceAfter){
+        alert(`Isi sounding ${source_storage} sebelum dan sesudah transfer.`);
+        return;
+    }
+
+    if(n(measurement.sourceSoundingQty)<=0){
+        alert(`Sonding ${source_storage} sesudah harus lebih rendah dari sebelum transfer.`);
         return;
     }
 
@@ -3551,18 +3640,24 @@ async function saveTransfer(){
     ))return;
 
     const lossQty=measurement.loss;
+    const sourceSoundingDifference=measurement.sourceSoundingDifference;
 
     const lossLimit=Math.max(
         LOSS_WARNING_LITERS,
         n(measurement.sourceQty)*(LOSS_WARNING_PERCENT/100)
     );
 
-    if(Math.abs(lossQty)>lossLimit){
+    if(
+        Math.abs(lossQty)>lossLimit ||
+        Math.abs(sourceSoundingDifference)>lossLimit
+    ){
         const lanjut=confirm(
             "[PERINGATAN] SELISIH TRANSFER PERLU DICEK\n\n"+
-            "Keluar "+source_storage+": "+fmt(measurement.sourceQty)+"\n"+
+            "Keluar flowmeter "+source_storage+": "+fmt(measurement.sourceQty)+"\n"+
+            "Turun sounding "+source_storage+": "+fmt(measurement.sourceSoundingQty)+"\n"+
+            "Flowmeter vs sounding sumber: "+fmtSigned(sourceSoundingDifference)+"\n"+
             "Masuk "+destination_storage+": "+fmt(qty)+"\n"+
-            "Selisih/loss: "+fmtSigned(lossQty)+"\n\n"+
+            "Flowmeter vs tujuan/loss: "+fmtSigned(lossQty)+"\n\n"+
             "Tetap simpan untuk audit?"
         );
         if(!lanjut)return;
@@ -3581,11 +3676,12 @@ async function saveTransfer(){
     ))return;
 
     const noteParts=[
+        `Sumber ${source_storage}: ${measurement.sourceBefore.matchedHeightCm} cm (${measurement.sourceBefore.liters} L) -> ${measurement.sourceAfter.matchedHeightCm} cm (${measurement.sourceAfter.liters} L); turun menurut sounding ${measurement.sourceSoundingQty} L`,
         `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) -> ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
     ];
 
     noteParts.push(
-        `Flowmeter ${source_storage}: ${measurement.meterStart} -> ${measurement.meterEnd} L; qty keluar ${measurement.sourceQty} L; selisih/loss ${lossQty} L`
+        `Flowmeter ${source_storage}: ${measurement.meterStart} -> ${measurement.meterEnd} L; qty keluar ${measurement.sourceQty} L; flowmeter vs sounding sumber ${sourceSoundingDifference} L; flowmeter vs tujuan/loss ${lossQty} L`
     );
 
     const {error}=await db.from("stock_movements").insert({
@@ -3598,13 +3694,13 @@ async function saveTransfer(){
         qty,
         operator,
         note:noteParts.join(" | "),
-        calculation_method:"TRANSFER_FLOWMETER_VS_DESTINATION_TERA",
+        calculation_method:"TRANSFER_FLOWMETER_SOURCE_SONDING_VS_DESTINATION_TERA",
         meter_start_liter:measurement.meterStart,
         meter_end_liter:measurement.meterEnd,
-        source_height_before_cm:null,
-        source_liter_before:null,
-        source_height_after_cm:null,
-        source_liter_after:null,
+        source_height_before_cm:measurement.sourceBefore.matchedHeightCm,
+        source_liter_before:measurement.sourceBefore.liters,
+        source_height_after_cm:measurement.sourceAfter.matchedHeightCm,
+        source_liter_after:measurement.sourceAfter.liters,
         destination_height_before_cm:measurement.destinationBefore.matchedHeightCm,
         destination_liter_before:measurement.destinationBefore.liters,
         destination_height_after_cm:measurement.destinationAfter.matchedHeightCm,
@@ -3628,6 +3724,9 @@ async function saveTransfer(){
     LAST_COPY_REPORTS.transfer=transferReport;
     setCopyPreview("transferCopyPreview",transferReport);
     [
+        "transferSourceHeightBefore",
+        "transferSourceHeightAfter",
+        "transferSourceSoundingQty",
         "transferDestinationHeightBefore",
         "transferDestinationHeightAfter",
         "transferMeterStart",

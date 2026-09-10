@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="qr-unit";
 </script>
 <script src="auth.js"></script>
@@ -226,7 +226,7 @@ async function syncSelectedGeneratedStatus(){
   const generatedBy=
     PROFILE?.display_name ||
     window.KPP_PROFILE?.display_name ||
-    "GL/Admin";
+    "GL/Admin/Atasan";
 
   const generatedAt=
     new Date().toISOString();
@@ -329,7 +329,7 @@ function render(){
       ${
         r.qr_generated
           ? `<div class="qr-created-by">
-               Dibuat oleh: <b>${esc(r.qr_generated_by_name||"GL/Admin")}</b>
+               Dibuat oleh: <b>${esc(r.qr_generated_by_name||"GL/Admin/Atasan")}</b>
                ${r.qr_generated_at
                  ? `<br>${new Date(r.qr_generated_at).toLocaleString("id-ID")}`
                  : ""}
@@ -382,7 +382,7 @@ async function setQrStatus(codes,value){
     checkin_qr_generated_at:value ? new Date().toISOString() : null,
     checkin_qr_generated_by_name:
       value
-        ? (PROFILE?.display_name||window.KPP_PROFILE?.display_name||"GL/Admin")
+        ? (PROFILE?.display_name||window.KPP_PROFILE?.display_name||"GL/Admin/Atasan")
         : null
   };
 

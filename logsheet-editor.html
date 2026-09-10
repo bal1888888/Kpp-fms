@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet-editor";
 </script>
 <script src="auth.js"></script>
@@ -201,7 +201,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 <body>
 <div class="header">
   <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-  <p>Logsheet Editor • GL / Admin</p>
+  <p>Logsheet Editor • GL / Admin / Atasan</p>
 </div>
 
 <div id="kppUserBar" class="kpp-userbar"></div>
@@ -1645,7 +1645,7 @@ async function saveAll(){
         payload.hm_ref_excluded_reason="HM dirapikan melalui Logsheet Editor; tidak dipakai sebagai HM reference.";
         payload.hm_ref_excluded_at=new Date().toISOString();
         payload.hm_ref_excluded_by=window.KPP_PROFILE?.user_id||null;
-        payload.hm_ref_excluded_by_name=window.KPP_PROFILE?.display_name||"GL/Admin";
+        payload.hm_ref_excluded_by_name=window.KPP_PROFILE?.display_name||"GL/Admin/Atasan";
         payload.hm_ref_excluded_by_role=window.KPP_PROFILE?.role||null;
       }
 
@@ -1711,7 +1711,7 @@ async function saveAll(){
           hm_ref_excluded_reason:"Dimasukkan melalui Logsheet Editor; histori manual tidak dipakai sebagai HM reference.",
           hm_ref_excluded_at:new Date().toISOString(),
           hm_ref_excluded_by:window.KPP_PROFILE?.user_id||null,
-          hm_ref_excluded_by_name:window.KPP_PROFILE?.display_name||"GL/Admin",
+          hm_ref_excluded_by_name:window.KPP_PROFILE?.display_name||"GL/Admin/Atasan",
           hm_ref_excluded_by_role:window.KPP_PROFILE?.role||null,
           session_id:null,
           fuelman_user_id:null,

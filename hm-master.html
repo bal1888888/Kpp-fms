@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS HM MASTER v9: Unit + HM + Master Transportir, Admin/GL only -->
+<!-- KPP-FMS HM MASTER v10: Unit + HM + Master Transportir, management roles -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <title>Master Unit & HM - KPP TRAM FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="hm-master";
 </script>
 <script src="auth.js"></script>
@@ -390,10 +390,10 @@ tbody tr:hover{background:#f8fafc}
         <div class="panel bulk-focus">
             <h3>1. Fix HM Banyak Unit</h3>
             <div class="info">
-                Isi HM aktual untuk beberapa unit sekaligus. Setiap nilai yang disimpan oleh <b>Admin/GL</b> menjadi <b>patokan HM resmi</b> mulai tanggal/jam efektifnya. Histori lama tidak dihapus.
+                Isi HM aktual untuk beberapa unit sekaligus. Setiap nilai yang disimpan oleh <b>Admin/GL/Atasan</b> menjadi <b>patokan HM resmi</b> mulai tanggal/jam efektifnya. Histori lama tidak dihapus.
             </div>
             <div class="bulk-fixed-note">
-                HM yang difix menjadi <b>titik reset/reference resmi</b>. Data lama sebelum waktu efektif tidak boleh mengalahkannya. Nilai berikutnya hanya bergerak dari transaksi setelah waktu tersebut atau koreksi Admin/GL yang lebih baru.
+                HM yang difix menjadi <b>titik reset/reference resmi</b>. Data lama sebelum waktu efektif tidak boleh mengalahkannya. Nilai berikutnya hanya bergerak dari transaksi setelah waktu tersebut atau koreksi Admin/GL/Atasan yang lebih baru.
             </div>
             <div class="bulk-hm-toolbar" style="margin-top:14px">
                 <div><label>Cari Unit</label><input id="bulkHmSearch" placeholder="Ketik DT, EX, TL..." oninput="renderBulkHmTable()"></div>
@@ -840,7 +840,7 @@ async function saveTransporter(){
         active,
         note,
         updated_at:new Date().toISOString(),
-        updated_by_name:window.KPP_PROFILE?.display_name||"Admin/GL"
+        updated_by_name:window.KPP_PROFILE?.display_name||"Admin/GL/Atasan"
     },{onConflict:"name"});
 
     if(error){
@@ -1022,7 +1022,7 @@ function renderUnitTable(){
                 ${
                     row.qr_generated
                         ? `<div style="font-size:10px;color:#64748b;margin-top:4px">
-                             Dibuat: ${esc(row.qr_generated_by_name||"GL/Admin")}
+                             Dibuat: ${esc(row.qr_generated_by_name||"GL/Admin/Atasan")}
                            </div>`
                         : ""
                 }
@@ -1071,7 +1071,7 @@ async function generateSelectedQr(){
 
     const generatedBy=
         window.KPP_PROFILE?.display_name ||
-        "GL/Admin";
+        "GL/Admin/Atasan";
 
     const generatedAt=
         new Date().toISOString();
@@ -1176,7 +1176,7 @@ async function saveUnitMaster(){
             qr_generated_at:qrGenerated ? new Date().toISOString() : null,
             qr_generated_by_name:
                 qrGenerated
-                    ? (window.KPP_PROFILE?.display_name||"GL/Admin")
+                    ? (window.KPP_PROFILE?.display_name||"GL/Admin/Atasan")
                     : null
         },{onConflict:"code_unit"});
 
@@ -1281,7 +1281,7 @@ async function saveBulkCorrections(){
     const note=document.getElementById("bulkNote").value.trim()||"Sinkron HM aktual massal";
     const status=document.getElementById("bulkSaveStatus");
     if(!tanggal||!jam){alert("Tanggal dan jam efektif wajib diisi.");return}
-    if(!operator){alert("Nama Admin/GL wajib diisi.");return}
+    if(!operator){alert("Nama Admin/GL/Atasan wajib diisi.");return}
     const codes=Array.from(BULK_HM_SELECTED).filter(code=>MASTER_UNITS.includes(code));
     if(!codes.length){alert("Pilih minimal 1 unit.");return}
     const payload=[];

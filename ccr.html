@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-window.KPP_ALLOWED_ROLES=["ccr","gl","admin"];
+window.KPP_ALLOWED_ROLES=["ccr","gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="ccr";
 </script>
 <script src="auth.js"></script>
@@ -883,7 +883,7 @@ async function save(){
 
 
 function openGlEdit(id){
-  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
+  if(!["gl","admin","atasan"].includes(PROFILE?.role)){alert("Khusus GL/Admin/Atasan.");return;}
 
   const r=ROWS.find(x=>String(x.id)===String(id));
   if(!r)return;
@@ -909,7 +909,7 @@ function closeGlEdit(){
   document.getElementById("glEditOverlay").classList.add("hidden");
 }
 async function saveGlEdit(){
-  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
+  if(!["gl","admin","atasan"].includes(PROFILE?.role)){alert("Khusus GL/Admin/Atasan.");return;}
 
   const id=Number(document.getElementById("editId").value);
   const operator=clean(document.getElementById("editOperator").value);
@@ -946,7 +946,7 @@ async function saveGlEdit(){
   alert("✅ Jatah CCR berhasil diedit.");
 }
 async function glDelete(id){
-  if(!["gl","admin"].includes(PROFILE?.role)){alert("Khusus GL/Admin.");return;}
+  if(!["gl","admin","atasan"].includes(PROFILE?.role)){alert("Khusus GL/Admin/Atasan.");return;}
 
   const r=ROWS.find(x=>String(x.id)===String(id));
   if(!r)return;
@@ -1025,12 +1025,12 @@ async function loadRows(){
         const canCancel=
           ["ACTIVE","PENDING_GL"].includes(r.status) &&
           (
-            ["gl","admin"].includes(PROFILE?.role) ||
+            ["gl","admin","atasan"].includes(PROFILE?.role) ||
             String(r.created_by||"")===String(window.KPP_SESSION?.user?.id||"")
           );
 
         const canGlControl=
-          ["gl","admin"].includes(PROFILE?.role) &&
+          ["gl","admin","atasan"].includes(PROFILE?.role) &&
           r.status!=="USED";
 
         return `
