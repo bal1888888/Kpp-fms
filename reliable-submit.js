@@ -73,7 +73,7 @@
     buttons.release.addEventListener('click',async()=>{const old=manager.read();await run(()=>manager.release());if(old.request?.status==='success')location.reload();});
     buttons.restore.addEventListener('click',()=>{
       const draft=manager.read().draft;if(!draft)return;
-      if(!restoreAllowed(draft.context)){status.textContent='Draf berasal dari sesi berbeda. Isian tidak dipindahkan ke shift baru; hubungi Admin/GL.';return;}
+      if(!restoreAllowed(draft.context)){status.textContent='Draf berasal dari sesi berbeda. Isian tidak dipindahkan ke shift baru; hubungi Admin/GL/Atasan.';return;}
       for(const id of fields){const el=document.getElementById(id);if(el && !el.readOnly && !el.disabled && id in draft.values){el.value=draft.values[id];el.dispatchEvent(new Event('input',{bubbles:true}));}}
     });
     const save=()=>{const values={};for(const id of fields){const el=document.getElementById(id);if(el)values[id]=el.value;}manager.saveDraft({values,context:context()}).catch(e=>{storageError='Draf belum tersimpan: '+e.message;render();});};

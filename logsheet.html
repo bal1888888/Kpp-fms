@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <script>
-window.KPP_ALLOWED_ROLES=["gl","admin"];
+window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet";
 </script>
 <script src="auth.js"></script>
@@ -418,7 +418,7 @@ function buildHmAnomalyMap(data){
     if(!unit||!rowKey)return;
 
     if(item.hm_ref_excluded===true){
-      map.set(rowKey,{text:"HISTORI HM — TIDAK JADI ACUAN",cls:"status-excluded",reason:item.hm_ref_excluded_reason||"Dikecualikan dari HM reference oleh Admin/GL.",kind:"excluded"});
+      map.set(rowKey,{text:"HISTORI HM — TIDAK JADI ACUAN",cls:"status-excluded",reason:item.hm_ref_excluded_reason||"Dikecualikan dari HM reference oleh Admin/GL/Atasan.",kind:"excluded"});
       // Exclusion applies to live references, not report anomaly detection.
       // Continue checking the displayed HM; real anomalies override this hidden label.
     }
@@ -427,7 +427,7 @@ function buildHmAnomalyMap(data){
       map.set(rowKey,{
         text:"HM KOSONG — BISA DIRAPIKAN",
         cls:"status-missing",
-        reason:"HM histori kosong. Admin/GL dapat mengisi HM histori melalui RAPIKAN HM; hasilnya tetap dikecualikan dari HM reference live.",
+        reason:"HM histori kosong. Admin/GL/Atasan dapat mengisi HM histori melalui RAPIKAN HM; hasilnya tetap dikecualikan dari HM reference live.",
         kind:"missing",
         previous_hm:lastValid.get(unit)?.hm ?? null
       });
@@ -438,7 +438,7 @@ function buildHmAnomalyMap(data){
       map.set(rowKey,{
         text:"HM TIDAK VALID — BISA DIRAPIKAN",
         cls:"status-missing",
-        reason:"Nilai HM histori tidak valid. Admin/GL dapat merapikannya tanpa menjadikannya HM reference live.",
+        reason:"Nilai HM histori tidak valid. Admin/GL/Atasan dapat merapikannya tanpa menjadikannya HM reference live.",
         kind:"missing",
         previous_hm:lastValid.get(unit)?.hm ?? null
       });
@@ -483,6 +483,7 @@ function prettyRole(role){
   const r=String(role||"").trim().toLowerCase();
   if(r==="gl") return "GL";
   if(r==="admin") return "ADMIN";
+  if(r==="atasan") return "ATASAN";
   if(r==="fuelman") return "FUELMAN";
   return r ? r.toUpperCase() : "USER";
 }
@@ -830,7 +831,7 @@ function renderTable(data){
     wrap.appendChild(label);
     const anomaly=HM_ANOMALY_MAP.get(String(item.id??""));
     // Editing history must remain available even when its warning is hidden.
-    // This page is restricted to Admin/GL; the existing RPC enforces write access.
+    // This page is restricted to management roles; the existing RPC enforces write access.
     if(item.id!==null && item.id!==undefined){
       const btn=document.createElement("button");
       btn.type="button";

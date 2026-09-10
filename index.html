@@ -196,6 +196,7 @@ function esc(value){
 function labelRole(r){
   if(r==="gl")return "GL";
   if(r==="admin")return "ADMIN";
+  if(r==="atasan")return "ATASAN";
   if(r==="ccr")return "CCR";
   return "FUELMAN";
 }
@@ -275,7 +276,7 @@ async function route(){
   }
 
   if(p.role==="gl") window.location.replace("dashboard.html");
-  else if(p.role==="admin") window.location.replace("dashboard.html");
+  else if(p.role==="admin"||p.role==="atasan") window.location.replace("dashboard.html");
   else if(p.role==="ccr") window.location.replace("ccr.html");
   else window.location.replace("fuelman.html");
 

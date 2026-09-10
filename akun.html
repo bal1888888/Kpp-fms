@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Kelola Akun - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>window.KPP_ALLOWED_ROLES=["gl","admin"];window.KPP_ACTIVE_PAGE="akun";</script>
+<script>window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];window.KPP_ACTIVE_PAGE="akun";</script>
 <script src="auth.js"></script>
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -35,14 +35,14 @@ th{background:#1f2937;color:#fff}
 </style>
 </head>
 <body>
-<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Kelola Akun - GL / Admin</div></div>
+<div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Kelola Akun - GL / Admin / Atasan</div></div>
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
 
 <div class="container">
   <div class="panel">
     <div class="note">
-      Halaman ini hanya bisa dibuka role <b>GL</b>. Password lama tidak dapat dilihat kembali. Jika anggota lupa password, GL dapat membuat <b>password baru</b> dari halaman ini.
+      Halaman ini hanya bisa dibuka role <b>GL, Admin, atau Atasan</b>. Password lama tidak dapat dilihat kembali. Jika anggota lupa password, pengelola dapat membuat <b>password baru</b> dari halaman ini.
     </div>
   </div>
 
@@ -63,6 +63,7 @@ th{background:#1f2937;color:#fff}
           <option value="fuelman">FUELMAN</option>
           <option value="ccr">CCR</option>
           <option value="admin">ADMIN</option>
+          <option value="atasan">ATASAN</option>
           <option value="gl">GL</option>
         </select>
       </div>
@@ -188,6 +189,7 @@ async function createStaff(){
   const jabatan=
     role==="gl"?"GL":
     role==="admin"?"ADMIN":
+    role==="atasan"?"ATASAN":
     role==="ccr"?"CCR":
     "FUELMAN";
 

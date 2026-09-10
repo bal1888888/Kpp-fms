@@ -8,37 +8,41 @@ const sandbox=vm.createContext({});
 vm.runInContext(source,sandbox);
 const audit=sandbox.KPPTransferAudit;
 
-test("transfer audit uses flowmeter out and destination tera in",()=>{
+test("transfer audit uses source and destination sounding",()=>{
   const result=audit.calculate({
-    meterStart:1446669,
-    meterEnd:1454634,
+    sourceSoundingQty:7900,
     destinationQty:8304.4
   });
   assert.deepEqual(
     JSON.parse(JSON.stringify(result)),
     {
-      meterStart:1446669,
-      meterEnd:1454634,
-      sourceQty:7965,
+      sourceQty:7900,
+      sourceSoundingQty:7900,
       destinationQty:8304.4,
-      loss:-339.4
+      loss:-404.4
     }
   );
 });
 
-test("transfer audit stays incomplete until both flowmeter readings exist",()=>{
-  const result=audit.calculate({meterStart:1000,destinationQty:900});
+test("transfer audit stays incomplete until source sounding exists",()=>{
+  const result=audit.calculate({destinationQty:900});
   assert.equal(result.sourceQty,null);
   assert.equal(result.loss,null);
 });
 
-test("transfer audit rejects reversed and invalid flowmeter readings",()=>{
+test("transfer audit calculates loss from both sounding results",()=>{
+  const result=audit.calculate({
+    sourceSoundingQty:775,
+    destinationQty:760
+  });
+  assert.equal(result.sourceQty,775);
+  assert.equal(result.sourceSoundingQty,775);
+  assert.equal(result.loss,15);
+});
+
+test("transfer audit rejects invalid sounding quantity",()=>{
   assert.throws(
-    ()=>audit.calculate({meterStart:1000,meterEnd:999,destinationQty:900}),
-    /akhir harus lebih besar/
-  );
-  assert.throws(
-    ()=>audit.calculate({meterStart:"salah",meterEnd:1100,destinationQty:900}),
-    /Flowmeter awal harus berupa angka/
+    ()=>audit.calculate({sourceSoundingQty:"salah",destinationQty:90}),
+    /Qty sounding sumber harus berupa angka/
   );
 });

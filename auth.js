@@ -1,4 +1,4 @@
-// KPP-FMS AUTH V26 - hardened role navigation and consolidated history menu
+// KPP-FMS AUTH V27 - dedicated Atasan role with full management navigation
 const KPP_SUPABASE_URL = "https://pwowtyfybfqsveuvqrsb.supabase.co";
 const KPP_SUPABASE_KEY = "sb_publishable_XTHqun0VSNRFjYt7Dzqmkg_NTSPnKj0";
 const kppDb = supabase.createClient(KPP_SUPABASE_URL, KPP_SUPABASE_KEY);
@@ -38,7 +38,7 @@ window.KPP = {
     if (!roles.includes(profile.role)) {
       if (profile.role === "gl") {
         window.location.replace("dashboard.html");
-      } else if (profile.role === "admin") {
+      } else if (profile.role === "admin" || profile.role === "atasan") {
         window.location.replace("dashboard.html");
       } else if (profile.role === "ccr") {
         window.location.replace("ccr.html");
@@ -64,6 +64,7 @@ window.KPP = {
   roleLabel(role) {
     if (role === "gl") return "GL";
     if (role === "admin") return "ADMIN";
+    if (role === "atasan") return "ATASAN";
     if (role === "ccr") return "CCR";
     return "FUELMAN";
   },
@@ -640,7 +641,7 @@ window.KPP = {
     const labels = {
       dashboard: "Dashboard Fuel Operation",
       gl: "Control Panel GL",
-      admin: "Control Panel Admin",
+      admin: "Control Panel Manajemen",
       fuelman: "Fuelman Shift & Operation",
       pengisian: "Pengisian Fuel",
       stock: "Stock & Closing Fuel",
@@ -713,7 +714,7 @@ window.KPP = {
         ]
       },
       admin: {
-        title: "Menu Admin",
+        title: role === "atasan" ? "Menu Atasan" : "Menu Admin",
         steps: [
           ["Buka Dashboard", "Mulai dari Dashboard untuk melihat usage, stock, dan kondisi harian."],
           ["Pilih menu kerja", "Gunakan menu atas sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
@@ -743,7 +744,7 @@ window.KPP = {
         steps: [
           ["Pilih Shift & Fuel Truck", "Pilih Shift 1/2 lalu pilih Fuel Truck yang digunakan. Jika sesi Fuelman aktif, Shift dan Fuel Truck harus mengikuti sesi tersebut."],
           ["Pilih / Scan Code Unit", "Ketik Code Unit lalu klik CEK UNIT / AMBIL DATA. Jika unit punya jatah CCR aktif, gunakan SCAN QR UNIT."],
-          ["Cek Informasi Unit & HM", "Pastikan unit terpilih benar, lalu cek HM SEBELUMNYA. HM live mengikuti correction/reset Admin/GL terbaru dan mengabaikan histori yang sudah dikecualikan."],
+          ["Cek Informasi Unit & HM", "Pastikan unit terpilih benar, lalu cek HM SEBELUMNYA. HM live mengikuti correction/reset Admin/GL/Atasan terbaru dan mengabaikan histori yang sudah dikecualikan."],
           ["Isi Data Pengisian", "Isi atau cek HM Sekarang, Nama Operator dan Jumlah Fuel. HM Jalan dihitung otomatis. Pada mode CCR, data yang dikunci CCR tetap mengikuti jatah aktif."],
           ["Review & Simpan Data", "Cek ringkasan Unit, Fuel Truck/WH, HM, Qty, Operator dan Shift. Jika sudah benar, tekan SIMPAN DATA satu kali."],
         ]
@@ -778,7 +779,7 @@ window.KPP = {
         steps: [
           ["Pilih Tanggal Logsheet", "Pilih tanggal yang ingin dilihat atau diedit lalu klik LOAD DATA."],
           ["Edit Baris", "Cari baris yang perlu diperbaiki kemudian ubah Unit, HM, Qty, Shift, FT, atau field lain yang diperlukan."],
-          ["Isi Alasan Edit", "Jika mengubah data lama, isi alasan supaya audit Admin/GL tercatat jelas."],
+          ["Isi Alasan Edit", "Jika mengubah data lama, isi alasan supaya audit Admin/GL/Atasan tercatat jelas."],
           ["Tambah Baris bila perlu", "Klik +10 BARIS jika perlu input histori manual. Baris dari Editor bersifat histori dan tidak menjadi HM reference live."],
           ["Import Excel bila perlu", "Klik IMPORT EXCEL, pilih file, tentukan tanggal dari file, lalu tampilkan/cek baris baru sebelum disimpan."],
           ["Hitung Ulang HM", "Gunakan HITUNG ULANG HM bila perlu memperbarui keterkaitan HM di editor sebelum penyimpanan."],
@@ -1257,10 +1258,10 @@ window.KPP = {
         ["qr-unit", "qr-unit.html", "🏷️ QR Unit"],
         ["akun", "akun.html", "👥 Kelola Akun"],
       ];
-    } else if (profile.role === "admin") {
+    } else if (profile.role === "admin" || profile.role === "atasan") {
       items = [
         ["dashboard", "dashboard.html", "📊 Dashboard"],
-        ["admin", "admin.html", "🏠 Menu Admin"],
+        ["admin", "admin.html", profile.role === "atasan" ? "🏠 Menu Atasan" : "🏠 Menu Admin"],
         ["pengisian", "pengisian.html", "⛽ Pengisian"],
         ["stock", "stock.html", "🛢️ Stock"],
         ["logsheet", "logsheet.html", "📄 Logsheet"],

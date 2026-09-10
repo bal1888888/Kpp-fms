@@ -147,11 +147,19 @@ if (!operatorCheckinSource.includes('"submit_operator_actual_hm"')) {
 
 const stockPath = path.join(projectRoot, "stock.html");
 const stockSource = fs.readFileSync(stockPath, "utf8");
-if (!stockSource.includes('"TRANSFER_FLOWMETER_VS_DESTINATION_TERA"')) {
-  fail(stockPath, "transfer baru belum memakai audit flowmeter versus tera tujuan");
+if (!stockSource.includes('"TRANSFER_SOURCE_AND_DESTINATION_TERA"')) {
+  fail(stockPath, "transfer baru belum memakai sounding/tera sumber dan tujuan");
 }
-if (!stockSource.includes('id="transferMeterStart"') || !stockSource.includes('id="transferMeterEnd"')) {
-  fail(stockPath, "input flowmeter transfer sumber tidak ditemukan");
+if (stockSource.includes('id="transferMeterStart"') || stockSource.includes('id="transferMeterEnd"')) {
+  fail(stockPath, "flowmeter tidak boleh menjadi input transfer antar storage");
+}
+if (
+  !stockSource.includes('id="transferSourceHeightBefore"') ||
+  !stockSource.includes('id="transferSourceHeightAfter"') ||
+  !stockSource.includes("source_height_before_cm:measurement.sourceBefore.matchedHeightCm") ||
+  !stockSource.includes("source_height_after_cm:measurement.sourceAfter.matchedHeightCm")
+) {
+  fail(stockPath, "sounding sebelum/sesudah storage sumber belum diwajibkan dan disimpan");
 }
 
 if (failures.length) {
