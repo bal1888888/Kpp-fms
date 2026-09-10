@@ -50,6 +50,11 @@ test("all three fueling paths are patched in place to resolve an active FT from 
   assert.doesNotMatch(migration,/v_fuel_truck not in \(\s*'FT0073'/i);
 });
 
+test("Stock closing and copy preview use dynamic tera profile resolver",()=>{
+  assert.doesNotMatch(stock,/TERA\.lookup\(storage,/);
+  assert.match(stock,/teraLookup\(storage,heightInput\.value\)/);
+});
+
 test("master UI explains same-type reuse and immutable identity",()=>{
   assert.match(master,/fisik.*sama/i);
   assert.match(master,/Code dan jenis terkunci setelah disimpan/i);

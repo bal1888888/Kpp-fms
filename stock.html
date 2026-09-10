@@ -1864,7 +1864,7 @@ function buildClosingCopyReport(){
         }
 
         try{
-            const tera=TERA.lookup(storage,heightInput.value);
+            const tera=teraLookup(storage,heightInput.value);
             const actualQty=n(tera.liters);
             const difference=r1(actualQty-systemQty);
             actualTotal+=actualQty;
@@ -3119,7 +3119,7 @@ function updateClosingFromHeight(storage,refreshDifference=true){
     }
 
     try{
-        const tera=TERA.lookup(storage,heightInput.value);
+        const tera=teraLookup(storage,heightInput.value);
         actualInput.value=tera.liters;
         if(info)info.textContent=`${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`;
     }catch(error){
