@@ -11,32 +11,28 @@ window.KPP_ACTIVE_PAGE="master-storage";
 </script>
 <script src="auth.js"></script>
 <style>
-*{box-sizing:border-box;font-family:Arial,sans-serif}
+:root{--blue:#2563eb;--green:#16a34a;--orange:#c2410c;--muted:#64748b;--line:#dbe3ed;--soft:#f8fafc}
+*{box-sizing:border-box;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 body{margin:0;background:#f3f4f6;color:#111827}
 .header{background:#1f2937;color:#fff;text-align:center;padding:21px}
-.container{max-width:1180px;margin:24px auto;padding:14px}
-.panel{background:#fff;border:1px solid #e5e7eb;border-radius:15px;padding:18px;margin-bottom:16px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-label{display:block;font-size:12px;font-weight:800;margin-bottom:6px;color:#334155}
-input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#111827}
-textarea{min-height:78px;resize:vertical}
-button{border:0;border-radius:8px;padding:10px 13px;font-weight:800;cursor:pointer}
-.primary{background:#2563eb;color:#fff}.gray{background:#475569;color:#fff}.green{background:#15803d;color:#fff}.orange{background:#c2410c;color:#fff}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.note{font-size:12px;line-height:1.55;color:#64748b}
-.status{margin-top:12px;font-size:13px;font-weight:800}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:920px}
-th,td{border:1px solid #d1d5db;padding:8px;font-size:12px;text-align:center}
-th{background:#e5e7eb}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}
-.badge-on{background:#dcfce7;color:#166534}.badge-off{background:#e5e7eb;color:#475569}.badge-ready{background:#dbeafe;color:#1d4ed8}.badge-wait{background:#fef3c7;color:#92400e}
-.row-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.small{padding:6px 8px;font-size:10px}
-.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.summary-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px}.summary-card small{display:block;color:#64748b;font-weight:800}.summary-card strong{display:block;font-size:22px;margin-top:5px}
-.app-nav{background:#111827;border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;gap:8px;align-items:center;overflow-x:auto}.app-nav a{color:#e5e7eb;text-decoration:none;padding:9px 13px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}.app-nav a.active{background:#2563eb;color:#fff}
-.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
-@media(max-width:760px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.container{padding:8px}.panel{padding:14px}}
+.container{max-width:1180px;margin:20px auto 40px;padding:0 14px}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.master-tabs{width:max-content;max-width:100%;display:flex;gap:6px;overflow-x:auto;margin:0 auto 18px;padding:5px;background:#e9eef5;border:1px solid #dbe3ed;border-radius:13px}
+.master-tabs a{white-space:nowrap;text-decoration:none;color:#475569;font-weight:800;font-size:12px;padding:10px 15px;border-radius:9px}
+.master-tabs a.active{background:#fff;color:#1d4ed8;border:1px solid #dbeafe;box-shadow:0 2px 7px rgba(15,23,42,.07)}
+.quick-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px 14px;color:#334155;font-size:12px;line-height:1.55;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.advanced-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+label{display:block;font-size:11px;font-weight:800;letter-spacing:.35px;text-transform:uppercase;margin-bottom:7px;color:#475569}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#60a5fa;box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+textarea{min-height:76px;resize:vertical}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:800;cursor:pointer}.primary{background:var(--blue);color:#fff}.gray{background:#475569;color:#fff}.green{background:var(--green);color:#fff}.orange{background:var(--orange);color:#fff}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.note{font-size:12px;line-height:1.55;color:var(--muted)}.status{margin-top:12px;font-size:13px;font-weight:800}
+details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;padding:10px 12px}summary{cursor:pointer;font-size:12px;font-weight:900;color:#334155}
+.table-wrap{overflow-x:auto;border:1px solid #e2e8f0;border-radius:12px}table{width:100%;border-collapse:separate;border-spacing:0;min-width:920px;background:#fff}th,td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px}th{background:#f8fafc;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:.4px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.badge-on{background:#dcfce7;color:#166534}.badge-off{background:#e5e7eb;color:#475569}.badge-ready{background:#dbeafe;color:#1d4ed8}.badge-wait{background:#fef3c7;color:#92400e}.row-actions{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.small{padding:6px 8px;font-size:10px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.summary-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:13px}.summary-card small{display:block;color:#64748b;font-weight:800}.summary-card strong{display:block;font-size:22px;margin-top:5px}
+.app-nav{background:#111827;border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;gap:8px;align-items:center;overflow-x:auto}.app-nav a{color:#e5e7eb;text-decoration:none;padding:9px 13px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold}.app-nav a.active{background:#2563eb;color:#fff}.kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
+@media(max-width:760px){.grid,.advanced-grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.container{padding:0 9px}.panel{padding:14px}.master-tabs{width:100%}.master-tabs a{flex:0 0 auto}}
 </style>
 </head>
 <body>
@@ -44,25 +40,36 @@ th{background:#e5e7eb}
 <div id="kppUserBar" class="kpp-userbar"></div>
 <div id="kppRoleNav"></div>
 <div class="container">
+  <div class="master-tabs" aria-label="Semua Master">
+    <a href="hm-master.html">🚜 MASTER UNIT</a>
+    <a href="hm-master.html">⚙️ HM MASTER</a>
+    <a href="hm-master.html">🚛 MASTER TRANSPORTIR</a>
+    <a href="master-storage.html" class="active">🛢️ MASTER MT / FT</a>
+  </div>
+
   <div class="panel">
-    <h3 style="margin-top:0">Tambah / Edit Storage</h3>
-    <div class="note">Master ini menjadi daftar resmi MT dan FT. Storage baru belum otomatis dipakai pada transaksi bila profil tera belum ditentukan.</div>
+    <h3 style="margin-top:0">Tambah / Edit MT atau FT</h3>
+    <div class="quick-note"><b>Mode cepat:</b> untuk storage baru cukup isi <b>Code Storage</b>. Sistem otomatis menentukan jenis, kapasitas standar, profil tera, status aktif, dan urutan tampil. Isi WH/Lokasi hanya bila perlu.</div>
     <input type="hidden" id="editId">
-    <div class="grid" style="margin-top:14px">
+    <div class="grid">
       <div><label>Code Storage</label><input id="code" maxlength="20" placeholder="Contoh: MT05 / FT0077" autocomplete="off"></div>
-      <div><label>Jenis</label><select id="storageType"><option value="MT">MT</option><option value="FT">FT</option></select></div>
-      <div><label>Nama Tampilan</label><input id="displayName" placeholder="Opsional, default sama dengan code"></div>
-      <div><label>Warehouse / Lokasi</label><input id="warehouse" placeholder="Contoh: WH FT03"></div>
-      <div><label>Kapasitas Nominal (Liter)</label><input type="number" id="capacity" min="1" step="0.1" inputmode="decimal" placeholder="Contoh: 40000"></div>
-      <div><label>Profil Tera</label><select id="teraProfile"><option value="">Belum ada tera</option><option value="MT">Gunakan tabel tera MT</option><option value="FT">Gunakan tabel tera FT</option></select></div>
-      <div><label>Urutan Tampil</label><input type="number" id="sortOrder" min="0" step="1" value="100"></div>
-      <div><label>Status</label><select id="active"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
-      <div><label>Catatan</label><textarea id="notes" placeholder="Opsional"></textarea></div>
+      <div><label>Warehouse / Lokasi</label><input id="warehouse" placeholder="Opsional, contoh: WH FT03"></div>
     </div>
-    <div class="actions">
-      <button class="primary" type="button" onclick="saveStorage()">SIMPAN MASTER</button>
-      <button class="gray" type="button" onclick="resetForm()">RESET</button>
-    </div>
+
+    <details>
+      <summary>Pengaturan lanjutan</summary>
+      <div class="advanced-grid">
+        <div><label>Jenis</label><select id="storageType"><option value="MT">MT</option><option value="FT">FT</option></select></div>
+        <div><label>Nama Tampilan</label><input id="displayName" placeholder="Otomatis mengikuti code"></div>
+        <div><label>Kapasitas Nominal (Liter)</label><input type="number" id="capacity" min="1" step="0.1" inputmode="decimal"></div>
+        <div><label>Profil Tera</label><select id="teraProfile"><option value="">Belum ada tera</option><option value="MT">Tera MT</option><option value="FT">Tera FT</option></select></div>
+        <div><label>Urutan Tampil</label><input type="number" id="sortOrder" min="0" step="1" value="100"></div>
+        <div><label>Status</label><select id="active"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
+        <div style="grid-column:1/-1"><label>Catatan</label><textarea id="notes" placeholder="Opsional"></textarea></div>
+      </div>
+    </details>
+
+    <div class="actions"><button class="primary" type="button" onclick="saveStorage()">SIMPAN MASTER</button><button class="gray" type="button" onclick="resetForm()">RESET</button></div>
     <div id="formStatus" class="status"></div>
   </div>
 
@@ -73,129 +80,66 @@ th{background:#e5e7eb}
       <div class="summary-card"><small>MT</small><strong id="sumMt">0</strong></div>
       <div class="summary-card"><small>FT</small><strong id="sumFt">0</strong></div>
     </div>
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-      <h3 style="margin:0">Daftar Master MT / FT</h3>
-      <button class="green" type="button" onclick="loadStorages()">REFRESH</button>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Code</th><th>Jenis</th><th>Nama</th><th>WH/Lokasi</th><th>Kapasitas</th><th>Tera</th><th>Status</th><th>Urutan</th><th>Aksi</th></tr></thead>
-        <tbody id="storageBody"></tbody>
-      </table>
-    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><h3 style="margin:0">Daftar Master MT / FT</h3><button class="green" type="button" onclick="loadStorages()">REFRESH</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Code</th><th>Jenis</th><th>Nama</th><th>WH/Lokasi</th><th>Kapasitas</th><th>Tera</th><th>Status</th><th>Urutan</th><th>Aksi</th></tr></thead><tbody id="storageBody"></tbody></table></div>
   </div>
 </div>
 <script>
 const db=window.KPP.db;
 let ROWS=[];
 let PROFILE=null;
-
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function fmt(v){return Number(v||0).toLocaleString("id-ID",{maximumFractionDigits:1})+" L"}
 function normalizeCode(v){return String(v||"").trim().toUpperCase().replace(/\s+/g,"")}
-
-async function init(){
-  const auth=await window.KPP.requireRoles(["gl","admin","atasan"]);
-  if(!auth)return;
-  PROFILE=auth.profile;
-  window.KPP.renderNav(PROFILE,"master-storage");
-  window.KPP.renderUserBar(PROFILE);
-  await loadStorages();
+function defaultsForCode(code){
+  const c=normalizeCode(code);
+  if(c.startsWith("FT")) return {type:"FT",capacity:20000,tera:"FT"};
+  return {type:"MT",capacity:40000,tera:"MT"};
 }
-
+function nextSortOrder(){return ROWS.length?Math.max(...ROWS.map(r=>Number(r.sort_order||0)))+10:10}
+function applyCodeDefaults(force=false){
+  const code=normalizeCode(document.getElementById("code").value);
+  document.getElementById("code").value=code;
+  if(!code)return;
+  const d=defaultsForCode(code);
+  if(force||!document.getElementById("editId").value){
+    document.getElementById("storageType").value=d.type;
+    if(force||!document.getElementById("capacity").value)document.getElementById("capacity").value=d.capacity;
+    if(force||!document.getElementById("teraProfile").value)document.getElementById("teraProfile").value=d.tera;
+    if(force||!document.getElementById("displayName").value)document.getElementById("displayName").value=code;
+  }
+}
+async function init(){
+  const auth=await window.KPP.requireRoles(["gl","admin","atasan"]);if(!auth)return;
+  PROFILE=auth.profile;window.KPP.renderNav(PROFILE,"master-storage");window.KPP.renderUserBar(PROFILE);await loadStorages();resetForm();
+}
 async function loadStorages(){
-  const body=document.getElementById("storageBody");
-  body.innerHTML='<tr><td colspan="9">Memuat...</td></tr>';
+  const body=document.getElementById("storageBody");body.innerHTML='<tr><td colspan="9">Memuat...</td></tr>';
   const {data,error}=await db.from("storage_master").select("*").order("sort_order",{ascending:true}).order("code",{ascending:true});
   if(error){body.innerHTML='<tr><td colspan="9">Gagal memuat: '+esc(error.message)+'</td></tr>';return}
-  ROWS=data||[];
-  document.getElementById("sumAll").textContent=ROWS.length;
-  document.getElementById("sumActive").textContent=ROWS.filter(r=>r.active).length;
-  document.getElementById("sumMt").textContent=ROWS.filter(r=>r.storage_type==="MT").length;
-  document.getElementById("sumFt").textContent=ROWS.filter(r=>r.storage_type==="FT").length;
+  ROWS=data||[];document.getElementById("sumAll").textContent=ROWS.length;document.getElementById("sumActive").textContent=ROWS.filter(r=>r.active).length;document.getElementById("sumMt").textContent=ROWS.filter(r=>r.storage_type==="MT").length;document.getElementById("sumFt").textContent=ROWS.filter(r=>r.storage_type==="FT").length;
   if(!ROWS.length){body.innerHTML='<tr><td colspan="9">Belum ada master storage.</td></tr>';return}
-  body.innerHTML=ROWS.map(r=>`<tr>
-    <td><b>${esc(r.code)}</b></td>
-    <td>${esc(r.storage_type)}</td>
-    <td>${esc(r.display_name||r.code)}</td>
-    <td>${esc(r.warehouse||'-')}</td>
-    <td>${fmt(r.nominal_capacity_liter)}</td>
-    <td>${r.tera_profile?'<span class="badge badge-ready">'+esc(r.tera_profile)+'</span>':'<span class="badge badge-wait">BELUM ADA</span>'}</td>
-    <td>${r.active?'<span class="badge badge-on">AKTIF</span>':'<span class="badge badge-off">NONAKTIF</span>'}</td>
-    <td>${Number(r.sort_order||0)}</td>
-    <td><div class="row-actions"><button class="primary small" onclick="editStorage(${Number(r.id)})">EDIT</button><button class="${r.active?'orange':'green'} small" onclick="toggleStorage(${Number(r.id)},${r.active?'false':'true'})">${r.active?'NONAKTIFKAN':'AKTIFKAN'}</button></div></td>
-  </tr>`).join("");
+  body.innerHTML=ROWS.map(r=>`<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.storage_type)}</td><td>${esc(r.display_name||r.code)}</td><td>${esc(r.warehouse||'-')}</td><td>${fmt(r.nominal_capacity_liter)}</td><td>${r.tera_profile?'<span class="badge badge-ready">'+esc(r.tera_profile)+'</span>':'<span class="badge badge-wait">BELUM ADA</span>'}</td><td>${r.active?'<span class="badge badge-on">AKTIF</span>':'<span class="badge badge-off">NONAKTIF</span>'}</td><td>${Number(r.sort_order||0)}</td><td><div class="row-actions"><button class="primary small" onclick="editStorage(${Number(r.id)})">EDIT</button><button class="${r.active?'orange':'green'} small" onclick="toggleStorage(${Number(r.id)},${r.active?'false':'true'})">${r.active?'NONAKTIFKAN':'AKTIFKAN'}</button></div></td></tr>`).join("");
 }
-
 function editStorage(id){
-  const r=ROWS.find(x=>Number(x.id)===Number(id)); if(!r)return;
-  document.getElementById("editId").value=r.id;
-  document.getElementById("code").value=r.code||"";
-  document.getElementById("storageType").value=r.storage_type||"MT";
-  document.getElementById("displayName").value=r.display_name||"";
-  document.getElementById("warehouse").value=r.warehouse||"";
-  document.getElementById("capacity").value=r.nominal_capacity_liter??"";
-  document.getElementById("teraProfile").value=r.tera_profile||"";
-  document.getElementById("sortOrder").value=r.sort_order??100;
-  document.getElementById("active").value=String(!!r.active);
-  document.getElementById("notes").value=r.notes||"";
-  document.getElementById("formStatus").textContent="Mode edit: "+r.code;
-  window.scrollTo({top:0,behavior:"smooth"});
+  const r=ROWS.find(x=>Number(x.id)===Number(id));if(!r)return;
+  document.getElementById("editId").value=r.id;document.getElementById("code").value=r.code||"";document.getElementById("storageType").value=r.storage_type||"MT";document.getElementById("displayName").value=r.display_name||"";document.getElementById("warehouse").value=r.warehouse||"";document.getElementById("capacity").value=r.nominal_capacity_liter??"";document.getElementById("teraProfile").value=r.tera_profile||"";document.getElementById("sortOrder").value=r.sort_order??100;document.getElementById("active").value=String(!!r.active);document.getElementById("notes").value=r.notes||"";document.getElementById("formStatus").textContent="Mode edit: "+r.code;window.scrollTo({top:0,behavior:"smooth"});
 }
-
 function resetForm(){
-  document.getElementById("editId").value="";
-  document.getElementById("code").value="";
-  document.getElementById("storageType").value="MT";
-  document.getElementById("displayName").value="";
-  document.getElementById("warehouse").value="";
-  document.getElementById("capacity").value="";
-  document.getElementById("teraProfile").value="";
-  document.getElementById("sortOrder").value="100";
-  document.getElementById("active").value="true";
-  document.getElementById("notes").value="";
-  document.getElementById("formStatus").textContent="";
+  document.getElementById("editId").value="";document.getElementById("code").value="";document.getElementById("storageType").value="MT";document.getElementById("displayName").value="";document.getElementById("warehouse").value="";document.getElementById("capacity").value="40000";document.getElementById("teraProfile").value="MT";document.getElementById("sortOrder").value=String(nextSortOrder());document.getElementById("active").value="true";document.getElementById("notes").value="";document.getElementById("formStatus").textContent="";
 }
-
 async function saveStorage(){
-  const status=document.getElementById("formStatus");
-  const id=Number(document.getElementById("editId").value||0);
-  const code=normalizeCode(document.getElementById("code").value);
-  const storage_type=document.getElementById("storageType").value;
-  const display_name=document.getElementById("displayName").value.trim()||code;
-  const warehouse=document.getElementById("warehouse").value.trim()||null;
-  const nominal_capacity_liter=Number(document.getElementById("capacity").value||0);
-  const tera_profile=document.getElementById("teraProfile").value||null;
-  const sort_order=Number(document.getElementById("sortOrder").value||100);
-  const active=document.getElementById("active").value==="true";
-  const notes=document.getElementById("notes").value.trim()||null;
-
+  const status=document.getElementById("formStatus");const id=Number(document.getElementById("editId").value||0);const code=normalizeCode(document.getElementById("code").value);if(!id)applyCodeDefaults(false);
+  const storage_type=document.getElementById("storageType").value;const display_name=document.getElementById("displayName").value.trim()||code;const warehouse=document.getElementById("warehouse").value.trim()||null;const nominal_capacity_liter=Number(document.getElementById("capacity").value||0);const tera_profile=document.getElementById("teraProfile").value||null;const sort_order=Number(document.getElementById("sortOrder").value||100);const active=document.getElementById("active").value==="true";const notes=document.getElementById("notes").value.trim()||null;
   if(!/^[A-Z0-9_-]{3,20}$/.test(code)){status.textContent="Code storage harus 3-20 karakter: huruf, angka, _ atau -.";return}
+  if(!code.startsWith("MT")&&!code.startsWith("FT")){status.textContent="Gunakan prefix MT atau FT supaya sistem bisa mengenali jenis storage otomatis.";return}
   if(nominal_capacity_liter<=0){status.textContent="Kapasitas nominal wajib lebih dari 0 liter.";return}
-  if((code.startsWith("MT")&&storage_type!=="MT")||(code.startsWith("FT")&&storage_type!=="FT")){
-    const ok=confirm("Prefix code dan jenis storage berbeda. Tetap simpan?"); if(!ok)return;
-  }
-
-  status.textContent="Menyimpan...";
-  const payload={code,storage_type,display_name,warehouse,nominal_capacity_liter,tera_profile,active,sort_order,notes};
-  let result;
-  if(id) result=await db.from("storage_master").update(payload).eq("id",id);
-  else result=await db.from("storage_master").insert(payload);
+  status.textContent="Menyimpan...";const payload={code,storage_type,display_name,warehouse,nominal_capacity_liter,tera_profile,active,sort_order,notes};let result=id?await db.from("storage_master").update(payload).eq("id",id):await db.from("storage_master").insert(payload);
   if(result.error){status.textContent="Gagal: "+result.error.message;return}
-  status.textContent="Master storage berhasil disimpan.";
-  resetForm();
-  await loadStorages();
+  await loadStorages();resetForm();status.textContent="Master "+code+" berhasil disimpan.";
 }
-
-async function toggleStorage(id,next){
-  const r=ROWS.find(x=>Number(x.id)===Number(id)); if(!r)return;
-  const ok=confirm((next?"Aktifkan ":"Nonaktifkan ")+r.code+"?"); if(!ok)return;
-  const {error}=await db.from("storage_master").update({active:!!next}).eq("id",id);
-  if(error){alert("Gagal: "+error.message);return}
-  await loadStorages();
-}
-
-document.addEventListener("DOMContentLoaded",init);
+async function toggleStorage(id,next){const r=ROWS.find(x=>Number(x.id)===Number(id));if(!r)return;if(!confirm((next?"Aktifkan ":"Nonaktifkan ")+r.code+"?"))return;const {error}=await db.from("storage_master").update({active:!!next}).eq("id",id);if(error){alert("Gagal: "+error.message);return}await loadStorages()}
+document.getElementById("code").addEventListener("input",()=>applyCodeDefaults(false));document.addEventListener("DOMContentLoaded",init);
 </script>
 </body>
 </html>
