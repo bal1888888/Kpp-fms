@@ -624,20 +624,11 @@ th{background:#f8fafc;color:#475569}
     <div id="stockLevelAlert" class="stock-level-alert"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
     <div class="cards" id="stockCards"></div>
-    <div class="note" style="margin-top:12px">
-        Rumus: Stock Sistem = Stock Opening + Penerimaan + Transfer Masuk - Transfer Keluar - Pengisian Unit.
-        Tinggi CM pada kartu adalah <b>estimasi sounding dari Stock Sistem menggunakan tabel tera</b>;
-        sounding fisik Fuelman tetap menjadi acuan pengecekan lapangan.
-    </div>
 </div>
 
 <div class="panel converter-panel">
     <h3> Konverter Tera MT & FT</h3>
-    <div class="note" style="margin-bottom:12px">
-        Masukkan tinggi sondingan dalam CM. Konversi mengikuti <b>Profil Sonding / Tera</b> dari Master MT / FT.
-        Storage berprofil <b>MT</b> memakai tabel sonding MT yang tervalidasi dan storage berprofil <b>FT</b> memakai tabel sonding FT.
-        Jika profil belum ditentukan karena bentuk tangki berbeda, konversi sengaja diblokir agar liter tidak ditebak.
-    </div>
+    <div class="note" style="margin-bottom:12px">Pilih storage, lalu masukkan tinggi sonding (CM).</div>
     <div class="grid">
         <div>
             <label>Storage</label>
@@ -646,7 +637,7 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Tinggi Sonding (CM)</label>
             <input type="number" id="converterHeight" min="0" step="0.1" inputmode="decimal" oninput="updateQuickConverter()" placeholder="Contoh: 150.2">
-            <span class="field-hint">Gunakan satu angka di belakang koma, sesuai interval tabel tera 0,1 cm.</span>
+            <span class="field-hint">Interval input 0,1 cm.</span>
         </div>
         <div id="converterResult" class="tera-result">
             <small>HASIL KONVERSI</small>
@@ -674,7 +665,6 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Petugas Sonding (Akun Login)</label>
             <input id="openingOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
-            <span class="field-hint">Nama tidak diketik manual; otomatis mengikuti akun yang sedang masuk.</span>
         </div>
         <div style="align-self:end">
             <button class="green" onclick="saveOpening()">SIMPAN OPENING</button>
@@ -692,10 +682,7 @@ th{background:#f8fafc;color:#475569}
 
 <div class="panel workflow-panel receipt-panel" data-step="02">
     <h3>2. Penerimaan Solar</h3>
-    <div class="note" style="margin-bottom:12px">
-        Audit membandingkan <b>qty transporter</b> dari flowmeter dengan <b>qty yang benar-benar masuk</b>
-        berdasarkan sounding tangki tujuan. Stock bertambah mengikuti hasil sounding tangki.
-    </div>
+    <div class="note" style="margin-bottom:12px">Flowmeter untuk audit transporter. Stock masuk mengikuti sounding tangki.</div>
     <div class="grid">
         <div>
             <label>Masuk ke</label>
@@ -708,14 +695,13 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Nomor PO / LO</label>
             <input id="receiptReference" autocomplete="off" placeholder="Contoh: PO/LO-2026-001">
-            <span class="field-hint">Boleh dikosongkan saat penerimaan. Admin/GL/Atasan dapat melengkapinya dari History Penerimaan.</span>
+            <span class="field-hint">PO/LO bisa dilengkapi kemudian.</span>
         </div>
         <div>
             <label>Transportir</label>
             <select id="receiptTransporter">
                 <option value="">Memuat Master Transportir...</option>
             </select>
-            <span class="field-hint">Dikelola Admin/GL/Atasan dari menu Master Unit & HM.</span>
         </div>
         <div>
             <label>Flowmeter Awal Transporter (Liter)</label>
@@ -732,7 +718,6 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label id="receiptTankBeforeLabel">Sonding MT01 Sebelum Bongkar (CM)</label>
             <input type="number" id="receiptTankHeightBefore" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Sebelum bongkar">
-            <span class="field-hint">Tangki tujuan kita yang dipilih pada bagian "Masuk ke".</span>
         </div>
         <div>
             <label id="receiptTankAfterLabel">Sonding MT01 Sesudah Bongkar (CM)</label>
@@ -745,12 +730,11 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label id="receiptLossLabel">Hasil Audit Bongkaran (Transportir - Aktual)</label>
             <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter - tangki">
-            <span class="field-hint">Positif = LOSS, negatif = GAIN/LEBIH. Stock bertambah mengikuti aktual hasil sonding.</span>
+            <span class="field-hint">Positif = LOSS, negatif = GAIN.</span>
         </div>
         <div>
             <label>Petugas Sonding (Akun Login)</label>
             <input id="receiptOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
-            <span class="field-hint">Contoh: akun Tegar akan tercatat sebagai Tegar.</span>
         </div>
         <div style="align-self:end">
             <button class="orange" onclick="saveReceipt()">SIMPAN PENERIMAAN</button>
@@ -769,11 +753,7 @@ th{background:#f8fafc;color:#475569}
 <div class="panel workflow-panel transfer-panel" data-step="03">
     <h3>3. Transfer Antar Storage</h3>
 
-    <div class="note" style="margin-bottom:12px">
-        Transfer antar storage memakai <b>sonding/tera pada kedua storage</b>.
-        Solar keluar dihitung dari penurunan volume sumber, solar masuk dihitung dari kenaikan volume tujuan,
-        dan selisih keduanya dicatat sebagai loss transfer.
-    </div>
+    <div class="note" style="margin-bottom:12px">Transfer memakai sounding/tera sumber dan tujuan.</div>
 
     <div class="grid">
         <div>
@@ -812,7 +792,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 
     <div class="measure-section">
-        <h4 id="transferSourceAuditTitle">Audit Transfer - sounding/tera sumber dan tujuan sebagai patokan</h4>
+        <h4 id="transferSourceAuditTitle">Audit Transfer</h4>
         <div class="grid">
             <div>
                 <label id="transferSourceBeforeLabel">Sonding Sumber Sebelum Transfer (CM)</label>
@@ -856,11 +836,7 @@ th{background:#f8fafc;color:#475569}
 <div class="panel workflow-panel closing-panel" data-step="04">
     <h3>4. Stock Closing / Stock Taking</h3>
 
-    <div class="note" style="margin-bottom:12px">
-        Masukkan tinggi sonding akhir shift. Stock Fisik dikonversi otomatis dari tabel tera.
-        Estimasi sonding pada Stock Sistem dihitung dari jumlah liter sistem sebagai pembanding;
-        hasil sonding fisik tetap menjadi acuan Stock Closing. Selisih = Stock Fisik - Stock Sistem.
-    </div>
+    <div class="note" style="margin-bottom:12px">Masukkan sonding akhir shift.</div>
 
     <div class="table-wrap">
         <table class="closing-table">
@@ -937,7 +913,7 @@ th{background:#f8fafc;color:#475569}
     <div id="stockAdminTools" class="admin-tools hidden">
         <div>
             <b> Mode Koreksi Stock - GL/Admin/Atasan</b>
-            <div class="note">Centang transaksi RECEIPT/TRANSFER yang salah atau spam, lalu hapus. Pengisian unit tidak dihapus dari menu ini.</div>
+            <div class="note">Koreksi khusus RECEIPT / TRANSFER.</div>
         </div>
         <button class="danger" type="button" onclick="deleteSelectedMovements()"> HAPUS TERPILIH</button>
     </div>

@@ -208,25 +208,10 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 <div id="kppRoleNav"></div>
 
 <div class="container">
-<div class="safe-hm-note"><b>Mode Edit Histori Aman.</b> HM yang diubah lewat Logsheet Editor otomatis ditandai sebagai histori saja dan <b>tidak dipakai sebagai HM reference</b>. Untuk mengubah HM resmi unit, gunakan <b>HM Master / Bulk Fix</b>.</div>
+<div class="safe-hm-note"><b>Edit histori saja.</b> HM resmi diubah lewat HM Master / Bulk Fix.</div>
 
   <div class="panel">
-    <div class="notice">
-      <b>Mode spreadsheet:</b> pilih tanggal lalu LOAD DATA. HM Awal dan HM Jalan dihitung otomatis dari pengisian sebelumnya dan tidak bisa diketik manual.
-      Untuk input massal dari Excel, klik <b>IMPORT EXCEL</b>. Sistem akan mencari sheet Logsheet otomatis walaupun sheet pertama adalah FLOWMETER / Pivot / sheet lain.
-      <b>JAM boleh kosong.</b> Jika file punya JAM, jam asli dipakai. Jika file tidak punya JAM atau sel JAM kosong, sistem <b>tidak membuat jam palsu</b> dan transaksi tetap boleh disimpan.
-      <b>HM kosong atau HM yang lebih kecil tetap boleh di-import dan disimpan.</b>
-      Acuan HM berikutnya memakai <b>HM VALID TERTINGGI</b> yang pernah tercatat untuk unit tersebut.
-      Jadi HM kosong / HM lebih kecil tidak menurunkan acuan HM.
-      Contoh: 15/08 HM 21 → 16/08 HM kosong atau 18 → 17/08 HM 31,
-      maka acuan tetap 21 sampai HM 31 tersimpan; setelah itu pengisian berikutnya memakai 31.
-      Mapping storage otomatis: <b>FT0073 → WH FT02</b> dan <b>FT0075 → WH FT01</b>.
-      Jadi Admin cukup pilih Fuel Truck; kolom WH akan terisi otomatis dan terkunci.
-      Jika file lama hanya punya kolom WH, sistem juga otomatis mengubahnya kembali menjadi Fuel Truck yang sesuai.
-      Semua hasil import masuk ke <b>preview dulu</b>, belum langsung ke database.
-      Tombol hijau menyimpan <b>tanggal yang sedang ditampilkan saja</b>. Setelah berhasil, status baris berubah menjadi
-      <b>TERSIMPAN BARU / EDIT TERSIMPAN / SUDAH ADA</b>.
-    </div>
+    <div class="notice">Pilih tanggal lalu <b>LOAD DATA</b>. Untuk input massal gunakan <b>IMPORT EXCEL</b>; hasil masuk preview sebelum disimpan. JAM opsional.</div>
 
     <div class="controls" style="margin-top:12px">
       <div>
@@ -241,10 +226,6 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 
     <input type="file" id="excelFile" accept=".xlsx,.xls" hidden>
 
-    <div class="help" style="margin-top:10px">
-      ⏱️ <b>Jam bersifat opsional.</b> Kosong tetap aman disimpan. Kalau ada jam asli di Excel, jam tersebut tetap dipakai.
-    </div>
-
     <div class="actions-top">
       <button id="recalcBtn" class="btn-outline">↻ HITUNG ULANG HM</button>
       <button id="clearNewBtn" class="btn-outline">BERSIHKAN BARIS BARU</button>
@@ -252,12 +233,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
     </div>
 
     <div id="status" class="status"></div>
-    <div class="help">
-      <span class="badge badge-old">HIJAU</span> data yang sudah ada di database •
-      <span class="badge badge-new">BIRU</span> baris baru •
-      <span class="badge badge-import">KUNING</span> baris BARU hasil Import Excel •
-      data yang terdeteksi sama pada tanggal yang sama diberi status <b>SUDAH ADA</b> dan tidak dimasukkan lagi.
-    </div>
+    <div class="help"><span class="badge badge-old">HIJAU</span> tersimpan • <span class="badge badge-new">BIRU</span> baru • <span class="badge badge-import">KUNING</span> import • duplikat = <b>SUDAH ADA</b>.</div>
 
     <div id="importPreview" class="import-preview">
       <strong>📂 IMPORT PREVIEW — BELUM MASUK DATABASE</strong>
