@@ -21,14 +21,20 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-          patterns = re.compile(r'(rumus|formula|menggunakan tabel|mengikuti profil|jika profil|acuan pengecekan|acuan stock|secara otomatis|dihitung dari|perhitungan|konversi sengaja|stock sistem =|estimasi sounding)', re.I)
+          key = re.compile(r'(rumus|formula|menggunakan tabel|mengikuti profil|jika profil|acuan pengecekan|acuan stock|secara otomatis|dihitung dari|perhitungan|konversi sengaja|stock sistem =|estimasi sounding)', re.I)
           for p in sorted(Path('.').glob('*.html')):
-              lines=p.read_text(errors='ignore').splitlines()
+              raw=p.read_text(errors='ignore')
+              cleaned=re.sub(r'<script\b[^>]*>.*?</script>', '', raw, flags=re.I|re.S)
+              cleaned=re.sub(r'<style\b[^>]*>.*?</style>', '', cleaned, flags=re.I|re.S)
+              lines=cleaned.splitlines()
               hits=[]
               for i,line in enumerate(lines,1):
                   text=re.sub(r'<[^>]+>',' ',line)
+                  text=re.sub(r'&nbsp;',' ',text)
                   text=re.sub(r'\s+',' ',text).strip()
-                  if text and patterns.search(text):
+                  if not text:
+                      continue
+                  if key.search(text) or len(text)>=90:
                       hits.append((i,text))
               if hits:
                   print(f'### {p}')
