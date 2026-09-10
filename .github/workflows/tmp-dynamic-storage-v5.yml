@@ -1,0 +1,59 @@
+name: Temp dynamic storage v5
+on:
+  push:
+    branches:
+      - feat/dynamic-storage-master-v1
+    paths:
+      - .github/workflows/tmp-dynamic-storage-v5.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/dynamic-storage-master-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fix patch script and apply
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/tmp_patch_dynamic_storage.py')
+          s=p.read_text()
+          old="""listener = source.find('document.addEventListener(\"kpp-auth-ready\",async')
+          if listener < 0:
+              raise SystemExit(\"pengisian kpp-auth-ready async listener not found\")
+          brace = source.find(\"{\", listener)
+          source = source[: brace + 1] + \"\\n    await loadFuelTruckMaster();\" + source[brace + 1 :]
+          p.write_text(source)"""
+          new="""listener = source.find('document.addEventListener(\"kpp-auth-ready\", async function(event) {')
+          if listener < 0:
+              raise SystemExit(\"pengisian kpp-auth-ready listener not found\")
+          brace = source.find(\"{\", listener)
+          source = source[: brace + 1] + \"\\n    await loadFuelTruckMaster();\" + source[brace + 1 :]
+          p.write_text(source)"""
+          if old not in s:
+              raise SystemExit('listener patch target not found')
+          s=s.replace(old,new,1)
+          if '}).join("\\\\n");' not in s or '}).join("\\\\n\\\\n");' not in s:
+              raise SystemExit('daily report join patch targets not found')
+          s=s.replace('}).join("\\\\n");','}).join(String.fromCharCode(10));',1)
+          s=s.replace('}).join("\\\\n\\\\n");','}).join(String.fromCharCode(10)+String.fromCharCode(10));',1)
+          p.write_text(s)
+          PY
+          python3 scripts/tmp_patch_dynamic_storage.py
+          rm -f .github/workflows/tmp-dynamic-storage-v4.yml .github/workflows/tmp-dynamic-storage-v5.yml
+      - name: Install dependencies
+        run: npm ci
+      - name: Run checks
+        run: npm run check
+      - name: Commit result
+        run: |
+          git config user.name "kpp-storage-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: connect Master MT FT across fuel operations"
+          git push origin HEAD:feat/dynamic-storage-master-v1
