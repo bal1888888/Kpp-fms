@@ -13,6 +13,7 @@ window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan", "fuelman"];
 window.KPP_ACTIVE_PAGE="pengisian";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 
     <style>
         * {
@@ -650,7 +651,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
           <div class="step-content">
             <div class="step-grid-3">
               <div class="form-group"><label>Shift Aktif</label><select id="shift"><option value="">-- Pilih Shift --</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
-              <div class="form-group"><label>Fuel Truck / Sumber Pengisian</label><select id="fuelTruck"><option value="">-- Pilih Fuel Truck --</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
+              <div class="form-group"><label>Fuel Truck / Sumber Pengisian</label><select id="fuelTruck"><option value="">-- Pilih Fuel Truck --</option></select></div>
               <div id="whBox" class="wh-display hidden"><small>WAREHOUSE / WH</small><strong id="whDisplay">-</strong></div>
             </div>
           </div>
@@ -760,10 +761,17 @@ const supabaseClient =
         SUPABASE_KEY
     );
 
-const FUEL_TRUCK_MAP = {
-    "FT0073": "FT02",
-    "FT0075": "FT01"
-};
+let STORAGE_ROWS=window.KPPStorage.fallbackRows();
+let FUEL_TRUCK_MAP=window.KPPStorage.ftMap(STORAGE_ROWS);
+async function loadFuelTruckMaster(){
+    STORAGE_ROWS=await window.KPPStorage.load(supabaseClient,{activeOnly:true});
+    FUEL_TRUCK_MAP=window.KPPStorage.ftMap(STORAGE_ROWS);
+    const select=document.getElementById("fuelTruck");
+    const selected=select.value;
+    const rows=STORAGE_ROWS.filter(row=>row.storage_type==="FT");
+    select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");
+    if(selected && rows.some(row=>row.code===selected))select.value=selected;
+}
 
 // 124 CODE UNIT awal dari sheet POPULASI UNIT (fallback bila Unit Master online gagal dibaca)
 const BASE_MASTER_UNITS = [
@@ -1226,6 +1234,7 @@ async function reliableFuelRpc(action,payload){
 }
 
 document.addEventListener("kpp-auth-ready", async function(event) {
+    await loadFuelTruckMaster();
     currentStaffProfile = event.detail.profile;
     if (window.KPP_SESSION?.user?.id && !fuelDelivery) {
       fuelDelivery = KPPReliable.mount({scope:'fuel:'+window.KPP_SESSION.user.id, client:supabaseClient,

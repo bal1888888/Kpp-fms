@@ -10,6 +10,7 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="dashboard";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 :root{
@@ -431,9 +432,16 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 
 <script>
 const db=KPP.db;
-const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
-const STORAGE_CAPACITY={MT01:40000,MT02:40000,MT03:40000,MT04:40000,FT0073:20000,FT0075:20000};
-const TOTAL_CAPACITY=200000;
+let STORAGE_ROWS=window.KPPStorage.fallbackRows();
+let STORAGES=STORAGE_ROWS.map(row=>row.code);
+let STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+let TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+async function loadStorageMaster(){
+  STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+  STORAGES=STORAGE_ROWS.map(row=>row.code);
+  STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+  TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+n(b),0);
+}
 function stockLevelState(total){
   const pct=TOTAL_CAPACITY>0?(n(total)/TOTAL_CAPACITY)*100:0;
   if(pct<20)return "critical";
@@ -518,27 +526,25 @@ function shiftNumber(v){
 function getFuelTruck(item){
   const ft=String(item.fuel_truck||"").trim().toUpperCase();
   if(ft)return ft;
-  const wh=String(item.wh||"").trim().toUpperCase();
-  if(wh==="FT02")return "FT0073";
-  if(wh==="FT01")return "FT0075";
-  return "-";
+  const wh=window.KPPStorage.normalizeWarehouse(item.wh);
+  const match=STORAGE_ROWS.find(row=>row.storage_type==="FT" && window.KPPStorage.whCode(row)===wh);
+  return match?.code||"-";
 }
 function getWH(item){
-  const wh=String(item.wh||"").trim().toUpperCase();
+  const wh=window.KPPStorage.normalizeWarehouse(item.wh);
   if(wh)return wh;
   const ft=getFuelTruck(item);
-  if(ft==="FT0073")return "FT02";
-  if(ft==="FT0075")return "FT01";
-  return "-";
+  const row=STORAGE_ROWS.find(item=>item.code===ft);
+  return row?window.KPPStorage.whCode(row)||"-":"-";
 }
 function getFuelman(item){return String(item.fuelman_name||item.fuelman_username||"").trim()||"-"}
 function sourceFromFuel(row){
   const ft=String(row.fuel_truck||"").trim().toUpperCase();
-  if(ft==="FT0073"||ft==="FT0075")return ft;
-  const wh=String(row.wh||"").trim().toUpperCase();
-  if(wh==="FT02")return "FT0073";
-  if(wh==="FT01")return "FT0075";
-  return "";
+  const direct=STORAGE_ROWS.find(item=>item.storage_type==="FT" && item.code===ft);
+  if(direct)return direct.code;
+  const wh=window.KPPStorage.normalizeWarehouse(row.wh);
+  const match=STORAGE_ROWS.find(item=>item.storage_type==="FT" && window.KPPStorage.whCode(item)===wh);
+  return match?.code||"";
 }
 
 async function fetchPagedFuel(startDate,endDate){
@@ -878,7 +884,10 @@ async function loadDashboard(){
 }
 
 document.getElementById("refreshBtn").addEventListener("click",loadDashboard);
-document.addEventListener("kpp-auth-ready",loadDashboard);
+document.addEventListener("kpp-auth-ready",async()=>{
+  await loadStorageMaster();
+  await loadDashboard();
+});
 </script>
 </body>
 </html>

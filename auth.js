@@ -653,6 +653,7 @@ window.KPP = {
       "ccr-approval": "Approval CCR",
       riwayat: "Riwayat Fuel",
       "hm-master": "Master Unit & HM",
+      "master-storage": "Master MT / FT",
       "qr-unit": "QR Unit",
       akun: "Kelola Akun"
     };

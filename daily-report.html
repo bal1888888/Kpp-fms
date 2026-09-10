@@ -13,6 +13,7 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="daily-report";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 
 <style>
@@ -383,21 +384,18 @@ th{background:#f8fafc;color:#475569}
 <script>
 const db=KPP.db;
 const TERA=window.KPP_TERA;
-const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
-const FT_MAP={
-  FT0073:"FT02",
-  FT0075:"FT01"
-};
-
-const STORAGE_CAPACITY={
-  MT01:40000,
-  MT02:40000,
-  MT03:40000,
-  MT04:40000,
-  FT0073:20000,
-  FT0075:20000
-};
-const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+let STORAGE_ROWS=window.KPPStorage.fallbackRows();
+let STORAGES=STORAGE_ROWS.map(row=>row.code);
+let FT_MAP=window.KPPStorage.ftMap(STORAGE_ROWS);
+let STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+let TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+async function loadStorageMaster(){
+  STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+  STORAGES=STORAGE_ROWS.map(row=>row.code);
+  FT_MAP=window.KPPStorage.ftMap(STORAGE_ROWS);
+  STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+  TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+n(b),0);
+}
 
 function n(v){return Number(v)||0}
 function pad(v){return String(v).padStart(2,"0")}
@@ -469,8 +467,9 @@ function fmtIto(v){
   return new Intl.NumberFormat("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1}).format(v);
 }
 function estimatedSonding(storage,qty){
-  if(!TERA || typeof TERA.heightForLiters!=="function")return null;
-  return TERA.heightForLiters(storage,Math.max(0,n(qty)));
+  if(!TERA)return null;
+  try{return window.KPPStorage.heightForLiters(TERA,STORAGE_ROWS,storage,Math.max(0,n(qty)));}
+  catch{return null;}
 }
 function fmtSonding(value){
   if(value===null || value===undefined || !Number.isFinite(Number(value)))return "-";
@@ -490,11 +489,11 @@ function showCopyToast(message,isError=false){
 }
 function sourceFromFuel(row){
   const ft=String(row.fuel_truck||"").trim().toUpperCase();
-  if(ft==="FT0073"||ft==="FT0075")return ft;
-  const wh=String(row.wh||"").trim().toUpperCase();
-  if(wh==="FT02")return "FT0073";
-  if(wh==="FT01")return "FT0075";
-  return "";
+  const direct=STORAGE_ROWS.find(item=>item.storage_type==="FT" && item.code===ft);
+  if(direct)return direct.code;
+  const wh=window.KPPStorage.normalizeWarehouse(row.wh);
+  const match=STORAGE_ROWS.find(item=>item.storage_type==="FT" && window.KPPStorage.whCode(item)===wh);
+  return match?.code||"";
 }
 function shiftNumber(v){
   const s=String(v||"").trim().toLowerCase();
@@ -698,10 +697,9 @@ function renderStock(stock){
 }
 
 function summarizeYesterday(rows){
-  const result={
-    FT0073:{1:0,2:0},
-    FT0075:{1:0,2:0}
-  };
+  const result=Object.fromEntries(
+    STORAGE_ROWS.filter(row=>row.storage_type==="FT").map(row=>[row.code,{1:0,2:0}])
+  );
 
   rows.forEach(row=>{
     const ft=sourceFromFuel(row);
@@ -718,9 +716,10 @@ function renderUsageTable(summary){
   const body=document.getElementById("usageBody");
   body.innerHTML="";
 
-  ["FT0073","FT0075"].forEach(ft=>{
-    const s1=n(summary[ft][1]);
-    const s2=n(summary[ft][2]);
+  STORAGE_ROWS.filter(row=>row.storage_type==="FT").forEach(row=>{
+    const ft=row.code;
+    const s1=n(summary[ft]?.[1]);
+    const s2=n(summary[ft]?.[2]);
     body.innerHTML+=`
       <tr>
         <td><b>${ft}</b></td>
@@ -737,26 +736,25 @@ function makeReportText({
   reportDate,stock,totalStock,yesterday,ySummary,
   usageYesterday,usageMTD,avgMTD,ito,activeDays
 }){
+  const stockLines=STORAGE_ROWS.map(row=>{
+    const label=row.warehouse ? `${row.code} / ${row.warehouse}` : row.code;
+    return stockReportLine(label,row.code,stock[row.code]);
+  }).join(String.fromCharCode(10));
+  const usageLines=STORAGE_ROWS.filter(row=>row.storage_type==="FT").map(row=>{
+    const summary=ySummary[row.code]||{1:0,2:0};
+    return `${row.code}${row.warehouse?` / ${row.warehouse}`:""}
+Shift 1 : ${fmt(summary[1])} LTR
+Shift 2 : ${fmt(summary[2])} LTR`;
+  }).join(String.fromCharCode(10)+String.fromCharCode(10));
   return `UPDATE STOCK FUEL
 ${formatDateID(reportDate)}
 
-${stockReportLine("MT01","MT01",stock.MT01)}
-${stockReportLine("MT02","MT02",stock.MT02)}
-${stockReportLine("MT03","MT03",stock.MT03)}
-${stockReportLine("MT04","MT04",stock.MT04)}
-${stockReportLine("FT0073 / WH FT02","FT0073",stock.FT0073)}
-${stockReportLine("FT0075 / WH FT01","FT0075",stock.FT0075)}
+${stockLines}
 
 TOTAL STOCK FUEL = ${fmt(totalStock)} LTR
 
 USAGE YESTERDAY (${formatDateID(yesterday)}):
-FT0073
-Shift 1 : ${fmt(ySummary.FT0073[1])} LTR
-Shift 2 : ${fmt(ySummary.FT0073[2])} LTR
-
-FT0075
-Shift 1 : ${fmt(ySummary.FT0075[1])} LTR
-Shift 2 : ${fmt(ySummary.FT0075[2])} LTR
+${usageLines}
 
 TOTAL PEMAKAIAN = ${fmt(usageYesterday)} LTR
 
@@ -879,8 +877,9 @@ document.getElementById("copyBtn").addEventListener("click",async()=>{
   }
 });
 
-document.addEventListener("kpp-auth-ready",()=>{
+document.addEventListener("kpp-auth-ready",async()=>{
   document.getElementById("reportDate").value=localDate();
+  await loadStorageMaster();
   loadReport();
 });
 </script>

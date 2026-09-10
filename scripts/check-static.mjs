@@ -162,6 +162,21 @@ if (
   fail(stockPath, "sounding sebelum/sesudah storage sumber belum diwajibkan dan disimpan");
 }
 
+const storageHelperPath = path.join(projectRoot, "storage-master.js");
+const storageHelperSource = fs.readFileSync(storageHelperPath, "utf8");
+if (!storageHelperSource.includes("storage_master") || !storageHelperSource.includes("hardCapacityMap")) {
+  fail(storageHelperPath, "helper Master MT/FT dinamis tidak lengkap");
+}
+if (!stockSource.includes("loadStorageMaster") || !stockSource.includes("teraLookup")) {
+  fail(stockPath, "Stock belum memakai Master MT/FT dan profil sounding dinamis");
+}
+for (const dynamicPage of ["daily-report.html","fuelman.html","pengisian.html","stock-history.html"]) {
+  const dynamicSource = fs.readFileSync(path.join(projectRoot, dynamicPage), "utf8");
+  if (!dynamicSource.includes('src="storage-master.js"')) {
+    fail(path.join(projectRoot, dynamicPage), "belum terhubung ke Master MT/FT dinamis");
+  }
+}
+
 const dashboardPath = path.join(projectRoot, "dashboard.html");
 const dashboardSource = fs.readFileSync(dashboardPath, "utf8");
 if (
