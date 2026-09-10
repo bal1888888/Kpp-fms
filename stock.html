@@ -3303,18 +3303,16 @@ async function saveOpening(){
 
     if(!beginStockSave("Menyimpan Stock Opening..."))return;
 
-    const {error}=await db.from("stock_opening").upsert(
-        {
-            tanggal,
-            shift,
-            storage,
-            qty,
-            operator,
-            sonding_height_cm:openingTera.matchedHeightCm,
-            tera_version:TERA.version
-        },
-        {onConflict:"tanggal,shift,storage"}
-    );
+    const {data:openingResult,error}=await db.rpc("save_stock_opening_safe",{
+        p_tanggal:tanggal,
+        p_shift:shift,
+        p_storage:storage,
+        p_qty:qty,
+        p_operator:operator,
+        p_sonding_height_cm:openingTera.matchedHeightCm,
+        p_tera_version:TERA.version,
+        p_session_id:ACTIVE_FUELMAN_SESSION?.id||null
+    });
 
     document.getElementById("openingStatus").textContent=
         error?"[GAGAL] "+error.message:"[OK] Stock opening tersimpan.";

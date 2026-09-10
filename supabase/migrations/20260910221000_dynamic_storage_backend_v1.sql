@@ -127,8 +127,8 @@ declare
 begin
   if tg_table_name = 'fuelman_sessions' then
     v_code := upper(trim(new.fuel_truck));
-    if tg_op = 'UPDATE' and v_code is not distinct from upper(trim(old.fuel_truck)) then
-      return new;
+    if tg_op = 'UPDATE' then
+      if v_code is not distinct from upper(trim(old.fuel_truck)) then return new; end if;
     end if;
     select s.storage_type into v_kind from public.storage_master s
       where s.code = v_code and s.active = true;
@@ -139,8 +139,8 @@ begin
   elsif tg_table_name = 'fuel_history' then
     if new.fuel_truck is null then return new; end if;
     v_code := upper(trim(new.fuel_truck));
-    if tg_op = 'UPDATE' and v_code is not distinct from upper(trim(old.fuel_truck)) then
-      return new;
+    if tg_op = 'UPDATE' then
+      if v_code is not distinct from upper(trim(old.fuel_truck)) then return new; end if;
     end if;
     select s.storage_type into v_kind from public.storage_master s
       where s.code = v_code and s.active = true;
@@ -150,8 +150,8 @@ begin
 
   elsif tg_table_name in ('stock_opening','stock_closing') then
     v_code := upper(trim(new.storage));
-    if tg_op = 'UPDATE' and v_code is not distinct from upper(trim(old.storage)) then
-      return new;
+    if tg_op = 'UPDATE' then
+      if v_code is not distinct from upper(trim(old.storage)) then return new; end if;
     end if;
     if not exists(select 1 from public.storage_master s where s.code=v_code and s.active=true) then
       raise exception 'Storage % tidak aktif atau tidak ada di Master MT/FT.', coalesce(v_code, '-');
@@ -186,7 +186,6 @@ end;
 $$;
 revoke all on function public.kpp_validate_operational_storage_ref() from public, anon, authenticated;
 
-foreach_dummy: -- label-like comment anchor only
 
 -- Trigger validation on new references. Unchanged historical references remain editable after deactivation.
 drop trigger if exists trg_fuelman_session_storage_guard on public.fuelman_sessions;
