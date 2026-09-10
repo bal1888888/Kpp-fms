@@ -162,6 +162,15 @@ if (
   fail(stockPath, "sounding sebelum/sesudah storage sumber belum diwajibkan dan disimpan");
 }
 
+const dashboardPath = path.join(projectRoot, "dashboard.html");
+const dashboardSource = fs.readFileSync(dashboardPath, "utf8");
+if (
+  !dashboardSource.includes("row.source_measured_qty!==null") ||
+  !dashboardSource.includes("row.destination_measured_qty!==null")
+) {
+  fail(dashboardPath, "dashboard belum menghitung stock transfer dari sounding sumber dan tujuan");
+}
+
 if (failures.length) {
   console.error("Static checks gagal:\n");
   failures.forEach((message) => console.error(`- ${message}`));

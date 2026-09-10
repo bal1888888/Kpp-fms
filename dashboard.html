@@ -258,8 +258,9 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 }
 
 </style>
+<link rel="stylesheet" href="dashboard-ui.css">
 </head>
-<body>
+<body class="dashboard-workspace">
 <div class="header">
   <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
   <p>PT KPP - Dashboard Fuel Management</p>
@@ -270,125 +271,150 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 <div class="container">
   <div class="top-bar">
     <div class="page-heading">
-      <h2>📊 Dashboard</h2>
-      <p>Ringkasan operasional fuel terbaru.</p>
+      <span class="dashboard-eyebrow">CONTROL ROOM</span>
+      <h2>Kontrol Operasional Fuel</h2>
+      <p>Pemakaian, stok, penerimaan, dan aktivitas Fuelman dalam satu layar.</p>
     </div>
-    <button class="refresh-btn" id="refreshBtn">↻ Refresh Data</button>
+    <div class="refresh-cluster">
+      <span id="dashboardFreshness">Data operasional sampai H-1</span>
+      <button class="refresh-btn" id="refreshBtn">Muat Ulang Data</button>
+    </div>
   </div>
 
   <div id="errorBox" class="error"></div>
 
-  <div class="overview-grid">
-    <div class="overview-card usage-card">
-      <div class="overview-head">
+  <div class="executive-grid">
+    <div class="wide-hero-card">
+      <div class="wide-hero-main">
+        <div class="hero-icon" aria-hidden="true">L</div>
         <div>
-          <div class="overview-title">📈 Monitor Fuel Usage 5 Hari Terakhir</div>
-          <div class="overview-sub">Perbandingan pemakaian harian sampai H-1.</div>
+          <div class="hero-label">PEMAKAIAN PERIODE BERJALAN</div>
+          <div class="hero-value" id="totalFuelMTD">0 L</div>
+          <div class="hero-sub">Akumulasi pemakaian MTD sampai H-1</div>
         </div>
-        <span class="trend-badge flat" id="usageTrendBadge">-</span>
       </div>
-      <div class="usage-bars" id="usageTrendBars"></div>
+      <div class="wide-hero-side">
+        <div class="mtd-compare-wrap">
+          <span class="trend-badge flat" id="mtdCompareBadge">Belum ada pembanding</span>
+          <div class="mtd-compare-note" id="mtdCompareNote">Dibandingkan dengan periode sebelumnya.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="overview-card stock-trend-card">
-      <div class="overview-head">
-        <div>
-          <div class="overview-title">🛢️ Monitor Total Stock 5 Hari Terakhir</div>
-          <div class="overview-sub">Perbandingan total stock akhir hari sampai H-1.</div>
-        </div>
-        <span class="trend-badge flat" id="stockTrendBadge">-</span>
+    <div class="section kpi-section">
+      <div class="section-head">
+        <h2>Indikator Utama</h2>
+        <a class="section-link" href="daily-report.html">Daily Report</a>
       </div>
-      <div class="usage-bars" id="stockTrendBars"></div>
-    </div>
-
-    <div class="overview-card receipt-card">
-      <div class="overview-head">
-        <div>
-          <div class="overview-title">🏭 Penerimaan Solar MTD per Transportir</div>
-          <div class="overview-sub">Total penerimaan per perusahaan transportir sampai H-1.</div>
+      <div class="daily-grid">
+        <div class="daily-card blue">
+          <div class="daily-label">PEMAKAIAN KEMARIN</div>
+          <div class="daily-value" id="usageYesterday">0 L</div>
+          <div class="daily-sub" id="yesterdayLabel">-</div>
         </div>
-      </div>
-      <div class="receipt-total" id="receiptMTDTotal">0 L <small>total</small></div>
-      <div class="receipt-bars" id="receiptTransporterBars">
-        <div class="receipt-empty">Memuat penerimaan...</div>
+        <div class="daily-card amber">
+          <div class="daily-label">RATA-RATA MTD</div>
+          <div class="daily-value" id="avgMTD">0 L/hari</div>
+          <div class="daily-sub" id="activeDays">0 hari aktif</div>
+        </div>
+        <div class="daily-card purple">
+          <div class="daily-label">ITO / DAY OF COVER</div>
+          <div class="daily-value" id="ito">0 hari</div>
+          <div class="daily-sub">Stock ÷ pemakaian kemarin</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="wide-hero-card">
-    <div class="wide-hero-main">
-      <div class="hero-icon">⛽</div>
+  <div class="section performance-section">
+    <div class="section-head">
       <div>
-        <div class="hero-label">TOTAL FUEL USAGE MTD</div>
-        <div class="hero-value" id="totalFuelMTD">0 L</div>
-        <div class="hero-sub">Akumulasi fuel usage MTD</div>
+        <span class="section-kicker">TREN 5 HARI</span>
+        <h2>Performa Fuel</h2>
       </div>
     </div>
-    <div class="wide-hero-side">
-      <div class="mtd-compare-wrap">
-        <span class="trend-badge flat" id="mtdCompareBadge">Belum ada pembanding</span>
-        <div class="mtd-compare-note" id="mtdCompareNote">Dibanding periode MTD sebelumnya pada jumlah hari berjalan yang sama.</div>
+    <div class="overview-grid">
+      <div class="overview-card usage-card">
+        <div class="overview-head">
+          <div>
+            <div class="overview-title">Pemakaian Harian</div>
+            <div class="overview-sub">Total pemakaian sampai H-1.</div>
+          </div>
+          <span class="trend-badge flat" id="usageTrendBadge">-</span>
+        </div>
+        <div class="usage-bars" id="usageTrendBars"></div>
+      </div>
+
+      <div class="overview-card stock-trend-card">
+        <div class="overview-head">
+          <div>
+            <div class="overview-title">Posisi Total Stock</div>
+            <div class="overview-sub">Stock akhir hari sampai H-1.</div>
+          </div>
+          <span class="trend-badge flat" id="stockTrendBadge">-</span>
+        </div>
+        <div class="usage-bars" id="stockTrendBars"></div>
+      </div>
+
+      <div class="overview-card receipt-card">
+        <div class="overview-head">
+          <div>
+            <div class="overview-title">Penerimaan per Transportir</div>
+            <div class="overview-sub">Akumulasi penerimaan MTD.</div>
+          </div>
+        </div>
+        <div class="receipt-total" id="receiptMTDTotal">0 L <small>total</small></div>
+        <div class="receipt-bars" id="receiptTransporterBars">
+          <div class="receipt-empty">Memuat penerimaan...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="operations-grid">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <span class="section-kicker">PEMAKAIAN MTD</span>
+          <h2>Distribusi per Shift</h2>
+        </div>
+      </div>
+      <div class="shift-container">
+        <div class="shift-card">
+          <div class="shift-icon">S1</div>
+          <div><h3>Shift 1</h3><div class="shift-fuel" id="shift1Fuel">0 L</div></div>
+        </div>
+        <div class="shift-card">
+          <div class="shift-icon">S2</div>
+          <div><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div class="session-title-wrap">
+          <div>
+            <span class="section-kicker">STATUS SHIFT</span>
+            <h2>Fuelman Bertugas</h2>
+          </div>
+          <span class="session-count" id="activeFuelmanCount">0</span>
+        </div>
+      </div>
+      <div id="activeSessions" class="session-grid">
+        <div class="session-empty">Memuat sesi aktif...</div>
       </div>
     </div>
   </div>
 
   <div class="section">
     <div class="section-head">
-      <h2>📋 Ringkasan Daily Report</h2>
-      <a class="section-link" href="daily-report.html">Buka Daily Report →</a>
-    </div>
-    <div class="daily-grid">
-      <div class="daily-card blue">
-        <div class="daily-icon">📉</div>
-        <div class="daily-label">USAGE YESTERDAY</div>
-        <div class="daily-value" id="usageYesterday">0 L</div>
-        <div class="daily-sub" id="yesterdayLabel">-</div>
+      <div>
+        <span class="section-kicker">AKTIVITAS TERBARU</span>
+        <h2>Transaksi Pengisian</h2>
       </div>
-      <div class="daily-card amber">
-        <div class="daily-icon">⚡</div>
-        <div class="daily-label">AVG MTD</div>
-        <div class="daily-value" id="avgMTD">0 L/hari</div>
-        <div class="daily-sub" id="activeDays">0 hari aktif</div>
-      </div>
-      <div class="daily-card purple">
-        <div class="daily-icon">⏳</div>
-        <div class="daily-label">ITO / DAYS OF COVER</div>
-        <div class="daily-value" id="ito">0 hari</div>
-        <div class="daily-sub">Total Stock ÷ Usage Yesterday</div>
-      </div>
+      <a class="section-link" href="logsheet.html">Buka Logsheet</a>
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <h2>📊 Penggunaan Fuel per Shift MTD</h2>
-    </div>
-    <div class="shift-container">
-      <div class="shift-card">
-        <div class="shift-icon">1️⃣</div>
-        <div><h3>Shift 1</h3><div class="shift-fuel" id="shift1Fuel">0 L</div></div>
-      </div>
-      <div class="shift-card">
-        <div class="shift-icon">2️⃣</div>
-        <div><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head">
-      <div class="session-title-wrap">
-        <h2>👷 Fuelman Sedang Bertugas</h2>
-        <span class="session-count" id="activeFuelmanCount">0</span>
-      </div>
-    </div>
-    <div id="activeSessions" class="session-grid">
-      <div class="session-empty">Memuat session aktif...</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-head"><h2>📋 Transaksi Pengisian Terbaru</h2></div>
     <div class="table-container">
       <table>
         <thead>
@@ -540,7 +566,7 @@ async function fetchPagedReceipts(startDate,endDate){
   while(true){
     const {data,error}=await db
       .from("stock_movements")
-      .select("id,tanggal,shift,jenis,qty,transporter,destination_storage")
+      .select("id,tanggal,shift,jenis,qty,transporter,destination_storage,destination_measured_qty")
       .eq("jenis","RECEIPT")
       .gte("tanggal",startDate)
       .lte("tanggal",endDate)
@@ -623,7 +649,10 @@ function renderReceipts(rows){
   rows.forEach(row=>{
     const company=canonicalTransporter(row.transporter);
     if(!(company in sums))sums[company]=0;
-    sums[company]+=n(row.qty);
+    const receivedQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+      ?n(row.destination_measured_qty)
+      :n(row.qty);
+    sums[company]+=receivedQty;
   });
   const entries=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
   const total=entries.reduce((s,[,q])=>s+q,0);
@@ -676,10 +705,21 @@ async function calculateStock(tanggal,shift){
   const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
   (o.data||[]).forEach(row=>{if(row.storage in stock)stock[row.storage]=n(row.qty)});
   (m.data||[]).forEach(row=>{
-    if(row.jenis==="RECEIPT"&&row.destination_storage in stock)stock[row.destination_storage]+=n(row.qty);
+    if(row.jenis==="RECEIPT"&&row.destination_storage in stock){
+      const receivedQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+        ?n(row.destination_measured_qty)
+        :n(row.qty);
+      stock[row.destination_storage]+=receivedQty;
+    }
     if(row.jenis==="TRANSFER"){
-      if(row.source_storage in stock)stock[row.source_storage]-=n(row.qty);
-      if(row.destination_storage in stock)stock[row.destination_storage]+=n(row.qty);
+      const sourceQty=row.source_measured_qty!==null&&row.source_measured_qty!==undefined
+        ?n(row.source_measured_qty)
+        :n(row.qty);
+      const destinationQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+        ?n(row.destination_measured_qty)
+        :n(row.qty);
+      if(row.source_storage in stock)stock[row.source_storage]-=sourceQty;
+      if(row.destination_storage in stock)stock[row.destination_storage]+=destinationQty;
     }
   });
   (f.data||[]).forEach(row=>{const source=sourceFromFuel(row);if(source)stock[source]-=n(row.fuel)});
