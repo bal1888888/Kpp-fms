@@ -173,13 +173,8 @@ tbody tr:hover{background:#f8fafc}
 
     <div id="tabUnit" class="tab-page active">
         <div class="panel">
-            <div class="info">
-                Kelola populasi unit dari satu tempat. Kalau ada <b>unit baru</b>, tidak perlu edit source code.
-                Setelah unit disimpan dan statusnya <b>Aktif</b>, unit otomatis bisa dipilih di halaman Pengisian Fuel.
-            </div>
-            <div class="warning">
-                Jangan hapus unit lama yang sudah punya histori. Kalau unit sudah tidak operasi, ubah saja statusnya menjadi <b>Tidak Aktif</b>.
-            </div>
+            <div class="info">Unit aktif otomatis tersedia di Pengisian Fuel.</div>
+            <div class="warning">Unit berhistori: nonaktifkan, jangan hapus.</div>
         </div>
 
         <div class="panel">
@@ -282,10 +277,7 @@ tbody tr:hover{background:#f8fafc}
                 <button class="qr-btn" type="button" onclick="generateSelectedQr()">🏷️ GENERATE QR TERPILIH</button>
             </div>
 
-            <div class="qr-selected-note">
-                Centang unit yang mau dibuat QR-nya, lalu klik <b>GENERATE QR TERPILIH</b>.
-                Unit yang sudah pernah di-print akan ditandai <b>SUDAH ADA QR</b>.
-            </div>
+            <div class="qr-selected-note">Centang unit, lalu pilih <b>GENERATE QR TERPILIH</b>.</div>
 
             <div class="table-wrap table-scroll">
                 <table>
@@ -312,14 +304,8 @@ tbody tr:hover{background:#f8fafc}
 
     <div id="tabTransporter" class="tab-page">
         <div class="panel">
-            <div class="transport-note">
-                Kelola perusahaan transportir dari satu tempat. Transportir berstatus <b>AKTIF</b>
-                otomatis muncul di dropdown Penerimaan Solar pada halaman Stock.
-            </div>
-            <div class="warning">
-                Vendor yang sudah pernah dipakai jangan dihapus. Jika kontraknya selesai, ubah status menjadi <b>TIDAK AKTIF</b>
-                supaya histori penerimaan lama tetap terbaca.
-            </div>
+            <div class="transport-note">Transportir aktif tersedia di Penerimaan Solar.</div>
+            <div class="warning">Vendor lama: nonaktifkan, jangan hapus.</div>
         </div>
 
         <div class="panel">
@@ -379,23 +365,13 @@ tbody tr:hover{background:#f8fafc}
 
     <div id="tabHm" class="tab-page">
 <div class="panel">
-            <div class="info">
-                Gunakan HM Master untuk menetapkan <b>HM aktual yang benar-benar terbaca di unit</b> saat go-live atau saat referensi lama diketahui salah.
-                Data logsheet lama <b>tidak dihapus</b>. Sistem hanya menjadikan koreksi ini sebagai patokan mulai tanggal/jam efektifnya.
-            </div>
-            <div class="warning">
-                Untuk <b>unit baru</b>: simpan unit terlebih dahulu di tab MASTER UNIT, lalu masuk ke tab HM MASTER untuk memasukkan HM aktual awalnya.
-            </div>
+            <div class="info">Tetapkan HM aktual sebagai referensi resmi.</div>
+            <div class="warning">Unit baru: simpan MASTER UNIT, lalu isi HM MASTER.</div>
         </div>
 
         <div class="panel bulk-focus">
             <h3>1. Fix HM Banyak Unit</h3>
-            <div class="info">
-                Isi HM aktual untuk beberapa unit sekaligus. Setiap nilai yang disimpan oleh <b>Admin/GL/Atasan</b> menjadi <b>patokan HM resmi</b> mulai tanggal/jam efektifnya. Histori lama tidak dihapus.
-            </div>
-            <div class="bulk-fixed-note">
-                HM yang difix menjadi <b>titik reset/reference resmi</b>. Data lama sebelum waktu efektif tidak boleh mengalahkannya. Nilai berikutnya hanya bergerak dari transaksi setelah waktu tersebut atau koreksi Admin/GL/Atasan yang lebih baru.
-            </div>
+            <div class="info">Isi HM aktual beberapa unit sekaligus.</div>
             <div class="bulk-hm-toolbar" style="margin-top:14px">
                 <div><label>Cari Unit</label><input id="bulkHmSearch" placeholder="Ketik DT, EX, TL..." oninput="renderBulkHmTable()"></div>
                 <div><label>Tanggal Efektif Semua</label><input type="date" id="bulkEffectiveDate"></div>

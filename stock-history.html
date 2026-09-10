@@ -52,7 +52,7 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
 
 <main class="container">
   <section class="panel hero">
-    <div><h2> History Stock</h2><p>Pusat audit Penerimaan Transportir, Transfer Antar Storage, dan Stock Closing. Data operasional tetap dicatat dari halaman Stock.</p></div>
+    <div><h2> History Stock</h2></div>
     <div class="tabs" role="tablist">
       <button class="tab-btn active" id="tabReceipt" onclick="showHistoryTab('receipt')"> Penerimaan</button>
       <button class="tab-btn" id="tabTransfer" onclick="showHistoryTab('transfer')"> Transfer</button>
@@ -61,7 +61,7 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
   </section>
 
   <section class="panel tab-panel active" id="panelReceipt">
-    <div class="section-head"><div><h3>History Penerimaan Transportir</h3><div class="note">PO/LO, flowmeter, sounding tangki, qty masuk, loss, operator, dan periode kedatangan.</div></div></div>
+    <div class="section-head"><div><h3>History Penerimaan Transportir</h3></div></div>
     <div class="grid">
       <div><label>Dari Tanggal</label><input type="date" id="receiptFrom"></div>
       <div><label>Sampai Tanggal</label><input type="date" id="receiptTo"></div>
@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
   </section>
 
   <section class="panel tab-panel" id="panelTransfer">
-    <div class="section-head"><div><h3>History Transfer Antar Storage</h3><div class="note">Audit dua sisi: qty keluar sumber, qty masuk tujuan, sounding sebelum/sesudah, dan loss transfer.</div></div></div>
+    <div class="section-head"><div><h3>History Transfer Antar Storage</h3></div></div>
     <div class="grid">
       <div><label>Dari Tanggal</label><input type="date" id="transferFrom"></div>
       <div><label>Sampai Tanggal</label><input type="date" id="transferTo"></div>
@@ -91,7 +91,7 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
   </section>
 
   <section class="panel tab-panel" id="panelClosing">
-    <div class="section-head"><div><h3>History Stock Closing / Sonding Akhir</h3><div class="note">Riwayat Stock Sistem dibanding Stock Fisik berdasarkan sounding akhir setiap storage dan akun petugas.</div></div></div>
+    <div class="section-head"><div><h3>History Stock Closing / Sonding Akhir</h3></div></div>
     <div class="grid">
       <div><label>Dari Tanggal</label><input type="date" id="closingFrom"></div>
       <div><label>Sampai Tanggal</label><input type="date" id="closingTo"></div>

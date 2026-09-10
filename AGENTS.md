@@ -13,3 +13,9 @@
 - Selalu periksa `git status` dan `git diff` sebelum serta sesudah perubahan.
 - Jangan menjalankan tindakan destruktif.
 - Pertahankan kompatibilitas GitHub Pages serta tampilan dan fungsi pada PC maupun HP.
+
+## Aturan teks UI
+
+- Teks yang terlihat pengguna harus singkat, langsung ke aksi, dan tidak mengulang informasi yang sudah jelas dari label/tabel.
+- Jangan menambahkan paragraf rumus, penjelasan cara kerja internal, atau uraian implementasi di layar operasional.
+- Pertahankan hanya warning/instruksi yang benar-benar diperlukan untuk keselamatan data atau menyelesaikan alur kerja, lalu tulis sesingkat mungkin.

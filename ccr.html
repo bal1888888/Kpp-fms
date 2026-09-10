@@ -109,7 +109,7 @@ td.left{text-align:left}
 
 <div class="container">
   <section class="workspace-intro" aria-label="Ruang kerja CCR">
-    <div class="intro-copy"><span class="eyebrow">CONTROL ROOM / CCR</span><h2>Kontrol unit dalam satu layar.</h2><p>Pantau kesiapan HM, pilih unit, lalu terbitkan jatah tanpa berpindah alur.</p></div>
+    <div class="intro-copy"><span class="eyebrow">CONTROL ROOM / CCR</span><h2>Kontrol unit dalam satu layar.</h2></div>
     <div class="command-meta" aria-label="Status ruang kerja">
       <span class="live-pill"><i aria-hidden="true"></i>Sistem aktif</span>
       <span class="site-time">WIB <b>UTC+07</b></span>
@@ -120,17 +120,9 @@ td.left{text-align:left}
 
   <div class="guide-grid">
 
-  <div class="qr-box guide-card">
-    <b>QR UNIT = CHECK-IN OPERATOR TANPA AKUN.</b><br>
-    Operator scan QR, lalu mengirim nama, NRP (opsional), dan <b>HM awal operasional</b>.
-    CCR dapat memakai identitasnya dari panel check-in. HM awal tetap terpisah dari HM transaksi pengisian.
-  </div>
+  <div class="qr-box guide-card"><b>QR UNIT</b> = check-in operator tanpa akun.</div>
 
-  <div class="info guide-card">
-    <b>1 jatah = 1 kali pengisian.</b>
-    Pengisian ke-1 langsung ACTIVE.
-    Pengisian ke-2 dan seterusnya otomatis PENDING_GL dan belum bisa dibaca Fuelman sampai GL menyetujui.
-  </div>
+  <div class="info guide-card"><b>1 jatah = 1 pengisian.</b> Pengisian ke-2+ menunggu approval GL.</div>
 
   <div class="shift-clock guide-card">
     <b>Jam Shift:</b> Shift 1 = 06:30–18:30 • Shift 2 = 18:30–06:30.
@@ -142,7 +134,7 @@ td.left{text-align:left}
   <div class="panel panel-monitor" id="monitorSection">
     <div class="panel-heading checkin-head">
       <span class="section-index" aria-hidden="true">01</span>
-      <div><span class="eyebrow">MONITORING UNIT</span><h2>Check-in &amp; HM Operator</h2><p>Pilih unit berstatus HM tersedia untuk mengisi identitas ke form jatah. Riwayat shift tetap dapat dipantau dan diunduh.</p></div>
+      <div><span class="eyebrow">MONITORING UNIT</span><h2>Check-in &amp; HM Operator</h2><p>Pilih unit dengan HM tersedia.</p></div>
       <button type="button" class="btn-outline" id="refreshCheckinBtn">REFRESH CHECK-IN</button>
     </div>
     <div id="checkinMonitor"></div>
@@ -152,7 +144,7 @@ td.left{text-align:left}
   <div class="panel panel-allocation">
     <div class="panel-heading compact">
       <span class="section-index" aria-hidden="true">02</span>
-      <div><span class="eyebrow">ALOKASI FUEL</span><h2>Input Jatah Unit</h2><p>Data unit dan HM yang dipilih akan menjadi dasar satu transaksi pengisian.</p></div>
+      <div><span class="eyebrow">ALOKASI FUEL</span><h2>Input Jatah Unit</h2></div>
       <span class="panel-state">HM AKTUAL</span>
     </div>
 
@@ -199,7 +191,7 @@ td.left{text-align:left}
       <div>
         <label>HM Aktual Operator / Petugas</label>
         <input type="number" step="0.1" id="hm" placeholder="Contoh: 2950">
-        <div class="input-help">Pilih check-in READY untuk mengambil HM operator. Unit tanpa operator memakai pembacaan petugas.</div>
+        <div class="input-help">Pilih check-in READY.</div>
       </div>
 
       <div>
@@ -287,7 +279,7 @@ td.left{text-align:left}
   <div class="panel panel-history">
     <div class="panel-heading history-heading">
       <span class="section-index" aria-hidden="true">03</span>
-      <div><span class="eyebrow">AUDIT JATAH</span><h2>Riwayat Jatah CCR</h2><p>Lacak status jatah aktif, menunggu persetujuan, terpakai, atau kedaluwarsa.</p></div>
+      <div><span class="eyebrow">AUDIT JATAH</span><h2>Riwayat Jatah CCR</h2><p>Pantau status jatah.</p></div>
       <div class="actions history-actions">
         <select id="statusFilter" style="width:auto">
           <option value="ALL">SEMUA</option>
