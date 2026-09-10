@@ -13,6 +13,7 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
@@ -214,8 +215,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 
 <div class="summary">
   <div class="summary-card"><div class="summary-title" id="totalFuelLabel">TOTAL QTY ISSUED MTD</div><div class="summary-value" id="totalFuel">0 L</div></div>
-  <div class="summary-card"><div class="summary-title" id="totalFT01Label">FT01 MTD</div><div class="summary-value" id="totalFT01">0 L</div></div>
-  <div class="summary-card"><div class="summary-title" id="totalFT02Label">FT02 MTD</div><div class="summary-value" id="totalFT02">0 L</div></div>
+  <div id="warehouseSummaryCards" style="display:contents"></div>
   <div class="summary-card"><div class="summary-title" id="totalShift1Label">SHIFT 1 MTD</div><div class="summary-value" id="totalShift1">0 L</div></div>
   <div class="summary-card"><div class="summary-title" id="totalShift2Label">SHIFT 2 MTD</div><div class="summary-value" id="totalShift2">0 L</div></div>
 </div>
@@ -237,8 +237,8 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
   <div class="filter-group hidden" id="startDateBox"><label>Dari Tanggal</label><input type="date" id="filterTanggalAwal"></div>
   <div class="filter-group hidden" id="endDateBox"><label>Sampai Tanggal</label><input type="date" id="filterTanggalAkhir"></div>
   <div class="filter-group"><label>Shift</label><select id="filterShift"><option value="">Semua Shift</option><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
-  <div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option><option value="FT01">FT01</option><option value="FT02">FT02</option></select></div>
-  <div class="filter-group"><label>Fuel Truck <span id="ftLockHint" style="font-weight:600;color:#64748b"></span></label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>
+  <div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option></select></div>
+  <div class="filter-group"><label>Fuel Truck <span id="ftLockHint" style="font-weight:600;color:#64748b"></span></label><select id="filterFuelTruck"><option value="">Semua FT</option></select></div>
   <div class="filter-group"><label>Code Unit</label><input type="text" id="filterUnit" placeholder="Contoh: DT7441"></div>
   <div class="filter-group"><label>Fuelman</label><input type="text" id="filterFuelman" placeholder="Contoh: Tegar"></div>
   <div class="filter-group"><label>Filter HM</label><select id="filterHmAudit"><option value="">Semua HM</option><option value="anomaly">Perlu Dirapikan</option><option value="missing">HM Kosong</option><option value="down">HM Turun</option><option value="jump">HM Loncat</option><option value="excluded">Histori Dikecualikan</option></select></div>
@@ -314,6 +314,24 @@ let STATUS_MAP=new Map();
 let AUDIT_MAP=new Map();
 let HM_ANOMALY_MAP=new Map();
 let HM_CLEANUP_ROW=null;
+let LOG_STORAGE_ROWS=[];
+let LOG_FT_MAP={};
+let VALID_WHS=new Set();
+let WH_TO_FTS=new Map();
+
+async function loadStorageMaster(){
+  if(!window.KPPStorage)throw new Error("Master MT/FT belum termuat.");
+  LOG_STORAGE_ROWS=await window.KPPStorage.load(supabaseClient,{activeOnly:false});
+  LOG_FT_MAP=window.KPPStorage.ftMap(LOG_STORAGE_ROWS);
+  VALID_WHS=new Set(Object.values(LOG_FT_MAP).filter(Boolean));
+  WH_TO_FTS=new Map();
+  Object.entries(LOG_FT_MAP).forEach(([ft,wh])=>{
+    if(!wh)return;
+    if(!WH_TO_FTS.has(wh))WH_TO_FTS.set(wh,[]);
+    WH_TO_FTS.get(wh).push(ft);
+  });
+  WH_TO_FTS.forEach(list=>list.sort((a,b)=>a.localeCompare(b)));
+}
 
 function formatAngka(v){ return Number(v||0).toLocaleString("id-ID"); }
 function formatTanggal(v){
@@ -322,21 +340,20 @@ function formatTanggal(v){
   return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
 }
 function getWH(item){
-  if(item.wh) return String(item.wh).trim().toUpperCase();
+  if(item.wh){
+    const direct=window.KPPStorage?.normalizeWarehouse(item.wh)||String(item.wh).trim().toUpperCase();
+    if(direct)return direct;
+  }
   const ft=String(item.fuel_truck||"").trim().toUpperCase();
-  if(ft==="FT0073") return "FT02";
-  if(ft==="FT0075") return "FT01";
-  return "-";
+  return LOG_FT_MAP[ft]||"-";
 }
 
 function getFuelTruck(item){
   const ft=String(item.fuel_truck||"").trim().toUpperCase();
-  if(ft) return ft;
-
+  if(ft)return ft;
   const wh=getWH(item);
-  if(wh==="FT02") return "FT0073";
-  if(wh==="FT01") return "FT0075";
-  return "-";
+  const candidates=WH_TO_FTS.get(wh)||[];
+  return candidates.length===1?candidates[0]:"-";
 }
 
 function getFuelman(item){
@@ -579,7 +596,7 @@ function getDataErrorStatus(item){
   if(!item.tanggal) problems.push("TANGGAL KOSONG");
   if(!unit) problems.push("CODE UNIT KOSONG");
   else if(!MASTER_UNIT[unit]) problems.push("UNIT TIDAK ADA DI MASTER");
-  if(wh!=="FT01" && wh!=="FT02") problems.push("WH TIDAK DIKENAL");
+  if(!VALID_WHS.has(wh)) problems.push("WH TIDAK DIKENAL");
   if(shift!==1 && shift!==2) problems.push("SHIFT TIDAK VALID");
   if(!Number.isFinite(fuel) || fuel<=0) problems.push("QTY TIDAK VALID");
 
@@ -758,34 +775,44 @@ function getOperationalMtdBounds(){
 }
 
 function updateSummary(data,{isMtd=false,mtdBounds=null}={}){
-  let total=0,ft01=0,ft02=0,s1=0,s2=0;
+  let total=0,s1=0,s2=0;
+  const warehouseTotals=new Map();
   data.forEach(item=>{
     const q=Number(item.fuel)||0;
     total+=q;
     const wh=getWH(item);
-    if(wh==="FT01") ft01+=q;
-    if(wh==="FT02") ft02+=q;
-    if(Number(item.shift)===1) s1+=q;
-    if(Number(item.shift)===2) s2+=q;
+    if(wh&&wh!=="-")warehouseTotals.set(wh,(warehouseTotals.get(wh)||0)+q);
+    if(Number(item.shift)===1)s1+=q;
+    if(Number(item.shift)===2)s2+=q;
   });
 
   const suffix=isMtd?" MTD":"";
   document.getElementById("totalFuelLabel").textContent="TOTAL QTY ISSUED"+suffix;
-  document.getElementById("totalFT01Label").textContent="FT01"+suffix;
-  document.getElementById("totalFT02Label").textContent="FT02"+suffix;
   document.getElementById("totalShift1Label").textContent="SHIFT 1"+suffix;
   document.getElementById("totalShift2Label").textContent="SHIFT 2"+suffix;
-
   document.getElementById("totalFuel").textContent=formatAngka(total)+" L";
-  document.getElementById("totalFT01").textContent=formatAngka(ft01)+" L";
-  document.getElementById("totalFT02").textContent=formatAngka(ft02)+" L";
   document.getElementById("totalShift1").textContent=formatAngka(s1)+" L";
   document.getElementById("totalShift2").textContent=formatAngka(s2)+" L";
+
+  const host=document.getElementById("warehouseSummaryCards");
+  host.innerHTML="";
+  const whOrder=Array.from(new Set([...VALID_WHS,...warehouseTotals.keys()])).sort((a,b)=>a.localeCompare(b));
+  whOrder.forEach(wh=>{
+    const card=document.createElement("div");
+    card.className="summary-card";
+    const label=document.createElement("div");
+    label.className="summary-title";
+    label.textContent=wh+suffix;
+    const value=document.createElement("div");
+    value.className="summary-value";
+    value.textContent=formatAngka(warehouseTotals.get(wh)||0)+" L";
+    card.append(label,value);
+    host.appendChild(card);
+  });
 
   const title=isMtd && mtdBounds
     ? `Ringkasan MTD operasional ${formatTanggal(mtdBounds.start)} - ${formatTanggal(mtdBounds.end)}`
     : "Ringkasan mengikuti periode/filter yang dipilih";
-
   document.querySelectorAll(".summary-card").forEach(card=>card.title=title);
 }
 
@@ -914,7 +941,7 @@ async function loadData(){
   errorBox.style.display="none";
 
   try{
-    await loadUnitMasterOnline();
+    await Promise.all([loadStorageMaster(),loadUnitMasterOnline()]);
 
     const [fuelRows,auditRows]=await Promise.all([
       fetchAllFuelHistory(),
@@ -925,6 +952,7 @@ async function loadData(){
     ]);
 
     ALL_DATA=fuelRows;
+    populateStorageFilters(ALL_DATA);
     AUDIT_MAP=buildAuditMap(auditRows);
     STATUS_MAP=buildStatusMap(ALL_DATA);
     HM_ANOMALY_MAP=buildHmAnomalyMap(ALL_DATA);
@@ -1339,36 +1367,67 @@ async function downloadExcel(){
   }
 }
 
-function syncFuelTruckFromWH(){
+function allKnownFuelTrucks(){
+  const codes=new Set(
+    LOG_STORAGE_ROWS
+      .filter(row=>String(row.storage_type||"").toUpperCase()==="FT")
+      .map(row=>String(row.code||"").trim().toUpperCase())
+      .filter(Boolean)
+  );
+  ALL_DATA.forEach(item=>{
+    const code=String(item.fuel_truck||"").trim().toUpperCase();
+    if(code)codes.add(code);
+  });
+  return Array.from(codes).sort((a,b)=>a.localeCompare(b));
+}
+
+function setFilterOptions(select,values,allLabel,preferred=""){
+  select.innerHTML="";
+  const all=document.createElement("option");
+  all.value="";all.textContent=allLabel;select.appendChild(all);
+  values.forEach(value=>{
+    const option=document.createElement("option");
+    option.value=value;option.textContent=value;select.appendChild(option);
+  });
+  if(preferred&&values.includes(preferred))select.value=preferred;
+}
+
+function fuelTrucksForWh(wh){
+  return allKnownFuelTrucks().filter(code=>{
+    if(LOG_FT_MAP[code]===wh)return true;
+    return ALL_DATA.some(item=>String(item.fuel_truck||"").trim().toUpperCase()===code&&getWH(item)===wh);
+  });
+}
+
+function syncFuelTruckFromWH(preferred=""){
   const whSelect=document.getElementById("filterWH");
   const ftSelect=document.getElementById("filterFuelTruck");
   const hint=document.getElementById("ftLockHint");
   const wh=whSelect.value;
+  const codes=wh?fuelTrucksForWh(wh):allKnownFuelTrucks();
+  setFilterOptions(ftSelect,codes,wh?"Semua FT di "+wh:"Semua FT",preferred);
 
-  if(wh==="FT01"){
-    ftSelect.value="FT0075";
-    ftSelect.disabled=true;
-    ftSelect.classList.add("ft-locked");
-    ftSelect.title="FT01 otomatis memakai FT0075";
-    if(hint) hint.textContent="• otomatis FT0075";
-    return;
-  }
+  const lock=Boolean(wh&&codes.length===1);
+  if(lock)ftSelect.value=codes[0];
+  ftSelect.disabled=lock;
+  ftSelect.classList.toggle("ft-locked",lock);
+  ftSelect.title=lock?`${wh} memakai ${codes[0]}`:"";
+  if(hint)hint.textContent=lock?`• ${codes[0]}`:"";
+}
 
-  if(wh==="FT02"){
-    ftSelect.value="FT0073";
-    ftSelect.disabled=true;
-    ftSelect.classList.add("ft-locked");
-    ftSelect.title="FT02 otomatis memakai FT0073";
-    if(hint) hint.textContent="• otomatis FT0073";
-    return;
-  }
-
-  // Saat kembali ke Semua WH, Fuel Truck dibuka lagi dan filter FT di-reset.
-  ftSelect.disabled=false;
-  ftSelect.classList.remove("ft-locked");
-  ftSelect.value="";
-  ftSelect.title="";
-  if(hint) hint.textContent="";
+function populateStorageFilters(data){
+  const whSelect=document.getElementById("filterWH");
+  const ftSelect=document.getElementById("filterFuelTruck");
+  const oldWh=whSelect.value;
+  const oldFt=ftSelect.value;
+  const whs=new Set(VALID_WHS);
+  (data||[]).forEach(item=>{
+    const wh=getWH(item);
+    if(wh&&wh!=="-")whs.add(wh);
+  });
+  const values=Array.from(whs).sort((a,b)=>a.localeCompare(b));
+  setFilterOptions(whSelect,values,"Semua WH",oldWh);
+  syncFuelTruckFromWH(oldFt);
 }
 
 ["filterTanggal","filterTanggalAwal","filterTanggalAkhir","filterShift"]
