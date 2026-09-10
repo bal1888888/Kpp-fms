@@ -17,6 +17,7 @@
   function calculate(input={}){
     const meterStart=optionalNumber(input.meterStart,"Flowmeter awal");
     const meterEnd=optionalNumber(input.meterEnd,"Flowmeter akhir");
+    const sourceSoundingQty=optionalNumber(input.sourceSoundingQty,"Qty sounding sumber");
     const destinationQty=optionalNumber(input.destinationQty,"Qty masuk tujuan");
 
     let sourceQty=null;
@@ -32,7 +33,20 @@
         ? roundLiter(sourceQty-destinationQty)
         : null;
 
-    return Object.freeze({meterStart,meterEnd,sourceQty,destinationQty,loss});
+    const sourceSoundingDifference=
+      sourceQty!==null && sourceSoundingQty!==null
+        ? roundLiter(sourceQty-sourceSoundingQty)
+        : null;
+
+    return Object.freeze({
+      meterStart,
+      meterEnd,
+      sourceQty,
+      sourceSoundingQty,
+      sourceSoundingDifference,
+      destinationQty,
+      loss
+    });
   }
 
   root.KPPTransferAudit=Object.freeze({calculate});
