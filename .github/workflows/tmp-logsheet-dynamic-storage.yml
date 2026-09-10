@@ -1,0 +1,259 @@
+name: Temp logsheet dynamic storage patch
+
+on:
+  push:
+    branches:
+      - fix/logsheet-dynamic-storage
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/logsheet-dynamic-storage
+          fetch-depth: 0
+
+      - name: Patch logsheet
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path=Path('logsheet.html')
+          text=path.read_text(encoding='utf-8')
+
+          def once(old,new,label):
+              global text
+              count=text.count(old)
+              if count!=1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              text=text.replace(old,new,1)
+
+          once('<script src="auth.js"></script>\n','<script src="auth.js"></script>\n<script src="storage-master.js"></script>\n','storage script')
+
+          once('''<div class="summary">
+            <div class="summary-card"><div class="summary-title" id="totalFuelLabel">TOTAL QTY ISSUED MTD</div><div class="summary-value" id="totalFuel">0 L</div></div>
+            <div class="summary-card"><div class="summary-title" id="totalFT01Label">FT01 MTD</div><div class="summary-value" id="totalFT01">0 L</div></div>
+            <div class="summary-card"><div class="summary-title" id="totalFT02Label">FT02 MTD</div><div class="summary-value" id="totalFT02">0 L</div></div>
+            <div class="summary-card"><div class="summary-title" id="totalShift1Label">SHIFT 1 MTD</div><div class="summary-value" id="totalShift1">0 L</div></div>
+            <div class="summary-card"><div class="summary-title" id="totalShift2Label">SHIFT 2 MTD</div><div class="summary-value" id="totalShift2">0 L</div></div>
+          </div>''','''<div class="summary">
+            <div class="summary-card"><div class="summary-title" id="totalFuelLabel">TOTAL QTY ISSUED MTD</div><div class="summary-value" id="totalFuel">0 L</div></div>
+            <div id="warehouseSummaryCards" style="display:contents"></div>
+            <div class="summary-card"><div class="summary-title" id="totalShift1Label">SHIFT 1 MTD</div><div class="summary-value" id="totalShift1">0 L</div></div>
+            <div class="summary-card"><div class="summary-title" id="totalShift2Label">SHIFT 2 MTD</div><div class="summary-value" id="totalShift2">0 L</div></div>
+          </div>''','summary cards')
+
+          once('<div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option><option value="FT01">FT01</option><option value="FT02">FT02</option></select></div>','<div class="filter-group"><label>WH</label><select id="filterWH"><option value="">Semua WH</option></select></div>','WH filter')
+          once('<div class="filter-group"><label>Fuel Truck <span id="ftLockHint" style="font-weight:600;color:#64748b"></span></label><select id="filterFuelTruck"><option value="">Semua FT</option><option value="FT0073">FT0073</option><option value="FT0075">FT0075</option></select></div>','<div class="filter-group"><label>Fuel Truck <span id="ftLockHint" style="font-weight:600;color:#64748b"></span></label><select id="filterFuelTruck"><option value="">Semua FT</option></select></div>','FT filter')
+
+          once('''let HM_ANOMALY_MAP=new Map();
+          let HM_CLEANUP_ROW=null;
+
+          function formatAngka''','''let HM_ANOMALY_MAP=new Map();
+          let HM_CLEANUP_ROW=null;
+          let LOG_STORAGE_ROWS=[];
+          let LOG_FT_MAP={};
+          let VALID_WHS=new Set();
+          let WH_TO_FTS=new Map();
+
+          async function loadStorageMaster(){
+            if(!window.KPPStorage)throw new Error("Master MT/FT belum termuat.");
+            LOG_STORAGE_ROWS=await window.KPPStorage.load(supabaseClient,{activeOnly:false});
+            LOG_FT_MAP=window.KPPStorage.ftMap(LOG_STORAGE_ROWS);
+            VALID_WHS=new Set(Object.values(LOG_FT_MAP).filter(Boolean));
+            WH_TO_FTS=new Map();
+            Object.entries(LOG_FT_MAP).forEach(([ft,wh])=>{
+              if(!wh)return;
+              if(!WH_TO_FTS.has(wh))WH_TO_FTS.set(wh,[]);
+              WH_TO_FTS.get(wh).push(ft);
+            });
+            WH_TO_FTS.forEach(list=>list.sort((a,b)=>a.localeCompare(b)));
+          }
+
+          function formatAngka''','storage vars')
+
+          old_get='''function getWH(item){
+            if(item.wh) return String(item.wh).trim().toUpperCase();
+            const ft=String(item.fuel_truck||"").trim().toUpperCase();
+            if(ft==="FT0073") return "FT02";
+            if(ft==="FT0075") return "FT01";
+            return "-";
+          }
+
+          function getFuelTruck(item){
+            const ft=String(item.fuel_truck||"").trim().toUpperCase();
+            if(ft) return ft;
+
+            const wh=getWH(item);
+            if(wh==="FT02") return "FT0073";
+            if(wh==="FT01") return "FT0075";
+            return "-";
+          }'''
+          new_get='''function getWH(item){
+            if(item.wh){
+              const direct=window.KPPStorage?.normalizeWarehouse(item.wh)||String(item.wh).trim().toUpperCase();
+              if(direct)return direct;
+            }
+            const ft=String(item.fuel_truck||"").trim().toUpperCase();
+            return LOG_FT_MAP[ft]||"-";
+          }
+
+          function getFuelTruck(item){
+            const ft=String(item.fuel_truck||"").trim().toUpperCase();
+            if(ft)return ft;
+            const wh=getWH(item);
+            const candidates=WH_TO_FTS.get(wh)||[];
+            return candidates.length===1?candidates[0]:"-";
+          }'''
+          once(old_get,new_get,'get WH/FT')
+
+          once('if(wh!=="FT01" && wh!=="FT02") problems.push("WH TIDAK DIKENAL");','if(!VALID_WHS.has(wh)) problems.push("WH TIDAK DIKENAL");','WH validation')
+
+          pattern=r'function updateSummary\(data,\{isMtd=false,mtdBounds=null\}=\{\}\)\{[\s\S]*?\n\}\n\nfunction td\('
+          replacement='''function updateSummary(data,{isMtd=false,mtdBounds=null}={}){
+            let total=0,s1=0,s2=0;
+            const warehouseTotals=new Map();
+            data.forEach(item=>{
+              const q=Number(item.fuel)||0;
+              total+=q;
+              const wh=getWH(item);
+              if(wh&&wh!=="-")warehouseTotals.set(wh,(warehouseTotals.get(wh)||0)+q);
+              if(Number(item.shift)===1)s1+=q;
+              if(Number(item.shift)===2)s2+=q;
+            });
+
+            const suffix=isMtd?" MTD":"";
+            document.getElementById("totalFuelLabel").textContent="TOTAL QTY ISSUED"+suffix;
+            document.getElementById("totalShift1Label").textContent="SHIFT 1"+suffix;
+            document.getElementById("totalShift2Label").textContent="SHIFT 2"+suffix;
+            document.getElementById("totalFuel").textContent=formatAngka(total)+" L";
+            document.getElementById("totalShift1").textContent=formatAngka(s1)+" L";
+            document.getElementById("totalShift2").textContent=formatAngka(s2)+" L";
+
+            const host=document.getElementById("warehouseSummaryCards");
+            host.innerHTML="";
+            const whOrder=Array.from(new Set([...VALID_WHS,...warehouseTotals.keys()])).sort((a,b)=>a.localeCompare(b));
+            whOrder.forEach(wh=>{
+              const card=document.createElement("div");
+              card.className="summary-card";
+              const label=document.createElement("div");
+              label.className="summary-title";
+              label.textContent=wh+suffix;
+              const value=document.createElement("div");
+              value.className="summary-value";
+              value.textContent=formatAngka(warehouseTotals.get(wh)||0)+" L";
+              card.append(label,value);
+              host.appendChild(card);
+            });
+
+            const title=isMtd && mtdBounds
+              ? `Ringkasan MTD operasional ${formatTanggal(mtdBounds.start)} - ${formatTanggal(mtdBounds.end)}`
+              : "Ringkasan mengikuti periode/filter yang dipilih";
+            document.querySelectorAll(".summary-card").forEach(card=>card.title=title);
+          }
+
+          function td('''
+          text2,n=re.subn(pattern,replacement,text,count=1)
+          if n!=1: raise SystemExit(f'updateSummary: expected 1 match, found {n}')
+          text=text2
+
+          once('''  try{
+              await loadUnitMasterOnline();
+
+              const [fuelRows,auditRows]=await Promise.all([''','''  try{
+              await Promise.all([loadStorageMaster(),loadUnitMasterOnline()]);
+
+              const [fuelRows,auditRows]=await Promise.all([''','loadData masters')
+          once('''    ALL_DATA=fuelRows;
+              AUDIT_MAP=buildAuditMap(auditRows);''','''    ALL_DATA=fuelRows;
+              populateStorageFilters(ALL_DATA);
+              AUDIT_MAP=buildAuditMap(auditRows);''','populate filters')
+
+          sync_pattern=r'function syncFuelTruckFromWH\(\)\{[\s\S]*?\n\}\n\n\["filterTanggal"'
+          sync_replacement='''function allKnownFuelTrucks(){
+            const codes=new Set(
+              LOG_STORAGE_ROWS
+                .filter(row=>String(row.storage_type||"").toUpperCase()==="FT")
+                .map(row=>String(row.code||"").trim().toUpperCase())
+                .filter(Boolean)
+            );
+            ALL_DATA.forEach(item=>{
+              const code=String(item.fuel_truck||"").trim().toUpperCase();
+              if(code)codes.add(code);
+            });
+            return Array.from(codes).sort((a,b)=>a.localeCompare(b));
+          }
+
+          function setFilterOptions(select,values,allLabel,preferred=""){
+            select.innerHTML="";
+            const all=document.createElement("option");
+            all.value="";all.textContent=allLabel;select.appendChild(all);
+            values.forEach(value=>{
+              const option=document.createElement("option");
+              option.value=value;option.textContent=value;select.appendChild(option);
+            });
+            if(preferred&&values.includes(preferred))select.value=preferred;
+          }
+
+          function fuelTrucksForWh(wh){
+            return allKnownFuelTrucks().filter(code=>{
+              if(LOG_FT_MAP[code]===wh)return true;
+              return ALL_DATA.some(item=>String(item.fuel_truck||"").trim().toUpperCase()===code&&getWH(item)===wh);
+            });
+          }
+
+          function syncFuelTruckFromWH(preferred=""){
+            const whSelect=document.getElementById("filterWH");
+            const ftSelect=document.getElementById("filterFuelTruck");
+            const hint=document.getElementById("ftLockHint");
+            const wh=whSelect.value;
+            const codes=wh?fuelTrucksForWh(wh):allKnownFuelTrucks();
+            setFilterOptions(ftSelect,codes,wh?"Semua FT di "+wh:"Semua FT",preferred);
+
+            const lock=Boolean(wh&&codes.length===1);
+            if(lock)ftSelect.value=codes[0];
+            ftSelect.disabled=lock;
+            ftSelect.classList.toggle("ft-locked",lock);
+            ftSelect.title=lock?`${wh} memakai ${codes[0]}`:"";
+            if(hint)hint.textContent=lock?`• ${codes[0]}`:"";
+          }
+
+          function populateStorageFilters(data){
+            const whSelect=document.getElementById("filterWH");
+            const ftSelect=document.getElementById("filterFuelTruck");
+            const oldWh=whSelect.value;
+            const oldFt=ftSelect.value;
+            const whs=new Set(VALID_WHS);
+            (data||[]).forEach(item=>{
+              const wh=getWH(item);
+              if(wh&&wh!=="-")whs.add(wh);
+            });
+            const values=Array.from(whs).sort((a,b)=>a.localeCompare(b));
+            setFilterOptions(whSelect,values,"Semua WH",oldWh);
+            syncFuelTruckFromWH(oldFt);
+          }
+
+          ["filterTanggal"'''
+          text2,n=re.subn(sync_pattern,sync_replacement,text,count=1)
+          if n!=1: raise SystemExit(f'sync function: expected 1 match, found {n}')
+          text=text2
+
+          path.write_text(text,encoding='utf-8')
+          Path('.github/workflows/tmp-logsheet-dynamic-storage.yml').unlink()
+          PY
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add logsheet.html .github/workflows/tmp-logsheet-dynamic-storage.yml
+          git diff --cached --check
+          git commit -m "fix: make logsheet storage filters dynamic"
+          git push origin HEAD:fix/logsheet-dynamic-storage
