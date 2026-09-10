@@ -247,9 +247,10 @@ th{background:#f8fafc;color:#475569}
 }
 
 </style>
+<link rel="stylesheet" href="stock-daily-ui.css">
 </head>
 
-<body>
+<body class="daily-workspace">
 <div class="header">
   <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
   <p>Daily Fuel Report</p>
@@ -260,7 +261,16 @@ th{background:#f8fafc;color:#475569}
 
 <div class="container">
 
-  <div class="panel">
+  <div class="workspace-intro daily-intro">
+    <div>
+      <span class="workspace-kicker">DAILY CONTROL</span>
+      <h1>Daily Fuel Report</h1>
+      <p>Posisi stock dan pemakaian sampai H-1 untuk keputusan operasional harian.</p>
+    </div>
+    <a class="workspace-link" href="dashboard.html">Kembali ke Dashboard</a>
+  </div>
+
+  <div class="panel report-control-panel">
     <div class="notice">
       Stock tetap dihitung berdasarkan <b>Tanggal Report + Shift Stock</b>. Usage MTD memakai periode operasional <b>tanggal 26 sampai 25</b> dan tetap dihitung sampai <b>H-1</b>. ITO / Days of Cover = <b>Total Stock / Total Pemakaian Kemarin</b>. Kapasitas: MT = 40.000 L/unit, FT = 20.000 L/unit.
     </div>
@@ -282,7 +292,8 @@ th{background:#f8fafc;color:#475569}
     <div id="status" class="status"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel report-stock-panel">
+    <span class="section-kicker">POSISI TANGKI</span>
     <h2 class="section-title">Stock Fuel</h2>
     <div id="stockAlertBanner" class="stock-alert-banner"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
@@ -293,8 +304,9 @@ th{background:#f8fafc;color:#475569}
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="section-title">Ringkasan Usage</h2>
+  <div class="panel report-metric-panel">
+    <span class="section-kicker">INDIKATOR UTAMA</span>
+    <h2 class="section-title">Ringkasan Pemakaian</h2>
     <div class="metrics">
       <div class="metric blue" id="usageYesterdayCard">
         <div class="label">USAGE YESTERDAY</div>
@@ -336,8 +348,9 @@ th{background:#f8fafc;color:#475569}
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="section-title">Usage Yesterday per FT / Shift</h2>
+  <div class="panel report-shift-panel">
+    <span class="section-kicker">DISTRIBUSI H-1</span>
+    <h2 class="section-title">Pemakaian per Fuel Truck dan Shift</h2>
     <div class="table-wrap">
       <table>
         <thead>
@@ -354,11 +367,12 @@ th{background:#f8fafc;color:#475569}
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="section-title">Format Report Siap Copy</h2>
+  <div class="panel report-copy-panel">
+    <span class="section-kicker">LAPORAN LAPANGAN</span>
+    <h2 class="section-title">Format Siap Salin</h2>
     <div id="reportText" class="report-box">Memuat...</div>
     <div style="margin-top:12px">
-      <button class="btn-gray" id="copyBtn">COPY REPORT</button>
+      <button class="btn-gray" id="copyBtn">SALIN REPORT</button>
     </div>
   </div>
 
