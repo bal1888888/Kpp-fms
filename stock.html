@@ -475,9 +475,10 @@ th{background:#f8fafc;color:#475569}
 }
 
 </style>
+<link rel="stylesheet" href="stock-daily-ui.css">
 </head>
 
-<body>
+<body class="stock-workspace">
 
 <div class="header">
     <h2>KPP FUEL MANAGEMENT SYSTEM</h2>
@@ -580,6 +581,15 @@ th{background:#f8fafc;color:#475569}
 
 <div class="container">
 
+<div class="workspace-intro stock-intro">
+    <div>
+        <span class="workspace-kicker">STOCK CONTROL</span>
+        <h1>Kontrol Stock Fuel</h1>
+        <p>Pilih periode, periksa posisi tangki, lalu catat pergerakan sesuai urutan operasional.</p>
+    </div>
+    <div class="workspace-status"><span></span> Data Supabase aktif</div>
+</div>
+
 <div id="fuelmanSessionInfo" class="session-info hidden">
     <strong> SHIFT FUELMAN AKTIF</strong><br>
     Fuelman: <span id="sessionFuelman">-</span><br>
@@ -588,7 +598,7 @@ th{background:#f8fafc;color:#475569}
     <span>Untuk akun Fuelman, tanggal/shift mengikuti session dan Stock Closing hanya untuk Fuel Truck yang sedang dipakai.</span>
 </div>
 
-<div class="panel">
+<div class="panel period-panel">
     <h3>Periode Stock</h3>
     <div class="grid">
         <div>
@@ -608,7 +618,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
-<div class="panel">
+<div class="panel stock-position-panel">
     <h3>Stock Saat Ini</h3>
     <div id="stockLevelAlert" class="stock-level-alert"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
@@ -620,7 +630,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
-<div class="panel">
+<div class="panel converter-panel">
     <h3> Konverter Tera MT & FT</h3>
     <div class="note" style="margin-bottom:12px">
         Masukkan tinggi sondingan dalam CM. Sistem memakai tabel <b>TERA MT01</b> untuk MT01-MT04
@@ -651,7 +661,7 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
-<div class="panel">
+<div class="panel workflow-panel opening-panel" data-step="01">
     <h3>1. Stock Opening Awal Shift</h3>
     <div class="grid">
         <div>
@@ -685,7 +695,7 @@ th{background:#f8fafc;color:#475569}
     </details>
 </div>
 
-<div class="panel">
+<div class="panel workflow-panel receipt-panel" data-step="02">
     <h3>2. Penerimaan Solar</h3>
     <div class="note" style="margin-bottom:12px">
         Audit membandingkan <b>qty transporter</b> dari flowmeter dengan <b>qty yang benar-benar masuk</b>
@@ -768,7 +778,7 @@ th{background:#f8fafc;color:#475569}
     </details>
 </div>
 
-<div class="panel">
+<div class="panel workflow-panel transfer-panel" data-step="03">
     <h3>3. Transfer Antar Storage</h3>
 
     <div class="note" style="margin-bottom:12px">
@@ -869,7 +879,7 @@ th{background:#f8fafc;color:#475569}
     </details>
 </div>
 
-<div class="panel">
+<div class="panel workflow-panel closing-panel" data-step="04">
     <h3>4. Stock Closing / Stock Taking</h3>
 
     <div class="note" style="margin-bottom:12px">
@@ -942,7 +952,7 @@ th{background:#f8fafc;color:#475569}
     </details>
 </div>
 
-<div class="panel">
+<div class="panel movement-panel">
     <div class="panel-title-row">
         <h3>Pergerakan Fuel Shift Ini</h3>
         <button class="gray panel-toggle-btn" id="movementPanelToggle" type="button" onclick="toggleStockPanel('movement')" aria-expanded="true"> SEMBUNYIKAN</button>
