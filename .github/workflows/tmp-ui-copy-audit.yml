@@ -1,0 +1,37 @@
+name: Temp UI copy audit
+
+on:
+  push:
+    branches:
+      - style/clean-ui-copy-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Find verbose operational copy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          patterns = re.compile(r'(rumus|formula|menggunakan tabel|mengikuti profil|jika profil|acuan pengecekan|acuan stock|secara otomatis|dihitung dari|perhitungan|konversi sengaja|stock sistem =|estimasi sounding)', re.I)
+          for p in sorted(Path('.').glob('*.html')):
+              lines=p.read_text(errors='ignore').splitlines()
+              hits=[]
+              for i,line in enumerate(lines,1):
+                  text=re.sub(r'<[^>]+>',' ',line)
+                  text=re.sub(r'\s+',' ',text).strip()
+                  if text and patterns.search(text):
+                      hits.append((i,text))
+              if hits:
+                  print(f'### {p}')
+                  for i,text in hits:
+                      print(f'{i}: {text}')
+          PY
