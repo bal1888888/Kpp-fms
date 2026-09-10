@@ -1011,6 +1011,112 @@ let CURRENT_RECEIPT_HISTORY=[];
 let COPY_TOAST_TIMER=null;
 let EXCELJS_LOAD_PROMISE=null;
 const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:"",closing:""};
+
+function stockMovementRequestKey(){
+    const uid=window.KPP_SESSION?.user?.id||"unknown";
+    return "kpp-stock-movement-safe-v1:"+uid;
+}
+
+function stockMovementRequestId(){
+    if(window.crypto?.randomUUID)return window.crypto.randomUUID();
+    const bytes=new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    bytes[6]=(bytes[6]&15)|64;
+    bytes[8]=(bytes[8]&63)|128;
+    return [...bytes].map((value,index)=>{
+        const hex=value.toString(16).padStart(2,"0");
+        return [4,6,8,10].includes(index)?"-"+hex:hex;
+    }).join("");
+}
+
+function readPendingStockMovement(){
+    const raw=localStorage.getItem(stockMovementRequestKey());
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed || parsed.version!==1 || !parsed.id || !parsed.payload || !parsed.recordedAt){
+        throw new Error("Status transaksi lokal tidak dikenali. Jangan input ulang sebelum diperiksa Admin/GL.");
+    }
+    return parsed;
+}
+
+function writePendingStockMovement(request){
+    localStorage.setItem(stockMovementRequestKey(),JSON.stringify({...request,version:1}));
+}
+
+function clearPendingStockMovement(requestId){
+    const current=readPendingStockMovement();
+    if(current?.id===requestId)localStorage.removeItem(stockMovementRequestKey());
+}
+
+function sameStockMovementPayload(left,right){
+    return JSON.stringify(left)===JSON.stringify(right);
+}
+
+async function dispatchStockMovementRequest(request){
+    const {data,error}=await db.rpc("save_stock_movement_safe",{
+        p_request_id:request.id,
+        p_payload:request.payload,
+        p_recorded_at:request.recordedAt
+    });
+
+    if(error || !data || typeof data.ok!=="boolean"){
+        return {
+            data:null,
+            error:{
+                message:"Hasil transaksi belum terkonfirmasi. ID transaksi tetap tersimpan di perangkat. Tekan SIMPAN lagi saat koneksi stabil untuk mengecek/kirim ulang transaksi yang sama. "+(error?.message||"")
+            },
+            ambiguous:true
+        };
+    }
+
+    if(!data.ok){
+        clearPendingStockMovement(request.id);
+        return {
+            data:null,
+            error:{message:data.message||"Transaksi ditolak server."},
+            rejected:true
+        };
+    }
+
+    clearPendingStockMovement(request.id);
+    return {
+        data:data.data||{},
+        error:null,
+        replayed:!!data.replayed
+    };
+}
+
+async function sendStockMovementSafe(payload){
+    const run=async()=>{
+        try{
+            let pending=readPendingStockMovement();
+            if(pending){
+                const same=sameStockMovementPayload(pending.payload,payload);
+                const previous=await dispatchStockMovementRequest(pending);
+                if(previous.error)return previous;
+                return same?previous:{...previous,previousOnly:true};
+            }
+
+            pending={
+                id:stockMovementRequestId(),
+                payload:JSON.parse(JSON.stringify(payload)),
+                recordedAt:new Date().toISOString()
+            };
+            writePendingStockMovement(pending);
+            return await dispatchStockMovementRequest(pending);
+        }catch(error){
+            return {
+                data:null,
+                error:{message:"Pengaman transaksi lokal gagal: "+error.message}
+            };
+        }
+    };
+
+    if(navigator.locks){
+        return navigator.locks.request(stockMovementRequestKey()+":lock",run);
+    }
+    return run();
+}
 const STOCK_PANEL_CONFIG={
     movement:{
         contentId:"movementPanelContent",
@@ -3415,7 +3521,7 @@ async function saveReceipt(){
     // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
     if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
 
-    const {error}=await db.from("stock_movements").insert({
+    const {error,previousOnly}=await sendStockMovementSafe({
         tanggal,
         jam:arrivalTime,
         arrival_at:new Date(`${tanggal}T${arrivalTime}+07:00`).toISOString(),
@@ -3440,6 +3546,14 @@ async function saveReceipt(){
         measurement_loss_qty:measurement.loss,
         tera_version:TERA.version
     });
+
+    if(previousOnly && !error){
+        document.getElementById("receiptStatus").textContent=
+            "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian penerimaan saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
+        await loadStock();
+        await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian penerimaan saat ini belum dikirim.");
+        return;
+    }
 
     document.getElementById("receiptStatus").textContent=
         error?"[GAGAL] "+error.message:
@@ -3584,7 +3698,7 @@ async function saveTransfer(){
 
     noteParts.push(`Loss sounding sumber vs tujuan ${lossQty} L`);
 
-    const {error}=await db.from("stock_movements").insert({
+    const {error,previousOnly}=await sendStockMovementSafe({
         tanggal,
         jam:transferTime,
         shift,
@@ -3610,6 +3724,14 @@ async function saveTransfer(){
         measurement_loss_qty:lossQty,
         tera_version:TERA.version
     });
+
+    if(previousOnly && !error){
+        document.getElementById("transferStatus").textContent=
+            "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian transfer saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
+        await loadStock();
+        await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian transfer saat ini belum dikirim.");
+        return;
+    }
 
     document.getElementById("transferStatus").textContent=
         error
