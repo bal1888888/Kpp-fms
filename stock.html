@@ -11,6 +11,7 @@ window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan", "fuelman"];
 window.KPP_ACTIVE_PAGE="stock";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 
@@ -639,14 +640,7 @@ th{background:#f8fafc;color:#475569}
     <div class="grid">
         <div>
             <label>Storage</label>
-            <select id="converterStorage" onchange="updateQuickConverter()">
-                <option value="MT01">MT01</option>
-                <option value="MT02">MT02</option>
-                <option value="MT03">MT03</option>
-                <option value="MT04">MT04</option>
-                <option value="FT0073">FT0073 (WH FT02)</option>
-                <option value="FT0075">FT0075 (WH FT01)</option>
-            </select>
+            <select id="converterStorage" onchange="updateQuickConverter()"><option value="">Memuat Master MT / FT...</option></select>
         </div>
         <div>
             <label>Tinggi Sonding (CM)</label>
@@ -704,14 +698,7 @@ th{background:#f8fafc;color:#475569}
     <div class="grid">
         <div>
             <label>Masuk ke</label>
-            <select id="receiptDestination" onchange="updateReceiptCalculation()">
-                <option>MT01</option>
-                <option>MT02</option>
-                <option>MT03</option>
-                <option>MT04</option>
-                <option value="FT0073">FT0073 (WH FT02)</option>
-                <option value="FT0075">FT0075 (WH FT01)</option>
-            </select>
+            <select id="receiptDestination" onchange="updateReceiptCalculation()"><option value="">Memuat Master MT / FT...</option></select>
         </div>
         <div>
             <label>Jam Kedatangan</label>
@@ -790,26 +777,12 @@ th{background:#f8fafc;color:#475569}
     <div class="grid">
         <div>
             <label>Storage Sumber (Solar Keluar)</label>
-            <select id="transferSource" onchange="syncTransferDestination()">
-                <option value="MT01">MT01</option>
-                <option value="MT02">MT02</option>
-                <option value="MT03">MT03</option>
-                <option value="MT04">MT04</option>
-                <option value="FT0073">FT0073 (WH FT02)</option>
-                <option value="FT0075">FT0075 (WH FT01)</option>
-            </select>
+            <select id="transferSource" onchange="syncTransferDestination()"><option value="">Memuat Master MT / FT...</option></select>
         </div>
 
         <div>
             <label>Storage Tujuan (Solar Masuk)</label>
-            <select id="transferDestination">
-                <option value="MT01">MT01</option>
-                <option value="MT02">MT02</option>
-                <option value="MT03">MT03</option>
-                <option value="MT04">MT04</option>
-                <option value="FT0073">FT0073 (WH FT02)</option>
-                <option value="FT0075">FT0075 (WH FT01)</option>
-            </select>
+            <select id="transferDestination"><option value="">Memuat Master MT / FT...</option></select>
         </div>
 
         <div>
@@ -1011,24 +984,17 @@ if(!TERA){
     throw new Error("File tera-data_v1_aug2026.js belum terpasang atau gagal dimuat.");
 }
 
-const STORAGES=["MT01","MT02","MT03","MT04","FT0073","FT0075"];
-
-const STORAGE_CAPACITY={...TERA.nominalCapacity};
-
-const STORAGE_HARD_CAPACITY=Object.fromEntries(
-    STORAGES.map(storage=>{
-        const curveName=TERA.storageCurve[storage];
-        const curve=TERA.curves[curveName];
-        return [storage,Number(curve[curve.length-1])];
-    })
-);
+let STORAGE_ROWS=window.KPPStorage.fallbackRows();
+let STORAGES=STORAGE_ROWS.map(row=>row.code);
+let STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+let STORAGE_HARD_CAPACITY=window.KPPStorage.hardCapacityMap(TERA,STORAGE_ROWS);
 
 const STOCK_CRITICAL_PCT=20;
 const STOCK_WARNING_PCT=35;
 const CAPACITY_WARNING_PCT=90;
 const LOSS_WARNING_LITERS=100;
 const LOSS_WARNING_PERCENT=0.5;
-const TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
+let TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
 let LAST_CAPACITY_ALERT_SIGNATURE="";
 
 let CURRENT_SYSTEM_STOCK=
@@ -1089,6 +1055,11 @@ function restoreStockPanelVisibility(){
 
 
 
+
+function storageRow(storage){return window.KPPStorage.byCode(STORAGE_ROWS,storage);}
+function storageLabel(storage){return window.KPPStorage.label(storageRow(storage)||{code:storage});}
+function teraLookup(storage,height){return window.KPPStorage.lookup(TERA,STORAGE_ROWS,storage,height);}
+function teraHeightForLiters(storage,liters){return window.KPPStorage.heightForLiters(TERA,STORAGE_ROWS,storage,liters);}
 
 function capacity(storage){
     return n(STORAGE_CAPACITY[storage]);
@@ -1352,10 +1323,7 @@ function fillStorageSelect(id,allowBlank=false){
     STORAGES.forEach(storage=>{
         const option=document.createElement("option");
         option.value=storage;
-        option.textContent=
-            storage+
-            (storage==="FT0073"?" (WH FT02)":
-             storage==="FT0075"?" (WH FT01)":"");
+        option.textContent=storageLabel(storage);
         el.appendChild(option);
     });
 }
@@ -2076,7 +2044,7 @@ function copyClosingReport(){
 function teraFromInput(storage,inputId){
     const input=document.getElementById(inputId);
     if(!input || input.value==="")return null;
-    return TERA.lookup(storage,input.value);
+    return teraLookup(storage,input.value);
 }
 
 function updateQuickConverter(){
@@ -2921,13 +2889,12 @@ async function loadFuelmanSession(){
 }
 
 function sourceFromFuel(row){
-    const ft=String(row.fuel_truck||"").toUpperCase();
-    if(ft==="FT0073"||ft==="FT0075") return ft;
-
-    const wh=String(row.wh||"").toUpperCase();
-    if(wh==="FT02") return "FT0073";
-    if(wh==="FT01") return "FT0075";
-    return "";
+    const ft=String(row.fuel_truck||"").trim().toUpperCase();
+    const direct=STORAGE_ROWS.find(item=>item.storage_type==="FT" && item.code===ft);
+    if(direct)return direct.code;
+    const wh=window.KPPStorage.normalizeWarehouse(row.wh);
+    const match=STORAGE_ROWS.find(item=>item.storage_type==="FT" && window.KPPStorage.whCode(item)===wh);
+    return match?.code||"";
 }
 
 async function loadStock(){
@@ -2996,15 +2963,14 @@ function renderStockCards(stock){
     cards.innerHTML="";
 
     STORAGES.forEach(storage=>{
-        let suffix="";
-        if(storage==="FT0073") suffix=" / WH FT02";
-        if(storage==="FT0075") suffix=" / WH FT01";
+        const row=storageRow(storage);
+        const suffix=row?.warehouse ? " / "+row.warehouse : "";
 
         const cap=capacity(storage);
         const p=capacityPercent(storage,stock[storage]);
         const state=capacityState(storage,stock[storage]);
         const width=Math.max(0,Math.min(p,100));
-        const estimatedHeight=TERA.heightForLiters(
+        const estimatedHeight=teraHeightForLiters(
             storage,
             Math.max(0,n(stock[storage]))
         );
@@ -3077,7 +3043,7 @@ function renderClosing(stock,savedClosing){
         const heightValue=saved&&saved.sonding_height_cm!==null&&saved.sonding_height_cm!==undefined
             ? saved.sonding_height_cm
             : "";
-        const estimatedSystemHeight=TERA.heightForLiters(
+        const estimatedSystemHeight=teraHeightForLiters(
             storage,
             Math.max(0,n(stock[storage]))
         );
@@ -3723,7 +3689,7 @@ async function saveClosing(){
 
         let closingTera;
         try{
-            closingTera=TERA.lookup(storage,heightInput.value);
+            closingTera=teraLookup(storage,heightInput.value);
         }catch(error){
             alert("Konversi Closing "+storage+" gagal.\n\n"+error.message);
             return;
@@ -3832,17 +3798,25 @@ async function saveClosing(){
     await finishStockSave(true,"Stock Closing sudah tersimpan.");
 }
 
-const openingStorage=document.getElementById("openingStorage");
+function refreshStorageInputs(){
+    ["converterStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
+    fillStorageSelect("editSource",true);
+    fillStorageSelect("editDestination",false);
+    syncTransferDestination();
+    updateQuickConverter();
+    updateOpeningConversion();
+    updateReceiptCalculation();
+}
 
-STORAGES.forEach(storage=>{
-    const option=document.createElement("option");
-    option.value=storage;
-    option.textContent=
-        storage+
-        (storage==="FT0073"?" (WH FT02)":
-         storage==="FT0075"?" (WH FT01)":"");
-    openingStorage.appendChild(option);
-});
+async function loadStorageMaster(){
+    STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+    STORAGES=STORAGE_ROWS.map(row=>row.code);
+    STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+    STORAGE_HARD_CAPACITY=window.KPPStorage.hardCapacityMap(TERA,STORAGE_ROWS);
+    TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+n(b),0);
+    CURRENT_SYSTEM_STOCK=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
+    refreshStorageInputs();
+}
 
 const TODAY=localDate();
 document.getElementById("tanggal").value=TODAY;
@@ -3879,6 +3853,7 @@ updateReceiptCalculation();
 document.addEventListener("kpp-auth-ready",async(event)=>{
     CURRENT_PROFILE=event.detail.profile;
 
+    await loadStorageMaster();
     await loadTransporterOptions();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
