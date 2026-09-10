@@ -49,7 +49,7 @@ details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#
 
   <div class="panel">
     <h3 style="margin-top:0">Tambah / Edit MT atau FT</h3>
-    <div class="quick-note"><b>Mode cepat:</b> cukup isi <b>Code Storage</b>. MT baru otomatis memakai profil sounding/tera MT, FT baru memakai profil sounding/tera FT. Pilihan ini aman bila bentuk/tipe tangkinya sama. Jika fisiknya berbeda, buka <b>Pengaturan lanjutan</b> lalu pilih <b>Belum ada / fisik berbeda</b>. WH/Lokasi tetap opsional.</div>
+    <div class="quick-note"><b>Mode cepat:</b> cukup isi <b>Code Storage</b>. MT baru otomatis memakai profil sounding/tera MT, FT baru memakai profil sounding/tera FT. Pilihan ini aman bila bentuk/tipe tangkinya sama. Jika fisiknya berbeda, buka <b>Pengaturan lanjutan</b> lalu pilih <b>Belum ada / fisik berbeda</b>. WH/Lokasi tetap opsional. <b>Code dan jenis terkunci setelah disimpan</b> agar histori tidak pernah pindah storage.</div>
     <input type="hidden" id="editId">
     <div class="grid">
       <div><label>Code Storage</label><input id="code" maxlength="20" placeholder="Contoh: MT05 / FT0077" autocomplete="off"></div>
@@ -123,23 +123,24 @@ async function loadStorages(){
 }
 function editStorage(id){
   const r=ROWS.find(x=>Number(x.id)===Number(id));if(!r)return;
-  document.getElementById("editId").value=r.id;document.getElementById("code").value=r.code||"";document.getElementById("storageType").value=r.storage_type||"MT";document.getElementById("displayName").value=r.display_name||"";document.getElementById("warehouse").value=r.warehouse||"";document.getElementById("capacity").value=r.nominal_capacity_liter??"";document.getElementById("teraProfile").value=r.tera_profile||"";document.getElementById("sortOrder").value=r.sort_order??100;document.getElementById("active").value=String(!!r.active);document.getElementById("notes").value=r.notes||"";document.getElementById("formStatus").textContent="Mode edit: "+r.code;window.scrollTo({top:0,behavior:"smooth"});
+  document.getElementById("editId").value=r.id;document.getElementById("code").value=r.code||"";document.getElementById("code").disabled=true;document.getElementById("storageType").value=r.storage_type||"MT";document.getElementById("storageType").disabled=true;document.getElementById("displayName").value=r.display_name||"";document.getElementById("warehouse").value=r.warehouse||"";document.getElementById("capacity").value=r.nominal_capacity_liter??"";document.getElementById("teraProfile").value=r.tera_profile||"";document.getElementById("sortOrder").value=r.sort_order??100;document.getElementById("active").value=String(!!r.active);document.getElementById("notes").value=r.notes||"";document.getElementById("formStatus").textContent="Mode edit: "+r.code;window.scrollTo({top:0,behavior:"smooth"});
 }
 function resetForm(){
-  document.getElementById("editId").value="";document.getElementById("code").value="";document.getElementById("storageType").value="MT";document.getElementById("displayName").value="";document.getElementById("warehouse").value="";document.getElementById("capacity").value="40000";document.getElementById("teraProfile").value="MT";document.getElementById("sortOrder").value=String(nextSortOrder());document.getElementById("active").value="true";document.getElementById("notes").value="";document.getElementById("formStatus").textContent="";
+  document.getElementById("editId").value="";document.getElementById("code").disabled=false;document.getElementById("storageType").disabled=false;document.getElementById("code").value="";document.getElementById("storageType").value="MT";document.getElementById("displayName").value="";document.getElementById("warehouse").value="";document.getElementById("capacity").value="40000";document.getElementById("teraProfile").value="MT";document.getElementById("sortOrder").value=String(nextSortOrder());document.getElementById("active").value="true";document.getElementById("notes").value="";document.getElementById("formStatus").textContent="";
 }
 async function saveStorage(){
   const status=document.getElementById("formStatus");const id=Number(document.getElementById("editId").value||0);const code=normalizeCode(document.getElementById("code").value);if(!id)applyCodeDefaults(false);
   const storage_type=document.getElementById("storageType").value;const display_name=document.getElementById("displayName").value.trim()||code;const warehouse=document.getElementById("warehouse").value.trim()||null;const nominal_capacity_liter=Number(document.getElementById("capacity").value||0);const tera_profile=document.getElementById("teraProfile").value||null;const sort_order=Number(document.getElementById("sortOrder").value||100);const active=document.getElementById("active").value==="true";const notes=document.getElementById("notes").value.trim()||null;
   if(!/^[A-Z0-9_-]{3,20}$/.test(code)){status.textContent="Code storage harus 3-20 karakter: huruf, angka, _ atau -.";return}
   if(!code.startsWith("MT")&&!code.startsWith("FT")){status.textContent="Gunakan prefix MT atau FT supaya sistem bisa mengenali jenis storage otomatis.";return}
+  if(tera_profile && tera_profile!==storage_type){status.textContent="Profil sonding harus sama dengan jenis storage. Jika fisik berbeda pilih Belum ada / fisik berbeda.";return}
   if(nominal_capacity_liter<=0){status.textContent="Kapasitas nominal wajib lebih dari 0 liter.";return}
   status.textContent="Menyimpan...";const payload={code,storage_type,display_name,warehouse,nominal_capacity_liter,tera_profile,active,sort_order,notes};let result=id?await db.from("storage_master").update(payload).eq("id",id):await db.from("storage_master").insert(payload);
   if(result.error){status.textContent="Gagal: "+result.error.message;return}
   await loadStorages();resetForm();status.textContent="Master "+code+" berhasil disimpan.";
 }
 async function toggleStorage(id,next){const r=ROWS.find(x=>Number(x.id)===Number(id));if(!r)return;if(!confirm((next?"Aktifkan ":"Nonaktifkan ")+r.code+"?"))return;const {error}=await db.from("storage_master").update({active:!!next}).eq("id",id);if(error){alert("Gagal: "+error.message);return}await loadStorages()}
-document.getElementById("code").addEventListener("input",()=>applyCodeDefaults(false));document.addEventListener("DOMContentLoaded",init);
+document.getElementById("code").addEventListener("input",()=>applyCodeDefaults(false));document.getElementById("storageType").addEventListener("change",event=>{if(!document.getElementById("editId").value){const profile=document.getElementById("teraProfile");if(profile.value)profile.value=event.target.value}});document.addEventListener("DOMContentLoaded",init);
 </script>
 </body>
 </html>
