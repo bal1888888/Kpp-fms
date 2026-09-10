@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-static.mjs && node --test scripts/test-ccr-monitor.mjs scripts/test-operator-hm.mjs scripts/test-reliable-submit.mjs scripts/test-security-hardening.mjs scripts/test-db-performance.mjs scripts/test-transfer-audit.mjs scripts/test-atomic-stock-closing.mjs scripts/test-dynamic-storage-backend.mjs scripts/test-least-privilege-tables.mjs scripts/test-stock-movement-idempotency.mjs scripts/test-final-integrity-locks.mjs scripts/test-operator-fueling-link-restrict.mjs scripts/test-ui-copy-clean.mjs scripts/test-role-atasan.mjs scripts/test-storage-master.mjs"
+    "check": "node scripts/check-static.mjs && node --test scripts/test-ccr-monitor.mjs scripts/test-operator-hm.mjs scripts/test-reliable-submit.mjs scripts/test-security-hardening.mjs scripts/test-db-performance.mjs scripts/test-transfer-audit.mjs scripts/test-atomic-stock-closing.mjs scripts/test-dynamic-storage-backend.mjs scripts/test-least-privilege-tables.mjs scripts/test-stock-movement-idempotency.mjs scripts/test-final-integrity-locks.mjs scripts/test-operator-fueling-link-restrict.mjs scripts/test-ui-copy-clean.mjs scripts/test-role-atasan.mjs scripts/test-storage-master.mjs scripts/test-ccr-allocation-reliable.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8"
