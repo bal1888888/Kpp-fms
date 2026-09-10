@@ -15,35 +15,18 @@
   }
 
   function calculate(input={}){
-    const meterStart=optionalNumber(input.meterStart,"Flowmeter awal");
-    const meterEnd=optionalNumber(input.meterEnd,"Flowmeter akhir");
     const sourceSoundingQty=optionalNumber(input.sourceSoundingQty,"Qty sounding sumber");
     const destinationQty=optionalNumber(input.destinationQty,"Qty masuk tujuan");
-
-    let sourceQty=null;
-    if(meterStart!==null && meterEnd!==null){
-      if(meterEnd<=meterStart){
-        throw new Error("Flowmeter akhir harus lebih besar dari flowmeter awal.");
-      }
-      sourceQty=roundLiter(meterEnd-meterStart);
-    }
+    const sourceQty=sourceSoundingQty;
 
     const loss=
       sourceQty!==null && destinationQty!==null
         ? roundLiter(sourceQty-destinationQty)
         : null;
 
-    const sourceSoundingDifference=
-      sourceQty!==null && sourceSoundingQty!==null
-        ? roundLiter(sourceQty-sourceSoundingQty)
-        : null;
-
     return Object.freeze({
-      meterStart,
-      meterEnd,
       sourceQty,
       sourceSoundingQty,
-      sourceSoundingDifference,
       destinationQty,
       loss
     });
