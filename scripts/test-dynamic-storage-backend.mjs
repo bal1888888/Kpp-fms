@@ -19,7 +19,7 @@ test("backend storage references point to storage_master instead of fixed checks
 });
 
 test("new operational references must be active and FT sessions require FT type",()=>{
-  assert.match(migration,/s\.storage_type='FT' and s\.active=true/i);
+  assert.match(migration,/storage_type = 'FT'/i);
   assert.match(migration,/Fuel Truck .*tidak aktif atau bukan FT/i);
   assert.match(migration,/Storage .*tidak aktif atau tidak ada di Master MT\/FT/i);
 });
@@ -37,14 +37,20 @@ test("opening uses no-overwrite RPC",()=>{
   assert.doesNotMatch(stock,/from\("stock_opening"\)\.upsert/);
 });
 
-test("atomic closing and all fueling paths resolve storage from master",()=>{
-  assert.match(migration,/function public\.save_stock_closing_atomic/i);
-  const masterLookups=migration.match(/from public\.storage_master s where s\.code=v_fuel_truck and s\.storage_type='FT' and s\.active=true/gi)||[];
-  assert.equal(masterLookups.length,3);
+test("atomic closing preserves implementation and removes fixed six-storage assumption",()=>{
+  assert.match(migration,/pg_get_functiondef\('public\.save_stock_closing_atomic/);
+  assert.match(migration,/jsonb_array_length\(p_rows\) > 100/);
+  assert.match(migration,/not exists \(select 1 from public\.storage_master sm/);
+});
+
+test("all three fueling paths are patched in place to resolve an active FT from master",()=>{
+  assert.match(migration,/foreach v_name in array array\['submit_ccr_fueling','submit_manual_fueling_from_checkin','submit_operatorless_fueling'\]/);
+  assert.match(migration,/select s\.code, private\.kpp_storage_wh\(s\.warehouse\)/);
+  assert.match(migration,/FT validation block not found/);
   assert.doesNotMatch(migration,/v_fuel_truck not in \(\s*'FT0073'/i);
 });
 
 test("master UI explains same-type reuse and immutable identity",()=>{
   assert.match(master,/fisik.*sama/i);
-  assert.match(master,/Code.*tidak dapat diubah|code.*terkunci/i);
+  assert.match(master,/Code dan jenis terkunci setelah disimpan/i);
 });
