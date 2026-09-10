@@ -335,6 +335,56 @@ let CURRENT_OPERATOR_CHECKIN=null;
 const CHECKIN_MONITOR=window.KPPCCRMonitor.create({db,host:document.getElementById("checkinMonitor"),onSelect:useOperatorCheckin});
 let HM_REFERENCE_REQUEST=0;
 let HM_REFERENCE_LOADING=false;
+const CCR_PENDING_KEY_PREFIX="kpp-ccr-allocation-pending-v1:";
+
+function ccrPendingKey(){
+  const uid=window.KPP_SESSION?.user?.id;
+  if(!uid)throw new Error("Sesi login belum siap. Muat ulang halaman.");
+  return CCR_PENDING_KEY_PREFIX+uid;
+}
+function readCcrAllocationPending(){
+  const raw=localStorage.getItem(ccrPendingKey());
+  if(!raw)return null;
+  try{
+    const parsed=JSON.parse(raw);
+    if(!parsed?.id||!parsed?.recordedAt||!parsed?.payload)throw new Error("format");
+    return parsed;
+  }catch(_){
+    throw new Error("Status pengiriman jatah di perangkat rusak. Hubungi Admin sebelum input baru.");
+  }
+}
+async function submitCcrAllocationReliable(payload=null){
+  let pending=readCcrAllocationPending();
+  if(!pending){
+    if(!payload)return {data:null,error:null};
+    if(!globalThis.crypto?.randomUUID){
+      return {data:null,error:new Error("Browser belum mendukung ID pengiriman aman. Gunakan Chrome/Edge terbaru.")};
+    }
+    pending={id:crypto.randomUUID(),recordedAt:new Date().toISOString(),payload};
+    try{
+      localStorage.setItem(ccrPendingKey(),JSON.stringify(pending));
+    }catch(e){
+      return {data:null,error:new Error("Penyimpanan perangkat tidak tersedia. Jatah tidak dikirim agar aman dari double submit.")};
+    }
+  }
+
+  const result=await db.rpc("create_ccr_allocation_reliable",{
+    p_request_id:pending.id,
+    p_payload:pending.payload,
+    p_recorded_at:pending.recordedAt
+  });
+
+  if(result.error){
+    return {data:null,error:new Error("Hasil belum terkonfirmasi. Tekan SIMPAN JATAH lagi untuk cek/kirim ulang. "+result.error.message)};
+  }
+  if(!result.data?.ok){
+    localStorage.removeItem(ccrPendingKey());
+    return {data:null,error:new Error(result.data?.message||"Server menolak pengiriman jatah.")};
+  }
+
+  localStorage.removeItem(ccrPendingKey());
+  return {data:result.data.data,error:null,replayed:!!result.data.replayed};
+}
 
 const MASTER_LAST_HM = {
         "CB1019": 587,
@@ -769,6 +819,16 @@ async function save(){
   status.textContent="Memeriksa ritasi...";
 
   try{
+    const pendingBeforeInput=readCcrAllocationPending();
+    if(pendingBeforeInput){
+      status.textContent="Memeriksa pengiriman jatah sebelumnya...";
+      const recovered=await submitCcrAllocationReliable();
+      if(recovered.error)throw recovered.error;
+      const row=recovered.data;
+      alert(`✅ Jatah ${row?.unit||""} pengisian ke-${row?.filling_no||"-"} sudah terkonfirmasi di server.`);
+      location.reload();
+      return;
+    }
     if(CURRENT_OPERATOR_CHECKIN){
       const fresh=await CHECKIN_MONITOR.verify(CURRENT_OPERATOR_CHECKIN.id);
       if(upper(fresh.unit)!==upper(document.getElementById("unit").value) || fresh.tanggal!==document.getElementById("tanggal").value || fresh.shift!==document.getElementById("shift").value)throw new Error("Pilihan unit/tanggal/shift berubah. Pilih ulang check-in.");
@@ -809,11 +869,7 @@ async function save(){
       operator_checkin_at:CURRENT_OPERATOR_CHECKIN?.created_at||null
     };
 
-    const {data,error}=await db
-      .from("ccr_allocations")
-      .insert(payload)
-      .select("*")
-      .single();
+    const {data,error}=await submitCcrAllocationReliable(payload);
 
     if(error){
       const m=String(error.message||"");
