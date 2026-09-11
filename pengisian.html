@@ -1198,6 +1198,18 @@ function shiftSessionToNumber(value) {
     return Number(value) || 0;
 }
 
+function isFuelmanSessionCurrent(session){
+    if(!session)return false;
+    const expected=window.KPPTime.operationalShift();
+    return String(session.tanggal||"")===expected.tanggal &&
+        shiftSessionToNumber(session.shift)===expected.shift;
+}
+function fuelmanSessionMismatchMessage(session){
+    const expected=window.KPPTime.operationalShift();
+    const sessionLabel=session ? `${session.tanggal||"-"} ${session.shift||"-"}` : "tidak ada session aktif";
+    return `Periode shift sudah berganti. Session Fuelman: ${sessionLabel}. Sekarang: ${expected.tanggal} Shift ${expected.shift}. Selesaikan Closing/End Shift lama lalu START SHIFT baru.`;
+}
+
 function applyFuelTruckSelection(value, lockField) {
     const select = document.getElementById("fuelTruck");
     select.value = value || "";
@@ -1263,6 +1275,12 @@ async function loadActiveFuelmanSession() {
     if((activeFuelmanSession.duty_type||"FUELMAN")==="PIC_TRANSFER"){
         alert("PIC TRANSFER tidak memiliki akses Pengisian Fuel. Gunakan menu Stock untuk melihat posisi stock dan Closing semua MT aktif.");
         window.location.replace("stock.html");
+        return;
+    }
+
+    if(!isFuelmanSessionCurrent(activeFuelmanSession)){
+        alert("⚠️ "+fuelmanSessionMismatchMessage(activeFuelmanSession));
+        if (!fuelDelivery?.read().request) window.location.replace("fuelman.html");
         return;
     }
 
@@ -2720,6 +2738,16 @@ document
                     "Shift Fuelman belum aktif. Kembali ke Menu Fuelman lalu START SHIFT."
                 );
                 window.location.replace("fuelman.html");
+                return;
+            }
+
+            if (
+                currentStaffProfile &&
+                currentStaffProfile.role === "fuelman" &&
+                !isFuelmanSessionCurrent(activeFuelmanSession)
+            ) {
+                alert("⚠️ "+fuelmanSessionMismatchMessage(activeFuelmanSession));
+                if (!fuelDelivery?.read().request) window.location.replace("fuelman.html");
                 return;
             }
 
