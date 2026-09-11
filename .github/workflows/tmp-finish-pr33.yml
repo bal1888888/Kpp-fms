@@ -1,0 +1,42 @@
+name: Temp finish PR33 safely
+
+on:
+  push:
+    branches:
+      - fix/fuel-history-storage-dynamic-v2
+    paths:
+      - scripts/tmp_finish_pr33.py
+      - .github/workflows/tmp-finish-pr33.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/fuel-history-storage-dynamic-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply safe history/editor patch
+        run: python3 scripts/tmp_finish_pr33.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Run checks
+        run: npm run check
+      - name: Commit final result
+        run: |
+          git config user.name "kpp-mining"
+          git config user.email "iqbalinsani1017@gmail.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 1
+          fi
+          git commit -m "fix: make fuel history storage mapping dynamic and safe"
+          git push origin HEAD:fix/fuel-history-storage-dynamic-v2
