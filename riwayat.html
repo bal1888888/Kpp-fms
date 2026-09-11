@@ -19,11 +19,13 @@ body{background:#f4f6f8;color:#222}.header{background:#1f2937;color:#fff;padding
 .title{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}.right-tools{display:flex;align-items:center;gap:10px}
 .total{background:#eff6ff;color:#2563eb;padding:10px 15px;border-radius:8px;font-size:14px;font-weight:bold}
 .refresh-btn{background:#16a34a;color:#fff;border:none;padding:10px 15px;border-radius:7px;cursor:pointer}
+.refresh-btn:disabled{opacity:.6;cursor:not-allowed}
 .table-container{overflow:auto;max-height:70vh}table{width:100%;border-collapse:collapse;min-width:1350px}
 th{background:#1f2937;color:#fff;padding:12px;font-size:13px;white-space:nowrap;position:sticky;top:0}
 td{padding:11px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:center;white-space:nowrap}tr:hover{background:#f8fafc}
-.unit,.operator,.fuel{font-weight:bold}.status{text-align:center;padding:35px;color:#777}
+.unit,.operator,.fuel{font-weight:bold}.status{text-align:center;padding:18px;color:#64748b;font-size:12px;line-height:1.5}
 .error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:15px;display:none}
+.more-wrap{display:none;justify-content:center;padding-top:12px}.more-wrap.show{display:flex}.load-more{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:10px 16px;font-size:12px;font-weight:800;cursor:pointer}.load-more:disabled{opacity:.55;cursor:not-allowed}
 .back{display:inline-block;margin-top:20px;color:#2563eb;text-decoration:none;font-size:14px}
 @media(max-width:900px){
   .container{padding:8px;margin:10px auto}
@@ -53,6 +55,7 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:center
 @media(max-width:520px){
   .right-tools{display:grid;grid-template-columns:1fr 1fr}
   .total{display:flex;align-items:center;justify-content:center;text-align:center}
+  .load-more{width:100%;min-height:42px}
 }
 
 /* ===== KPP-FMS GLOBAL NAV ===== */
@@ -94,12 +97,10 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:center
     border-color:#60a5fa;
 }
 
-
 .kpp-userbar{background:#fff;border-bottom:1px solid #e5e7eb}
 .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
 .kpp-userbar-inner span{color:#64748b}
 .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
-
 </style>
 </head>
 <body>
@@ -113,16 +114,22 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:center
 <thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel (L)</th><th>Shift</th></tr></thead>
 <tbody id="historyTable"></tbody>
 </table></div>
-<div id="statusData" class="status">Mengambil seluruh data dari database...</div>
-
+<div id="statusData" class="status">Mengambil data terbaru dari database...</div>
+<div id="moreWrap" class="more-wrap"><button id="loadMoreBtn" class="load-more" type="button">MUAT 300 DATA LAGI</button></div>
 </div></div>
 
 <script>
 let HISTORY_STORAGE_ROWS=[];
 let HISTORY_FT_MAP={};
 let HISTORY_WH_TO_FTS=new Map();
+let STORAGE_MASTER_READY=false;
+const PAGE_SIZE=300;
+let HISTORY_OFFSET=0;
+let HISTORY_TOTAL=0;
+let HISTORY_LOADING=false;
 
 async function loadStorageMasterHistory(){
+  if(STORAGE_MASTER_READY)return;
   if(!window.KPPStorage)throw new Error("Master MT/FT belum termuat.");
   HISTORY_STORAGE_ROWS=await window.KPPStorage.load(KPP.db,{activeOnly:false});
   HISTORY_FT_MAP=window.KPPStorage.ftMap(HISTORY_STORAGE_ROWS);
@@ -132,6 +139,7 @@ async function loadStorageMasterHistory(){
     if(!HISTORY_WH_TO_FTS.has(wh))HISTORY_WH_TO_FTS.set(wh,[]);
     HISTORY_WH_TO_FTS.get(wh).push(ft);
   });
+  STORAGE_MASTER_READY=true;
 }
 
 function formatAngka(v){if(v===null||v===undefined||v==="")return "-";return Number(v).toLocaleString("id-ID")}
@@ -157,85 +165,98 @@ function getFuelman(item){
   return String(item.fuelman_name||item.fuelman_username||"").trim()||"-";
 }
 
-async function fetchAll(){
-  let all=[],from=0,size=1000;
-  while(true){
-    const {data,error}=await KPP.db
-      .from("fuel_history")
-      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
-      .order("tanggal",{ascending:true})
-      .order("id",{ascending:true})
-      .range(from,from+size-1);
-
-    if(error) throw error;
-    all=all.concat(data||[]);
-    if(!data||data.length<size) break;
-    from+=size;
-  }
-  return all;
+async function fetchHistoryPage(offset){
+  const {data,error,count}=await KPP.db
+    .from("fuel_history")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username",{count:"exact"})
+    .order("tanggal",{ascending:false})
+    .order("id",{ascending:false})
+    .range(offset,offset+PAGE_SIZE-1);
+  if(error)throw error;
+  return {data:data||[],count:Number(count||0)};
 }
 
-async function tampilkanRiwayat(){
+function appendRows(data,startIndex){
   const table=document.getElementById("historyTable");
-  const total=document.getElementById("totalData");
+  data.forEach((item,index)=>{
+    const row=document.createElement("tr");
+    row.appendChild(cell(startIndex+index+1));
+    row.appendChild(cell(formatTanggal(item.tanggal)));
+    row.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
+    row.appendChild(cell(item.unit||"(KOSONG)","unit"));
+    row.appendChild(cell(item.operator||"-","operator"));
+    row.appendChild(cell(getFuelman(item)));
+    row.appendChild(cell(getFuelTruck(item)));
+    row.appendChild(cell(getWH(item)));
+    row.appendChild(cell(Number(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
+    row.appendChild(cell(formatAngka(item.hm_akhir)));
+    row.appendChild(cell(Number(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
+    row.appendChild(cell(formatAngka(item.fuel)+" L","fuel"));
+    row.appendChild(cell("Shift "+item.shift));
+    table.appendChild(row);
+  });
+}
+
+function updatePagingStatus(){
+  const status=document.getElementById("statusData");
+  const more=document.getElementById("moreWrap");
+  const shown=Math.min(HISTORY_OFFSET,HISTORY_TOTAL);
+  document.getElementById("totalData").textContent=HISTORY_TOTAL.toLocaleString("id-ID");
+  status.style.display="block";
+  status.textContent=HISTORY_TOTAL?`Menampilkan ${shown.toLocaleString("id-ID")} transaksi terbaru dari ${HISTORY_TOTAL.toLocaleString("id-ID")}.`:"Belum ada data pengisian fuel.";
+  more.classList.toggle("show",shown<HISTORY_TOTAL);
+}
+
+async function tampilkanRiwayat(reset=true){
+  if(HISTORY_LOADING)return;
+  const table=document.getElementById("historyTable");
   const status=document.getElementById("statusData");
   const errorBox=document.getElementById("errorBox");
+  const refresh=document.getElementById("refreshBtn");
+  const loadMore=document.getElementById("loadMoreBtn");
 
-  table.innerHTML="";
-  total.textContent="0";
-  status.style.display="block";
-  status.textContent="Mengambil seluruh data dari database...";
+  HISTORY_LOADING=true;
+  refresh.disabled=true;
+  loadMore.disabled=true;
   errorBox.style.display="none";
 
+  if(reset){
+    HISTORY_OFFSET=0;
+    HISTORY_TOTAL=0;
+    table.replaceChildren();
+    document.getElementById("totalData").textContent="0";
+    document.getElementById("moreWrap").classList.remove("show");
+    status.style.display="block";
+    status.textContent="Mengambil data terbaru dari database...";
+  }else{
+    status.textContent="Memuat data berikutnya...";
+  }
+
   try{
-    const dataPromise=fetchAll();
     await loadStorageMasterHistory();
-    const data=await dataPromise;
-
-    data.sort((a,b)=>{
-      const da=a.tanggal||"",db=b.tanggal||"";
-      if(da!==db) return db.localeCompare(da);
-      return Number(b.id||0)-Number(a.id||0);
-    });
-
-    total.textContent=Number(data.length).toLocaleString("id-ID");
-
-    if(!data.length){
-      status.textContent="Belum ada data pengisian fuel.";
-      return;
-    }
-
-    status.style.display="none";
-
-    data.forEach((item,index)=>{
-      const row=document.createElement("tr");
-      row.appendChild(cell(index+1));
-      row.appendChild(cell(formatTanggal(item.tanggal)));
-      row.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
-      row.appendChild(cell(item.unit||"(KOSONG)","unit"));
-      row.appendChild(cell(item.operator||"-","operator"));
-      row.appendChild(cell(getFuelman(item)));
-      row.appendChild(cell(getFuelTruck(item)));
-      row.appendChild(cell(getWH(item)));
-      row.appendChild(cell(Number(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
-      row.appendChild(cell(formatAngka(item.hm_akhir)));
-      row.appendChild(cell(Number(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
-      row.appendChild(cell(formatAngka(item.fuel)+" L","fuel"));
-      row.appendChild(cell("Shift "+item.shift));
-      table.appendChild(row);
-    });
+    const start=HISTORY_OFFSET;
+    const result=await fetchHistoryPage(start);
+    HISTORY_TOTAL=result.count;
+    appendRows(result.data,start);
+    HISTORY_OFFSET=start+result.data.length;
+    updatePagingStatus();
   }catch(error){
     console.error(error);
-    status.style.display="none";
     errorBox.style.display="block";
-    errorBox.textContent="❌ Gagal mengambil data: "+error.message;
+    errorBox.textContent="❌ Gagal mengambil data: "+(error?.message||"Unknown error");
+    if(reset&&HISTORY_OFFSET===0)status.textContent="Data belum berhasil dimuat.";
+  }finally{
+    HISTORY_LOADING=false;
+    refresh.disabled=false;
+    loadMore.disabled=false;
   }
 }
 
-document.getElementById("refreshBtn").addEventListener("click",tampilkanRiwayat);
+document.getElementById("refreshBtn").addEventListener("click",()=>tampilkanRiwayat(true));
+document.getElementById("loadMoreBtn").addEventListener("click",()=>tampilkanRiwayat(false));
 
 document.addEventListener("kpp-auth-ready",()=>{
-  tampilkanRiwayat();
+  tampilkanRiwayat(true);
 });
 </script>
 </body>
