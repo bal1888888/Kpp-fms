@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 
 const history = await readFile(new URL('../riwayat.html', import.meta.url), 'utf8');
@@ -37,4 +38,16 @@ test('existing history preserves explicit FT when master lookup is degraded', ()
 
 test('new rows still require a registered FT', () => {
   assert.match(editor, /fuel_truck:normalizeFT\(r\.fuel_truck\),\n\s+wh:whForFT\(normalizeFT\(r\.fuel_truck\)\)/);
+});
+
+
+test('FT canonicalizer removes whitespace and keeps dynamic codes', () => {
+  const match = editor.match(/function canonicalFT\(v\)\{[\s\S]*?\n\}/);
+  assert.ok(match, 'canonicalFT function missing');
+  const context = {};
+  vm.createContext(context);
+  new vm.Script(`${match[0]};this.canonicalFT=canonicalFT;`).runInContext(context);
+  assert.equal(context.canonicalFT(' FT 0099 '), 'FT0099');
+  assert.equal(context.canonicalFT('73'), 'FT0073');
+  assert.equal(context.canonicalFT('not-a-truck'), '');
 });

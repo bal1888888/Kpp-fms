@@ -350,7 +350,7 @@ async function loadStorageMasterEditor(){
 }
 
 function canonicalFT(v){
-  const s=String(v||"").trim().toUpperCase().replace(/\\s/g,"");
+  const s=String(v||"").trim().toUpperCase().replace(/\s/g,"");
   if(!s)return "";
   if(s==="73"||s==="0073"||s==="FT73")return "FT0073";
   if(s==="75"||s==="0075"||s==="FT75")return "FT0075";
