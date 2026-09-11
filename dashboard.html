@@ -139,6 +139,12 @@ body{background:var(--bg);color:var(--text)}
 .session-card .meta{font-size:12px;color:#475569;line-height:1.55}
 .session-empty{padding:14px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;color:var(--muted);font-size:12px;text-align:center}
 
+.fc-head-meta{font-size:10px;color:var(--muted);font-weight:700;text-align:right}
+.fc-table-wrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:11px;-webkit-overflow-scrolling:touch}
+.fc-table{min-width:650px}
+.fc-value{font-weight:900;color:#166534}
+.fc-muted{color:var(--muted)}
+.fc-status{padding:14px;text-align:center;color:var(--muted);font-size:11px}
 .table-container{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;min-width:950px;background:#fff}
 th{background:var(--navy);color:#fff;padding:12px;font-size:12px;white-space:nowrap;position:sticky;top:0;z-index:1}
@@ -382,6 +388,23 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
     </div>
   </div>
 
+  <div class="section" id="fcSection">
+    <div class="section-head">
+      <div>
+        <span class="section-kicker">EFISIENSI UNIT MTD</span>
+        <h2>Fuel Consumption per Unit</h2>
+      </div>
+      <div class="fc-head-meta" id="fcCoverage">0 unit valid</div>
+    </div>
+    <div class="fc-table-wrap">
+      <table class="fc-table">
+        <thead><tr><th>Unit</th><th>Fuel MTD</th><th>HM Jalan Valid</th><th>FC</th><th>Sampel Valid</th></tr></thead>
+        <tbody id="fcUnitBody"></tbody>
+      </table>
+      <div id="fcStatus" class="fc-status">Memuat FC unit...</div>
+    </div>
+  </div>
+
   <div class="operations-grid">
     <div class="section">
       <div class="section-head">
@@ -430,7 +453,7 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
       <table>
         <thead>
           <tr>
-            <th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>Shift</th>
+            <th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>FC</th><th>Shift</th>
           </tr>
         </thead>
         <tbody id="transactionTable"></tbody>
@@ -466,6 +489,65 @@ function formatAngka(v){return Number(v||0).toLocaleString("id-ID",{maximumFract
 function formatIto(v){return Number(v||0).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})}
 function formatTanggal(v){if(!v)return "-";const p=String(v).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
 function cell(t){const x=document.createElement("td");x.textContent=t;return x}
+
+function validHmRun(row){
+  if(row?.hm_ref_excluded===true)return null;
+  const awalRaw=row?.hm_awal, akhirRaw=row?.hm_akhir;
+  if(awalRaw===null||awalRaw===undefined||awalRaw===""||akhirRaw===null||akhirRaw===undefined||akhirRaw==="")return null;
+  const awal=Number(awalRaw), akhir=Number(akhirRaw);
+  if(!Number.isFinite(awal)||!Number.isFinite(akhir)||akhir<=awal)return null;
+  const expected=Math.round((akhir-awal)*10)/10;
+  if(!(expected>0))return null;
+  const storedRaw=row?.hm_jalan;
+  if(storedRaw!==null&&storedRaw!==undefined&&storedRaw!==""){
+    const stored=Number(storedRaw);
+    if(!Number.isFinite(stored)||stored<=0||Math.abs(stored-expected)>0.11)return null;
+  }
+  return expected;
+}
+function fuelConsumption(row){
+  const hm=validHmRun(row);
+  const fuel=Number(row?.fuel);
+  return hm>0&&Number.isFinite(fuel)&&fuel>0 ? fuel/hm : null;
+}
+function buildFcByUnit(rows){
+  const map=new Map();
+  (rows||[]).forEach(row=>{
+    const unit=String(row.unit||"").trim().toUpperCase();
+    const hm=validHmRun(row);
+    const fuel=Number(row.fuel);
+    if(!unit||!(hm>0)||!Number.isFinite(fuel)||fuel<=0)return;
+    const entry=map.get(unit)||{unit,fuel:0,hm:0,samples:0};
+    entry.fuel+=fuel;
+    entry.hm+=hm;
+    entry.samples+=1;
+    map.set(unit,entry);
+  });
+  return Array.from(map.values())
+    .map(entry=>({...entry,fc:entry.hm>0?entry.fuel/entry.hm:null}))
+    .sort((a,b)=>b.fuel-a.fuel||a.unit.localeCompare(b.unit));
+}
+function renderFuelConsumption(rows){
+  const body=document.getElementById("fcUnitBody");
+  const status=document.getElementById("fcStatus");
+  const coverage=document.getElementById("fcCoverage");
+  const data=buildFcByUnit(rows);
+  body.innerHTML="";
+  coverage.textContent=data.length+" unit valid";
+  data.forEach(item=>{
+    const tr=document.createElement("tr");
+    tr.appendChild(cell(item.unit));
+    tr.appendChild(cell(formatAngka(item.fuel)+" L"));
+    tr.appendChild(cell(formatAngka(item.hm)+" HM"));
+    const fcCell=cell(formatIto(item.fc)+" L/HM");
+    fcCell.className="fc-value";
+    tr.appendChild(fcCell);
+    tr.appendChild(cell(String(item.samples)));
+    body.appendChild(tr);
+  });
+  status.style.display=data.length?"none":"block";
+  if(!data.length)status.textContent="Belum ada pasangan HM valid untuk menghitung FC periode ini.";
+}
 
 function localDate(){
   const d=new Date();
@@ -562,7 +644,7 @@ async function fetchPagedFuel(startDate,endDate){
   while(true){
     const {data,error}=await db
       .from("fuel_history")
-      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
+      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
       .gte("tanggal",startDate)
       .lte("tanggal",endDate)
       .order("tanggal",{ascending:true})
@@ -734,7 +816,7 @@ function renderMTDCompare(current,previous,window){
 async function fetchLatest(){
   const {data,error}=await db
     .from("fuel_history")
-    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
     .order("tanggal",{ascending:false})
     .order("id",{ascending:false})
     .limit(200);
@@ -853,6 +935,8 @@ function renderLatest(rows){
     r.appendChild(cell(item.hm_akhir!==null&&item.hm_akhir!==undefined&&item.hm_akhir!==""?formatAngka(item.hm_akhir):"-"));
     r.appendChild(cell(n(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
     r.appendChild(cell(formatAngka(item.fuel)+" L"));
+    const fc=fuelConsumption(item);
+    r.appendChild(cell(fc===null?"-":formatIto(fc)+" L/HM"));
     const shiftText=String(item.shift||"");
     r.appendChild(cell(shiftText.toLowerCase().startsWith("shift")?shiftText:"Shift "+shiftText));
     table.appendChild(r);
@@ -918,6 +1002,7 @@ async function loadDashboard(){
     renderUsageTrend(trendFuelRows,yesterday);
     renderStockTrend(stockTrendPoints,yesterday);
     renderReceipts(receiptRows);
+    renderFuelConsumption(mtdRows);
     renderLatest(latestRows);
   }catch(error){
     console.error(error);
