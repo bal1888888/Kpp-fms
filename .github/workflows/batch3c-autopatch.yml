@@ -34,22 +34,13 @@ jobs:
                   raise RuntimeError(f'{path}: expected 1 anchor, found {count}')
               p.write_text(text.replace(old,new,1),encoding='utf-8')
 
-          replace_once(
-              'stock.html',
-              '''            banner.innerHTML="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";''',
-              '''            banner.textContent="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";'''
-          )
-          replace_once(
-              'stock.html',
-              '''            banner.innerHTML="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";''',
-              '''            banner.textContent="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";'''
-          )
+          replace_once('stock.html', 'banner.innerHTML="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";', 'banner.textContent="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";')
+          replace_once('stock.html', 'banner.innerHTML="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";', 'banner.textContent="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";')
 
           replace_once(
               'pengisian.html',
-              '''    select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");
-          if(selected && rows.some(row=>row.code===selected))select.value=selected;''',
-              '''    select.replaceChildren();
+              '''select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");''',
+              '''select.replaceChildren();
           const placeholder=document.createElement("option");
           placeholder.value="";
           placeholder.textContent="-- Pilih Fuel Truck --";
@@ -59,8 +50,7 @@ jobs:
               option.value=String(row.code||"");
               option.textContent=window.KPPStorage.label(row);
               select.appendChild(option);
-          });
-          if(selected && rows.some(row=>row.code===selected))select.value=selected;'''
+          });'''
           )
 
           replace_once(
@@ -69,18 +59,14 @@ jobs:
               '''return `<div class="receipt-row"><div class="receipt-company">${escapeHtml(company)}</div><div class="receipt-track"><div class="receipt-fill" style="width:${width}%"></div></div><div class="receipt-value">${formatAngka(qty)} L</div></div>`;'''
           )
 
+          replace_once('hm-master.html', 'if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}', 'if(error){body.innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}')
           replace_once(
               'hm-master.html',
-              '''    if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}
-          if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
-          body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");''',
-              '''    if(error){body.innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}
-          if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
-          body.innerHTML=data.map(r=>`<tr><td>${esc(r.tanggal)}</td><td>${esc(String(r.jam||"").slice(0,8))}</td><td>${esc(r.unit)}</td><td>${fmt(r.hm)}</td><td>${esc(r.operator||"-")}</td><td>${esc(r.note||"-")}</td></tr>`).join("");'''
+              '''body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");''',
+              '''body.innerHTML=data.map(r=>`<tr><td>${esc(r.tanggal)}</td><td>${esc(String(r.jam||"").slice(0,8))}</td><td>${esc(r.unit)}</td><td>${fmt(r.hm)}</td><td>${esc(r.operator||"-")}</td><td>${esc(r.note||"-")}</td></tr>`).join("");'''
           )
 
-          test=Path('scripts/test-rendering-safety.mjs')
-          test.write_text(textwrap.dedent(r'''
+          Path('scripts/test-rendering-safety.mjs').write_text(textwrap.dedent(r'''
           import test from "node:test";
           import assert from "node:assert/strict";
           import fs from "node:fs";
