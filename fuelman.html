@@ -69,8 +69,8 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
 <div class="container">
 
   <div class="info">
-    <b>Alur Fuelman:</b><br>
-    Start Shift → pilih Shift & Fuel Truck → Pengisian / Stock → Closing Stock → End Shift.
+    <b>Alur Shift Fuelman:</b><br>
+    Start Shift → pilih Shift & Tugas. <b>FUELMAN</b> memilih FT dan bertanggung jawab atas Pengisian + Closing FT miliknya. <b>PIC TRANSFER</b> hanya melihat Stock dan wajib Closing semua MT aktif sebelum End Shift.
   </div>
 
   <div id="loadingPanel" class="panel">
@@ -79,7 +79,6 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
 
   <div id="startPanel" class="panel hidden">
     <h2>▶️ Start Shift</h2>
-
     <div class="grid">
       <div>
         <label>Shift</label>
@@ -91,6 +90,15 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
       </div>
 
       <div>
+        <label>Tugas Shift</label>
+        <select id="dutyType">
+          <option value="">-- Pilih Tugas --</option>
+          <option value="FUELMAN">FUELMAN</option>
+          <option value="PIC_TRANSFER">PIC TRANSFER</option>
+        </select>
+      </div>
+
+      <div id="fuelTruckGroup" class="hidden">
         <label>Fuel Truck</label>
         <select id="fuelTruck"><option value="">-- Pilih Fuel Truck --</option></select>
       </div>
@@ -120,6 +128,10 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
         <span id="sShift">-</span>
       </div>
       <div class="session-row">
+        <b>Tugas Shift</b>
+        <span id="sDuty">-</span>
+      </div>
+      <div class="session-row" id="sTruckRow">
         <b>Fuel Truck</b>
         <span id="sTruck">-</span>
       </div>
@@ -134,7 +146,7 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
     </div>
 
     <div class="actions">
-      <a class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
+      <a id="fuelingLink" class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
       <a class="btn btn-gray" href="stock.html">🛢️ Stock</a>
       <button id="endBtn" class="btn-red">END SHIFT</button>
     </div>
@@ -148,6 +160,18 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
 let currentProfile=null;
 let currentSession=null;
 let STORAGE_ROWS=window.KPPStorage.fallbackRows();
+
+function dutyLabel(value){return value==="PIC_TRANSFER"?"PIC TRANSFER":"FUELMAN";}
+function syncDutyForm(){
+  const duty=document.getElementById("dutyType")?.value||"";
+  const group=document.getElementById("fuelTruckGroup");
+  const truck=document.getElementById("fuelTruck");
+  if(!group||!truck)return;
+  const needsTruck=duty==="FUELMAN";
+  group.classList.toggle("hidden",!needsTruck);
+  truck.disabled=!needsTruck;
+  if(!needsTruck)truck.value="";
+}
 async function loadFuelTruckMaster(){
   STORAGE_ROWS=await window.KPPStorage.load(KPP.db,{activeOnly:true});
   const rows=STORAGE_ROWS.filter(row=>row.storage_type==="FT");
@@ -219,130 +243,73 @@ async function loadActiveSession(){
 
 function renderActive(){
   if(!currentSession)return;
-
+  const duty=currentSession.duty_type||"FUELMAN";
   document.getElementById("sFuelman").textContent=currentSession.fuelman_name||"-";
   document.getElementById("sTanggal").textContent=fmtDate(currentSession.tanggal);
   document.getElementById("sShift").textContent=currentSession.shift||"-";
+  document.getElementById("sDuty").textContent=dutyLabel(duty);
   document.getElementById("sTruck").textContent=currentSession.fuel_truck||"-";
+  document.getElementById("sTruckRow").classList.toggle("hidden",duty==="PIC_TRANSFER");
+  document.getElementById("fuelingLink").classList.toggle("hidden",duty==="PIC_TRANSFER");
   document.getElementById("sMulai").textContent=fmtTime(currentSession.jam_mulai);
-
-  hide("startPanel");
-  show("activePanel");
+  hide("startPanel"); show("activePanel");
 }
 
 async function startShift(){
   const shift=document.getElementById("shift").value;
-  const fuelTruck=document.getElementById("fuelTruck").value;
-  const status=document.getElementById("startStatus");
-  const btn=document.getElementById("startBtn");
-
+  const dutyType=document.getElementById("dutyType").value;
+  const fuelTruck=dutyType==="FUELMAN"?document.getElementById("fuelTruck").value:null;
+  const status=document.getElementById("startStatus"),btn=document.getElementById("startBtn");
   status.textContent="";
+  if(!shift){status.textContent="❌ Pilih Shift.";return;}
+  if(!dutyType){status.textContent="❌ Pilih Tugas Shift.";return;}
+  if(dutyType==="FUELMAN"&&!fuelTruck){status.textContent="❌ FUELMAN wajib memilih Fuel Truck.";return;}
+  const responsibility=dutyType==="PIC_TRANSFER"?"Closing semua MT aktif sebelum End Shift":`Closing ${fuelTruck} sebelum End Shift`;
+  if(!confirm(`Mulai shift?
 
-  if(!shift){
-    status.textContent="❌ Pilih Shift.";
-    return;
-  }
-
-  if(!fuelTruck){
-    status.textContent="❌ Pilih Fuel Truck.";
-    return;
-  }
-
-  const ok=confirm(
-    `Mulai shift?\n\nFuelman: ${currentProfile.display_name}\nShift: ${shift}\nFuel Truck: ${fuelTruck}`
-  );
-
-  if(!ok)return;
-
-  btn.disabled=true;
-  btn.textContent="MEMULAI...";
-
-  const row={
-    user_id:KPP_SESSION.user.id,
-    username:currentProfile.username,
-    fuelman_name:currentProfile.display_name,
-    tanggal:localDate(),
-    shift,
-    fuel_truck:fuelTruck,
-    jam_mulai:localTime(),
-    status:"ACTIVE"
-  };
-
-  const {data,error}=await KPP.db
-    .from("fuelman_sessions")
-    .insert(row)
-    .select()
-    .single();
-
-  btn.disabled=false;
-  btn.textContent="START SHIFT";
-
-  if(error){
-    let msg=error.message;
-
-    if(msg.includes("fuelman_sessions_one_active_user")){
-      msg="Akun ini masih punya shift aktif.";
-    }else if(msg.includes("fuelman_sessions_one_active_truck")){
-      msg=`${fuelTruck} sedang dipakai Fuelman lain yang masih ACTIVE.`;
-    }
-
-    status.textContent="❌ "+msg;
-    return;
-  }
-
-  currentSession=data;
+Fuelman: ${currentProfile.display_name}
+Shift: ${shift}
+Tugas: ${dutyLabel(dutyType)}`+(fuelTruck?`
+Fuel Truck: ${fuelTruck}`:"")+`
+Tanggung jawab: ${responsibility}`))return;
+  btn.disabled=true;btn.textContent="MEMULAI...";
+  const {data,error}=await KPP.db.rpc("start_fuelman_shift",{p_shift:shift,p_duty_type:dutyType,p_fuel_truck:fuelTruck||null});
+  btn.disabled=false;btn.textContent="START SHIFT";
+  if(error){status.textContent="❌ "+error.message;return;}
+  currentSession=data?.data||null;
+  if(!currentSession){status.textContent="❌ Session belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
   renderActive();
 }
 
 async function endShift(){
   if(!currentSession)return;
+  const duty=currentSession.duty_type||"FUELMAN";
+  const responsibility=duty==="PIC_TRANSFER"?"semua MT aktif":currentSession.fuel_truck;
+  if(!confirm(`Akhiri shift?
 
-  const ok=confirm(
-    `Akhiri shift?\n\n${currentSession.shift} • ${currentSession.fuel_truck}\n\nPastikan Closing Stock sudah dilakukan.`
-  );
+${currentSession.shift} • ${dutyLabel(duty)}`+(currentSession.fuel_truck?` • ${currentSession.fuel_truck}`:"")+`
 
-  if(!ok)return;
-
-  const btn=document.getElementById("endBtn");
-  const status=document.getElementById("endStatus");
-
-  btn.disabled=true;
-  btn.textContent="MENGAKHIRI...";
-  status.textContent="";
-
-  const {error}=await KPP.db
-    .from("fuelman_sessions")
-    .update({
-      jam_selesai:localTime(),
-      status:"ENDED",
-      ended_at:new Date().toISOString()
-    })
-    .eq("id",currentSession.id)
-    .eq("user_id",KPP_SESSION.user.id);
-
-  btn.disabled=false;
-  btn.textContent="END SHIFT";
-
-  if(error){
-    status.textContent="❌ "+error.message;
-    return;
-  }
-
+Wajib sudah Closing: ${responsibility}.`))return;
+  const btn=document.getElementById("endBtn"),status=document.getElementById("endStatus");
+  btn.disabled=true;btn.textContent="MENGAKHIRI...";status.textContent="";
+  const {data,error}=await KPP.db.rpc("end_fuelman_shift",{p_session_id:currentSession.id});
+  btn.disabled=false;btn.textContent="END SHIFT";
+  if(error){status.textContent="❌ "+error.message+" Buka menu Stock dan lengkapi sonding yang diwajibkan.";return;}
+  if(!data?.ok){status.textContent="❌ End Shift belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
   currentSession=null;
-  document.getElementById("shift").value="";
-  document.getElementById("fuelTruck").value="";
+  document.getElementById("shift").value="";document.getElementById("dutyType").value="";document.getElementById("fuelTruck").value="";syncDutyForm();
   document.getElementById("startStatus").textContent="✅ Shift sebelumnya sudah diakhiri.";
-
-  hide("activePanel");
-  show("startPanel");
+  hide("activePanel");show("startPanel");
 }
 
+document.getElementById("dutyType").addEventListener("change",syncDutyForm);
 document.getElementById("startBtn").addEventListener("click",startShift);
 document.getElementById("endBtn").addEventListener("click",endShift);
 
 document.addEventListener("kpp-auth-ready",async(e)=>{
   currentProfile=e.detail.profile;
   await loadFuelTruckMaster();
+  syncDutyForm();
   await loadActiveSession();
 });
 </script>

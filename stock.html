@@ -789,6 +789,15 @@ th{background:#f8fafc;color:#475569}
   #movementPanelContent:not(.hidden){margin-top:8px!important}
 }
 
+
+/* ===== KPP-FMS FUELMAN DUTY VISIBILITY v1 ===== */
+.pic-transfer-mode .converter-panel,
+.pic-transfer-mode .opening-panel,
+.pic-transfer-mode .receipt-panel,
+.pic-transfer-mode .transfer-panel,
+.pic-transfer-mode .movement-panel,
+.pic-transfer-mode .workflow-compact-tools{display:none!important}
+
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 </head>
@@ -909,8 +918,9 @@ th{background:#f8fafc;color:#475569}
     <strong> SHIFT FUELMAN AKTIF</strong><br>
     Fuelman: <span id="sessionFuelman">-</span><br>
     Shift: <span id="sessionShift">-</span><br>
-    Fuel Truck: <span id="sessionTruck">-</span><br>
-    <span>Untuk akun Fuelman, tanggal/shift mengikuti session dan Stock Closing hanya untuk Fuel Truck yang sedang dipakai.</span>
+    Tugas: <span id="sessionDuty">-</span><br>
+    <span id="sessionTruckLine">Fuel Truck: <span id="sessionTruck">-</span><br></span>
+    <span id="sessionResponsibility">Tanggal/shift dan tanggung jawab Closing mengikuti session.</span>
 </div>
 
 <div class="panel period-panel">
@@ -2238,11 +2248,11 @@ function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOv
 }
 
 function closingStoragesForAccount(){
-    return CURRENT_PROFILE &&
-        CURRENT_PROFILE.role==="fuelman" &&
-        ACTIVE_FUELMAN_SESSION
-            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
-            : STORAGES;
+    if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman" && ACTIVE_FUELMAN_SESSION))return STORAGES;
+    if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){
+        return STORAGE_ROWS.filter(row=>row.active!==false && row.storage_type==="MT").map(row=>row.code);
+    }
+    return ACTIVE_FUELMAN_SESSION.fuel_truck?[ACTIVE_FUELMAN_SESSION.fuel_truck]:[];
 }
 
 function buildClosingCopyReport(){
@@ -3227,27 +3237,20 @@ function applyAccountSoundingIdentity(){
 
 function applyFuelmanIdentity(){
     applyAccountSoundingIdentity();
-
-    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION){
-        return;
-    }
-
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION)return;
     const name=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||"";
-
-    fillStorageSelect("editSource",true);
-fillStorageSelect("editDestination",false);
-
-const openingStorage=document.getElementById("openingStorage");
-    if(openingStorage){
-        openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck;
-        openingStorage.disabled=true;
-        openingStorage.classList.add("locked-field");
-        updateOpeningConversion();
-    }
-
+    const duty=ACTIVE_FUELMAN_SESSION.duty_type||"FUELMAN",picTransfer=duty==="PIC_TRANSFER";
+    document.body.classList.toggle("pic-transfer-mode",picTransfer);
+    document.querySelectorAll('a[href="pengisian.html"]').forEach(link=>link.classList.toggle("hidden",picTransfer));
+    fillStorageSelect("editSource",true);fillStorageSelect("editDestination",false);
+    const openingStorage=document.getElementById("openingStorage");
+    if(openingStorage&&!picTransfer){openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck||"";openingStorage.disabled=true;openingStorage.classList.add("locked-field");updateOpeningConversion();}
     document.getElementById("sessionFuelman").textContent=name||"-";
     document.getElementById("sessionShift").textContent=ACTIVE_FUELMAN_SESSION.shift||"-";
+    document.getElementById("sessionDuty").textContent=picTransfer?"PIC TRANSFER":"FUELMAN";
     document.getElementById("sessionTruck").textContent=ACTIVE_FUELMAN_SESSION.fuel_truck||"-";
+    document.getElementById("sessionTruckLine").classList.toggle("hidden",picTransfer);
+    document.getElementById("sessionResponsibility").textContent=picTransfer?"PIC TRANSFER: hanya melihat posisi stock dan wajib Closing semua MT aktif sebelum End Shift.":"FUELMAN: Closing hanya untuk FT yang sedang dibawa sebelum End Shift.";
     document.getElementById("fuelmanSessionInfo").classList.remove("hidden");
 }
 
@@ -3283,7 +3286,7 @@ async function loadFuelmanSession(){
         return false;
     }
 
-    ACTIVE_FUELMAN_SESSION=data[0];
+    ACTIVE_FUELMAN_SESSION={...data[0],duty_type:data[0].duty_type||"FUELMAN"};
 
     document.getElementById("tanggal").value=ACTIVE_FUELMAN_SESSION.tanggal;
     document.getElementById("shift").value=String(
@@ -3741,6 +3744,7 @@ async function saveOpening(){
             window.location.replace("fuelman.html");
             return;
         }
+        if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){alert("PIC TRANSFER hanya melihat stock dan melakukan Closing semua MT aktif.");return;}
         storage=ACTIVE_FUELMAN_SESSION.fuel_truck;
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
@@ -4146,10 +4150,7 @@ async function saveClosing(){
         return;
     }
 
-    const closingStorages=
-        isFuelman
-            ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
-            : STORAGES;
+    const closingStorages=closingStoragesForAccount();
     const revisionState=closingRevisionState();
     const isRevision=revisionState.isFinal;
 
@@ -4355,14 +4356,14 @@ async function saveClosing(){
         };
         document.getElementById("closingStatus").textContent=
             isFuelman
-                ? "[OK] Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                ? "[OK] Closing "+(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"?"semua MT aktif":ACTIVE_FUELMAN_SESSION.fuel_truck)+
                   " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
                 : "[OK] Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
                   nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
     }else{
         document.getElementById("closingStatus").textContent=
             isFuelman
-                ? "[OK] Closing "+ACTIVE_FUELMAN_SESSION.fuel_truck+
+                ? "[OK] Closing "+(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"?"semua MT aktif":ACTIVE_FUELMAN_SESSION.fuel_truck)+
                   " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
                 : "[OK] Stock closing tersimpan.";
     }

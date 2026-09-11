@@ -1195,6 +1195,12 @@ async function loadActiveFuelmanSession() {
 
     activeFuelmanSession = data[0];
 
+    if((activeFuelmanSession.duty_type||"FUELMAN")==="PIC_TRANSFER"){
+        alert("PIC TRANSFER tidak memiliki akses Pengisian Fuel. Gunakan menu Stock untuk melihat posisi stock dan Closing semua MT aktif.");
+        window.location.replace("stock.html");
+        return;
+    }
+
     const shiftNumber = shiftSessionToNumber(activeFuelmanSession.shift);
 
     applyFuelTruckSelection(activeFuelmanSession.fuel_truck, true);
