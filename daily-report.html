@@ -247,6 +247,31 @@ th{background:#f8fafc;color:#475569}
   .stock-total-main strong{font-size:30px}
 }
 
+
+/* ===== KPP-FMS DAILY STOCK RADIAL v1 ===== */
+#stockCards.cards{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.daily-stock-gauge{display:flex;flex-direction:column;align-items:center;padding:12px 10px!important;background:#fff!important}
+.daily-stock-context{width:100%;text-align:center;color:#64748b;font-size:9px;font-weight:800;min-height:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.daily-stock-radial{--ring-pct:0;--ring-color:#16a34a;width:126px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--ring-color) calc(var(--ring-pct)*1%),#e8edf4 0)}
+.daily-stock-radial::before{content:"";position:absolute;inset:11px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1px #edf1f6}
+.daily-stock-radial-inner{position:relative;z-index:1;text-align:center;display:flex;flex-direction:column;align-items:center;line-height:1.05}
+.daily-stock-code{font-size:13px;font-weight:900;color:#0f172a}
+.daily-stock-pct{margin-top:5px;font-size:21px;font-weight:900;color:var(--ring-color)}
+.daily-stock-status{margin-top:5px;padding:3px 7px;border-radius:999px;font-size:8px;font-weight:900;color:var(--ring-color);background:#f8fafc}
+.daily-stock-radial.safe{--ring-color:#16a34a}.daily-stock-radial.low{--ring-color:#f59e0b}.daily-stock-radial.critical{--ring-color:#ef4444}.daily-stock-radial.high{--ring-color:#f97316}
+.daily-stock-metrics{width:100%;display:grid;grid-template-columns:1fr 1fr;margin-top:9px;padding-top:8px;border-top:1px solid #eef2f7}
+.daily-stock-metric{text-align:center;padding:0 4px;min-width:0}.daily-stock-metric+.daily-stock-metric{border-left:1px solid #e5e7eb}
+.daily-stock-metric strong{display:block!important;color:#0f172a!important;font-size:12px!important;line-height:1.15}.daily-stock-metric small{font-size:8px!important;color:#64748b!important;margin:2px 0 0!important}
+.daily-stock-gauge .stock-sounding-estimate{width:100%;margin-top:7px;padding:5px 6px;border-radius:7px;background:#f8fafc}
+.daily-total-compact{padding:8px 10px;border-radius:9px;background:#f8fafc;border:1px solid #e5e7eb;font-size:11px;font-weight:800;text-align:right}
+@media(max-width:600px){
+  #stockCards.cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  .daily-stock-gauge{padding:8px 5px!important;min-width:0!important}
+  .daily-stock-radial{width:96px!important}.daily-stock-radial::before{inset:8px!important}
+  .daily-stock-code{font-size:11px!important}.daily-stock-pct{font-size:17px!important;margin-top:4px!important}.daily-stock-status{font-size:7px!important;margin-top:4px!important;padding:2px 5px!important}
+  .daily-stock-context{font-size:7.5px!important}.daily-stock-metric{padding:0 2px!important}.daily-stock-metric strong{font-size:9px!important;white-space:normal!important}.daily-stock-metric small{font-size:7px!important}
+  .daily-stock-gauge .stock-sounding-estimate span,.daily-stock-gauge .stock-sounding-estimate b{font-size:7.5px!important}
+}
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 </head>
@@ -631,22 +656,20 @@ function renderStock(stock){
     const statusText=cls==="critical"?"KRITIS":cls==="low"?"RENDAH":cls==="high"?"TINGGI":"AMAN";
 
     host.innerHTML+=`
-      <div class="card ${cardClass}">
-        <small>${storage}${suffix}</small>
-        <strong>${fmt(stock[storage])} L</strong>
-        <div class="stock-sounding-estimate">
-          <span>Estimasi sounding</span>
-          <b>~ ${fmtSonding(sounding)} cm</b>
-        </div>
-        <div class="capacity-wrap">
-          <div class="capacity-row">
-            <span>Kapasitas ${fmt(cap)} L</span>
-            <span class="capacity-text ${cls}">${pctFmt(pct)}% - ${statusText}</span>
-          </div>
-          <div class="capacity-bar">
-            <div class="capacity-fill ${cls}" style="width:${width}%"></div>
+      <div class="card daily-stock-gauge ${cardClass}">
+        <div class="daily-stock-context">${suffix ? suffix.replace(/^\s*\/\s*/,"") : "STORAGE FUEL"}</div>
+        <div class="daily-stock-radial ${cls}" style="--ring-pct:${width}">
+          <div class="daily-stock-radial-inner">
+            <span class="daily-stock-code">${storage}</span>
+            <span class="daily-stock-pct">${pctFmt(pct)}%</span>
+            <span class="daily-stock-status">${statusText}</span>
           </div>
         </div>
+        <div class="daily-stock-metrics">
+          <div class="daily-stock-metric"><strong>${fmt(stock[storage])} L</strong><small>STOCK</small></div>
+          <div class="daily-stock-metric"><strong>${fmt(cap)} L</strong><small>KAPASITAS</small></div>
+        </div>
+        <div class="stock-sounding-estimate"><span>Sonding estimasi</span><b>~ ${fmtSonding(sounding)} cm</b></div>
       </div>
     `;
   });
@@ -679,11 +702,8 @@ function renderStock(stock){
             <span>Total kapasitas ${fmt(TOTAL_CAPACITY)} L</span>
             <span class="capacity-text ${totalCls}">${pctFmt(totalPct)}% terisi</span>
           </div>
-          <div class="capacity-bar">
-            <div class="capacity-fill ${totalCls}" style="width:${Math.max(0,Math.min(totalPct,100))}%"></div>
-          </div>
         </div>
-        <div class="stock-total-note">Status total stock mengikuti level kapasitas storage.</div>
+        
       </div>
     </div>
   `;
