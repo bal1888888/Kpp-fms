@@ -258,6 +258,10 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <tbody id="logsheetBody"></tbody>
 </table>
 </div>
+<div id="logsheetPaging" style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px 0 2px">
+  <span id="logsheetPagingText" style="font-size:11px;color:#64748b;font-weight:700"></span>
+  <button id="loadMoreLogsheet" type="button" class="download-btn hidden" onclick="loadMoreLogsheet()">MUAT 300 DATA LAGI</button>
+</div>
 
 <div id="loading" class="loading">Mengambil data dari database...</div>
 
@@ -312,6 +316,8 @@ async function loadUnitMasterOnline(){
 }
 
 let ALL_DATA=[];
+const LOGSHEET_PAGE_SIZE=300;
+let LOGSHEET_VISIBLE_LIMIT=LOGSHEET_PAGE_SIZE;
 let STATUS_MAP=new Map();
 let AUDIT_MAP=new Map();
 let HM_ANOMALY_MAP=new Map();
@@ -820,7 +826,7 @@ function renderTable(data){
   const body=document.getElementById("logsheetBody");
   body.innerHTML="";
 
-  data.forEach((item,index)=>{
+  data.slice(0,LOGSHEET_VISIBLE_LIMIT).forEach((item,index)=>{
     const unit=String(item.unit||"").trim().toUpperCase();
     const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
     const row=document.createElement("tr");
@@ -867,7 +873,24 @@ function renderTable(data){
   });
 }
 
-function renderFiltered(){
+function updateLogsheetPaging(total){
+  const textEl=document.getElementById("logsheetPagingText");
+  const button=document.getElementById("loadMoreLogsheet");
+  if(!textEl||!button)return;
+  const shown=Math.min(LOGSHEET_VISIBLE_LIMIT,total);
+  textEl.textContent=total
+    ? `Menampilkan ${formatAngka(shown)} dari ${formatAngka(total)} transaksi hasil filter.`
+    : "";
+  button.classList.toggle("hidden",shown>=total);
+}
+
+function loadMoreLogsheet(){
+  LOGSHEET_VISIBLE_LIMIT+=LOGSHEET_PAGE_SIZE;
+  renderFiltered(false);
+}
+
+function renderFiltered(resetWindow=true){
+  if(resetWindow)LOGSHEET_VISIBLE_LIMIT=LOGSHEET_PAGE_SIZE;
   HM_ANOMALY_MAP=buildHmAnomalyMap(ALL_DATA);
   const filtered=applyFilter(ALL_DATA);
 
@@ -884,6 +907,7 @@ function renderFiltered(){
   }
 
   renderTable(filtered);
+  updateLogsheetPaging(filtered.length);
 
   const loading=document.getElementById("loading");
   if(filtered.length===0){
@@ -1001,7 +1025,7 @@ async function saveHmCleanup(){
 }
 
 async function downloadExcel(){
-  const data=renderFiltered();
+  const data=applyFilter(ALL_DATA);
 
   if(data.length===0){
     alert("Tidak ada data untuk didownload.");
