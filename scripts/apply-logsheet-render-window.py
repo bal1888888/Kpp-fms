@@ -25,8 +25,16 @@ replace_once(
 )
 
 replace_once(
-    "  data.forEach((item,index)=>{",
-    "  data.slice(0,LOGSHEET_VISIBLE_LIMIT).forEach((item,index)=>{",
+    '''function renderTable(data){
+  const body=document.getElementById("logsheetBody");
+  body.innerHTML="";
+
+  data.forEach((item,index)=>{''',
+    '''function renderTable(data){
+  const body=document.getElementById("logsheetBody");
+  body.innerHTML="";
+
+  data.slice(0,LOGSHEET_VISIBLE_LIMIT).forEach((item,index)=>{''',
     "render slice",
 )
 
