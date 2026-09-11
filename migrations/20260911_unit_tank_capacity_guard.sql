@@ -126,7 +126,7 @@ begin
    limit 1;
 
   if v_capacity is not null and new.fuel > v_capacity then
-    raise exception 'Qty fuel %.2f L melebihi kapasitas tangki unit % sebesar %.2f L.',
+    raise exception 'Qty fuel % L melebihi kapasitas tangki unit % sebesar % L.',
       new.fuel, v_unit, v_capacity;
   end if;
 
