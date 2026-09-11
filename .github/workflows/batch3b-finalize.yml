@@ -30,7 +30,23 @@ jobs:
           start=workflow.index("          python - <<'PY'")+len("          python - <<'PY'\n")
           end=workflow.index("\n          PY",start)
           patch_script=textwrap.dedent(workflow[start:end])
+
+          # Keep page-specific operational-shift resolvers intact. Some pages,
+          # such as CCR, delegate this rule to their tested domain helper.
+          shift_rewrite="text,changed_shift=replace_function(text,'currentOperationalShift','function currentOperationalShift(){return window.KPPTime.operationalShift();}')"
+          if shift_rewrite not in patch_script:
+            raise RuntimeError('Batch 3B shift rewrite anchor missing')
+          patch_script=patch_script.replace(shift_rewrite,"changed_shift=False",1)
+
           exec(compile(patch_script,'batch3b-embedded.py','exec'),{})
+
+          # Existing storage helper contracts intentionally use the canonical
+          # filename. Cache-bust auth/WIB/polish assets without changing it.
+          for page in Path('.').glob('*.html'):
+            html=page.read_text(encoding='utf-8')
+            fixed=html.replace('storage-master.js?v=20260911b3','storage-master.js')
+            if fixed!=html:
+              page.write_text(fixed,encoding='utf-8')
 
           test=Path('scripts/test-wib-runtime.mjs')
           s=test.read_text(encoding='utf-8')
