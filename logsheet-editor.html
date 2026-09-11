@@ -13,6 +13,7 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet-editor";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -326,10 +327,53 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 <script>
 const db=KPP.db;
 
-const FT_WH={
-  FT0073:"FT02",
-  FT0075:"FT01"
-};
+let EDITOR_STORAGE_ROWS=[];
+let EDITOR_FT_MAP={};
+let EDITOR_FT_CODES=[];
+let EDITOR_WH_TO_FTS=new Map();
+
+async function loadStorageMasterEditor(){
+  if(!window.KPPStorage)throw new Error("Master MT/FT belum termuat.");
+  EDITOR_STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:false});
+  EDITOR_FT_MAP=window.KPPStorage.ftMap(EDITOR_STORAGE_ROWS);
+  EDITOR_FT_CODES=EDITOR_STORAGE_ROWS
+    .filter(row=>String(row.storage_type||"").toUpperCase()==="FT")
+    .map(row=>String(row.code||"").trim().toUpperCase())
+    .filter(Boolean)
+    .sort((a,b)=>a.localeCompare(b));
+  EDITOR_WH_TO_FTS=new Map();
+  Object.entries(EDITOR_FT_MAP).forEach(([ft,wh])=>{
+    if(!wh)return;
+    if(!EDITOR_WH_TO_FTS.has(wh))EDITOR_WH_TO_FTS.set(wh,[]);
+    EDITOR_WH_TO_FTS.get(wh).push(ft);
+  });
+}
+
+function canonicalFT(v){
+  const s=String(v||"").trim().toUpperCase().replace(/\s/g,"");
+  if(!s)return "";
+  if(s==="73"||s==="0073"||s==="FT73")return "FT0073";
+  if(s==="75"||s==="0075"||s==="FT75")return "FT0075";
+  if(/^FT[0-9]+$/.test(s))return s;
+  return "";
+}
+
+function preserveExistingFT(v){
+  return canonicalFT(v);
+}
+
+function whForFT(v){
+  const code=canonicalFT(v);
+  return code?EDITOR_FT_MAP[code]||"":"";
+}
+
+function renderFtOptions(selected){
+  const current=preserveExistingFT(selected);
+  const codes=[...EDITOR_FT_CODES];
+  if(current&&!codes.includes(current))codes.push(current);
+  codes.sort((a,b)=>a.localeCompare(b));
+  return '<option value="">-</option>'+codes.map(code=>`<option value="${esc(code)}"${current===code?" selected":""}>${esc(code)}</option>`).join("");
+}
 
 let rows=[];
 let unitMaster=[];
@@ -376,11 +420,8 @@ function normalizeShift(v){
   return "";
 }
 function normalizeFT(v){
-  const s=String(v||"").trim().toUpperCase().replace(/\s/g,"");
-  if(s==="73"||s==="0073"||s==="FT73")return "FT0073";
-  if(s==="75"||s==="0075"||s==="FT75")return "FT0075";
-  if(s==="FT0073"||s==="FT0075")return s;
-  return "";
+  const code=canonicalFT(v);
+  return code&&EDITOR_FT_CODES.includes(code)?code:"";
 }
 function cleanText(v){return String(v||"").trim()}
 function esc(s){
@@ -483,10 +524,9 @@ function makeAutoTime(shift,counters){
 }
 
 function inferFTFromWH(v){
-  const wh=String(v||"").trim().toUpperCase();
-  if(wh==="FT02")return "FT0073";
-  if(wh==="FT01")return "FT0075";
-  return "";
+  const wh=window.KPPStorage?.normalizeWarehouse(v)||String(v||"").trim().toUpperCase();
+  const matches=EDITOR_WH_TO_FTS.get(wh)||[];
+  return matches.length===1?matches[0]:"";
 }
 
 function stableNumber(v){
@@ -907,7 +947,7 @@ async function importExcelFile(file){
         fuel:num(raw[idx.qty]),
         shift,
         fuel_truck:ft,
-        wh:FT_WH[ft]||cleanText(idx.wh>=0?raw[idx.wh]:""),
+        wh:whForFT(ft)||cleanText(idx.wh>=0?raw[idx.wh]:""),
         fuelman_name:idx.fuelman>=0?cleanText(raw[idx.fuelman]):"",
         dirty:true,
         imported:true,
@@ -1187,7 +1227,7 @@ async function loadDate(options={}){
     hm_jalan:num(r.hm_jalan),
     fuel:num(r.fuel),
     shift:normalizeShift(r.shift),
-    fuel_truck:normalizeFT(r.fuel_truck) || (String(r.wh||"").toUpperCase()==="FT02"?"FT0073":String(r.wh||"").toUpperCase()==="FT01"?"FT0075":""),
+    fuel_truck:normalizeFT(r.fuel_truck)||preserveExistingFT(r.fuel_truck)||inferFTFromWH(r.wh),
     fuelman_name:r.fuelman_name||"",
     wh:r.wh||"",
     existing:true,
@@ -1361,12 +1401,12 @@ function setValue(index,field,value){
   if(field==="jam")value=displayTime(normalizeTime(value));
   if(field==="hm_akhir"||field==="fuel")value=num(value);
   if(field==="shift")value=normalizeShift(value);
-  if(field==="fuel_truck")value=normalizeFT(value);
+  if(field==="fuel_truck")value=normalizeFT(value)||(rows[index]?.id?preserveExistingFT(value):"");
 
   r[field]=value;
 
   if(field==="fuel_truck"){
-    r.wh=FT_WH[value]||"";
+    r.wh=whForFT(value)||r.wh||"";
     const tr=document.querySelector(`tr[data-index="${index}"]`);
     const whCell=tr?.querySelector(".wh-auto");
     if(whCell) whCell.textContent=r.wh||"-";
@@ -1412,12 +1452,10 @@ function render(){
       </td>
       <td>
         <select class="grid-select col-ft" data-col="6">
-          <option value="">-</option>
-          <option value="FT0073"${r.fuel_truck==="FT0073"?" selected":""}>FT0073</option>
-          <option value="FT0075"${r.fuel_truck==="FT0075"?" selected":""}>FT0075</option>
+          ${renderFtOptions(r.fuel_truck)}
         </select>
       </td>
-      <td class="calc wh-auto col-wh">${esc(r.wh || FT_WH[r.fuel_truck] || "-")}</td>
+      <td class="calc wh-auto col-wh">${esc(r.wh || whForFT(r.fuel_truck) || "-")}</td>
       <td><input class="grid-input col-fuelman" data-col="7" value="${esc(r.fuelman_name)}" placeholder="Opsional"></td>
       <td class="row-status">
         ${
@@ -1524,10 +1562,10 @@ function pasteMatrix(startRow,startCol,text){
       if(field==="unit")v=cleanText(v).toUpperCase();
       if(field==="hm_akhir"||field==="fuel")v=num(v);
       if(field==="shift")v=normalizeShift(v);
-      if(field==="fuel_truck")v=normalizeFT(v);
+      if(field==="fuel_truck")v=normalizeFT(v)||(rows[idx]?.id?preserveExistingFT(v):"");
 
       rows[idx][field]=v;
-      if(field==="fuel_truck")rows[idx].wh=FT_WH[v]||"";
+      if(field==="fuel_truck")rows[idx].wh=whForFT(v)||rows[idx].wh||"";
       rows[idx].dirty=true;
     });
   });
@@ -1560,7 +1598,7 @@ function validateRow(r,index){
   if(!cleanText(r.unit))return `Baris ${index+1}: Unit wajib diisi.`;
   if(num(r.fuel)===null || num(r.fuel)<=0)return `Baris ${index+1}: Qty harus lebih dari 0.`;
   if(!normalizeShift(r.shift))return `Baris ${index+1}: Shift wajib 1 atau 2.`;
-  if(!normalizeFT(r.fuel_truck))return `Baris ${index+1}: Fuel Truck wajib FT0073 / FT0075.`;
+  if(!normalizeFT(r.fuel_truck)&&!(r.id&&preserveExistingFT(r.fuel_truck)))return `Baris ${index+1}: Fuel Truck wajib terdaftar di Master MT / FT.`;
 
   // HM historis yang lebih kecil dari acuan tetap boleh disimpan.
   // Nilai tersebut tidak akan menggantikan HM acuan tertinggi.
@@ -1610,8 +1648,8 @@ async function saveAll(){
         hm_jalan:r.hm_jalan,
         fuel:num(r.fuel),
         shift:normalizeShift(r.shift),
-        fuel_truck:normalizeFT(r.fuel_truck),
-        wh:FT_WH[normalizeFT(r.fuel_truck)]||cleanText(r.wh)||null,
+        fuel_truck:normalizeFT(r.fuel_truck)||preserveExistingFT(r.fuel_truck)||null,
+        wh:whForFT(normalizeFT(r.fuel_truck)||preserveExistingFT(r.fuel_truck))||cleanText(r.wh)||null,
         fuelman_name:cleanText(r.fuelman_name)||null
       };
 
@@ -1681,7 +1719,7 @@ async function saveAll(){
           fuel:num(r.fuel),
           shift:normalizeShift(r.shift),
           fuel_truck:normalizeFT(r.fuel_truck),
-          wh:FT_WH[normalizeFT(r.fuel_truck)]||cleanText(r.wh)||null,
+          wh:whForFT(normalizeFT(r.fuel_truck))||cleanText(r.wh)||null,
           fuelman_name:cleanText(r.fuelman_name)||null,
           hm_ref_excluded:true,
           hm_ref_excluded_reason:"Dimasukkan melalui Logsheet Editor; histori manual tidak dipakai sebagai HM reference.",
@@ -1842,7 +1880,7 @@ document.addEventListener("kpp-auth-ready",async()=>{
   document.getElementById("editorDate").value=localDate();
 
   try{
-    await loadUnitMaster();
+    await Promise.all([loadUnitMaster(),loadStorageMasterEditor()]);
     await loadDate();
   }catch(e){
     document.getElementById("status").textContent="❌ "+e.message;

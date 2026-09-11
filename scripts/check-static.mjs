@@ -170,7 +170,7 @@ if (!storageHelperSource.includes("storage_master") || !storageHelperSource.incl
 if (!stockSource.includes("loadStorageMaster") || !stockSource.includes("teraLookup")) {
   fail(stockPath, "Stock belum memakai Master MT/FT dan profil sounding dinamis");
 }
-for (const dynamicPage of ["daily-report.html","fuelman.html","pengisian.html","stock-history.html"]) {
+for (const dynamicPage of ["daily-report.html","fuelman.html","pengisian.html","stock-history.html","logsheet.html","logsheet-editor.html","riwayat.html"]) {
   const dynamicSource = fs.readFileSync(path.join(projectRoot, dynamicPage), "utf8");
   if (!dynamicSource.includes('src="storage-master.js"')) {
     fail(path.join(projectRoot, dynamicPage), "belum terhubung ke Master MT/FT dinamis");
