@@ -116,5 +116,5 @@
   .daily-workspace .metric{min-height:132px}.daily-workspace .metric .value{font-size:23px}
   .daily-workspace .report-box{font-size:12px}
 }
-@media(max-width:420px){.stock-workspace .cards,.daily-workspace .cards{grid-template-columns:1fr}}
+@media(max-width:420px){.stock-workspace .cards,.daily-workspace .cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.stock-workspace *,.daily-workspace *{transition:none!important;scroll-behavior:auto!important}}

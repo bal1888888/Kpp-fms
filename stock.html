@@ -663,6 +663,46 @@ th{background:#f8fafc;color:#475569}
   .stock-gauge-metric strong{font-size:10px!important}
 }
 
+
+/* ===== KPP-FMS STOCK RADIAL MOBILE COMPACT v2 ===== */
+@media(max-width:760px){
+  .stock-position-panel{padding:10px!important}
+  .stock-position-panel #stockCards.cards{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    width:100%!important;
+  }
+  .stock-position-panel #stockCards .stock-gauge-card{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:9px 5px 8px!important;
+    border-radius:10px!important;
+  }
+  .stock-position-panel #stockCards .stock-radial{
+    width:104px!important;
+    max-width:100%!important;
+  }
+  .stock-position-panel #stockCards .stock-radial::before{inset:9px!important}
+  .stock-position-panel #stockCards .stock-radial-code{font-size:12px!important;max-width:78px!important}
+  .stock-position-panel #stockCards .stock-radial-percent{font-size:19px!important;margin-top:4px!important}
+  .stock-position-panel #stockCards .stock-radial-status{font-size:7px!important;margin-top:4px!important;padding:3px 6px!important}
+  .stock-position-panel #stockCards .stock-gauge-context{font-size:8px!important;min-height:14px!important;margin-bottom:4px!important}
+  .stock-position-panel #stockCards .stock-gauge-metrics{margin-top:7px!important;padding-top:7px!important}
+  .stock-position-panel #stockCards .stock-gauge-metric{padding:0 2px!important}
+  .stock-position-panel #stockCards .stock-gauge-metric strong{font-size:10px!important;white-space:normal!important;line-height:1.1!important}
+  .stock-position-panel #stockCards .stock-gauge-metric small{font-size:7px!important;margin-top:2px!important}
+  .stock-position-panel #stockCards .stock-sounding-estimate{margin-top:6px!important;padding:5px!important;gap:4px!important}
+  .stock-position-panel #stockCards .stock-sounding-estimate span,
+  .stock-position-panel #stockCards .stock-sounding-estimate b{font-size:7.5px!important;white-space:nowrap!important}
+}
+@media(max-width:360px){
+  .stock-position-panel #stockCards.cards{gap:6px!important}
+  .stock-position-panel #stockCards .stock-radial{width:92px!important}
+  .stock-position-panel #stockCards .stock-gauge-metric strong{font-size:9px!important}
+}
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 </head>
