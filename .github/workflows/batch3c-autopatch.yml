@@ -24,6 +24,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import textwrap
 
           def replace_once(path, old, new):
               p=Path(path)
@@ -47,19 +48,19 @@ jobs:
           replace_once(
               'pengisian.html',
               '''    select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");
-    if(selected && rows.some(row=>row.code===selected))select.value=selected;''',
+          if(selected && rows.some(row=>row.code===selected))select.value=selected;''',
               '''    select.replaceChildren();
-    const placeholder=document.createElement("option");
-    placeholder.value="";
-    placeholder.textContent="-- Pilih Fuel Truck --";
-    select.appendChild(placeholder);
-    rows.forEach(row=>{
-        const option=document.createElement("option");
-        option.value=String(row.code||"");
-        option.textContent=window.KPPStorage.label(row);
-        select.appendChild(option);
-    });
-    if(selected && rows.some(row=>row.code===selected))select.value=selected;'''
+          const placeholder=document.createElement("option");
+          placeholder.value="";
+          placeholder.textContent="-- Pilih Fuel Truck --";
+          select.appendChild(placeholder);
+          rows.forEach(row=>{
+              const option=document.createElement("option");
+              option.value=String(row.code||"");
+              option.textContent=window.KPPStorage.label(row);
+              select.appendChild(option);
+          });
+          if(selected && rows.some(row=>row.code===selected))select.value=selected;'''
           )
 
           replace_once(
@@ -71,48 +72,49 @@ jobs:
           replace_once(
               'hm-master.html',
               '''    if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}
-    if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
-    body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");''',
+          if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
+          body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");''',
               '''    if(error){body.innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}
-    if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
-    body.innerHTML=data.map(r=>`<tr><td>${esc(r.tanggal)}</td><td>${esc(String(r.jam||"").slice(0,8))}</td><td>${esc(r.unit)}</td><td>${fmt(r.hm)}</td><td>${esc(r.operator||"-")}</td><td>${esc(r.note||"-")}</td></tr>`).join("");'''
+          if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
+          body.innerHTML=data.map(r=>`<tr><td>${esc(r.tanggal)}</td><td>${esc(String(r.jam||"").slice(0,8))}</td><td>${esc(r.unit)}</td><td>${fmt(r.hm)}</td><td>${esc(r.operator||"-")}</td><td>${esc(r.note||"-")}</td></tr>`).join("");'''
           )
 
           test=Path('scripts/test-rendering-safety.mjs')
-          test.write_text(r'''import test from "node:test";
-import assert from "node:assert/strict";
-import fs from "node:fs";
+          test.write_text(textwrap.dedent(r'''
+          import test from "node:test";
+          import assert from "node:assert/strict";
+          import fs from "node:fs";
 
-const read=(name)=>fs.readFileSync(new URL(`../${name}`,import.meta.url),"utf8");
+          const read=(name)=>fs.readFileSync(new URL(`../${name}`,import.meta.url),"utf8");
 
-test("stock alert renders dynamic content as text",()=>{
-  const src=read("stock.html");
-  assert.match(src,/banner\.textContent="\[PERINGATAN\] Stock menipis:/);
-  assert.match(src,/banner\.textContent="\[INFO\] Stock mendekati penuh:/);
-  assert.doesNotMatch(src,/banner\.innerHTML="\[(?:PERINGATAN|INFO)\]/);
-});
+          test("stock alert renders dynamic content as text",()=>{
+            const src=read("stock.html");
+            assert.match(src,/banner\.textContent="\[PERINGATAN\] Stock menipis:/);
+            assert.match(src,/banner\.textContent="\[INFO\] Stock mendekati penuh:/);
+            assert.doesNotMatch(src,/banner\.innerHTML="\[(?:PERINGATAN|INFO)\]/);
+          });
 
-test("pengisian fuel-truck options use DOM textContent",()=>{
-  const src=read("pengisian.html");
-  assert.match(src,/option\.textContent=window\.KPPStorage\.label\(row\)/);
-  assert.match(src,/select\.replaceChildren\(\)/);
-  assert.doesNotMatch(src,/rows\.map\(row=>`<option value="\$\{row\.code\}/);
-});
+          test("pengisian fuel-truck options use DOM textContent",()=>{
+            const src=read("pengisian.html");
+            assert.match(src,/option\.textContent=window\.KPPStorage\.label\(row\)/);
+            assert.match(src,/select\.replaceChildren\(\)/);
+            assert.doesNotMatch(src,/rows\.map\(row=>`<option value="\$\{row\.code\}/);
+          });
 
-test("dashboard escapes transporter names before HTML rendering",()=>{
-  const src=read("dashboard.html");
-  assert.match(src,/receipt-company">\$\{escapeHtml\(company\)\}/);
-  assert.doesNotMatch(src,/receipt-company">\$\{company\}/);
-});
+          test("dashboard escapes transporter names before HTML rendering",()=>{
+            const src=read("dashboard.html");
+            assert.match(src,/receipt-company">\$\{escapeHtml\(company\)\}/);
+            assert.doesNotMatch(src,/receipt-company">\$\{company\}/);
+          });
 
-test("HM correction history escapes database free text",()=>{
-  const src=read("hm-master.html");
-  assert.match(src,/\$\{esc\(error\.message\)\}/);
-  assert.match(src,/\$\{esc\(r\.operator\|\|"-"\)\}/);
-  assert.match(src,/\$\{esc\(r\.note\|\|"-"\)\}/);
-  assert.doesNotMatch(src,/\$\{r\.note\|\|"-"\}/);
-});
-''',encoding='utf-8')
+          test("HM correction history escapes database free text",()=>{
+            const src=read("hm-master.html");
+            assert.match(src,/\$\{esc\(error\.message\)\}/);
+            assert.match(src,/\$\{esc\(r\.operator\|\|"-"\)\}/);
+            assert.match(src,/\$\{esc\(r\.note\|\|"-"\)\}/);
+            assert.doesNotMatch(src,/\$\{r\.note\|\|"-"\}/);
+          });
+          ''').lstrip(),encoding='utf-8')
 
           package=Path('package.json')
           text=package.read_text(encoding='utf-8')
