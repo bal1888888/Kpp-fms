@@ -1,0 +1,112 @@
+from pathlib import Path
+
+p=Path("stock.html")
+s=p.read_text()
+s=s.replace("<!-- KPP-FMS STOCK v9.14: GL/Admin-only final Stock Closing revision with audit-safe carry forward -->","<!-- KPP-FMS STOCK v9.15: compact mobile workflow + collapsible transaction processes -->",1)
+
+css=r'''
+/* ===== KPP-FMS STOCK MOBILE WORKFLOW COMPACT v1 ===== */
+.workflow-compact-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:#eff6ff}
+.workflow-compact-copy{min-width:0}
+.workflow-compact-copy strong{display:block;font-size:12px;color:#1e3a8a;margin-bottom:2px}
+.workflow-compact-copy span{display:block;font-size:10px;color:#64748b;line-height:1.35}
+.workflow-compact-actions{display:flex;gap:7px;flex:0 0 auto}
+.workflow-compact-actions button{padding:8px 10px;font-size:10px;border:1px solid #bfdbfe;background:#fff;color:#1d4ed8}
+.workflow-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
+.workflow-panel-head h3{margin:0!important;min-width:0}
+.workflow-toggle-btn{flex:0 0 auto;padding:7px 10px!important;font-size:10px!important;background:#eef2ff!important;color:#3730a3!important;border:1px solid #c7d2fe!important}
+.workflow-panel.is-collapsed{padding-top:12px!important;padding-bottom:12px!important}
+.workflow-panel.is-collapsed > *:not(.workflow-panel-head){display:none!important}
+.workflow-panel.is-collapsed .workflow-toggle-btn{background:#eff6ff!important;color:#1d4ed8!important;border-color:#bfdbfe!important}
+.workflow-panel.is-collapsed{box-shadow:0 2px 8px rgba(15,23,42,.035)!important}
+@media(max-width:700px){
+  .container{padding:5px!important;margin:8px auto!important}
+  .workflow-compact-tools{position:sticky;top:54px;z-index:30;padding:8px 9px;margin-bottom:8px;box-shadow:0 5px 14px rgba(15,23,42,.08)}
+  .workflow-compact-copy strong{font-size:11px}.workflow-compact-copy span{font-size:9px}
+  .workflow-compact-actions{gap:5px}.workflow-compact-actions button{padding:7px 8px;font-size:9px}
+  .workflow-panel{padding:10px!important;margin-bottom:9px!important;border-radius:12px!important}
+  .workflow-panel-head h3{font-size:15px!important;line-height:1.25}
+  .workflow-toggle-btn{padding:6px 8px!important;font-size:9px!important}
+  .workflow-panel>.note{font-size:10px!important;line-height:1.35;margin:8px 0!important}
+  .workflow-panel .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .workflow-panel .grid>div{min-width:0}
+  .workflow-panel label{font-size:10px;margin-bottom:4px;line-height:1.25}
+  .workflow-panel input,.workflow-panel select,.workflow-panel textarea{padding:8px 9px;font-size:12px;border-radius:7px;min-height:38px}
+  .workflow-panel textarea{min-height:54px}
+  .workflow-panel button,.workflow-panel .btn{padding:9px 11px;font-size:10px}
+  .workflow-panel details{margin-top:8px!important}
+  .workflow-panel details summary{font-size:10px!important;padding:8px!important}
+  .closing-table{min-width:650px!important}
+  .closing-table th,.closing-table td{font-size:9px!important;padding:5px 4px!important}
+  .closing-table input{min-width:86px!important;padding:7px 6px!important;font-size:11px!important;min-height:34px!important}
+  .closing-system-reading{min-width:115px!important}
+  .closing-system-reading>strong{font-size:10px!important}
+  .closing-system-reading>small{font-size:8px!important;white-space:normal!important;line-height:1.2}
+  .closing-summary{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:9px 0!important}
+  .summary-box{padding:8px!important}.summary-box small{font-size:9px}.summary-box strong{font-size:14px!important}
+}
+'''
+if "KPP-FMS STOCK MOBILE WORKFLOW COMPACT v1" not in s:
+    s=s.replace("</style>",css+"\n</style>",1)
+
+js=r'''
+<script>
+/* ===== KPP-FMS STOCK MOBILE WORKFLOW COMPACT v1 ===== */
+(()=>{
+  const PREF_KEY="kpp-stock-workflow-collapse-v1";
+  const isMobile=()=>window.matchMedia("(max-width: 700px)").matches;
+  const panels=()=>Array.from(document.querySelectorAll(".workflow-panel[data-step]"));
+  function readPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||"{}")}catch{return {}}}
+  function writePrefs(prefs){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs))}catch{}}
+  function refreshButton(panel){
+    const btn=panel.querySelector(":scope > .workflow-panel-head .workflow-toggle-btn");
+    if(!btn)return;
+    const collapsed=panel.classList.contains("is-collapsed");
+    btn.textContent=collapsed?"TAMPILKAN":"SEMBUNYIKAN";
+    btn.setAttribute("aria-expanded",collapsed?"false":"true");
+  }
+  function setCollapsed(panel,collapsed,{persist=true,focus=false}={}){
+    panel.classList.toggle("is-collapsed",!!collapsed);
+    refreshButton(panel);
+    if(focus && !collapsed && isMobile()){
+      panels().forEach(other=>{if(other===panel)return;other.classList.add("is-collapsed");refreshButton(other)});
+    }
+    if(persist){
+      const prefs=readPrefs();
+      panels().forEach(p=>prefs[p.dataset.step]=p.classList.contains("is-collapsed"));
+      writePrefs(prefs);
+    }
+  }
+  function setAll(collapsed){
+    panels().forEach(p=>setCollapsed(p,collapsed,{persist:false}));
+    const prefs={};panels().forEach(p=>prefs[p.dataset.step]=collapsed);writePrefs(prefs);
+  }
+  function init(){
+    const list=panels();
+    if(!list.length||document.querySelector(".workflow-compact-tools"))return;
+    const prefs=readPrefs(),hasSaved=Object.keys(prefs).length>0;
+    const tools=document.createElement("div");
+    tools.className="workflow-compact-tools";
+    tools.innerHTML='<div class="workflow-compact-copy"><strong>Mode Ringkas Transaksi</strong><span>Tap judul proses untuk buka/tutup. Di HP, satu proses dibuka agar halaman tidak kepanjangan.</span></div><div class="workflow-compact-actions"><button type="button" data-action="collapse">Ringkas Semua</button><button type="button" data-action="expand">Buka Semua</button></div>';
+    list[0].before(tools);
+    tools.querySelector('[data-action="collapse"]').addEventListener("click",()=>setAll(true));
+    tools.querySelector('[data-action="expand"]').addEventListener("click",()=>setAll(false));
+    list.forEach(panel=>{
+      const title=panel.querySelector(":scope > h3");if(!title)return;
+      const head=document.createElement("div");head.className="workflow-panel-head";panel.insertBefore(head,title);head.appendChild(title);
+      const btn=document.createElement("button");btn.type="button";btn.className="workflow-toggle-btn";head.appendChild(btn);
+      const initial=hasSaved?prefs[panel.dataset.step]===true:isMobile();
+      setCollapsed(panel,initial,{persist:false});
+      const toggle=()=>setCollapsed(panel,!panel.classList.contains("is-collapsed"),{persist:true,focus:true});
+      btn.addEventListener("click",e=>{e.stopPropagation();toggle()});head.addEventListener("click",toggle);
+    });
+    if(!hasSaved&&!isMobile())list.forEach(panel=>setCollapsed(panel,false,{persist:false}));
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})();
+</script>
+'''
+if '<script>\n/* ===== KPP-FMS STOCK MOBILE WORKFLOW COMPACT v1 ===== */' not in s:
+    s=s.replace("</body>",js+"\n</body>",1)
+
+p.write_text(s)
