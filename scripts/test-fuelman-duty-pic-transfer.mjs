@@ -50,9 +50,10 @@ test("backend blocks PIC Transfer from fueling and stock movement insert paths",
   assert.match(migration,/trg_kpp_stock_movement_fuelman_duty_guard/);
 });
 
-test("one closing owner is locked per shift period",()=>{
-  assert.match(periodLock,/fuelman_sessions_one_fuelman_ft_per_period/);
-  assert.match(periodLock,/on public\.fuelman_sessions\(tanggal, shift, fuel_truck\)/);
-  assert.match(periodLock,/fuelman_sessions_one_pic_transfer_per_period/);
-  assert.match(periodLock,/on public\.fuelman_sessions\(tanggal, shift\)/);
+test("one closing owner is guarded per shift period without rewriting legacy duplicates",()=>{
+  assert.match(periodLock,/create or replace function public\.kpp_fuelman_duty_period_guard/);
+  assert.match(periodLock,/trg_kpp_fuelman_duty_period_guard/);
+  assert.match(periodLock,/new\.duty_type = 'FUELMAN'/);
+  assert.match(periodLock,/new\.duty_type = 'PIC_TRANSFER'/);
+  assert.match(periodLock,/Penugasan kedua diblokir agar Closing tidak ganda/);
 });
