@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const migration=fs.readFileSync(new URL("../supabase/migrations/20260911120000_fuelman_duty_pic_transfer_v1.sql",import.meta.url),"utf8");
 const periodLock=fs.readFileSync(new URL("../supabase/migrations/20260911121000_fuelman_duty_period_lock_v1.sql",import.meta.url),"utf8");
+const legacyCompat=fs.readFileSync(new URL("../supabase/migrations/20260911122000_fuelman_duty_legacy_trigger_compat_v1.sql",import.meta.url),"utf8");
 const fuelman=fs.readFileSync(new URL("../fuelman.html",import.meta.url),"utf8");
 const stock=fs.readFileSync(new URL("../stock.html",import.meta.url),"utf8");
 const pengisian=fs.readFileSync(new URL("../pengisian.html",import.meta.url),"utf8");
@@ -56,4 +57,20 @@ test("one closing owner is guarded per shift period without rewriting legacy dup
   assert.match(periodLock,/new\.duty_type = 'FUELMAN'/);
   assert.match(periodLock,/new\.duty_type = 'PIC_TRANSFER'/);
   assert.match(periodLock,/Penugasan kedua diblokir agar Closing tidak ganda/);
+});
+
+test("legacy storage trigger accepts PIC Transfer without FT but still validates Fuelman FT",()=>{
+  assert.match(legacyCompat,/coalesce\(new\.duty_type,'FUELMAN'\) = 'PIC_TRANSFER'/);
+  assert.match(legacyCompat,/PIC TRANSFER tidak boleh terikat Fuel Truck/);
+  assert.match(legacyCompat,/FUELMAN wajib memiliki Fuel Truck aktif/);
+  assert.match(legacyCompat,/update of fuel_truck, duty_type/);
+});
+
+test("legacy end-shift trigger requires all active MT for PIC Transfer",()=>{
+  assert.match(legacyCompat,/create or replace function public\.kpp_require_closing_before_end_shift/);
+  assert.match(legacyCompat,/new\.duty_type = 'PIC_TRANSFER'/);
+  assert.match(legacyCompat,/sm\.storage_type = 'MT'/);
+  assert.match(legacyCompat,/PIC TRANSFER belum Closing MT berikut/);
+  assert.match(legacyCompat,/sc\.session_id = new\.id/);
+  assert.match(legacyCompat,/sc\.fuelman_user_id = new\.user_id/);
 });
