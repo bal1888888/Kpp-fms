@@ -20,6 +20,7 @@ Automated regression tests protect code-level invariants. This checklist is for 
 - [ ] PIC TRANSFER cannot enter Pengisian.
 - [ ] Leave Fuelman/Pengisian open across 06:30 or 18:30. Old session must block new fueling and direct the user to Closing/End Shift.
 - [ ] Qty > unit tank capacity is rejected. Qty at the exact capacity remains valid.
+- [ ] Bypass browser validation with controlled test tooling only; database guard must still reject Qty above configured capacity.
 - [ ] If CCR limit is lower than tank capacity, the CCR limit wins. If tank capacity is lower, tank capacity wins.
 - [ ] Double tap Save does not create a second logical request.
 
@@ -32,7 +33,7 @@ Automated regression tests protect code-level invariants. This checklist is for 
 ## Role access
 - [ ] Fuelman sees only Fuelman operational access intended for the role.
 - [ ] CCR cannot open management-only pages.
-- [ ] Atasan remains view-only where configured.
+- [ ] Atasan remains view-only where configured, including tank capacity visible but not editable.
 - [ ] GL/Admin can maintain unit tank capacity; other roles cannot change it.
 
 ## Device / release smoke

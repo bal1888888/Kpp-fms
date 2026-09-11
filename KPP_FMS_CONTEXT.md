@@ -1,21 +1,33 @@
 # Konteks Proyek KPP-FMS
 
-## Keadaan Aktual
+## Keadaan aktual menjelang V1.0
 
-- KPP-FMS adalah aplikasi statis yang ditujukan untuk GitHub Pages dan menggunakan Supabase sebagai backend.
-- Role yang saat ini terpasang adalah Admin, GL, Fuelman, dan CCR.
-- Role Atasan belum terpasang.
-- Fitur stock, tera, dan sonding sudah terdapat di kode, tetapi schema/backend Supabase dan kondisi deployment live belum diverifikasi.
-- Untuk alur non-jatah, operator memasukkan HM aktual sebelum rest belum menjadi tahap sistem yang eksplisit.
-- Fuelman memasukkan Qty aktual pengisian.
-- Alur jatah CCR harus tetap dipisahkan dari alur non-jatah.
-- Repo saat ini menggunakan nama FT0073 dan FT0075.
-- Istilah operasional FT073 dan FT075 dapat merujuk ke tangki fisik yang sama; jangan melakukan rename atau normalisasi otomatis tanpa mapping dan persetujuan.
-- Mapping tetap: FT0073/FT073 = WH FT02 dan FT0075/FT075 = WH FT01.
-- Jaringan di site tambang dapat tidak stabil, sehingga CDN, loading awal, cache, antrean offline, dan waktu pencatatan data harus diperhatikan.
-- Waktu kejadian operasional dan waktu sinkronisasi ke server harus dibedakan bila data dikirim setelah sinyal kembali.
-- Jangan menganggap checkpoint atau artefak bertanda `GENERATED ONLY` sebagai fitur terpasang tanpa bukti di repo dan pengujian live.
+- KPP-FMS adalah aplikasi statis GitHub Pages dengan Supabase sebagai backend operasional.
+- Role aktif: Admin, GL, Atasan, CCR, dan Fuelman.
+- Operator melakukan check-in dan mengirim HM aktual. Untuk unit beroperator, Fuelman tidak menebak HM dan fokus pada Qty aktual.
+- Alur CCR memakai jatah/approval yang terhubung ke HM aktual operator. Pengisian tambahan mengikuti kontrol CCR/approval yang berlaku.
+- Unit tanpa operator tetap memiliki jalur khusus dan HM aktual diambil dari display unit sesuai aturan halaman Pengisian.
+- Fuelman bekerja melalui session shift. Duty `FUELMAN` terikat FT, sedangkan `PIC_TRANSFER` menangani transfer/closing MT sesuai tanggung jawabnya.
+- Session Fuelman yang melewati rollover 06:30/18:30 tidak boleh dipakai untuk pengisian baru sebelum closing dan End Shift lama diselesaikan.
+- Master storage menjadi referensi MT/FT aktif. Histori storage lama dipertahankan dan storage dinonaktifkan, bukan dihapus.
+- Stock Opening/Closing, carry-forward, transfer, sounding/tera, penerimaan, dan revisi closing memiliki guard integritas/audit di backend.
+- Kapasitas tangki unit bersifat optional sampai GL/Admin melengkapinya. Jika terisi, Qty di atas kapasitas ditolak di browser dan database. Batas efektif CCR menggunakan nilai yang lebih kecil antara limit CCR dan kapasitas unit.
+- Waktu operasional memakai WIB (`Asia/Jakarta`) melalui runtime `KPPTime`.
+- Riwayat Pengisian memakai query pagination 300/baris per halaman. Logsheet tetap memuat data lengkap untuk filter/ringkasan/export, tetapi render DOM dibatasi bertahap agar halaman ringan.
+- Jaringan site dapat tidak stabil. Submit penting memakai request ID yang sama saat retry agar hasil ambigu tidak menghasilkan transaksi logis baru.
 
-## Batas Verifikasi
+## Mapping operasional penting
 
-Keberadaan UI atau JavaScript di repo membuktikan implementasi pada sisi frontend, tetapi tidak dengan sendirinya membuktikan bahwa schema, RLS, RPC, izin akses, data, maupun integrasi live Supabase sudah benar dan aktif.
+- FT073 = WH FT02.
+- FT075 = WH FT01.
+- MT01 sampai MT04 digunakan sebagai storage MT aktif sesuai Master MT/FT.
+
+## Prinsip verifikasi
+
+Frontend yang tampil bukan satu-satunya sumber kebenaran untuk integritas data. Guard kritis harus tetap berada di backend melalui constraint, trigger, RLS, grant, atau RPC yang sesuai. Perubahan produksi harus dapat dilacak lewat migration dan Pull Request.
+
+## Sisa menuju V1.0
+
+- Lengkapi kapasitas tangki unit aktif dengan data resmi GL/Admin.
+- Jalankan UAT real-device PC/Android untuk alur Operator -> CCR/non-jatah -> Fuelman -> Stock/Closing -> laporan.
+- Finalisasi SOP singkat dan release freeze setelah UAT lulus.

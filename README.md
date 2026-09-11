@@ -1,52 +1,43 @@
 # KPP Fuel Management System
 
-KPP-FMS adalah aplikasi web statis untuk operasional fuel site tambang. Frontend
-dipublikasikan melalui GitHub Pages dan data operasional tersimpan di Supabase.
+KPP-FMS adalah aplikasi web statis untuk operasional fuel site tambang. Frontend dipublikasikan melalui GitHub Pages dan backend operasional menggunakan Supabase.
 
-## Branch dan deployment
+## Status arsitektur
 
-- `main` adalah sumber website produksi GitHub Pages. Jangan mengubahnya langsung.
-- `codex-work-2026-08-30` adalah branch kerja aktif untuk perubahan yang sedang ditinjau.
-- Setiap perubahan dibuat kecil, diuji di branch kerja, lalu masuk ke `main` melalui
-  review dan persetujuan eksplisit.
-- Commit atau push ke branch kerja tidak otomatis berarti perubahan sudah live.
+- Production web berasal dari branch `main` dan dideploy melalui GitHub Pages.
+- Perubahan dikerjakan pada branch task, diperiksa oleh regression test/CI, lalu masuk ke `main` melalui Pull Request.
+- Role aktif: Admin, GL, Atasan, CCR, dan Fuelman.
+- Waktu operasional menggunakan WIB (`Asia/Jakarta`) dengan batas shift 06:30 dan 18:30.
+- Histori operasional dipertahankan. Koreksi dilakukan melalui alur audit, bukan overwrite/hapus sembarang.
 
 ## Pemeriksaan lokal
 
-Pemeriksaan menggunakan Node.js 24 dan tidak membutuhkan package eksternal atau
-`npm install`.
+Gunakan Node.js 24. Setelah clone baru, jalankan `npm ci --ignore-scripts` satu kali untuk memasang dependency test, lalu:
 
 ```powershell
 npm run check
-git diff --check
-git status --short
 ```
 
-`npm run check` memeriksa sintaks JavaScript, inline script HTML, referensi file
-lokal, indikasi server/secret key, serta guard keamanan yang sudah ditetapkan.
-Pemeriksaan yang sama berjalan otomatis melalui GitHub Actions pada setiap push
-dan pull request.
+`npm run check` menjalankan static check lalu menemukan seluruh `scripts/test-*.mjs` secara otomatis. GitHub Actions menjalankan gate yang sama pada Pull Request dan push ke `main`.
 
-## Alur kerja aman
+## Alur kerja release
 
-1. Pastikan berada di branch kerja dan sinkron dengan remote.
-2. Periksa `git status` sebelum menyentuh file.
-3. Kerjakan satu perubahan kecil dan terfokus.
-4. Jalankan pemeriksaan lokal dan tinjau diff.
-5. Commit serta push hanya ke branch kerja.
-6. Uji tampilan dan alur pada PC maupun HP.
-7. Merge atau deploy hanya setelah review dan persetujuan eksplisit.
+1. Buat branch task dari `main` terbaru.
+2. Kerjakan perubahan kecil dan terfokus.
+3. Jalankan `npm run check` dan tinjau diff.
+4. Buka Pull Request dan tunggu CI hijau.
+5. Merge ke `main`.
+6. Pastikan Static checks dan GitHub Pages deployment di `main` hijau.
+7. Untuk perubahan alur lapangan, lakukan smoke test PC/Android sesuai `UAT_V1.md`.
 
-Perubahan schema, RLS, RPC, role, atau data Supabase harus dipisahkan dari
-perubahan frontend, memiliki rencana rollback, dan diverifikasi secara read-only
-sebelum diterapkan.
+Perubahan schema, RLS, RPC, grant, atau data produksi harus memakai migration/audit yang jelas. Hindari perubahan destruktif dan jangan pernah menyimpan token, password, secret key, atau kredensial database di repository.
 
-## Dokumen proyek
+## Dokumen utama
 
-- [`AGENTS.md`](AGENTS.md) — aturan kerja untuk Codex dan kontributor.
-- [`KPP_FMS_CONTEXT.md`](KPP_FMS_CONTEXT.md) — konteks serta batas verifikasi.
-- [`AUDIT_PLAN.md`](AUDIT_PLAN.md) — urutan audit dan perbaikan bertahap.
-- [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) — gerbang review, pengujian, merge, dan release.
-
-Jangan menyimpan token, password, secret key, atau kredensial database di commit,
-log, dokumentasi, maupun hasil pemeriksaan.
+- `AGENTS.md`: aturan kerja kontributor/agent.
+- `KPP_FMS_CONTEXT.md`: snapshot arsitektur dan alur operasional saat ini.
+- `AUDIT_PLAN.md`: status audit dan sisa pekerjaan menuju V1.0.
+- `HARDENING_CHECKLIST.md`: kontrol integritas yang sudah terpasang.
+- `RELEASE_CHECKLIST.md`: gate sebelum dan sesudah merge.
+- `UAT_V1.md`: smoke test lapangan final V1.0.
+- `docs/UNIT_TANK_CAPACITY_RULE.md`: aturan kapasitas tangki unit.

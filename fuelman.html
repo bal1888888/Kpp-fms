@@ -183,12 +183,6 @@ async function loadFuelTruckMaster(){
   select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");
 }
 
-function pad(n){return String(n).padStart(2,"0")}
-
-function localDate(){return window.KPPTime.localDate();}
-
-function localTime(){return window.KPPTime.localTime();}
-
 function currentOperationalSession(){
   const op=window.KPPTime.operationalShift();
   return {tanggal:op.tanggal,shift:`Shift ${op.shift}`};
@@ -212,7 +206,7 @@ function refreshSessionPeriodGuard(){
   if(warning){
     warning.classList.toggle("hidden",!stale);
     warning.textContent=stale
-      ? `PERIODE SHIFT SUDAH BERGANTI. Session ini ${currentSession.tanggal||"-"} ${currentSession.shift||"-"}, sedangkan sekarang ${expected.tanggal} ${expected.shift}. Pengisian dikunci. Selesaikan Closing dan End Shift lama terlebih dahulu.`
+      ? `PERIODE SHIFT SUDAH BERGANTI. Sesi ini ${currentSession.tanggal||"-"} ${currentSession.shift||"-"}, sedangkan sekarang ${expected.tanggal} ${expected.shift}. Pengisian dikunci. Selesaikan Closing dan End Shift lama terlebih dahulu.`
       : "";
   }
   const blockFueling=duty==="PIC_TRANSFER" || stale;
@@ -246,7 +240,7 @@ async function loadActiveSession(){
 
   const {data,error}=await KPP.db
     .from("fuelman_sessions")
-    .select("*")
+    .select("id,user_id,fuelman_name,tanggal,shift,duty_type,fuel_truck,status,jam_mulai,created_at")
     .eq("user_id",KPP_SESSION.user.id)
     .eq("status","ACTIVE")
     .order("created_at",{ascending:false})
@@ -307,7 +301,7 @@ Tanggung jawab: ${responsibility}`))return;
   btn.disabled=false;btn.textContent="START SHIFT";
   if(error){status.textContent="❌ "+error.message;return;}
   currentSession=data?.data||null;
-  if(!currentSession){status.textContent="❌ Session belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
+  if(!currentSession){status.textContent="❌ Sesi belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
   renderActive();
 }
 

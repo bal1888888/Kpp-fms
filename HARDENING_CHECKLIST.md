@@ -1,31 +1,36 @@
 # KPP-FMS Final Hardening Checklist
 
-Status ini dipakai sebagai release gate sebelum perubahan hardening masuk ke `main`.
-
 ## Data integrity
+
 - [x] Master MT/FT menjadi referensi backend untuk storage aktif.
-- [x] Code storage dan tipe MT/FT tidak dapat diubah setelah dibuat.
 - [x] Storage lama dinonaktifkan, bukan dihapus, sehingga histori tetap terhubung.
-- [x] Stock Opening memakai RPC no-overwrite dan retry identik bersifat idempotent.
-- [x] Stock Closing tetap atomic, no-overwrite, dan carry-forward tidak menimpa opening berbeda.
-- [x] Fuelman session hanya boleh memakai FT aktif dari Master MT/FT.
-- [x] Fueling CCR, manual check-in, dan unit tanpa operator memvalidasi FT aktif di backend.
-- [x] Referensi storage operasional dijaga foreign key ke `storage_master`.
-- [x] Penerimaan dan transfer divalidasi lagi di database untuk source/destination.
+- [x] Stock Opening memakai guard no-overwrite/idempotent.
+- [x] Stock Closing atomic dan carry-forward tidak menimpa opening berbeda.
+- [x] Fuelman session memvalidasi duty/FT dan periode shift operasional.
+- [x] Fueling CCR, non-jatah, dan unit tanpa operator memiliki guard sesuai alurnya.
+- [x] Referensi storage dan transfer dijaga di backend.
+- [x] HM aktual tidak boleh turun dari referensi server yang berlaku.
+- [x] Qty di atas kapasitas tangki unit ditolak bila kapasitas sudah dikonfigurasi.
+- [x] Retry submit memakai request ID yang sama untuk mencegah transaksi logis ganda saat hasil jaringan ambigu.
 
 ## Sounding / tera
-- [x] Profil tera hanya boleh sama dengan jenis storage (MT memakai MT, FT memakai FT) atau kosong bila fisik berbeda.
-- [x] Storage tanpa profil tera tervalidasi tidak boleh mengonversi sounding secara asumsi.
-- [x] Reuse profil tera diperbolehkan hanya untuk bentuk/dimensi fisik yang benar-benar sama.
 
-## Deployment gate
-- [x] Histori storage production sudah dicek dan seluruh referensi lama terdapat di Master MT/FT sebelum FK diaktifkan.
-- [x] Regression test dynamic storage ditambahkan ke `npm run check`.
-- [ ] Pull request CI hijau.
-- [ ] Migration production berhasil.
-- [ ] CI `main` hijau setelah merge.
-- [ ] GitHub Pages deploy hijau setelah merge.
-- [ ] Smoke check production selesai.
+- [x] Profil tera harus sesuai jenis storage atau dikosongkan bila tidak tervalidasi.
+- [x] Storage tanpa profil tera tervalidasi tidak mengonversi sounding dengan asumsi.
+- [x] Transfer MT/FT dan penerimaan memakai sumber ukur yang sesuai alur operasional.
 
-## Aturan release
-Perubahan yang mengubah data lama secara massal, menghapus histori, atau memakai overwrite tidak boleh dilakukan sebagai bagian hardening ini. Koreksi historis harus melalui alur koreksi/audit yang eksplisit.
+## Deployment gate teknis
+
+- [x] Regression/static checks berjalan melalui `npm run check`.
+- [x] CI Pull Request digunakan sebelum merge.
+- [x] CI `main` diverifikasi setelah merge.
+- [x] GitHub Pages deployment diverifikasi setelah merge.
+- [x] Migration produksi yang sudah diterapkan tersimpan sebagai artefak repository.
+
+## Gate manual yang tersisa
+
+- [ ] UAT real-device `UAT_V1.md` selesai.
+- [ ] Master kapasitas unit aktif dilengkapi dengan data resmi.
+- [ ] SOP role final selesai dan release V1.0 dibekukan.
+
+Perubahan massal data lama, penghapusan histori, dan overwrite tanpa jejak audit tetap dilarang.
