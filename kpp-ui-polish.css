@@ -1,0 +1,12 @@
+/* KPP-FMS global interaction polish. Business colors/layout remain page-owned. */
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+button,a,input,select,textarea{touch-action:manipulation}
+button,.btn,.app-nav a{transition:transform .14s ease,filter .14s ease,box-shadow .14s ease,border-color .14s ease}
+button:not(:disabled):active,.btn:not(.disabled):active{transform:translateY(1px)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(37,99,235,.25);outline-offset:2px}
+input:focus,select:focus,textarea:focus{border-color:#60a5fa!important;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.panel,.section,.sheet,.form-box,.overview-card,.daily-card,.metric,.card{background-clip:padding-box}
+.table-wrap,.table-wrapper,.table-container,.fc-table-wrap{scrollbar-gutter:stable;overscroll-behavior:contain}
+.status,.note,.sub,.overview-sub,.daily-sub,.metric-note{overflow-wrap:anywhere}
+@media(max-width:700px){button,.btn,input,select{min-height:44px}.container{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

@@ -9,7 +9,8 @@
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="dashboard";
 </script>
-<script src="auth.js"></script>
+<script src="wib-time.js?v=20260911b3"></script>
+<script src="auth.js?v=20260911b3"></script>
 <script src="storage-master.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
@@ -312,6 +313,7 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 
 </style>
 <link rel="stylesheet" href="dashboard-ui.css">
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 </head>
 <body class="dashboard-workspace">
 <div class="header">
@@ -590,10 +592,7 @@ function renderFuelConsumption(rows){
   if(!data.length)status.textContent="Belum ada pasangan HM valid untuk menghitung FC periode ini.";
 }
 
-function localDate(){
-  const d=new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
+function localDate(){return window.KPPTime.localDate();}
 function dateMinusOne(value){
   const [y,m,d]=value.split("-").map(Number);
   const x=new Date(y,m-1,d);
