@@ -51,9 +51,9 @@ const dashboard=fs.readFileSync('dashboard.html','utf8');
 
 test('Daily Report uses measured receipt and transfer quantities like Stock and Dashboard',()=>{
   for(const [name,source] of [['Daily Report',daily],['Stock',stock],['Dashboard',dashboard]]){
-    assert.match(source,/destination_measured_qty!==null\s*&&\s*row\.destination_measured_qty!==undefined/,
+    assert.match(source,/row\.destination_measured_qty!==null\s*&&\s*row\.destination_measured_qty!==undefined/,
       name+' must prefer destination_measured_qty');
-    assert.match(source,/source_measured_qty!==null\s*&&\s*row\.source_measured_qty!==undefined/,
+    assert.match(source,/row\.source_measured_qty!==null\s*&&\s*row\.source_measured_qty!==undefined/,
       name+' must prefer source_measured_qty for transfer out');
   }
 
@@ -74,8 +74,6 @@ if(!pkg.scripts.check.includes(marker)){
   const tail=' && node --test scripts/test-dashboard-premium-radial.mjs';
   if(!pkg.scripts.check.includes(tail)) throw new Error('package.json check tail marker not found');
   pkg.scripts.check=pkg.scripts.check.replace(tail,` scripts/test-daily-stock-reconciliation.mjs${tail}`);
-  // Ensure the inserted test remains part of the existing node --test batch.
-  pkg.scripts.check=pkg.scripts.check.replace('scripts/test-stock-closing-revision-gl-admin.mjs scripts/test-daily-stock-reconciliation.mjs', 'scripts/test-stock-closing-revision-gl-admin.mjs scripts/test-daily-stock-reconciliation.mjs');
 }
 fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n');
 
