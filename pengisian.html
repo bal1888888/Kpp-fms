@@ -705,7 +705,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
                 <div class="data-grid">
                   <div class="form-group"><label>HM Sekarang / Estimasi Refueling</label><input type="number" id="currentHm" placeholder="Masukkan HM sekarang" step="0.1"></div>
                   <div class="form-group"><label>Nama Operator</label><input type="text" id="operator" placeholder="Masukkan nama operator"></div>
-                  <div class="form-group"><label>Jumlah Fuel (Liter)</label><input type="number" id="fuelQty" placeholder="Masukkan jumlah liter" step="0.01" min="0"></div>
+                  <div class="form-group"><label>Jumlah Fuel (Liter)</label><input type="number" id="fuelQty" placeholder="Masukkan jumlah liter" step="0.01" min="0"><small id="unitTankCapacityHint" style="display:block;margin-top:6px;color:#64748b;line-height:1.4">Kapasitas tangki mengikuti Master Unit.</small></div>
                   <div class="hm-result"><small>HM JALAN</small><strong id="hmDifference">0 HM</strong></div>
                   <div id="warning" class="warning">⚠️ HM sekarang tidak boleh lebih kecil dari HM sebelumnya.</div>
                 </div>
@@ -1062,7 +1062,7 @@ async function loadUnitMasterOnline() {
             await supabaseClient
                 .from("unit_master")
                 .select(
-                    "code_unit,active,operator_checkin_required,hm_required"
+                    "code_unit,active,operator_checkin_required,hm_required,tank_capacity_liter"
                 )
                 .order("code_unit",{ascending:true});
 
@@ -1134,8 +1134,61 @@ function getUnitFuelingPolicy(unit) {
         operator_checkin_required:
             row ? row.operator_checkin_required !== false : true,
         hm_required:
-            row ? row.hm_required !== false : true
+            row ? row.hm_required !== false : true,
+        tank_capacity_liter:
+            row && Number.isFinite(Number(row.tank_capacity_liter)) && Number(row.tank_capacity_liter)>0
+                ? Number(row.tank_capacity_liter)
+                : null
     };
+}
+
+function getCurrentTankCapacity(){
+    const capacity=Number(currentUnitPolicy?.tank_capacity_liter);
+    return Number.isFinite(capacity) && capacity>0 ? capacity : null;
+}
+
+function applyFuelTankCapacityLimit(){
+    const input=document.getElementById("fuelQty");
+    const hint=document.getElementById("unitTankCapacityHint");
+    if(!input)return;
+
+    const capacity=getCurrentTankCapacity();
+    const ccrLimit=Number(currentCCRLimit||0);
+    const limits=[];
+    if(capacity)limits.push(capacity);
+    if(currentCCRAllocation && Number.isFinite(ccrLimit) && ccrLimit>0)limits.push(ccrLimit);
+
+    if(limits.length){
+        input.max=String(Math.min(...limits));
+    }else{
+        input.removeAttribute("max");
+    }
+
+    if(hint){
+        if(capacity){
+            const effective=limits.length ? Math.min(...limits) : capacity;
+            hint.textContent=`Kapasitas tangki Master Unit: ${capacity.toLocaleString("id-ID",{maximumFractionDigits:2})} L${effective<capacity ? ` • batas efektif CCR: ${effective.toLocaleString("id-ID",{maximumFractionDigits:2})} L` : ""}`;
+            hint.style.color="#166534";
+        }else{
+            hint.textContent="Kapasitas tangki belum diatur di Master Unit. Minta GL/Admin melengkapinya.";
+            hint.style.color="#b45309";
+        }
+    }
+}
+
+function validateFuelAgainstTankCapacity(fuel){
+    const capacity=getCurrentTankCapacity();
+    if(capacity && fuel>capacity){
+        alert(
+            "❌ JUMLAH FUEL MELEBIHI KAPASITAS TANGKI UNIT.\n\n" +
+            "Unit: " + currentUnit + "\n" +
+            "Kapasitas Maksimum: " + capacity.toLocaleString("id-ID",{maximumFractionDigits:2}) + " L\n" +
+            "Qty Input: " + fuel.toLocaleString("id-ID",{maximumFractionDigits:2}) + " L\n\n" +
+            "Periksa salah ketik sebelum menyimpan."
+        );
+        return false;
+    }
+    return true;
 }
 
 
@@ -2099,7 +2152,7 @@ function siapkanFormManual(checkin) {
         document.getElementById("fuelQty");
 
     fuelInput.value = "";
-    fuelInput.removeAttribute("max");
+    applyFuelTankCapacityLimit();
 
     const actualHm = Number(checkin.hm_actual);
     document.getElementById("hmDifference")
@@ -2161,7 +2214,7 @@ function siapkanFormTanpaOperator() {
         document.getElementById("fuelQty");
 
     fuelInput.value = "";
-    fuelInput.removeAttribute("max");
+    applyFuelTankCapacityLimit();
 
     document.getElementById("hmDifference")
         .textContent = "Isi HM aktual";
@@ -2214,7 +2267,7 @@ function tampilkanJatahCcr(row) {
 
     const fuel = document.getElementById("fuelQty");
     fuel.value = "";
-    fuel.max = String(currentCCRLimit);
+    applyFuelTankCapacityLimit();
 
     document.getElementById("ccrAllocationBox").classList.remove("hidden");
     document.getElementById("ccrErrorBox").classList.add("hidden");
@@ -2680,6 +2733,10 @@ document
 
             if (isNaN(fuel) || fuel <= 0) {
                 alert("Masukkan jumlah fuel aktual.");
+                return;
+            }
+
+            if (!validateFuelAgainstTankCapacity(fuel)) {
                 return;
             }
 
