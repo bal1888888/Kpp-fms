@@ -1559,10 +1559,10 @@ function showCapacityAlertOnce(stock){
     if(banner){
         if(critical.length){
             banner.className="stock-level-alert show danger";
-            banner.innerHTML="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";
+            banner.textContent="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";
         }else if(high.length){
             banner.className="stock-level-alert show warn";
-            banner.innerHTML="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";
+            banner.textContent="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";
         }else{
             banner.className="stock-level-alert";
             banner.textContent="";
