@@ -1252,7 +1252,7 @@ async function loadActiveFuelmanSession() {
 
     const { data, error } = await KPP.db
         .from("fuelman_sessions")
-        .select("*")
+        .select("id,user_id,fuelman_name,tanggal,shift,duty_type,fuel_truck,status,jam_mulai,created_at")
         .eq("user_id", session.user.id)
         .eq("status", "ACTIVE")
         .order("created_at", { ascending: false })

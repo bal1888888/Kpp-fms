@@ -1,26 +1,30 @@
-# Rencana Audit dan Perbaikan KPP-FMS
+# Status Audit KPP-FMS Menuju V1.0
 
-Prioritas pekerjaan berikut harus dilakukan secara bertahap, dengan perubahan kecil, persetujuan yang sesuai, dan verifikasi sebelum melanjutkan ke tahap berikutnya.
+Dokumen ini adalah ringkasan status, bukan daftar backlog lama.
 
-## Status Baseline — 30 Agustus 2026
+## Sudah diselesaikan
 
-- [x] Branch backup dan branch kerja tersedia di remote.
-- [x] Aturan kerja, konteks proyek, dan pemeriksaan CI tersimpan di repo.
-- [x] Audit metadata schema, RLS, policy, grant, RPC, serta advisor dilakukan secara read-only.
-- [x] Status deployment GitHub Pages dan commit produksi diverifikasi melalui GitHub Actions.
-- [ ] Baseline visual website live pada PC dan HP masih perlu pengujian pengguna.
-- [ ] Hardening Supabase belum diterapkan dan harus melalui checkpoint database tersendiri.
+- [x] Audit schema, RLS, policy, grant, RPC, dan jalur akses utama.
+- [x] Hardening XSS/rendering dinamis pada halaman operasional utama.
+- [x] Role Atasan terpasang dan akses disesuaikan.
+- [x] Operator HM aktual terpasang untuk alur yang memerlukan operator.
+- [x] HM reference dan guard HM turun diperketat.
+- [x] Submit penting memiliki retry/idempotency guard untuk kondisi jaringan ambigu.
+- [x] Stock Opening/Closing dan carry-forward memiliki guard atomic/no-overwrite.
+- [x] Master MT/FT menjadi referensi storage dinamis.
+- [x] Penerimaan, transfer, sounding/tera, dan closing diaudit serta dijaga backend.
+- [x] Dashboard/Stock/History/Logsheet diringankan pada query atau render berat.
+- [x] Runtime WIB dipusatkan pada `KPPTime`.
+- [x] Session Fuelman lama dikunci saat rollover shift.
+- [x] Unit tank capacity guard tersedia di UI dan backend.
+- [x] Regression test terintegrasi ke CI dan ditemukan otomatis.
 
-Rincian temuan keamanan disimpan di luar repository publik dan hanya akan dipakai pada checkpoint hardening database.
+## Sisa release gate V1.0
 
-## Prioritas Bertahap
+- [ ] Isi kapasitas tangki untuk unit aktif berdasarkan data resmi, bukan asumsi EGI/tipe unit.
+- [ ] Jalankan seluruh `UAT_V1.md` pada Android dan PC menggunakan data uji terkontrol.
+- [ ] Cocokkan satu transaksi end-to-end dari HM/operator sampai Logsheet, Stock, Daily, dan Dashboard.
+- [ ] Finalisasi SOP singkat per role.
+- [ ] Freeze V1.0 dan buat checkpoint/tag release setelah UAT lulus.
 
-1. Audit schema, RLS, dan RPC Supabase secara read-only.
-2. Verifikasi baseline website live pada PC dan HP, termasuk header, profil, navigasi, role, cache, serta commit GitHub Pages yang sedang terpasang.
-3. Perbaiki risiko XSS pada rendering profil dan session.
-4. Hapus deklarasi `hmOperationalKey` yang mati dan tambahkan pemeriksaan untuk logika tersebut.
-5. Tetapkan matriks akses role, termasuk definisi dan hak akses role Atasan.
-6. Implementasikan tahap operator memasukkan HM aktual sebelum rest untuk alur non-jatah.
-7. Jadikan penyimpanan closing dan carry-forward opening sebagai operasi atomik.
-8. Audit ketahanan dependency CDN dan jaringan site.
-9. Tambahkan pemeriksaan HTML/JavaScript serta test tabel tera dan alur role.
+Tidak ada fitur besar baru yang masuk sebelum release gate di atas selesai, kecuali perbaikan bug yang dapat memengaruhi integritas atau operasional lapangan.

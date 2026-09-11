@@ -1,37 +1,33 @@
 # Checklist Release KPP-FMS
 
-Gunakan checklist ini sebelum perubahan dari branch kerja digabungkan ke `main`.
+Gunakan checklist ini untuk setiap perubahan yang akan masuk ke `main`.
 
-## Sebelum review
+## Sebelum merge
 
-- [ ] Perubahan kecil, fokus, dan sesuai kebutuhan yang disetujui.
-- [ ] Branch kerja sudah sinkron dan `git status` dipahami.
+- [ ] Scope perubahan jelas dan tidak melebar ke fitur yang tidak diperlukan.
 - [ ] `npm run check` lulus.
-- [ ] `git diff --check` bersih.
-- [ ] Seluruh diff ditinjau dan tidak memuat secret atau data sensitif.
-- [ ] GitHub Actions untuk commit terakhir berstatus hijau.
+- [ ] Diff ditinjau dan tidak memuat secret, kredensial, file sementara, atau data sensitif.
+- [ ] Perubahan tidak menghapus/overwrite histori operasional tanpa alur audit.
+- [ ] CI Pull Request berstatus hijau.
 
-## Uji aplikasi
+## Jika menyentuh Supabase
 
-- [ ] Halaman terkait dibuka pada PC.
-- [ ] Halaman terkait dibuka pada HP.
-- [ ] Login, navigasi, profil, dan logout tetap berfungsi untuk role terkait.
-- [ ] Hak akses diuji dari backend bila perubahan menyentuh data atau role.
-- [ ] Kondisi sinyal lambat, refresh, dan cache browser dipertimbangkan.
-- [ ] Data uji tidak mengganggu data operasional.
+- [ ] Perubahan schema/RLS/RPC/grant dibuat sebagai migration yang dapat diaudit.
+- [ ] Dampak role dan akses backend diverifikasi.
+- [ ] Tidak ada mutasi massal/destruktif yang tidak diperlukan.
+- [ ] Query verifikasi read-only dijalankan setelah perubahan bila relevan.
 
-## Jika ada perubahan Supabase
+## Setelah merge
 
-- [ ] Perubahan frontend dan database dibuat sebagai checkpoint terpisah.
-- [ ] Migration dan rencana rollback tersedia.
-- [ ] Pengujian dilakukan lebih dahulu pada environment non-produksi bila tersedia.
-- [ ] RLS, policy, grant, RPC, dan advisor keamanan diperiksa ulang.
-- [ ] Persetujuan eksplisit diberikan sebelum mengubah database produksi.
+- [ ] Static checks pada commit `main` hasil merge hijau.
+- [ ] GitHub Pages build/deploy pada commit yang sama hijau.
+- [ ] Smoke test halaman yang berubah dilakukan pada perangkat yang relevan.
+- [ ] Untuk perubahan alur lapangan, item terkait di `UAT_V1.md` ikut diuji.
 
-## Merge dan setelah release
+## Release V1.0
 
-- [ ] Ringkasan perubahan dan risiko telah dipahami reviewer.
-- [ ] Persetujuan eksplisit untuk merge/deploy sudah diberikan.
-- [ ] Deployment GitHub Pages selesai dan berstatus hijau.
-- [ ] Smoke test PC dan HP pada website live lulus.
-- [ ] Jika gagal, hentikan perubahan lanjutan dan jalankan rollback yang telah disiapkan.
+- [ ] UAT Operator/HM/CCR/Fuelman/Stock/Closing lulus end-to-end.
+- [ ] Master kapasitas unit aktif sudah dilengkapi berdasarkan sumber resmi.
+- [ ] SOP singkat per role tersedia.
+- [ ] Tidak ada bug integritas P0/P1 terbuka.
+- [ ] Buat checkpoint/tag V1.0 dan freeze fitur besar setelah semua gate di atas lulus.
