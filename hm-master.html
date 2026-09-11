@@ -103,19 +103,21 @@ tbody tr:hover{background:#f8fafc}
 .badge-off{font-weight:800;color:var(--red)}
 .transport-actions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
 .transport-note{background:var(--green-soft);border:1px solid #bbf7d0;color:#166534;border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6}
-.master-toolbar{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(3,minmax(130px,.65fr));gap:10px;align-items:stretch;margin-bottom:13px}
+.master-toolbar{display:grid;grid-template-columns:minmax(240px,1.7fr) repeat(4,minmax(120px,.65fr));gap:10px;align-items:stretch;margin-bottom:13px}
 .master-toolbar>div{min-width:0}
 .master-toolbar .card{margin:0;display:flex;justify-content:center;flex-direction:column}
 .table-scroll{max-height:500px;overflow:auto}
 .badge-qr{display:inline-block;padding:5px 8px;border-radius:999px;font-weight:800;font-size:9px;letter-spacing:.2px}
 .badge-qr.yes{background:#dcfce7;color:#166534}
 .badge-qr.no{background:#fee2e2;color:#991b1b}
-.qr-toolbar{display:grid;grid-template-columns:1.35fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:10px}
+.qr-toolbar{display:grid;grid-template-columns:1.25fr 1.05fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:10px}
 .qr-toolbar button{white-space:nowrap}
 .qr-check{width:auto;transform:scale(1.1)}
 .qr-actions{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
 .qr-btn{background:var(--violet);color:#fff;padding:7px 9px;font-size:10px}
 .qr-selected-note{background:var(--violet-soft);border:1px solid #ddd6fe;color:#5b21b6;margin-top:10px}
+.capacity-missing-card{background:var(--amber-soft)!important;border-color:#fde68a!important}
+.capacity-missing-card strong{color:#b45309!important}
 
 /* ===== BULK HM: main work area ===== */
 .bulk-focus{border-top:4px solid var(--blue);padding-top:17px}
@@ -260,6 +262,10 @@ tbody tr:hover{background:#f8fafc}
                     <small>QR SUDAH DIBUAT</small>
                     <strong id="totalQrGenerated">0</strong>
                 </div>
+                <div class="card capacity-missing-card">
+                    <small>KAPASITAS BELUM DIISI</small>
+                    <strong id="totalCapacityMissing">0</strong>
+                </div>
             </div>
 
             <div class="qr-toolbar">
@@ -269,6 +275,14 @@ tbody tr:hover{background:#f8fafc}
                         <option value="all">SEMUA UNIT</option>
                         <option value="no">BELUM ADA QR</option>
                         <option value="yes">SUDAH ADA QR</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Filter Kapasitas</label>
+                    <select id="capacityFilter" onchange="renderUnitTable()">
+                        <option value="all">SEMUA KAPASITAS</option>
+                        <option value="missing">BELUM DIISI • UNIT AKTIF</option>
+                        <option value="ready">SUDAH DIISI</option>
                     </select>
                 </div>
                 <div>
@@ -941,6 +955,7 @@ async function loadUnitMaster(){
 function getFilteredUnitRows(){
     const q=normalizeUnit(document.getElementById("unitSearch")?.value||"");
     const qrMode=document.getElementById("qrFilter")?.value||"all";
+    const capacityMode=document.getElementById("capacityFilter")?.value||"all";
 
     return UNIT_MASTER_ROWS.filter(row=>{
         const hay=[
@@ -957,7 +972,16 @@ function getFilteredUnitRows(){
             (qrMode==="yes" && row.qr_generated) ||
             (qrMode==="no" && !row.qr_generated);
 
-        return searchOk && qrOk;
+        const hasCapacity=
+            Number.isFinite(Number(row.tank_capacity_liter)) &&
+            Number(row.tank_capacity_liter)>0;
+
+        const capacityOk=
+            capacityMode==="all" ||
+            (capacityMode==="missing" && row.active && !hasCapacity) ||
+            (capacityMode==="ready" && hasCapacity);
+
+        return searchOk && qrOk && capacityOk;
     });
 }
 
@@ -985,6 +1009,12 @@ function renderUnitTable(){
 
     document.getElementById("totalQrGenerated").textContent=
         UNIT_MASTER_ROWS.filter(r=>r.qr_generated).length;
+
+    document.getElementById("totalCapacityMissing").textContent=
+        UNIT_MASTER_ROWS.filter(r=>
+            r.active &&
+            !(Number.isFinite(Number(r.tank_capacity_liter)) && Number(r.tank_capacity_liter)>0)
+        ).length;
 
     if(!filtered.length){
         body.innerHTML='<tr><td colspan="10">Unit tidak ditemukan.</td></tr>';
