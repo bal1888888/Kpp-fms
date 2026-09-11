@@ -12,7 +12,8 @@
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet";
 </script>
-<script src="auth.js"></script>
+<script src="wib-time.js?v=20260911b3"></script>
+<script src="auth.js?v=20260911b3"></script>
 <script src="storage-master.js"></script>
 
 <style>
@@ -203,6 +204,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 }
 
 </style>
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 </head>
 <body>
 <div class="header"><h1>KPP FUEL MANAGEMENT SYSTEM</h1><p>PT KPP - Daily Fuel Logsheet</p></div>
@@ -762,17 +764,7 @@ function localIsoDate(date){
   return `${y}-${m}-${d}`;
 }
 
-function getOperationalMtdBounds(){
-  const now=new Date();
-  const start=now.getDate()>=26
-    ? new Date(now.getFullYear(),now.getMonth(),26)
-    : new Date(now.getFullYear(),now.getMonth()-1,26);
-
-  return {
-    start:localIsoDate(start),
-    end:localIsoDate(now)
-  };
-}
+function getOperationalMtdBounds(){return window.KPPTime.operationalMtdBounds();}
 
 function updateSummary(data,{isMtd=false,mtdBounds=null}={}){
   let total=0,s1=0,s2=0;

@@ -12,7 +12,8 @@ window.KPP_ALLOWED_ROLES=["fuelman"];
 window.KPP_ACTIVE_PAGE="fuelman";
 </script>
 
-<script src="auth.js"></script>
+<script src="wib-time.js?v=20260911b3"></script>
+<script src="auth.js?v=20260911b3"></script>
 <script src="storage-master.js"></script>
 
 <style>
@@ -54,6 +55,7 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
   .app-nav-inner{justify-content:flex-start}
 }
 </style>
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 </head>
 
 <body>
@@ -181,15 +183,9 @@ async function loadFuelTruckMaster(){
 
 function pad(n){return String(n).padStart(2,"0")}
 
-function localDate(){
-  const d=new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
+function localDate(){return window.KPPTime.localDate();}
 
-function localTime(){
-  const d=new Date();
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
+function localTime(){return window.KPPTime.localTime();}
 
 function fmtDate(v){
   if(!v)return "-";

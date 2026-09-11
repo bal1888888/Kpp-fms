@@ -172,7 +172,7 @@ if (!stockSource.includes("loadStorageMaster") || !stockSource.includes("teraLoo
 }
 for (const dynamicPage of ["daily-report.html","fuelman.html","pengisian.html","stock-history.html","logsheet.html","logsheet-editor.html","riwayat.html"]) {
   const dynamicSource = fs.readFileSync(path.join(projectRoot, dynamicPage), "utf8");
-  if (!dynamicSource.includes('src="storage-master.js"')) {
+  if (!/src=[\"']storage-master\.js(?:\?v=[^\"']*)?[\"']/.test(dynamicSource)) {
     fail(path.join(projectRoot, dynamicPage), "belum terhubung ke Master MT/FT dinamis");
   }
 }

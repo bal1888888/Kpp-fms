@@ -10,7 +10,8 @@
 window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan", "fuelman"];
 window.KPP_ACTIVE_PAGE="stock";
 </script>
-<script src="auth.js"></script>
+<script src="wib-time.js?v=20260911b3"></script>
+<script src="auth.js?v=20260911b3"></script>
 <script src="storage-master.js"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
@@ -800,6 +801,7 @@ th{background:#f8fafc;color:#475569}
 
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 </head>
 
 <body class="stock-workspace">
@@ -2027,15 +2029,9 @@ async function deleteSelectedMovements(){
     await finishStockSave(true,ids.length+" transaksi stock sudah dihapus.");
 }
 
-function localDate(){
-    const d=new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
+function localDate(){return window.KPPTime.localDate();}
 
-function localTime(){
-    const d=new Date();
-    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
-}
+function localTime(){return window.KPPTime.localTime();}
 
 function n(value){return Number(value||0)}
 function r1(value){return Math.round((n(value)+Number.EPSILON)*10)/10}
@@ -2154,7 +2150,7 @@ function syncReceiptHistoryPeriodDates(){
         return;
     }
 
-    const lastDay=String(new Date(year,month,0).getDate()).padStart(2,"0");
+    const lastDay=String(window.KPPTime.daysInMonth(year,month)).padStart(2,"0");
     const periodEnd=prefix+lastDay;
     const today=localDate();
     fromInput.value=prefix+"15";

@@ -12,7 +12,8 @@
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet-editor";
 </script>
-<script src="auth.js"></script>
+<script src="wib-time.js?v=20260911b3"></script>
+<script src="auth.js?v=20260911b3"></script>
 <script src="storage-master.js"></script>
 
 <style>
@@ -197,6 +198,7 @@ td.action{background:#fff;padding:5px;white-space:nowrap}
 .safe-hm-note{background:#eef6ff;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:10px;padding:12px 14px;margin:12px 0 16px;font-size:12px;line-height:1.5;color:#1e3a5f}
 .safe-hm-note b{color:#0f172a}
 </style>
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 </head>
 
 <body>
@@ -387,10 +389,7 @@ let recentSavedIds=new Set();
 let recentUpdatedIds=new Set();
 
 function pad(v){return String(v).padStart(2,"0")}
-function localDate(){
-  const d=new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-}
+function localDate(){return window.KPPTime.localDate();}
 function num(v){
   if(v===null||v===undefined||v==="")return null;
   const x=Number(String(v).replace(",","."));
