@@ -10,6 +10,7 @@ window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan"];
 window.KPP_ACTIVE_PAGE="riwayat";
 </script>
 <script src="auth.js"></script>
+<script src="storage-master.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#f4f6f8;color:#222}.header{background:#1f2937;color:#fff;padding:20px;text-align:center}
@@ -117,6 +118,22 @@ td{padding:11px;border-bottom:1px solid #e5e7eb;font-size:13px;text-align:center
 </div></div>
 
 <script>
+let HISTORY_STORAGE_ROWS=[];
+let HISTORY_FT_MAP={};
+let HISTORY_WH_TO_FTS=new Map();
+
+async function loadStorageMasterHistory(){
+  if(!window.KPPStorage)throw new Error("Master MT/FT belum termuat.");
+  HISTORY_STORAGE_ROWS=await window.KPPStorage.load(KPP.db,{activeOnly:false});
+  HISTORY_FT_MAP=window.KPPStorage.ftMap(HISTORY_STORAGE_ROWS);
+  HISTORY_WH_TO_FTS=new Map();
+  Object.entries(HISTORY_FT_MAP).forEach(([ft,wh])=>{
+    if(!wh)return;
+    if(!HISTORY_WH_TO_FTS.has(wh))HISTORY_WH_TO_FTS.set(wh,[]);
+    HISTORY_WH_TO_FTS.get(wh).push(ft);
+  });
+}
+
 function formatAngka(v){if(v===null||v===undefined||v==="")return "-";return Number(v).toLocaleString("id-ID")}
 function formatTanggal(v){if(!v)return "-";const p=String(v).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
 function cell(t,cls=""){const x=document.createElement("td");x.textContent=t;if(cls)x.className=cls;return x}
@@ -124,19 +141,16 @@ function cell(t,cls=""){const x=document.createElement("td");x.textContent=t;if(
 function getFuelTruck(item){
   const ft=String(item.fuel_truck||"").trim().toUpperCase();
   if(ft)return ft;
-  const wh=String(item.wh||"").trim().toUpperCase();
-  if(wh==="FT02")return "FT0073";
-  if(wh==="FT01")return "FT0075";
-  return "-";
+  const wh=window.KPPStorage?.normalizeWarehouse(item.wh)||String(item.wh||"").trim().toUpperCase();
+  const candidates=HISTORY_WH_TO_FTS.get(wh)||[];
+  return candidates.length===1?candidates[0]:"-";
 }
 
 function getWH(item){
-  const wh=String(item.wh||"").trim().toUpperCase();
-  if(wh)return wh;
-  const ft=getFuelTruck(item);
-  if(ft==="FT0073")return "FT02";
-  if(ft==="FT0075")return "FT01";
-  return "-";
+  const direct=window.KPPStorage?.normalizeWarehouse(item.wh)||String(item.wh||"").trim().toUpperCase();
+  if(direct)return direct;
+  const ft=String(item.fuel_truck||"").trim().toUpperCase();
+  return HISTORY_FT_MAP[ft]||"-";
 }
 
 function getFuelman(item){
@@ -174,7 +188,9 @@ async function tampilkanRiwayat(){
   errorBox.style.display="none";
 
   try{
-    const data=await fetchAll();
+    const dataPromise=fetchAll();
+    await loadStorageMasterHistory();
+    const data=await dataPromise;
 
     data.sort((a,b)=>{
       const da=a.tanggal||"",db=b.tanggal||"";
