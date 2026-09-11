@@ -1,0 +1,71 @@
+name: Temp fix canonical FT
+
+on:
+  push:
+    branches:
+      - fix/fuel-history-storage-dynamic-v2
+    paths:
+      - .github/workflows/tmp-fix-canonical-ft.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/fuel-history-storage-dynamic-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Fix and test FT canonicalization
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          editor = Path('logsheet-editor.html')
+          s = editor.read_text(encoding='utf-8')
+          old = r'replace(/\\s/g,"")'
+          new = r'replace(/\s/g,"")'
+          if old not in s:
+              raise SystemExit('over-escaped canonicalFT regex not found')
+          s = s.replace(old, new, 1)
+          editor.write_text(s, encoding='utf-8')
+
+          test = Path('scripts/test-fuel-history-storage-pages.mjs')
+          t = test.read_text(encoding='utf-8')
+          if "import vm from 'node:vm';" not in t:
+              t = t.replace("import assert from 'node:assert/strict';\n", "import assert from 'node:assert/strict';\nimport vm from 'node:vm';\n", 1)
+          block = r'''
+
+          test('FT canonicalizer removes whitespace and keeps dynamic codes', () => {
+            const match = editor.match(/function canonicalFT\(v\)\{[\s\S]*?\n\}/);
+            assert.ok(match, 'canonicalFT function missing');
+            const context = {};
+            vm.createContext(context);
+            new vm.Script(`${match[0]};this.canonicalFT=canonicalFT;`).runInContext(context);
+            assert.equal(context.canonicalFT(' FT 0099 '), 'FT0099');
+            assert.equal(context.canonicalFT('73'), 'FT0073');
+            assert.equal(context.canonicalFT('not-a-truck'), '');
+          });
+          '''
+          if "FT canonicalizer removes whitespace" not in t:
+              t += block
+          test.write_text(t, encoding='utf-8')
+          PY
+          rm .github/workflows/tmp-fix-canonical-ft.yml
+      - name: Install dependencies
+        run: npm ci
+      - name: Run checks
+        run: npm run check
+      - name: Commit final result
+        run: |
+          git config user.name "kpp-mining"
+          git config user.email "iqbalinsani1017@gmail.com"
+          git add -A
+          git commit -m "test: verify dynamic FT canonicalization"
+          git push origin HEAD:fix/fuel-history-storage-dynamic-v2
