@@ -1,0 +1,53 @@
+name: Temp Stock Mobile Cleanup v2
+on:
+  push:
+    branches:
+      - feat/stock-mobile-cleanup-v2
+    paths:
+      - .github/workflows/tmp-stock-mobile-cleanup-v2.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/stock-mobile-cleanup-v2
+          fetch-depth: 0
+      - name: Apply Stock cleanup
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('stock.html')
+          s=p.read_text()
+          s=s.replace('<!-- KPP-FMS STOCK v9.15: compact mobile workflow + collapsible transaction processes -->','<!-- KPP-FMS STOCK v9.16: mobile cleanup, compact workflow, no redundant bottom shortcuts -->',1)
+          bottom='''<div class="panel actions">\n    <a href="pengisian.html" class="btn green"> Pengisian Fuel</a>\n    <a href="dashboard.html" class="btn primary"> Dashboard</a>\n    <a href="stock-history.html" class="btn purple"> History Stock</a>\n    <a href="logsheet.html" class="btn gray"> Logsheet</a>\n</div>\n\n'''
+          if bottom not in s:
+              raise SystemExit('bottom shortcut block not found')
+          s=s.replace(bottom,'',1)
+          s=s.replace('Mode Ringkas Transaksi','Mode Ringkas')
+          s=s.replace('Tap judul proses untuk buka/tutup. Di HP, satu proses dibuka agar halaman tidak kepanjangan.','Tap proses untuk buka/tutup.')
+          old='''function restoreStockPanelVisibility(){\n    Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{\n        let collapsed=false;\n        try{\n            collapsed=localStorage.getItem(config.storageKey)==="1";\n        }catch{}\n        setStockPanelCollapsed(panelKey,collapsed,false);\n    });\n}'''
+          new='''function restoreStockPanelVisibility(){\n    Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{\n        let collapsed=false;\n        try{\n            const stored=localStorage.getItem(config.storageKey);\n            collapsed=stored===null\n                ? (panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches)\n                : stored==="1";\n        }catch{\n            collapsed=panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches;\n        }\n        setStockPanelCollapsed(panelKey,collapsed,false);\n    });\n}'''
+          if old not in s:
+              raise SystemExit('restoreStockPanelVisibility marker not found')
+          s=s.replace(old,new,1)
+          css='''\n\n/* ===== KPP-FMS STOCK MOBILE CLEANUP v2 ===== */\n@media(max-width:700px){\n  .workflow-compact-tools{\n    position:static!important;\n    display:grid!important;\n    grid-template-columns:minmax(0,1fr) auto!important;\n    gap:7px!important;\n    padding:7px 8px!important;\n    margin-bottom:7px!important;\n    border-radius:10px!important;\n    box-shadow:none!important;\n  }\n  .workflow-compact-copy strong{font-size:10px!important;margin:0!important;line-height:1.2!important}\n  .workflow-compact-copy span{display:none!important}\n  .workflow-compact-actions{gap:4px!important}\n  .workflow-compact-actions button{padding:6px 7px!important;font-size:8px!important;min-height:30px!important}\n  .workflow-panel.is-collapsed{padding:7px 9px!important;min-height:54px!important;margin-bottom:7px!important}\n  .workflow-panel.is-collapsed .workflow-panel-head{min-height:38px!important}\n  .workflow-panel-head h3{font-size:13px!important;line-height:1.15!important;padding-right:4px!important}\n  .workflow-toggle-btn{padding:6px 7px!important;font-size:8px!important;min-width:74px!important;min-height:32px!important}\n  .workflow-panel.is-collapsed::before,\n  .workflow-panel.is-collapsed::after{opacity:.22!important}\n  .movement-panel{padding:9px!important;margin-bottom:8px!important;border-radius:12px!important}\n  .movement-panel .panel-title-row{margin-bottom:0!important;align-items:center!important}\n  .movement-panel .panel-title-row h3{font-size:14px!important;line-height:1.2!important}\n  .movement-panel .panel-toggle-btn{padding:7px 9px!important;font-size:8px!important;min-height:32px!important}\n  #movementPanelContent:not(.hidden){margin-top:8px!important}\n}\n'''
+          if 'KPP-FMS STOCK MOBILE CLEANUP v2' not in s:
+              s=s.replace('</style>',css+'\n</style>',1)
+          p.write_text(s)
+          PY
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run checks
+        run: npm run check
+      - name: Remove temporary workflow
+        run: rm -f .github/workflows/tmp-stock-mobile-cleanup-v2.yml
+      - name: Commit final patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stock.html package.json scripts/test-stock-mobile-cleanup-v2.mjs .github/workflows/tmp-stock-mobile-cleanup-v2.yml
+          git commit -m "feat: bersihkan Stock mobile dan shortcut redundant" || exit 0
+          git push origin HEAD:feat/stock-mobile-cleanup-v2
