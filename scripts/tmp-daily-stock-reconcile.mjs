@@ -51,17 +51,17 @@ const dashboard=fs.readFileSync('dashboard.html','utf8');
 
 test('Daily Report uses measured receipt and transfer quantities like Stock and Dashboard',()=>{
   for(const [name,source] of [['Daily Report',daily],['Stock',stock],['Dashboard',dashboard]]){
-    assert.match(source,/row\.destination_measured_qty!==null\s*&&\s*row\.destination_measured_qty!==undefined/,
+    assert.ok(source.includes('row.destination_measured_qty!==null && row.destination_measured_qty!==undefined'),
       name+' must prefer destination_measured_qty');
-    assert.match(source,/row\.source_measured_qty!==null\s*&&\s*row\.source_measured_qty!==undefined/,
+    assert.ok(source.includes('row.source_measured_qty!==null && row.source_measured_qty!==undefined'),
       name+' must prefer source_measured_qty for transfer out');
   }
 
-  assert.match(daily,/stock\[row\.source_storage\]-=sourceQty;/,
+  assert.ok(daily.includes('stock[row.source_storage]-=sourceQty;'),
     'Daily Report must subtract the measured source quantity');
-  assert.match(daily,/stock\[row\.destination_storage\]\+=destinationQty;/,
+  assert.ok(daily.includes('stock[row.destination_storage]+=destinationQty;'),
     'Daily Report must add the measured destination quantity');
-  assert.doesNotMatch(daily,/if\(row\.jenis==="TRANSFER"\)\{\s*if\(row\.source_storage\)stock\[row\.source_storage\]-=n\(row\.qty\);/,
+  assert.ok(!daily.includes('if(row.source_storage)stock[row.source_storage]-=n(row.qty);'),
     'Daily Report must not use one qty for both transfer sides');
 });
 `;
