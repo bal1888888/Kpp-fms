@@ -2,6 +2,11 @@
 (() => {
   "use strict";
 
+  const CACHE_TTL_MS=5*60*1000;
+  const LOAD_TIMEOUT_MS=8000;
+  const cache=new Map();
+  let loadState=Object.freeze({source:"none",activeOnly:null,loadedAt:null,error:null});
+
   const FALLBACK_ROWS = Object.freeze([
     Object.freeze({code:"MT01",storage_type:"MT",display_name:"MT01",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:10}),
     Object.freeze({code:"MT02",storage_type:"MT",display_name:"MT02",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:20}),
@@ -41,24 +46,88 @@
     };
   }
 
-  function fallbackRows(){
-    return FALLBACK_ROWS.map(row=>({...row}));
+  function cloneRows(rows){
+    return (rows||[]).map(row=>({...row}));
   }
 
-  async function load(db,{activeOnly=true}={}){
+  function fallbackRows(){
+    return cloneRows(FALLBACK_ROWS);
+  }
+
+  function cacheKey(activeOnly){
+    return activeOnly?"active":"all";
+  }
+
+  function readCache(activeOnly){
+    const entry=cache.get(cacheKey(activeOnly));
+    if(!entry)return null;
+    if(Date.now()-entry.savedAt>CACHE_TTL_MS){
+      cache.delete(cacheKey(activeOnly));
+      return null;
+    }
+    return cloneRows(entry.rows);
+  }
+
+  function writeCache(activeOnly,rows){
+    cache.set(cacheKey(activeOnly),{savedAt:Date.now(),rows:cloneRows(rows)});
+  }
+
+  function clearCache(){
+    cache.clear();
+  }
+
+  function setLoadState(source,activeOnly,error=null){
+    loadState=Object.freeze({
+      source,
+      activeOnly:!!activeOnly,
+      loadedAt:new Date().toISOString(),
+      error:error?String(error?.message||error):null
+    });
+  }
+
+  function diagnostics(){
+    return {...loadState,cacheEntries:cache.size,cacheTtlMs:CACHE_TTL_MS,timeoutMs:LOAD_TIMEOUT_MS};
+  }
+
+  function withTimeout(value,timeoutMs){
+    const ms=Math.max(1000,Number(timeoutMs)||LOAD_TIMEOUT_MS);
+    let timer=null;
+    return Promise.race([
+      Promise.resolve(value),
+      new Promise((_,reject)=>{
+        timer=setTimeout(()=>reject(new Error(`Master MT/FT timeout setelah ${ms} ms`)),ms);
+      })
+    ]).finally(()=>{
+      if(timer!==null)clearTimeout(timer);
+    });
+  }
+
+  async function load(db,{activeOnly=true,forceRefresh=false,timeoutMs=LOAD_TIMEOUT_MS}={}){
+    if(!forceRefresh){
+      const cached=readCache(activeOnly);
+      if(cached){
+        setLoadState("cache",activeOnly);
+        return cached;
+      }
+    }
+
     try{
+      if(!db||typeof db.from!=="function")throw new Error("Koneksi database Master MT/FT tidak tersedia");
       let query=db
         .from("storage_master")
         .select("code,storage_type,display_name,warehouse,nominal_capacity_liter,tera_profile,active,sort_order,notes")
         .order("sort_order",{ascending:true})
         .order("code",{ascending:true});
       if(activeOnly)query=query.eq("active",true);
-      const {data,error}=await query;
+      const {data,error}=await withTimeout(query,timeoutMs);
       if(error)throw error;
       const rows=(data||[]).map(normalizeRow).filter(row=>row.code);
-      if(rows.length)return rows;
-      throw new Error("Master MT/FT kosong");
+      if(!rows.length)throw new Error("Master MT/FT kosong");
+      writeCache(activeOnly,rows);
+      setLoadState("online",activeOnly);
+      return cloneRows(rows);
     }catch(error){
+      setLoadState("fallback",activeOnly,error);
       console.warn("Master MT/FT online belum terbaca, memakai fallback aman:",error?.message||error);
       return fallbackRows().filter(row=>!activeOnly||row.active);
     }
@@ -136,6 +205,8 @@
   window.KPPStorage=Object.freeze({
     fallbackRows,
     load,
+    clearCache,
+    diagnostics,
     byCode,
     label,
     normalizeCode,
