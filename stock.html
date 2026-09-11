@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.13: compact radial stock gauges; transaction logic unchanged -->
+<!-- KPP-FMS STOCK v9.14: GL/Admin-only final Stock Closing revision with audit-safe carry forward -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -121,6 +121,19 @@ th{background:#e5e7eb}
 
 
 .hidden{display:none!important}
+
+.closing-revision-box{
+    margin-top:14px;
+    padding:13px 14px;
+    border:1px solid #bfdbfe;
+    border-left:4px solid #2563eb;
+    border-radius:10px;
+    background:#eff6ff;
+}
+.closing-revision-box label{color:#1e3a8a}
+.closing-revision-box .note{margin-top:6px;color:#1e40af}
+.closing-revision-box textarea{background:#fff}
+button:disabled,input:disabled,textarea:disabled,select:disabled{cursor:not-allowed;opacity:.68}
 
 .stock-save-overlay{
     position:fixed;
@@ -1098,13 +1111,19 @@ th{background:#f8fafc;color:#475569}
 
     <div class="grid">
         <div>
-            <label>Petugas Sonding Closing (Akun Login)</label>
+            <label id="closingOperatorLabel">Petugas Sonding Closing (Akun Login)</label>
             <input id="closingOperator" class="locked-field" readonly placeholder="Otomatis dari akun login">
         </div>
         <div>
             <label>Keterangan</label>
             <textarea id="closingNote" placeholder="Opsional: catatan stock taking / sonding"></textarea>
         </div>
+    </div>
+
+    <div id="closingRevisionBox" class="closing-revision-box hidden">
+        <label>Alasan Revisi Stock Akhir</label>
+        <textarea id="closingRevisionReason" placeholder="Wajib diisi. Contoh: koreksi salah baca sounding akhir shift"></textarea>
+        <div class="note">Revisi Stock Akhir hanya GL/Admin. Nilai lama dan baru tetap disimpan di audit.</div>
     </div>
 
     <label class="checkbox-row">
@@ -1116,7 +1135,7 @@ th{background:#f8fafc;color:#475569}
     </label>
 
     <div style="margin-top:14px">
-        <button class="purple" onclick="saveClosing()">SIMPAN STOCK CLOSING</button>
+        <button class="purple" id="closingSaveButton" onclick="saveClosing()">SIMPAN STOCK CLOSING</button>
     </div>
 
     <div class="status" id="closingStatus"></div>
@@ -1212,6 +1231,7 @@ let STOCK_SAVE_TIMER_1=null;
 let STOCK_SAVE_TIMER_2=null;
 let CURRENT_MOVEMENTS=[];
 let CURRENT_RECEIPT_HISTORY=[];
+let CURRENT_SAVED_CLOSING=[];
 let COPY_TOAST_TIMER=null;
 let EXCELJS_LOAD_PROMISE=null;
 const LAST_COPY_REPORTS={opening:"",receipt:"",transfer:"",closing:""};
@@ -1531,6 +1551,13 @@ function isStockEditor(){
     return !!(
         CURRENT_PROFILE &&
         ["gl","admin","atasan"].includes(CURRENT_PROFILE.role)
+    );
+}
+
+function canReviseClosing(){
+    return !!(
+        CURRENT_PROFILE &&
+        ["gl","admin"].includes(CURRENT_PROFILE.role)
     );
 }
 
@@ -3338,6 +3365,59 @@ function renderStockCards(stock){
     </div>`;
 }
 
+function closingRevisionState(savedClosing=CURRENT_SAVED_CLOSING){
+    const rows=Array.isArray(savedClosing)?savedClosing:[];
+    const savedMap=Object.fromEntries(rows.map(row=>[row.storage,row]));
+    const closingStorages=closingStoragesForAccount();
+    const hasSaved=closingStorages.some(storage=>!!savedMap[storage]);
+    const isFinal=closingStorages.length>0 && closingStorages.every(storage=>!!savedMap[storage]);
+    return {rows,savedMap,closingStorages,hasSaved,isFinal};
+}
+
+function applyClosingRevisionUi(savedClosing){
+    CURRENT_SAVED_CLOSING=(savedClosing||[]).map(row=>({...row}));
+    const state=closingRevisionState(CURRENT_SAVED_CLOSING);
+    const canRevise=canReviseClosing();
+    const status=document.getElementById("closingStatus");
+    const saveButton=document.getElementById("closingSaveButton");
+    const note=document.getElementById("closingNote");
+    const carry=document.getElementById("carryForward");
+    const revisionBox=document.getElementById("closingRevisionBox");
+    const revisionReason=document.getElementById("closingRevisionReason");
+    const operatorLabel=document.getElementById("closingOperatorLabel");
+
+    state.closingStorages.forEach(storage=>{
+        const height=document.getElementById(`height-${storage}`);
+        if(!height)return;
+        height.disabled=state.isFinal ? !canRevise : !!state.savedMap[storage];
+    });
+
+    if(state.isFinal){
+        note.disabled=!canRevise;
+        carry.disabled=true;
+        saveButton.disabled=!canRevise;
+        saveButton.textContent=canRevise?"SIMPAN REVISI STOCK AKHIR":"STOCK AKHIR TERKUNCI";
+        revisionBox.classList.toggle("hidden",!canRevise);
+        operatorLabel.textContent=canRevise?"Akun Revisi (GL/Admin)":"Petugas Sonding Closing";
+        status.textContent=canRevise
+            ? "[OK] Stock akhir sudah tersimpan. Mode revisi aktif khusus GL/Admin."
+            : "[TERKUNCI] Stock akhir sudah tersimpan. Revisi hanya GL/Admin.";
+        return state;
+    }
+
+    note.disabled=false;
+    carry.disabled=false;
+    saveButton.disabled=false;
+    saveButton.textContent=state.hasSaved?"SIMPAN SISA STOCK CLOSING":"SIMPAN STOCK CLOSING";
+    revisionBox.classList.add("hidden");
+    if(revisionReason)revisionReason.value="";
+    operatorLabel.textContent="Petugas Sonding Closing (Akun Login)";
+    status.textContent=state.hasSaved
+        ? "[INFO] Closing periode ini belum lengkap. Baris yang sudah tersimpan dikunci; lengkapi storage yang belum."
+        : "";
+    return state;
+}
+
 function renderClosing(stock,savedClosing){
     const savedMap={};
 
@@ -3413,6 +3493,7 @@ function renderClosing(stock,savedClosing){
     });
     updateClosingDifference();
     renderClosingCopyPreview();
+    applyClosingRevisionUi(savedClosing);
 }
 
 function updateClosingFromHeight(storage,refreshDifference=true){
@@ -3998,10 +4079,19 @@ async function saveClosing(){
         isFuelman
             ? [ACTIVE_FUELMAN_SESSION.fuel_truck]
             : STORAGES;
+    const revisionState=closingRevisionState();
+    const isRevision=revisionState.isFinal;
+
+    if(isRevision && !canReviseClosing()){
+        alert("Revisi Stock Akhir hanya GL/Admin.");
+        return;
+    }
 
     const closingRows=[];
 
     for(const storage of closingStorages){
+        if(!isRevision && revisionState.savedMap[storage])continue;
+
         const heightInput=document.getElementById(`height-${storage}`);
         const input=document.getElementById(`actual-${storage}`);
 
@@ -4009,7 +4099,7 @@ async function saveClosing(){
             alert(
                 isFuelman
                     ? "Isi tinggi sonding "+storage+" terlebih dahulu."
-                    : "Isi tinggi sonding untuk semua storage terlebih dahulu."
+                    : "Isi tinggi sonding untuk semua storage yang belum tersimpan terlebih dahulu."
             );
             return;
         }
@@ -4064,6 +4154,91 @@ async function saveClosing(){
                     ? ACTIVE_FUELMAN_SESSION.fuelman_name
                     : null
         });
+    }
+
+    if(!closingRows.length){
+        alert(isRevision?"Tidak ada data Stock Akhir untuk direvisi.":"Semua Stock Closing periode ini sudah tersimpan.");
+        return;
+    }
+
+    if(isRevision){
+        const reasonInput=document.getElementById("closingRevisionReason");
+        const reason=String(reasonInput?.value||"").trim();
+        if(reason.length<5){
+            alert("Alasan revisi wajib diisi minimal 5 karakter.");
+            reasonInput?.focus();
+            return;
+        }
+
+        const changedRows=closingRows.filter(row=>{
+            const old=revisionState.savedMap[row.storage];
+            if(!old)return false;
+            return (
+                n(old.actual_qty)!==n(row.actual_qty) ||
+                n(old.sonding_height_cm)!==n(row.sonding_height_cm) ||
+                String(old.note||"").trim()!==String(row.note||"").trim() ||
+                String(old.tera_version||"")!==String(row.tera_version||"")
+            );
+        });
+
+        if(!changedRows.length){
+            alert("Tidak ada perubahan Stock Akhir yang perlu disimpan.");
+            return;
+        }
+
+        const nearFullRevision=changedRows.filter(
+            row=>capacityPercent(row.storage,row.actual_qty)>=CAPACITY_WARNING_PCT
+        );
+        if(nearFullRevision.length){
+            const lanjut=confirm(
+                "[PERINGATAN] REVISI MENDEKATI KAPASITAS\n\n"+
+                nearFullRevision.map(row=>capacityMessage(row.storage,row.actual_qty)).join("\n")+
+                "\n\nLanjutkan revisi?"
+            );
+            if(!lanjut)return;
+        }
+
+        const lanjut=confirm(
+            "REVISI STOCK AKHIR\n\n"+
+            "Storage berubah: "+changedRows.map(row=>row.storage).join(", ")+"\n"+
+            "Alasan: "+reason+"\n\n"+
+            "Nilai lama dan baru akan disimpan di audit. Lanjut?"
+        );
+        if(!lanjut)return;
+
+        if(!beginStockSave("Menyimpan revisi Stock Akhir..."))return;
+
+        const {data:revisionResult,error:revisionError}=await db.rpc(
+            "revise_stock_closing",
+            {
+                p_rows:changedRows.map(row=>({
+                    tanggal:row.tanggal,
+                    shift:row.shift,
+                    storage:row.storage,
+                    actual_qty:row.actual_qty,
+                    note:row.note,
+                    sonding_height_cm:row.sonding_height_cm,
+                    tera_version:row.tera_version
+                })),
+                p_reason:reason
+            }
+        );
+
+        if(revisionError){
+            document.getElementById("closingStatus").textContent=
+                "[GAGAL] Revisi dibatalkan: "+revisionError.message;
+            await finishStockSave(false,"Revisi dibatalkan: "+revisionError.message);
+            return;
+        }
+
+        LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+        reasonInput.value="";
+        await loadStock();
+        await finishStockSave(
+            true,
+            "Revisi Stock Akhir tersimpan. "+n(revisionResult?.changed_rows)+" storage diperbarui."
+        );
+        return;
     }
 
     const nearFullClosing=closingRows.filter(

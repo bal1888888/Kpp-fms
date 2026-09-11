@@ -43,5 +43,5 @@ test('Stock UI exposes revision only to GL/Admin and keeps initial Closing path'
 test('saved final Closing is locked for non-revisers', () => {
   assert.match(stock, /STOCK AKHIR TERKUNCI/i);
   assert.match(stock, /SIMPAN REVISI STOCK AKHIR/i);
-  assert.match(stock, /height\.disabled\s*=\s*!!savedMap\[storage\]\s*&&\s*!canRevise/i);
+  assert.match(stock, /height\.disabled\s*=\s*state\.isFinal\s*\?\s*!canRevise\s*:\s*!!state\.savedMap\[storage\]/i);
 });
