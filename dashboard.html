@@ -637,17 +637,7 @@ function operationalPeriod(referenceDate){
   return {start,end};
 }
 function currentOperationalShift(){
-  const now=new Date();
-  const mins=now.getHours()*60+now.getMinutes();
-  let tanggal=localDate();
-  let shift=1;
-  if(mins>=18*60+30){
-    shift=2;
-  }else if(mins<6*60+30){
-    shift=2;
-    tanggal=dateMinusOne(tanggal);
-  }
-  return {tanggal,shift};
+  return window.KPPTime.operationalShift();
 }
 function shiftNumber(v){
   const s=String(v||"").trim().toLowerCase();
@@ -866,10 +856,10 @@ async function fetchLatest(){
 
 async function calculateStock(tanggal,shift){
   const [o,m,f,c]=await Promise.all([
-    db.from("stock_opening").select("*").eq("tanggal",tanggal).eq("shift",shift),
-    db.from("stock_movements").select("*").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("stock_movements").select("jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",tanggal).eq("shift",shift),
     db.from("fuel_history").select("fuel,fuel_truck,wh").eq("tanggal",tanggal).eq("shift",shift),
-    db.from("stock_closing").select("*").eq("tanggal",tanggal).eq("shift",shift)
+    db.from("stock_closing").select("storage,actual_qty").eq("tanggal",tanggal).eq("shift",shift)
   ]);
   const err=o.error||m.error||f.error||c.error;
   if(err)throw err;

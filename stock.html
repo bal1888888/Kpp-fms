@@ -3310,10 +3310,10 @@ async function loadStock(){
     if(!tanggal)return;
 
     const [o,m,f,c]=await Promise.all([
-        db.from("stock_opening").select("*").eq("tanggal",tanggal).eq("shift",shift),
-        db.from("stock_movements").select("*").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
+        db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
+        db.from("stock_movements").select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
         db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator").eq("tanggal",tanggal).eq("shift",shift),
-        db.from("stock_closing").select("*").eq("tanggal",tanggal).eq("shift",shift)
+        db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
     ]);
 
     const anyError=o.error||m.error||f.error||c.error;
