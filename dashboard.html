@@ -611,56 +611,83 @@ function renderUsageTrend(rows,endDate){
   const dates=lastDates(endDate,5);
   const sums=Object.fromEntries(dates.map(d=>[d,0]));
   rows.forEach(row=>{if(Object.prototype.hasOwnProperty.call(sums,row.tanggal))sums[row.tanggal]+=n(row.fuel)});
-  const values=dates.map(d=>sums[d]);
+
+  const activeDates=dates.filter(d=>n(sums[d])>0);
+  const values=activeDates.map(d=>n(sums[d]));
   const max=Math.max(...values,1);
   const host=document.getElementById("usageTrendBars");
-  host.innerHTML=dates.map((d,i)=>{
-    const height=Math.max(4,(values[i]/max)*125);
-    const parts=d.split("-");
-    const label=`${parts[2]}/${parts[1]}`;
-    return `<div class="usage-bar-item"><div class="usage-bar-value">${formatAngka(values[i])}</div><div class="usage-bar" style="height:${height}px" title="${formatAngka(values[i])} L"></div><div class="usage-bar-date">${label}</div></div>`;
-  }).join("");
 
+  if(!activeDates.length){
+    host.innerHTML='<div class="trend-radial-empty">Belum ada pemakaian.</div>';
+  }else{
+    host.innerHTML=activeDates.map((d,i)=>{
+      const value=values[i];
+      const ringPct=Math.max(6,Math.min((value/max)*100,100));
+      const parts=d.split("-");
+      const month=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"][Math.max(0,Number(parts[1])-1)]||parts[1];
+      const label=`${parts[2]} ${month}`;
+      const compact=value>=1000?`${formatIto(value/1000)}K`:formatAngka(value);
+      return `<div class="trend-radial-item usage-radial-item${i===activeDates.length-1?" is-latest":""}">
+        <div class="trend-radial-label">${label}</div>
+        <div class="usage-trend-ring" style="--usage-pct:${ringPct}" title="${formatAngka(value)} L">
+          <div class="usage-ring-inner"><strong>${compact}</strong><small>L</small></div>
+        </div>
+        <div class="trend-ring-liter">${formatAngka(value)} L</div>
+        <div class="trend-ring-caption">PEMAKAIAN</div>
+      </div>`;
+    }).join("");
+  }
+
+  const badge=document.getElementById("usageTrendBadge");
+  if(!values.length){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
+  if(values.length===1){badge.className="trend-badge flat";badge.textContent="1 hari data";return;}
   const latest=values[values.length-1];
   const previous=values[values.length-2];
-  const badge=document.getElementById("usageTrendBadge");
-  if(previous<=0&&latest<=0){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
   if(previous<=0){badge.className="trend-badge up";badge.textContent="▲ Naik";return;}
   const change=((latest-previous)/previous)*100;
   if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil";}
-  else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%`; }
-  else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%`; }
+  else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%`;}
+  else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%`;}
 }
 
 function renderStockTrend(points,endDate){
   const dates=lastDates(endDate,5);
   const byDate=Object.fromEntries((points||[]).map(p=>[p.tanggal,n(p.total)]));
-  const values=dates.map(d=>n(byDate[d]));
-  const max=Math.max(...values,1);
+  const availableDates=dates.filter(d=>Object.prototype.hasOwnProperty.call(byDate,d));
+  const values=availableDates.map(d=>n(byDate[d]));
   const host=document.getElementById("stockTrendBars");
-  host.innerHTML=dates.map((d,i)=>{
-    const parts=d.split("-");
-    const label=`${parts[2]}/${parts[1]}`;
-    const state=stockLevelState(values[i]);
-    const levelPct=TOTAL_CAPACITY>0?(values[i]/TOTAL_CAPACITY)*100:0;
-    const ringPct=Math.max(0,Math.min(levelPct,100));
-    return `<div class="stock-trend-ring-item">
-      <div class="stock-trend-ring ${state}" style="--trend-pct:${ringPct}" title="${formatAngka(values[i])} L">
-        <span>${formatIto(levelPct)}%</span>
-      </div>
-      <div class="stock-trend-ring-value">${formatAngka(values[i])} L</div>
-      <div class="stock-trend-ring-date">${label}</div>
-    </div>`;
-  }).join("");
 
-  const latest=values[values.length-1];
-  const previous=values[values.length-2];
+  if(!availableDates.length){
+    host.innerHTML='<div class="trend-radial-empty">Belum ada posisi stock.</div>';
+  }else{
+    host.innerHTML=availableDates.map((d,i)=>{
+      const value=values[i];
+      const parts=d.split("-");
+      const month=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"][Math.max(0,Number(parts[1])-1)]||parts[1];
+      const label=`${parts[2]} ${month}`;
+      const state=stockLevelState(value);
+      const levelPct=TOTAL_CAPACITY>0?(value/TOTAL_CAPACITY)*100:0;
+      const ringPct=Math.max(0,Math.min(levelPct,100));
+      const stateText=state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
+      return `<div class="trend-radial-item stock-radial-item ${state}${i===availableDates.length-1?" is-latest":""}">
+        <div class="trend-radial-label">${label}</div>
+        <div class="stock-trend-ring ${state}" style="--trend-pct:${ringPct}" title="${formatAngka(value)} L">
+          <span>${formatIto(levelPct)}%</span>
+        </div>
+        <div class="trend-ring-liter">${formatAngka(value)} L</div>
+        <div class="trend-stock-status ${state}">${stateText}</div>
+      </div>`;
+    }).join("");
+  }
+
   const badge=document.getElementById("stockTrendBadge");
+  if(!values.length){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
+  const latest=values[values.length-1];
+  const previous=values.length>1?values[values.length-2]:0;
   const latestPct=TOTAL_CAPACITY>0?(latest/TOTAL_CAPACITY)*100:0;
   const state=stockLevelState(latest);
   const levelText=state==="critical"?" • KRITIS":state==="low"?" • RENDAH":state==="high"?" • TINGGI":" • AMAN";
-  if(previous<=0&&latest<=0){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
-  if(previous<=0){badge.className=state==="critical"?"trend-badge stock-down":"trend-badge stock-up";badge.textContent=`${formatIto(latestPct)}%${levelText}`;return;}
+  if(values.length===1||previous<=0){badge.className=state==="critical"?"trend-badge stock-down":"trend-badge stock-up";badge.textContent=`${formatIto(latestPct)}%${levelText}`;return;}
   const change=((latest-previous)/previous)*100;
   if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent=`• Stabil ${formatIto(latestPct)}%${levelText}`;}
   else if(change>0){badge.className="trend-badge stock-up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%${levelText}`;}
