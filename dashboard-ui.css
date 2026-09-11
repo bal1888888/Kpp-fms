@@ -126,3 +126,133 @@
   .dashboard-workspace .table-container{max-height:68vh}
 }
 @media(prefers-reduced-motion:reduce){.dashboard-workspace *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* ===== KPP-FMS PREMIUM RADIAL PERFORMANCE v2 ===== */
+.dashboard-workspace .performance-section{
+  border-color:#c9d9ed;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)!important;
+}
+.dashboard-workspace .performance-section .usage-card,
+.dashboard-workspace .performance-section .stock-trend-card{
+  position:relative;
+  overflow:hidden;
+  padding:18px!important;
+}
+.dashboard-workspace .performance-section .usage-card{
+  border:1px solid #bfdbfe!important;
+  background:linear-gradient(160deg,#ffffff 0%,#f3f8ff 100%)!important;
+  box-shadow:0 10px 28px rgba(37,99,235,.07)!important;
+}
+.dashboard-workspace .performance-section .stock-trend-card{
+  border:1px solid #86efac!important;
+  background:linear-gradient(160deg,#ffffff 0%,#f0fdf4 100%)!important;
+  box-shadow:0 12px 30px rgba(22,163,74,.10)!important;
+}
+.dashboard-workspace .performance-section .stock-trend-card::before,
+.dashboard-workspace .performance-section .usage-card::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:4px;
+}
+.dashboard-workspace .performance-section .stock-trend-card::before{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.dashboard-workspace .performance-section .usage-card::before{background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.dashboard-workspace .performance-section .overview-title{font-size:16px;font-weight:900;color:#10213a}
+.dashboard-workspace .performance-section .overview-sub{font-size:10px;color:#718197}
+
+.dashboard-workspace #usageTrendBars.usage-bars,
+.dashboard-workspace #stockTrendBars.usage-bars{
+  height:auto!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(64px,1fr))!important;
+  align-items:stretch!important;
+  gap:9px!important;
+  padding:9px 0 0!important;
+  border-bottom:0!important;
+  overflow:visible!important;
+}
+.dashboard-workspace .trend-radial-item{
+  min-width:0;
+  padding:9px 5px 8px;
+  border:1px solid #e1e8f2;
+  border-radius:14px;
+  background:rgba(255,255,255,.92);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:center;
+  box-shadow:0 5px 16px rgba(15,23,42,.045);
+}
+.dashboard-workspace .trend-radial-item.is-latest{
+  transform:translateY(-2px);
+  box-shadow:0 10px 20px rgba(15,23,42,.09);
+}
+.dashboard-workspace .stock-radial-item.is-latest{border-color:#4ade80;background:#f7fff9}
+.dashboard-workspace .usage-radial-item.is-latest{border-color:#93c5fd;background:#f8fbff}
+.dashboard-workspace .trend-radial-label{
+  width:100%;margin-bottom:7px;color:#20324d;font-size:11px;font-weight:900;letter-spacing:.04em;white-space:nowrap;
+}
+.dashboard-workspace .trend-ring-liter{
+  margin-top:7px;color:#0f172a;font-size:10px;font-weight:900;line-height:1.15;white-space:nowrap;
+}
+.dashboard-workspace .trend-ring-caption{
+  margin-top:3px;color:#6b7d94;font-size:7px;font-weight:900;letter-spacing:.08em;
+}
+.dashboard-workspace .trend-stock-status{
+  margin-top:4px;padding:3px 6px;border-radius:999px;font-size:7px;font-weight:900;letter-spacing:.05em;
+}
+.dashboard-workspace .trend-stock-status.safe{background:#dcfce7;color:#166534}
+.dashboard-workspace .trend-stock-status.low{background:#fef3c7;color:#92400e}
+.dashboard-workspace .trend-stock-status.critical{background:#fee2e2;color:#991b1b}
+.dashboard-workspace .trend-stock-status.high{background:#ffedd5;color:#9a3412}
+
+.dashboard-workspace .stock-trend-ring{
+  width:76px!important;aspect-ratio:1!important;border-radius:50%!important;display:grid!important;place-items:center!important;
+  position:relative!important;background:conic-gradient(var(--trend-color) calc(var(--trend-pct)*1%),#e8edf4 0)!important;
+  box-shadow:0 0 0 5px rgba(255,255,255,.8),0 7px 16px rgba(15,23,42,.08);
+}
+.dashboard-workspace .stock-trend-ring::before{inset:8px!important}
+.dashboard-workspace .stock-trend-ring span{font-size:12px!important}
+
+.dashboard-workspace .usage-trend-ring{
+  --usage-pct:0;
+  width:76px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;
+  background:conic-gradient(#2563eb calc(var(--usage-pct)*1%),#e8edf4 0);
+  box-shadow:0 0 0 5px rgba(255,255,255,.8),0 7px 16px rgba(37,99,235,.10);
+}
+.dashboard-workspace .usage-trend-ring::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}
+.dashboard-workspace .usage-ring-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;line-height:1}
+.dashboard-workspace .usage-ring-inner strong{color:#1d4ed8;font-size:12px;font-weight:900;letter-spacing:-.02em}
+.dashboard-workspace .usage-ring-inner small{margin-top:3px;color:#64748b;font-size:7px;font-weight:900}
+.dashboard-workspace .trend-radial-empty{grid-column:1/-1;padding:18px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff;color:#64748b;font-size:11px;font-weight:800;text-align:center}
+
+@media(max-width:720px){
+  .dashboard-workspace .performance-section{padding:15px!important}
+  .dashboard-workspace .performance-section .usage-card,
+  .dashboard-workspace .performance-section .stock-trend-card{padding:14px 10px!important}
+  .dashboard-workspace #usageTrendBars.usage-bars,
+  .dashboard-workspace #stockTrendBars.usage-bars{
+    grid-template-columns:repeat(auto-fit,minmax(54px,1fr))!important;
+    gap:5px!important;
+    padding-top:8px!important;
+  }
+  .dashboard-workspace .trend-radial-item{padding:7px 2px 6px;border-radius:11px}
+  .dashboard-workspace .trend-radial-label{font-size:8px;margin-bottom:5px;letter-spacing:0}
+  .dashboard-workspace .stock-trend-ring,
+  .dashboard-workspace .usage-trend-ring{width:50px!important}
+  .dashboard-workspace .stock-trend-ring::before,
+  .dashboard-workspace .usage-trend-ring::before{inset:6px!important}
+  .dashboard-workspace .stock-trend-ring span{font-size:8px!important}
+  .dashboard-workspace .usage-ring-inner strong{font-size:8px}.dashboard-workspace .usage-ring-inner small{font-size:6px;margin-top:2px}
+  .dashboard-workspace .trend-ring-liter{font-size:7px;margin-top:5px}
+  .dashboard-workspace .trend-ring-caption,.dashboard-workspace .trend-stock-status{font-size:6px}
+  .dashboard-workspace .trend-stock-status{padding:2px 4px;margin-top:3px}
+  .dashboard-workspace .trend-radial-item.is-latest{transform:none}
+  .dashboard-workspace .performance-section .overview-title{font-size:15px}
+}
+@media(max-width:360px){
+  .dashboard-workspace #usageTrendBars.usage-bars,
+  .dashboard-workspace #stockTrendBars.usage-bars{grid-template-columns:repeat(auto-fit,minmax(48px,1fr))!important;gap:4px!important}
+  .dashboard-workspace .stock-trend-ring,.dashboard-workspace .usage-trend-ring{width:45px!important}
+  .dashboard-workspace .trend-ring-liter{font-size:6.5px}
+}
