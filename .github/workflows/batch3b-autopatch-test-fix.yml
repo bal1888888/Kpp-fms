@@ -24,17 +24,17 @@ jobs:
           from pathlib import Path
           p=Path('.github/workflows/batch3b-autopatch.yml')
           s=p.read_text(encoding='utf-8')
-          start='          import vm from \\"node:vm\\";'
-          end='          const T=context.window.KPPTime;'
+          start_marker='import vm from'
+          end_marker='const T=context.window.KPPTime;'
           replacement='''          globalThis.window={};
           await import(\\"../wib-time.js\\");
           const T=globalThis.window.KPPTime;'''
-          if start in s and end in s:
-              i=s.index(start)
-              j=s.index(end,i)+len(end)
+          if start_marker in s and end_marker in s:
+              i=s.rfind('\n',0,s.index(start_marker))+1
+              j=s.index(end_marker,s.index(start_marker))+len(end_marker)
               s=s[:i]+replacement+s[j:]
               p.write_text(s,encoding='utf-8')
-          elif replacement not in s:
+          elif 'globalThis.window={};' not in s:
               raise SystemExit('WIB test harness markers not found')
           Path('.github/workflows/batch3b-autopatch-test-fix.yml').unlink()
           PY
