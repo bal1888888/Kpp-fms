@@ -4,7 +4,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const source=fs.readFileSync(new URL("../storage-master.js",import.meta.url),"utf8");
-const context={window:{},console};
+const context={window:{},console,setTimeout,clearTimeout};
 vm.createContext(context);
 vm.runInContext(source,context,{filename:"storage-master.js"});
 const S=context.window.KPPStorage;
@@ -65,4 +65,55 @@ test("hard capacity never exceeds nominal or validated curve",()=>{
   const caps=S.hardCapacityMap(tera,rows);
   assert.equal(caps.MT05,40000);
   assert.equal(caps.FT0099,20500);
+});
+
+function fakeDb(rows){
+  let calls=0;
+  const db={
+    from(table){
+      assert.equal(table,"storage_master");
+      calls++;
+      const builder={
+        select(){return builder;},
+        order(){return builder;},
+        eq(){return builder;},
+        then(resolve,reject){return Promise.resolve({data:rows,error:null}).then(resolve,reject);}
+      };
+      return builder;
+    }
+  };
+  return {db,get calls(){return calls;}};
+}
+
+test("online master is cached per page and returned as defensive copies",async()=>{
+  S.clearCache();
+  const sourceRows=[{code:"FT0099",storage_type:"FT",display_name:"FT0099",warehouse:"WH FT03",nominal_capacity_liter:21000,tera_profile:"FT",active:true,sort_order:1}];
+  const fake=fakeDb(sourceRows);
+  const first=await S.load(fake.db,{activeOnly:true,forceRefresh:true});
+  first[0].display_name="MUTATED CLIENT COPY";
+  const second=await S.load(fake.db,{activeOnly:true});
+  assert.equal(fake.calls,1);
+  assert.equal(second[0].display_name,"FT0099");
+  assert.equal(S.diagnostics().source,"cache");
+  assert.equal(S.diagnostics().cacheEntries,1);
+});
+
+test("clearCache forces a fresh Master MT/FT request",async()=>{
+  S.clearCache();
+  const fake=fakeDb([{code:"MT01",storage_type:"MT",display_name:"MT01",nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:1}]);
+  await S.load(fake.db,{forceRefresh:true});
+  await S.load(fake.db);
+  assert.equal(fake.calls,1);
+  S.clearCache();
+  await S.load(fake.db);
+  assert.equal(fake.calls,2);
+});
+
+test("Master MT/FT failure falls back safely and exposes diagnostics",async()=>{
+  S.clearCache();
+  const db={from(){throw new Error("network down");}};
+  const rows=await S.load(db,{activeOnly:true,forceRefresh:true});
+  assert.equal(rows.length,6);
+  assert.equal(S.diagnostics().source,"fallback");
+  assert.match(S.diagnostics().error,/network down/i);
 });
