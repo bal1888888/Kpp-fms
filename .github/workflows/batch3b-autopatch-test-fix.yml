@@ -1,0 +1,41 @@
+name: Batch 3B autopatch test fix
+
+on:
+  push:
+    branches:
+      - "hardening/batch3b-wib-web-v1"
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: hardening/batch3b-wib-web-v1
+      - name: Fix WIB test harness
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/batch3b-autopatch.yml')
+          s=p.read_text(encoding='utf-8')
+          old='''          import vm from \\"node:vm\\";\n\n          const root=new URL(\\"../\\",import.meta.url);\n          const source=fs.readFileSync(new URL(\\"../wib-time.js\\",import.meta.url),\\"utf8\\");\n          const context={window:{},globalThis:{},Intl,Date,Object,Number,String,Error};\n          vm.createContext(context);\n          vm.runInContext(source,context,{filename:\\"wib-time.js\\"});\n          const T=context.window.KPPTime;'''
+          new='''          globalThis.window={};\n          await import(\\"../wib-time.js\\");\n          const T=globalThis.window.KPPTime;'''
+          if old not in s:
+              if new not in s:
+                  raise SystemExit('WIB test harness anchor not found')
+          else:
+              s=s.replace(old,new,1)
+              p.write_text(s,encoding='utf-8')
+          Path('.github/workflows/batch3b-autopatch-test-fix.yml').unlink()
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test: use native Node globals for WIB runtime" || exit 0
+          git push origin HEAD:hardening/batch3b-wib-web-v1
