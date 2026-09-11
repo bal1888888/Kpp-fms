@@ -771,7 +771,17 @@ async function loadFuelTruckMaster(){
     const select=document.getElementById("fuelTruck");
     const selected=select.value;
     const rows=STORAGE_ROWS.filter(row=>row.storage_type==="FT");
-    select.innerHTML='<option value="">-- Pilih Fuel Truck --</option>'+rows.map(row=>`<option value="${row.code}">${window.KPPStorage.label(row)}</option>`).join("");
+    select.replaceChildren();
+const placeholder=document.createElement("option");
+placeholder.value="";
+placeholder.textContent="-- Pilih Fuel Truck --";
+select.appendChild(placeholder);
+rows.forEach(row=>{
+    const option=document.createElement("option");
+    option.value=String(row.code||"");
+    option.textContent=window.KPPStorage.label(row);
+    select.appendChild(option);
+});
     if(selected && rows.some(row=>row.code===selected))select.value=selected;
 }
 

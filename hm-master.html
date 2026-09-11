@@ -1369,9 +1369,9 @@ async function checkUnit(){
 async function loadHistory(unit){
     const {data,error}=await db.from("hm_corrections").select("id,tanggal,jam,unit,hm,operator,note").eq("unit",unit).order("tanggal",{ascending:false}).order("jam",{ascending:false}).order("id",{ascending:false}).limit(20);
     const body=document.getElementById("historyBody");
-    if(error){body.innerHTML=`<tr><td colspan="6">${error.message}</td></tr>`;return}
+    if(error){body.innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}
     if(!data?.length){body.innerHTML='<tr><td colspan="6">Belum ada koreksi HM untuk unit ini.</td></tr>';return}
-    body.innerHTML=data.map(r=>`<tr><td>${r.tanggal}</td><td>${String(r.jam).slice(0,8)}</td><td>${r.unit}</td><td>${fmt(r.hm)}</td><td>${r.operator||"-"}</td><td>${r.note||"-"}</td></tr>`).join("");
+    body.innerHTML=data.map(r=>`<tr><td>${esc(r.tanggal)}</td><td>${esc(String(r.jam||"").slice(0,8))}</td><td>${esc(r.unit)}</td><td>${fmt(r.hm)}</td><td>${esc(r.operator||"-")}</td><td>${esc(r.note||"-")}</td></tr>`).join("");
 }
 
 async function saveCorrection(){
