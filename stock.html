@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- KPP-FMS STOCK v9.15: compact mobile workflow + collapsible transaction processes -->
+<!-- KPP-FMS STOCK v9.16: mobile cleanup, compact workflow, no redundant bottom shortcuts -->
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -758,6 +758,37 @@ th{background:#f8fafc;color:#475569}
   .summary-box{padding:8px!important}.summary-box small{font-size:9px}.summary-box strong{font-size:14px!important}
 }
 
+
+
+/* ===== KPP-FMS STOCK MOBILE CLEANUP v2 ===== */
+@media(max-width:700px){
+  .workflow-compact-tools{
+    position:static!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:7px!important;
+    padding:7px 8px!important;
+    margin-bottom:7px!important;
+    border-radius:10px!important;
+    box-shadow:none!important;
+  }
+  .workflow-compact-copy strong{font-size:10px!important;margin:0!important;line-height:1.2!important}
+  .workflow-compact-copy span{display:none!important}
+  .workflow-compact-actions{gap:4px!important}
+  .workflow-compact-actions button{padding:6px 7px!important;font-size:8px!important;min-height:30px!important}
+  .workflow-panel.is-collapsed{padding:7px 9px!important;min-height:54px!important;margin-bottom:7px!important}
+  .workflow-panel.is-collapsed .workflow-panel-head{min-height:38px!important}
+  .workflow-panel-head h3{font-size:13px!important;line-height:1.15!important;padding-right:4px!important}
+  .workflow-toggle-btn{padding:6px 7px!important;font-size:8px!important;min-width:74px!important;min-height:32px!important}
+  .workflow-panel.is-collapsed::before,
+  .workflow-panel.is-collapsed::after{opacity:.22!important}
+  .movement-panel{padding:9px!important;margin-bottom:8px!important;border-radius:12px!important}
+  .movement-panel .panel-title-row{margin-bottom:0!important;align-items:center!important}
+  .movement-panel .panel-title-row h3{font-size:14px!important;line-height:1.2!important}
+  .movement-panel .panel-toggle-btn{padding:7px 9px!important;font-size:8px!important;min-height:32px!important}
+  #movementPanelContent:not(.hidden){margin-top:8px!important}
+}
+
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 </head>
@@ -1228,13 +1259,6 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
-<div class="panel actions">
-    <a href="pengisian.html" class="btn green"> Pengisian Fuel</a>
-    <a href="dashboard.html" class="btn primary"> Dashboard</a>
-    <a href="stock-history.html" class="btn purple"> History Stock</a>
-    <a href="logsheet.html" class="btn gray"> Logsheet</a>
-</div>
-
 <div id="copyToast" class="copy-toast" role="status" aria-live="polite"></div>
 
 </div>
@@ -1420,8 +1444,13 @@ function restoreStockPanelVisibility(){
     Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{
         let collapsed=false;
         try{
-            collapsed=localStorage.getItem(config.storageKey)==="1";
-        }catch{}
+            const stored=localStorage.getItem(config.storageKey);
+            collapsed=stored===null
+                ? (panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches)
+                : stored==="1";
+        }catch{
+            collapsed=panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches;
+        }
         setStockPanelCollapsed(panelKey,collapsed,false);
     });
 }
@@ -4449,7 +4478,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     const prefs=readPrefs(),hasSaved=Object.keys(prefs).length>0;
     const tools=document.createElement("div");
     tools.className="workflow-compact-tools";
-    tools.innerHTML='<div class="workflow-compact-copy"><strong>Mode Ringkas Transaksi</strong><span>Tap judul proses untuk buka/tutup. Di HP, satu proses dibuka agar halaman tidak kepanjangan.</span></div><div class="workflow-compact-actions"><button type="button" data-action="collapse">Ringkas Semua</button><button type="button" data-action="expand">Buka Semua</button></div>';
+    tools.innerHTML='<div class="workflow-compact-copy"><strong>Mode Ringkas</strong><span>Tap proses untuk buka/tutup.</span></div><div class="workflow-compact-actions"><button type="button" data-action="collapse">Ringkas Semua</button><button type="button" data-action="expand">Buka Semua</button></div>';
     list[0].before(tools);
     tools.querySelector('[data-action="collapse"]').addEventListener("click",()=>setAll(true));
     tools.querySelector('[data-action="expand"]').addEventListener("click",()=>setAll(false));
