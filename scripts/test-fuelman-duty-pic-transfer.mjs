@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const migration=fs.readFileSync(new URL("../supabase/migrations/20260911120000_fuelman_duty_pic_transfer_v1.sql",import.meta.url),"utf8");
+const periodLock=fs.readFileSync(new URL("../supabase/migrations/20260911121000_fuelman_duty_period_lock_v1.sql",import.meta.url),"utf8");
 const fuelman=fs.readFileSync(new URL("../fuelman.html",import.meta.url),"utf8");
 const stock=fs.readFileSync(new URL("../stock.html",import.meta.url),"utf8");
 const pengisian=fs.readFileSync(new URL("../pengisian.html",import.meta.url),"utf8");
@@ -46,4 +47,11 @@ test("backend blocks PIC Transfer from fueling and stock movement insert paths",
   assert.match(migration,/PIC TRANSFER hanya dapat melihat stock dan menyimpan Stock Closing MT/);
   assert.match(migration,/trg_kpp_fuel_history_session_duty_guard/);
   assert.match(migration,/trg_kpp_stock_movement_fuelman_duty_guard/);
+});
+
+test("one closing owner is locked per shift period",()=>{
+  assert.match(periodLock,/fuelman_sessions_one_fuelman_ft_per_period/);
+  assert.match(periodLock,/on public\.fuelman_sessions\(tanggal, shift, fuel_truck\)/);
+  assert.match(periodLock,/fuelman_sessions_one_pic_transfer_per_period/);
+  assert.match(periodLock,/on public\.fuelman_sessions\(tanggal, shift\)/);
 });
