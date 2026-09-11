@@ -566,12 +566,24 @@ async function calculateStock(tanggal,shift){
 
   (m.data||[]).forEach(row=>{
     if(row.jenis==="RECEIPT" && row.destination_storage){
-      stock[row.destination_storage]+=n(row.qty);
+      const receivedQty=
+        row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+          ? n(row.destination_measured_qty)
+          : n(row.qty);
+      stock[row.destination_storage]+=receivedQty;
     }
 
     if(row.jenis==="TRANSFER"){
-      if(row.source_storage)stock[row.source_storage]-=n(row.qty);
-      if(row.destination_storage)stock[row.destination_storage]+=n(row.qty);
+      const sourceQty=
+        row.source_measured_qty!==null && row.source_measured_qty!==undefined
+          ? n(row.source_measured_qty)
+          : n(row.qty);
+      const destinationQty=
+        row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+          ? n(row.destination_measured_qty)
+          : n(row.qty);
+      if(row.source_storage)stock[row.source_storage]-=sourceQty;
+      if(row.destination_storage)stock[row.destination_storage]+=destinationQty;
     }
   });
 
