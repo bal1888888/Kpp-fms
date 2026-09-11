@@ -67,6 +67,15 @@ test('System Health UI is management-only and renders RPC data with DOM text nod
   assert.doesNotMatch(healthHtml,/row\.(?:label|detail|check_key)[^\n]{0,80}innerHTML/);
 });
 
+test('System Health UI can focus attention and separates check count from affected item count',()=>{
+  assert.match(healthHtml,/id="attentionBtn"/);
+  assert.match(healthHtml,/ATTENTION_ONLY/);
+  assert.match(healthHtml,/function issueTotal\(/);
+  assert.match(healthHtml,/HANYA PERLU PERHATIAN/);
+  assert.match(healthHtml,/WIB \(server\)/);
+  assert.match(healthHtml,/renderGroups\(HEALTH_ROWS\)/);
+});
+
 test('management landing pages expose System Health',()=>{
   assert.match(admin,/href="system-health\.html"/);
   assert.match(gl,/href="system-health\.html"/);
