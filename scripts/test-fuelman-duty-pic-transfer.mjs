@@ -30,6 +30,7 @@ test("Fuelman check-in chooses duty and PIC cannot use fueling UI",()=>{
   assert.match(fuelman,/PIC TRANSFER/);
   assert.match(fuelman,/start_fuelman_shift/);
   assert.match(fuelman,/end_fuelman_shift/);
+  assert.match(fuelman,/querySelectorAll\('a\[href="pengisian\.html"\]'\)/);
   assert.match(pengisian,/PIC TRANSFER tidak memiliki akses Pengisian Fuel/);
 });
 
