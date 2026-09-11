@@ -251,6 +251,7 @@ function renderActive(){
   document.getElementById("sTruck").textContent=currentSession.fuel_truck||"-";
   document.getElementById("sTruckRow").classList.toggle("hidden",duty==="PIC_TRANSFER");
   document.getElementById("fuelingLink").classList.toggle("hidden",duty==="PIC_TRANSFER");
+document.querySelectorAll('a[href="pengisian.html"]').forEach(link=>link.classList.toggle("hidden",duty==="PIC_TRANSFER"));
   document.getElementById("sMulai").textContent=fmtTime(currentSession.jam_mulai);
   hide("startPanel"); show("activePanel");
 }
