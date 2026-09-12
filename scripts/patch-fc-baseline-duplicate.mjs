@@ -5,6 +5,10 @@ function replaceExact(file,from,to){
   if(!src.includes(from)) throw new Error(`${file}: target patch tidak ditemukan`);
   fs.writeFileSync(file,src.replace(from,to));
 }
+function replaceAllIfPresent(file,from,to){
+  const src=fs.readFileSync(file,'utf8');
+  fs.writeFileSync(file,src.split(from).join(to));
+}
 
 const oldBaseline=`  async function fetchBaselines(db,start,units){const pairs=await Promise.all(units.map(async unit=>{const {data,error}=await db.from("fuel_history").select("id,tanggal,unit,hm_akhir").eq("unit",unit).lt("tanggal",start).not("hm_akhir","is",null).order("tanggal",{ascending:false}).order("id",{ascending:false}).limit(1);if(error)throw error;return [unit,(data||[])[0]||null];}));return new Map(pairs);}`;
 const newBaseline=`  function baselineKey(row){return \`${'${String(row?.tanggal||"")} ${String(row?.jam||"00:00:00")} ${String(row?.id??"").padStart(20,"0")}'}\`;}
@@ -36,7 +40,9 @@ replaceExact('system-health.html',oldHealth,newHealth);
 for(const file of ['dashboard.html','logsheet.html']){
   replaceExact(file,'fc-chart.js?v=20260912h','fc-chart.js?v=20260912i');
 }
-replaceExact('scripts/test-fc-anomaly-visibility.mjs','20260912h','20260912i');
+for(const file of ['scripts/test-fc-anomaly-visibility.mjs','scripts/test-fc-data-contract.mjs']){
+  replaceAllIfPresent(file,'20260912h','20260912i');
+}
 
 fs.writeFileSync('scripts/test-fc-baseline-duplicate-guard.mjs',`import test from 'node:test';
 import assert from 'node:assert/strict';
