@@ -1,0 +1,62 @@
+name: Sidebar FC monitor patch retry
+
+on:
+  push:
+    branches:
+      - ui/sidebar-fc-monitor-v1
+    paths:
+      - .github/workflows/sidebar-fc-monitor-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ui/sidebar-fc-monitor-v1
+          fetch-depth: 0
+
+      - name: Fix patch boundary
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/apply-sidebar-fc-monitor.py')
+          s=p.read_text(encoding='utf-8')
+          old="end = auth.index(end_marker, start)\n"
+          new="end = auth.index(end_marker, start) + len('\\n  }')\n"
+          if old not in s:
+              raise SystemExit('patch boundary anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+
+      - name: Apply sidebar and FC monitor
+        run: python scripts/apply-sidebar-fc-monitor.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run full repository checks
+        run: npm run check
+
+      - name: Remove temporary patch files
+        run: |
+          rm -f scripts/apply-sidebar-fc-monitor.py
+          rm -f .github/workflows/sidebar-fc-monitor-autopatch.yml
+          rm -f .github/workflows/sidebar-fc-monitor-fix.yml
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "ui: sidebar responsif dan grafik FC per unit"
+          git push origin HEAD:ui/sidebar-fc-monitor-v1
