@@ -18,6 +18,6 @@ test("FC sequential HM ignores lower/reset rows without poisoning next baseline"
 test("Dashboard and Logsheet cache-bust repaired FC runtime",()=>{
   for(const file of ["dashboard.html","logsheet.html"]){
     const html=fs.readFileSync(new URL("../"+file,import.meta.url),"utf8");
-    assert.match(html,/fc-chart\.js\?v=20260912e/);
+    assert.match(html,/fc-chart\.js\?v=20260912f/);
   }
 });
