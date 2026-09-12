@@ -12,7 +12,7 @@ window.KPP_ACTIVE_PAGE="dashboard";
 <script src="wib-time.js?v=20260911b3"></script>
 <script src="auth.js?v=20260912-sidebar1"></script>
 <script src="storage-master.js"></script>
-<script src="fc-chart.js?v=20260912c"></script>
+<script src="fc-chart.js?v=20260912d"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 :root{
@@ -429,23 +429,6 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
 
   <div id="dashboardFcChart"></div>
 
-  <div class="section" id="fcSection">
-    <div class="section-head">
-      <div>
-        <span class="section-kicker">EFISIENSI UNIT MTD</span>
-        <h2>Fuel Consumption per Unit</h2>
-      </div>
-      <div class="fc-head-meta" id="fcCoverage">0 unit valid</div>
-    </div>
-    <div class="fc-table-wrap">
-      <table class="fc-table">
-        <thead><tr><th>Unit</th><th>Fuel MTD</th><th>HM Jalan Valid</th><th>FC</th><th>Sampel Valid</th></tr></thead>
-        <tbody id="fcUnitBody"></tbody>
-      </table>
-      <div id="fcStatus" class="fc-status">Memuat FC unit...</div>
-    </div>
-  </div>
-
   <div class="operations-grid">
     <div class="section">
       <div class="section-head">
@@ -556,45 +539,6 @@ function fuelConsumption(row){
   const fuel=Number(row?.fuel);
   return hm>0&&Number.isFinite(fuel)&&fuel>0 ? fuel/hm : null;
 }
-function buildFcByUnit(rows){
-  const map=new Map();
-  (rows||[]).forEach(row=>{
-    const unit=String(row.unit||"").trim().toUpperCase();
-    const hm=validHmRun(row);
-    const fuel=Number(row.fuel);
-    if(!unit||!(hm>0)||!Number.isFinite(fuel)||fuel<=0)return;
-    const entry=map.get(unit)||{unit,fuel:0,hm:0,samples:0};
-    entry.fuel+=fuel;
-    entry.hm+=hm;
-    entry.samples+=1;
-    map.set(unit,entry);
-  });
-  return Array.from(map.values())
-    .map(entry=>({...entry,fc:entry.hm>0?entry.fuel/entry.hm:null}))
-    .sort((a,b)=>b.fuel-a.fuel||a.unit.localeCompare(b.unit));
-}
-function renderFuelConsumption(rows){
-  const body=document.getElementById("fcUnitBody");
-  const status=document.getElementById("fcStatus");
-  const coverage=document.getElementById("fcCoverage");
-  const data=buildFcByUnit(rows);
-  body.innerHTML="";
-  coverage.textContent=data.length+" unit valid";
-  data.forEach(item=>{
-    const tr=document.createElement("tr");
-    tr.appendChild(cell(item.unit));
-    tr.appendChild(cell(formatAngka(item.fuel)+" L"));
-    tr.appendChild(cell(formatAngka(item.hm)+" HM"));
-    const fcCell=cell(formatIto(item.fc)+" L/HM");
-    fcCell.className="fc-value";
-    tr.appendChild(fcCell);
-    tr.appendChild(cell(String(item.samples)));
-    body.appendChild(tr);
-  });
-  status.style.display=data.length?"none":"block";
-  if(!data.length)status.textContent="Belum ada pasangan HM valid untuk menghitung FC periode ini.";
-}
-
 function localDate(){return window.KPPTime.localDate();}
 function dateMinusOne(value){
   const [y,m,d]=value.split("-").map(Number);
@@ -1104,7 +1048,6 @@ async function loadDashboard(){
     renderUsageTrend(trendFuelRows,yesterday);
     renderStockTrend(stockTrendPoints,yesterday);
     renderReceipts(receiptRows);
-    renderFuelConsumption(mtdRows);
     renderLatest(latestRows);
   }catch(error){
     console.error(error);
