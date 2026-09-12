@@ -11,6 +11,6 @@ ok(fc.includes("view.samples}/${view.transactions}"),"coverage KPI should show v
 ok(fc.includes("Maksimal 10 unit"),"10-unit guard copy should exist");
 ok(!dash.includes('id="fcSection"'),"legacy duplicate MTD FC section should be removed");
 ok(!dash.includes("renderFuelConsumption(mtdRows)"),"legacy FC renderer should not run");
-ok(dash.includes("fc-chart.js?v=20260912g"),"dashboard should use new FC asset version");
-ok(log.includes("fc-chart.js?v=20260912g"),"logsheet should use new FC asset version");
+ok(dash.includes("fc-chart.js?v=20260912h"),"dashboard should use FC anomaly asset version");
+ok(log.includes("fc-chart.js?v=20260912h"),"logsheet should use FC anomaly asset version");
 console.log("FC dashboard informative checks passed");
