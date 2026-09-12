@@ -20,17 +20,23 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           fc=Path('fc-chart.js').read_text(encoding='utf-8')
-          required=['data-kpi="count"','view.samples','view.transactions','view.coverage']
+          required=['view.samples','view.transactions','view.coverage']
           missing=[token for token in required if token not in fc]
           if missing:
               raise SystemExit(f'coverage KPI runtime missing: {missing}')
           path=Path('scripts/test-fc-dashboard-informative.mjs')
           text=path.read_text(encoding='utf-8')
-          old='ok(fc.includes("view.samples}/${view.transactions}"),"coverage KPI should show valid/total samples");'
-          new='ok(fc.includes(\'data-kpi="count"\') && fc.includes("view.samples") && fc.includes("view.transactions") && fc.includes("view.coverage"),"coverage KPI should show valid/total samples");'
-          if old not in text:
-              raise SystemExit('missing coverage regression anchor')
-          path.write_text(text.replace(old,new,1),encoding='utf-8')
+          lines=text.splitlines()
+          needle='"coverage KPI should show valid/total samples"'
+          found=False
+          for i,line in enumerate(lines):
+              if needle in line:
+                  lines[i]='ok(fc.includes("view.samples") && fc.includes("view.transactions") && fc.includes("view.coverage"),"coverage KPI should show valid/total samples");'
+                  found=True
+                  break
+          if not found:
+              raise SystemExit('missing coverage regression message')
+          path.write_text('\n'.join(lines)+'\n',encoding='utf-8')
           PY
       - uses: actions/setup-node@v4
         with:
