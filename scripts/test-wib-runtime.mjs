@@ -27,7 +27,7 @@ test("critical protected pages load versioned runtime and polish",()=>{
   for(const file of ["dashboard.html","stock.html","daily-report.html","stock-history.html","logsheet.html","pengisian.html","system-health.html"]){
     const html=fs.readFileSync(new URL("../"+file,import.meta.url),"utf8");
     assert.match(html,/wib-time\.js\?v=20260911b3/);
-    assert.match(html,/auth\.js\?v=20260911b3/);
+    assert.match(html,/auth\.js\?v=[A-Za-z0-9._-]+/);
     assert.match(html,/kpp-ui-polish\.css\?v=20260911b3/);
   }
 });

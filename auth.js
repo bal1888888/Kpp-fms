@@ -708,7 +708,7 @@ window.KPP = {
         title: "Menu GL",
         steps: [
           ["Buka Dashboard", "Mulai dari Dashboard untuk melihat kondisi fuel secara umum."],
-          ["Pilih menu kerja", "Gunakan menu atas: Pengisian, Stock, Logsheet, Logsheet Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
+          ["Pilih menu kerja", "Gunakan menu samping: Pengisian, Stock, Logsheet, Logsheet Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
           ["Approval bila ada", "Kalau ada jatah CCR ritasi berikutnya berstatus PENDING GL, buka Approval CCR lalu periksa dan setujui/tolak."],
           ["Rapikan data bila perlu", "Gunakan Logsheet/Editor untuk histori, dan HM Master untuk menetapkan HM resmi unit."],
           ["Kelola akun", "Kalau perlu tambah anggota atau reset password, buka Kelola Akun."],
@@ -718,7 +718,7 @@ window.KPP = {
         title: role === "atasan" ? "Menu Atasan" : "Menu Admin",
         steps: [
           ["Buka Dashboard", "Mulai dari Dashboard untuk melihat usage, stock, dan kondisi harian."],
-          ["Pilih menu kerja", "Gunakan menu atas sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
+          ["Pilih menu kerja", "Gunakan menu samping sesuai pekerjaan: Pengisian, Stock, Logsheet, Editor, Daily Report, CCR, Approval, atau Master Unit & HM."],
           ["Kelola akun", "Gunakan Kelola Akun untuk menambah anggota atau reset password bila diperlukan."],
           ["Rapikan histori", "Kalau HM/data lama perlu diperbaiki, buka Logsheet atau Logsheet Editor."],
           ["Tetapkan HM resmi", "Kalau HM live unit harus dibetulkan, gunakan HM Master/Bulk Fix, bukan edit histori biasa."],
@@ -1276,9 +1276,7 @@ window.KPP = {
         ["akun", "akun.html", "👥 Kelola Akun"],
       ];
     } else if (profile.role === "ccr") {
-      items = [
-        ["ccr", "ccr.html", "🎯 Display CCR"],
-      ];
+      items = [["ccr", "ccr.html", "🎯 Display CCR"]];
     } else {
       items = [
         ["fuelman", "fuelman.html", "🏠 Menu Fuelman"],
@@ -1286,60 +1284,177 @@ window.KPP = {
       ];
     }
 
+    const splitLabel = (label) => {
+      const parts = String(label || "").trim().split(/\s+/);
+      return { icon: parts.shift() || "•", text: parts.join(" ") || "Menu" };
+    };
+    const displayName = String(profile.display_name || profile.username || "User");
+    const roleText = profile.jabatan || this.roleLabel(profile.role);
+
+    if (!document.getElementById("kppSidebarShellStyle")) {
+      const style = document.createElement("style");
+      style.id = "kppSidebarShellStyle";
+      style.textContent = `
+        body.kpp-sidebar-shell{
+          --kpp-sidebar-width:252px;
+          --kpp-sidebar-collapsed:76px;
+          --kpp-topbar-height:62px;
+          padding-left:var(--kpp-sidebar-width)!important;
+          padding-top:var(--kpp-topbar-height)!important;
+          background:#f5f7fb!important;
+          color:#0f172a;
+          transition:padding-left .18s ease;
+        }
+        body.kpp-sidebar-shell.kpp-sidebar-collapsed{padding-left:var(--kpp-sidebar-collapsed)!important;}
+        body.kpp-sidebar-shell>.header,body.kpp-sidebar-shell>.kpp-userbar{display:none!important;}
+        body.kpp-sidebar-shell #kppRoleNav{
+          position:fixed!important;left:0!important;top:0!important;bottom:0!important;
+          width:var(--kpp-sidebar-width)!important;z-index:12000!important;
+          background:linear-gradient(180deg,#0b1f36 0%,#102b49 55%,#0a192c 100%)!important;
+          border-right:1px solid rgba(148,163,184,.20)!important;
+          box-shadow:12px 0 34px rgba(15,23,42,.12)!important;
+          transition:width .18s ease,transform .2s ease!important;overflow:hidden!important;
+        }
+        body.kpp-sidebar-shell.kpp-sidebar-collapsed #kppRoleNav{width:var(--kpp-sidebar-collapsed)!important;}
+        .kpp-sidebar{height:100%;display:flex;flex-direction:column;color:#e5edf8;}
+        .kpp-sidebar-brand{height:72px;display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.16);min-width:0;}
+        .kpp-sidebar-brand img{width:46px;height:42px;object-fit:contain;border-radius:9px;background:#020617;flex:0 0 auto;}
+        .kpp-sidebar-brand-copy{min-width:0;overflow:hidden;}
+        .kpp-sidebar-brand-copy strong{display:block;color:#fff;font-size:14px;letter-spacing:.02em;white-space:nowrap;}
+        .kpp-sidebar-brand-copy small{display:block;color:#94a3b8;font-size:9px;margin-top:3px;white-space:nowrap;}
+        .kpp-sidebar-role{margin:10px 12px 3px;padding:6px 9px;border-radius:8px;background:rgba(37,99,235,.12);color:#bfdbfe;font-size:9px;font-weight:900;letter-spacing:.07em;white-space:nowrap;overflow:hidden;}
+        .kpp-sidebar-nav{padding:6px 8px 10px;overflow:auto;flex:1;scrollbar-width:thin;scrollbar-color:#36506e transparent;}
+        .kpp-sidebar-link{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 10px;margin:2px 0;border-radius:9px;color:#cbd5e1!important;text-decoration:none!important;font-size:11px;font-weight:800;border:1px solid transparent!important;transition:.15s ease;white-space:nowrap;overflow:hidden;}
+        .kpp-sidebar-link:hover{background:rgba(255,255,255,.07);color:#fff!important;border-color:rgba(147,197,253,.12)!important;}
+        .kpp-sidebar-link.active{background:linear-gradient(135deg,#1d4ed8,#2563eb)!important;color:#fff!important;border-color:#60a5fa!important;box-shadow:0 8px 18px rgba(37,99,235,.24);}
+        .kpp-sidebar-icon{width:24px;min-width:24px;text-align:center;font-size:15px;line-height:1;}
+        .kpp-sidebar-text{overflow:hidden;text-overflow:ellipsis;}
+        .kpp-sidebar-footer{padding:9px 8px 12px;border-top:1px solid rgba(148,163,184,.14);}
+        .kpp-sidebar-collapse{width:100%;display:flex;align-items:center;gap:10px;min-height:40px;border:0;border-radius:9px;padding:8px 10px;background:rgba(255,255,255,.055);color:#cbd5e1;font-size:10px;font-weight:850;cursor:pointer;text-align:left;}
+        .kpp-sidebar-collapse:hover{background:rgba(255,255,255,.09);color:#fff;}
+        body.kpp-sidebar-collapsed .kpp-sidebar-brand-copy,body.kpp-sidebar-collapsed .kpp-sidebar-role,body.kpp-sidebar-collapsed .kpp-sidebar-text,body.kpp-sidebar-collapsed .kpp-sidebar-collapse span:last-child{display:none!important;}
+        body.kpp-sidebar-collapsed .kpp-sidebar-brand{justify-content:center;padding-inline:8px;}
+        body.kpp-sidebar-collapsed .kpp-sidebar-link,body.kpp-sidebar-collapsed .kpp-sidebar-collapse{justify-content:center;padding-inline:8px;}
+        body.kpp-sidebar-collapsed .kpp-sidebar-collapse .kpp-sidebar-icon{transform:rotate(180deg);}
+        .kpp-workspace-topbar{position:fixed;left:var(--kpp-sidebar-width);right:0;top:0;height:var(--kpp-topbar-height);z-index:11900;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;box-shadow:0 4px 18px rgba(15,23,42,.05);transition:left .18s ease;}
+        body.kpp-sidebar-collapsed .kpp-workspace-topbar{left:var(--kpp-sidebar-collapsed);}
+        .kpp-workspace-topbar-inner{height:100%;display:grid;grid-template-columns:auto minmax(180px,420px) 1fr auto;align-items:center;gap:12px;padding:8px 18px;}
+        .kpp-sidebar-toggle{width:40px;height:40px;border:0;border-radius:10px;background:#eff6ff;color:#1d4ed8;font-size:19px;font-weight:900;cursor:pointer;}
+        .kpp-sidebar-toggle:hover{background:#dbeafe;}
+        .kpp-menu-search{position:relative;min-width:0;}
+        .kpp-menu-search input{width:100%;height:40px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fafc;color:#0f172a;padding:0 12px 0 34px;font-size:11px;outline:none;}
+        .kpp-menu-search input:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.08);background:#fff;}
+        .kpp-menu-search::before{content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-52%);color:#64748b;font-size:16px;pointer-events:none;}
+        .kpp-topbar-page{min-width:0;}
+        .kpp-topbar-page strong{display:block;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .kpp-topbar-page small{display:block;font-size:9px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .kpp-topbar-user{justify-self:end;min-width:0;}
+        .kpp-workspace-topbar .kpp-user-pill{background:#fff!important;color:#0f172a!important;border-color:#dbe3ee!important;box-shadow:none!important;}
+        .kpp-workspace-topbar .kpp-user-role{color:#64748b!important;}
+        .kpp-workspace-topbar .kpp-user-dropdown{background:#0b1424;}
+        .kpp-sidebar-overlay{display:none;position:fixed;inset:0;z-index:11850;background:rgba(2,6,23,.52);backdrop-filter:blur(2px);}
+        @media(max-width:900px){
+          body.kpp-sidebar-shell,body.kpp-sidebar-shell.kpp-sidebar-collapsed{padding-left:0!important;padding-top:58px!important;--kpp-topbar-height:58px;}
+          body.kpp-sidebar-shell #kppRoleNav,body.kpp-sidebar-shell.kpp-sidebar-collapsed #kppRoleNav{width:min(284px,84vw)!important;transform:translateX(-105%)!important;box-shadow:18px 0 45px rgba(2,6,23,.25)!important;}
+          body.kpp-sidebar-shell.kpp-sidebar-mobile-open #kppRoleNav{transform:translateX(0)!important;}
+          .kpp-workspace-topbar,body.kpp-sidebar-collapsed .kpp-workspace-topbar{left:0!important;}
+          body.kpp-sidebar-mobile-open .kpp-sidebar-overlay{display:block;}
+          .kpp-workspace-topbar-inner{grid-template-columns:auto minmax(0,1fr) auto;padding:7px 9px;gap:8px;}
+          .kpp-menu-search{display:none;}
+          .kpp-topbar-page strong{font-size:12px}.kpp-topbar-page small{font-size:8px;}
+          .kpp-sidebar-footer{display:none;}
+          .kpp-sidebar-brand-copy,.kpp-sidebar-role,.kpp-sidebar-text{display:block!important;}
+          .kpp-sidebar-brand{justify-content:flex-start!important;padding:12px 14px!important;}
+          .kpp-sidebar-link{justify-content:flex-start!important;padding:8px 10px!important;}
+          .kpp-workspace-topbar .kpp-user-pill{width:38px;height:38px;padding:0!important;border-radius:50%;justify-content:center;}
+          .kpp-workspace-topbar .kpp-user-name,.kpp-workspace-topbar .kpp-user-role,.kpp-workspace-topbar .kpp-user-chevron{display:none!important;}
+        }
+        @media(max-width:520px){
+          .kpp-topbar-page small{display:none;}
+          .kpp-workspace-topbar-inner{padding-inline:7px;}
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.classList.add("kpp-sidebar-shell");
+    const savedCollapsed = localStorage.getItem("kppSidebarCollapsed") === "1";
+    if (savedCollapsed && window.innerWidth > 900) document.body.classList.add("kpp-sidebar-collapsed");
+
     host.innerHTML = `
-      <nav class="app-nav">
-        <div class="app-nav-inner">
-          ${items.map(([key,href,label]) =>
-            `<a href="${href}"${key===active?' class="active"':""}>${label}</a>`
-          ).join("")}
+      <aside class="kpp-sidebar" aria-label="Navigasi utama">
+        <div class="kpp-sidebar-brand">
+          <img src="kpp-logo.png" alt="KPP">
+          <div class="kpp-sidebar-brand-copy"><strong>KPP TRAM FMS</strong><small>Fuel Management System</small></div>
         </div>
-      </nav>
+        <div class="kpp-sidebar-role">${this.roleLabel(profile.role)} • ${displayName}</div>
+        <nav class="kpp-sidebar-nav">
+          ${items.map(([key,href,label]) => {
+            const parsed = splitLabel(label);
+            return `<a class="kpp-sidebar-link${key===active?' active':''}" href="${href}" data-kpp-menu="${parsed.text.toLowerCase()}"><span class="kpp-sidebar-icon">${parsed.icon}</span><span class="kpp-sidebar-text">${parsed.text}</span></a>`;
+          }).join("")}
+        </nav>
+        <div class="kpp-sidebar-footer"><button type="button" class="kpp-sidebar-collapse" id="kppSidebarCollapse"><span class="kpp-sidebar-icon">«</span><span>Sembunyikan Menu</span></button></div>
+      </aside>
     `;
 
-    // Desktop: semua menu dirapikan di tengah dan dibuat muat dalam satu baris bila ruang cukup.
-    // Layar sempit: kembali menjadi scroll horizontal dari kiri agar menu pertama tidak hilang.
-    const navInner = host.querySelector(".app-nav-inner");
-    if (navInner) {
-      const arrangeNav = () => {
-        if (window.innerWidth > 1050) {
-          navInner.style.setProperty("justify-content", "center", "important");
-          navInner.style.setProperty("flex-wrap", "wrap", "important");
-          navInner.style.setProperty("overflow-x", "visible", "important");
-        } else {
-          navInner.style.setProperty("justify-content", "flex-start", "important");
-          navInner.style.setProperty("flex-wrap", "nowrap", "important");
-          navInner.style.setProperty("overflow-x", "auto", "important");
-
-          // Tampilkan menu aktif tanpa scrollIntoView karena API itu juga dapat
-          // menggeser viewport halaman secara vertikal saat auth/data selesai dimuat.
-          window.requestAnimationFrame(() => {
-            const activeLink = navInner.querySelector("a.active");
-            if (activeLink) {
-              const navRect = navInner.getBoundingClientRect();
-              const activeRect = activeLink.getBoundingClientRect();
-              const maxScroll = Math.max(0, navInner.scrollWidth - navInner.clientWidth);
-              const targetLeft = navInner.scrollLeft
-                + (activeRect.left - navRect.left)
-                - ((navInner.clientWidth - activeRect.width) / 2);
-              navInner.scrollLeft = Math.max(0, Math.min(maxScroll, targetLeft));
-            } else {
-              navInner.scrollLeft = 0;
-            }
-          });
-        }
-      };
-      arrangeNav();
-      let lastViewportWidth = window.innerWidth;
-      const handleNavResize = () => {
-        const nextViewportWidth = window.innerWidth;
-        // Address bar HP mengubah tinggi viewport ketika halaman di-scroll.
-        // Abaikan resize tinggi agar posisi halaman tidak dirender ulang.
-        if (nextViewportWidth === lastViewportWidth) return;
-        lastViewportWidth = nextViewportWidth;
-        arrangeNav();
-      };
-      window.addEventListener("resize", handleNavResize, {passive:true});
+    let topbar = document.getElementById("kppWorkspaceTopbar");
+    if (!topbar) {
+      topbar = document.createElement("div");
+      topbar.id = "kppWorkspaceTopbar";
+      topbar.className = "kpp-workspace-topbar";
+      topbar.innerHTML = `
+        <div class="kpp-workspace-topbar-inner">
+          <button type="button" class="kpp-sidebar-toggle" id="kppSidebarToggle" aria-label="Buka atau tutup menu">☰</button>
+          <div class="kpp-menu-search"><input id="kppMenuSearch" type="search" placeholder="Cari menu..." autocomplete="off"></div>
+          <div class="kpp-topbar-page"><strong>${this.pageSubtitle(active)}</strong><small>KPP TRAM Fuel Management System</small></div>
+          <div class="kpp-topbar-user" id="kppTopbarUser"></div>
+        </div>
+      `;
+      document.body.appendChild(topbar);
     }
+
+    let overlay = document.getElementById("kppSidebarOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "kppSidebarOverlay";
+      overlay.className = "kpp-sidebar-overlay";
+      document.body.appendChild(overlay);
+    }
+
+    const userMenu = document.querySelector(".kpp-user-menu");
+    const topbarUser = document.getElementById("kppTopbarUser");
+    if (userMenu && topbarUser && !topbarUser.contains(userMenu)) topbarUser.appendChild(userMenu);
+
+    const closeMobile = () => document.body.classList.remove("kpp-sidebar-mobile-open");
+    const toggleSidebar = () => {
+      if (window.innerWidth <= 900) {
+        document.body.classList.toggle("kpp-sidebar-mobile-open");
+        return;
+      }
+      const collapsed = document.body.classList.toggle("kpp-sidebar-collapsed");
+      localStorage.setItem("kppSidebarCollapsed", collapsed ? "1" : "0");
+    };
+    document.getElementById("kppSidebarToggle")?.addEventListener("click", toggleSidebar);
+    document.getElementById("kppSidebarCollapse")?.addEventListener("click", toggleSidebar);
+    overlay.addEventListener("click", closeMobile);
+    host.querySelectorAll("a.kpp-sidebar-link").forEach(link => link.addEventListener("click", closeMobile));
+
+    const searchInput = document.getElementById("kppMenuSearch");
+    const links = Array.from(host.querySelectorAll("a.kpp-sidebar-link"));
+    const filterMenu = () => {
+      const q = String(searchInput?.value || "").trim().toLowerCase();
+      links.forEach(link => { link.style.display = !q || String(link.dataset.kppMenu || "").includes(q) ? "flex" : "none"; });
+    };
+    searchInput?.addEventListener("input", filterMenu);
+    searchInput?.addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      const first = links.find(link => link.style.display !== "none");
+      if (first) window.location.href = first.href;
+    });
+
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeMobile(); });
+    window.addEventListener("resize", () => { if (window.innerWidth > 900) closeMobile(); }, {passive:true});
   }
 };
 
