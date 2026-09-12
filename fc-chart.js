@@ -48,7 +48,7 @@
     units.forEach(unit=>{
       const entry=perUnit.get(unit);const unitRows=rows.filter(row=>String(row.unit||"").trim().toUpperCase()===unit).sort((a,b)=>String(a.tanggal).localeCompare(String(b.tanggal))||num(a.id)-num(b.id));
       const base=baselines.get(unit);let previous=base&&Number.isFinite(Number(base.hm_akhir))?Number(base.hm_akhir):null;
-      unitRows.forEach(row=>{const hmRaw=row.hm_akhir;const hm=hmRaw===null||hmRaw===undefined||hmRaw===""?null:Number(hmRaw);if(!Number.isFinite(hm)){return;}let delta=null;if(Number.isFinite(previous)&&hm>=previous)delta=hm-previous;if(Number.isFinite(previous)&&hm<previous)delta=null;previous=hm;if(!(delta>0))return;const fuel=num(row.fuel);entry.hm+=delta;entry.validFuel+=fuel;entry.samples+=1;const day=entry.daily.get(row.tanggal)||{fuel:0,hm:0};day.fuel+=fuel;day.hm+=delta;entry.daily.set(row.tanggal,day);});
+      unitRows.forEach(row=>{const hmRaw=row.hm_akhir;const hm=hmRaw===null||hmRaw===undefined||hmRaw===""?null:Number(hmRaw);if(!Number.isFinite(hm)){return;}let delta=null;if(Number.isFinite(previous)&&hm>=previous)delta=hm-previous;if(Number.isFinite(previous)&&hm<previous){delta=null;return;}previous=hm;if(!(delta>0))return;const fuel=num(row.fuel);entry.hm+=delta;entry.validFuel+=fuel;entry.samples+=1;const day=entry.daily.get(row.tanggal)||{fuel:0,hm:0};day.fuel+=fuel;day.hm+=delta;entry.daily.set(row.tanggal,day);});
     });
     const dates=dateList(start,end);const series=units.map((unit,index)=>{const entry=perUnit.get(unit);return {unit,color:COLORS[index%COLORS.length],values:dates.map(date=>{const d=entry.daily.get(date);return d&&d.hm>0?d.fuel/d.hm:null;})};});
     const list=Array.from(perUnit.values());const totalFuel=list.reduce((s,x)=>s+x.totalFuel,0);const validFuel=list.reduce((s,x)=>s+x.validFuel,0);const totalHm=list.reduce((s,x)=>s+x.hm,0);const samples=list.reduce((s,x)=>s+x.samples,0);return {dates,series,totalFuel,totalHm,samples,avg:totalHm>0?validFuel/totalHm:null};
@@ -77,11 +77,11 @@
       status.className='kpp-fc-status';
       status.textContent='Memuat master unit...';
       try{
-        const request=KPP.db.from('unit_master').select('code,active').eq('active',true).order('code',{ascending:true});
+        const request=KPP.db.from('unit_master').select('code_unit,active').eq('active',true).order('code_unit',{ascending:true});
         const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout memuat Master Unit. Coba lagi.')),8000));
         const {data,error}=await Promise.race([request,timeout]);
         if(error)throw error;
-        units=(data||[]).map(r=>String(r.code||'').trim().toUpperCase()).filter(Boolean);
+        units=(data||[]).map(r=>String(r.code_unit||'').trim().toUpperCase()).filter(Boolean);
         let saved=[];
         try{saved=JSON.parse(localStorage.getItem('kppFcSelectedUnits')||'[]');}catch{}
         selected=saved.filter(u=>units.includes(u)).slice(0,MAX_UNITS);
