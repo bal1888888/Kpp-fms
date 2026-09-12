@@ -16,1908 +16,399 @@ TAP version 13
 # Subtest: GL closing and next opening commit together and identical retry is idempotent
 ok 1 - GL closing and next opening commit together and identical retry is idempotent
   ---
-  duration_ms: 3725.545055
+  duration_ms: 4216.839041
   type: 'test'
   ...
 # Subtest: conflicting next opening rolls the complete closing request back
 ok 2 - conflicting next opening rolls the complete closing request back
   ---
-  duration_ms: 2313.581949
+  duration_ms: 2707.745107
   type: 'test'
   ...
 # Subtest: changed replay cannot overwrite an existing closing
 ok 3 - changed replay cannot overwrite an existing closing
   ---
-  duration_ms: 3157.439281
+  duration_ms: 3497.046245
   type: 'test'
   ...
 # Subtest: Fuelman can close only the active truck session
 ok 4 - Fuelman can close only the active truck session
   ---
-  duration_ms: 3460.050263
+  duration_ms: 3587.39924
   type: 'test'
   ...
 # Subtest: RPC is unavailable to anon and available to authenticated
 ok 5 - RPC is unavailable to anon and available to authenticated
   ---
-  duration_ms: 2546.899592
+  duration_ms: 2472.144947
   type: 'test'
   ...
 # Subtest: bulk capacity helper is GL/Admin only and uses existing guarded RPC
 ok 6 - bulk capacity helper is GL/Admin only and uses existing guarded RPC
   ---
-  duration_ms: 0.879914
+  duration_ms: 0.941108
   type: 'test'
   ...
 # Subtest: bulk capacity preview blocks unknown, inactive, duplicate and invalid rows
 ok 7 - bulk capacity preview blocks unknown, inactive, duplicate and invalid rows
   ---
-  duration_ms: 0.2637
+  duration_ms: 0.269229
   type: 'test'
   ...
 # Subtest: bulk capacity helper never guesses capacity and supports controlled concurrency
 ok 8 - bulk capacity helper never guesses capacity and supports controlled concurrency
   ---
-  duration_ms: 0.280621
+  duration_ms: 0.267686
   type: 'test'
   ...
 # Subtest: CCR allocation RPC journals request before acknowledging success
 ok 9 - CCR allocation RPC journals request before acknowledging success
   ---
-  duration_ms: 1.288814
+  duration_ms: 1.302491
   type: 'test'
   ...
 # Subtest: CCR allocation RPC binds server identity and active operational shift
 ok 10 - CCR allocation RPC binds server identity and active operational shift
   ---
-  duration_ms: 0.462219
+  duration_ms: 0.482512
   type: 'test'
   ...
 # Subtest: CCR page uses persistent request id and reliable RPC instead of direct insert
 ok 11 - CCR page uses persistent request id and reliable RPC instead of direct insert
   ---
-  duration_ms: 0.321979
+  duration_ms: 0.324212
   type: 'test'
   ...
 # Subtest: approval page shows real HM only
 ok 12 - approval page shows real HM only
   ---
-  duration_ms: 0.997202
+  duration_ms: 1.445683
   type: 'test'
   ...
 # Subtest: approval page sends only state transition and rejection reason
 ok 13 - approval page sends only state transition and rejection reason
   ---
-  duration_ms: 0.195473
+  duration_ms: 0.228702
   type: 'test'
   ...
 # Subtest: database stamps approval and rejection identity from authenticated actor
 ok 14 - database stamps approval and rejection identity from authenticated actor
   ---
-  duration_ms: 0.264261
+  duration_ms: 0.311779
   type: 'test'
   ...
 # Subtest: authenticated clients cannot directly insert CCR allocations
 ok 15 - authenticated clients cannot directly insert CCR allocations
   ---
-  duration_ms: 1.174011
+  duration_ms: 1.273377
   type: 'test'
   ...
 # Subtest: CCR page creates allocations through the reliable RPC
 ok 16 - CCR page creates allocations through the reliable RPC
   ---
-  duration_ms: 0.309414
+  duration_ms: 0.314524
   type: 'test'
   ...
 # Subtest: WIB shift boundaries, midnight, month/year rollover
 ok 17 - WIB shift boundaries, midnight, month/year rollover
   ---
-  duration_ms: 269.595595
+  duration_ms: 61.624319
   type: 'test'
   ...
 # Subtest: missing HM stays blank, zero remains numeric
 ok 18 - missing HM stays blank, zero remains numeric
   ---
-  duration_ms: 0.282114
+  duration_ms: 0.37021
   type: 'test'
   ...
 # Subtest: historical/terminal/pending check-ins cannot be selected
 ok 19 - historical/terminal/pending check-ins cannot be selected
   ---
-  duration_ms: 2.177194
+  duration_ms: 2.476281
   type: 'test'
   ...
 # Subtest: join uses exact bigint string AND unit/date/shift; no unit-only guesses
 ok 20 - join uses exact bigint string AND unit/date/shift; no unit-only guesses
   ---
-  duration_ms: 0.418798
+  duration_ms: 0.455892
   type: 'test'
   ...
 # Subtest: search and status affect all report rows, preserve NRP zeros and literal formulas
 ok 21 - search and status affect all report rows, preserve NRP zeros and literal formulas
   ---
-  duration_ms: 0.666197
+  duration_ms: 0.583713
   type: 'test'
   ...
 # Subtest: date range restricted to 31 days with real calendar dates
 ok 22 - date range restricted to 31 days with real calendar dates
   ---
-  duration_ms: 0.555762
+  duration_ms: 0.678432
   type: 'test'
   ...
 # Subtest: event time and server received time exported separately in WIB
 ok 23 - event time and server received time exported separately in WIB
   ---
-  duration_ms: 0.621384
+  duration_ms: 0.698139
   type: 'test'
   ...
 # Subtest: pagination continues even when server returns fewer than 500 rows
 ok 24 - pagination continues even when server returns fewer than 500 rows
   ---
-  duration_ms: 0.72645
+  duration_ms: 0.778262
   type: 'test'
   ...
 # Subtest: query failure stops the report instead of exporting incomplete data
 ok 25 - query failure stops the report instead of exporting incomplete data
   ---
-  duration_ms: 1.103009
+  duration_ms: 1.081685
   type: 'test'
   ...
 # Subtest: monitor is read-only and never requests full fuel history
 ok 26 - monitor is read-only and never requests full fuel history
   ---
-  duration_ms: 0.692075
+  duration_ms: 0.726423
   type: 'test'
   ...
 # Subtest: CCR page integration: initialize, pick identity, preserve selection across report filters
 ok 27 - CCR page integration: initialize, pick identity, preserve selection across report filters
   ---
-  duration_ms: 21.390752
+  duration_ms: 21.263807
   type: 'test'
   ...
 # Subtest: Daily Report uses measured receipt and transfer quantities like Stock and Dashboard
 ok 28 - Daily Report uses measured receipt and transfer quantities like Stock and Dashboard
   ---
-  duration_ms: 4.352845
+  duration_ms: 6.531326
   type: 'test'
   ...
 # Subtest: daily total stock hero fills empty space with progress and useful KPIs
 ok 29 - daily total stock hero fills empty space with progress and useful KPIs
   ---
-  duration_ms: 0.992573
+  duration_ms: 1.23231
   type: 'test'
   ...
 # Subtest: dashboard monitors current operational duty assignments
 ok 30 - dashboard monitors current operational duty assignments
   ---
-  duration_ms: 1.818979
+  duration_ms: 2.979743
   type: 'test'
   ...
 # Subtest: closing progress is bound to the accountable session and user
 ok 31 - closing progress is bound to the accountable session and user
   ---
-  duration_ms: 0.261746
+  duration_ms: 0.293816
   type: 'test'
   ...
 # Subtest: monitor dynamically follows active Master MT and FT
 ok 32 - monitor dynamically follows active Master MT and FT
   ---
-  duration_ms: 0.166109
+  duration_ms: 0.252197
   type: 'test'
   ...
 # Subtest: dashboard uses the unified sequential-HM FC widget
 ok 33 - dashboard uses the unified sequential-HM FC widget
   ---
-  duration_ms: 1.377329
+  duration_ms: 1.000912
   type: 'test'
   ...
 # Subtest: aggregate FC is ratio of valid fuel totals to valid HM totals
 ok 34 - aggregate FC is ratio of valid fuel totals to valid HM totals
   ---
-  duration_ms: 0.263249
+  duration_ms: 0.305778
   type: 'test'
   ...
 # Subtest: daily usage only renders dates with usage
 ok 35 - daily usage only renders dates with usage
   ---
-  duration_ms: 0.879845
+  duration_ms: 1.195751
   type: 'test'
   ...
 # Subtest: stock trend shows readable premium radial items
 ok 36 - stock trend shows readable premium radial items
   ---
-  duration_ms: 0.175426
+  duration_ms: 0.218994
   type: 'test'
   ...
 # Subtest: premium dashboard radial css keeps phone layout compact
 ok 37 - premium dashboard radial css keeps phone layout compact
   ---
-  duration_ms: 0.216141
+  duration_ms: 0.282434
   type: 'test'
   ...
 # Subtest: RLS semantics stay intact and all foreign keys receive indexes
 ok 38 - RLS semantics stay intact and all foreign keys receive indexes
   ---
-  duration_ms: 4134.780036
+  duration_ms: 4235.762192
   type: 'test'
   ...
 # Subtest: backend storage references point to storage_master instead of fixed checks
 ok 39 - backend storage references point to storage_master instead of fixed checks
   ---
-  duration_ms: 3.459796
+  duration_ms: 3.001003
   type: 'test'
   ...
 # Subtest: new operational references must be active and FT sessions require FT type
 ok 40 - new operational references must be active and FT sessions require FT type
   ---
-  duration_ms: 0.515368
+  duration_ms: 0.584625
   type: 'test'
   ...
 # Subtest: storage identity and same-type sounding profile are protected
 ok 41 - storage identity and same-type sounding profile are protected
   ---
-  duration_ms: 0.343748
+  duration_ms: 0.369378
   type: 'test'
   ...
 # Subtest: opening uses no-overwrite RPC
 ok 42 - opening uses no-overwrite RPC
   ---
-  duration_ms: 0.433325
+  duration_ms: 0.514813
   type: 'test'
   ...
 # Subtest: atomic closing preserves implementation and removes fixed six-storage assumption
 ok 43 - atomic closing preserves implementation and removes fixed six-storage assumption
   ---
-  duration_ms: 0.224136
+  duration_ms: 0.243932
   type: 'test'
   ...
 # Subtest: all three fueling paths are patched in place to resolve an active FT from master
 ok 44 - all three fueling paths are patched in place to resolve an active FT from master
   ---
-  duration_ms: 0.272325
+  duration_ms: 0.354811
   type: 'test'
   ...
 # Subtest: Stock closing and copy preview use dynamic tera profile resolver
 ok 45 - Stock closing and copy preview use dynamic tera profile resolver
   ---
-  duration_ms: 0.258971
+  duration_ms: 0.274579
   type: 'test'
   ...
 # Subtest: master UI explains same-type reuse and immutable identity
 ok 46 - master UI explains same-type reuse and immutable identity
   ---
-  duration_ms: 0.260825
+  duration_ms: 0.349791
   type: 'test'
   ...
 # Subtest: implausible positive HM jumps are excluded from FC but remain visible
 ok 47 - implausible positive HM jumps are excluded from FC but remain visible
   ---
-  duration_ms: 2.694686
+  duration_ms: 2.828397
   type: 'test'
   ...
 # Subtest: FC summary is prominent and placed before the chart
 ok 48 - FC summary is prominent and placed before the chart
   ---
-  duration_ms: 0.395044
+  duration_ms: 0.414684
   type: 'test'
   ...
 # Subtest: missing dates break the SVG line instead of drawing fake continuity
 ok 49 - missing dates break the SVG line instead of drawing fake continuity
   ---
-  duration_ms: 0.324522
+  duration_ms: 0.228442
   type: 'test'
   ...
 # Subtest: focus works from legend, chart and anomaly list
 ok 50 - focus works from legend, chart and anomaly list
   ---
-  duration_ms: 0.353056
+  duration_ms: 0.281452
   type: 'test'
   ...
 # Subtest: dashboard.html cache-busts the FC anomaly runtime
 ok 51 - dashboard.html cache-busts the FC anomaly runtime
   ---
-  duration_ms: 0.551394
+  duration_ms: 0.435372
   type: 'test'
   ...
 # Subtest: logsheet.html cache-busts the FC anomaly runtime
 ok 52 - logsheet.html cache-busts the FC anomaly runtime
   ---
-  duration_ms: 0.561423
+  duration_ms: 0.521595
   type: 'test'
   ...
 # FC chart widget regression checks passed
 # Subtest: /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-chart-widget.mjs
 ok 15 - /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-chart-widget.mjs
   ---
-  duration_ms: 67.703319
+  duration_ms: 52.216823
   type: 'test'
   ...
-# FAIL: dashboard should use new FC asset version
+# FC dashboard informative checks passed
 # Subtest: /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-dashboard-informative.mjs
-not ok 16 - /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-dashboard-informative.mjs
+ok 16 - /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-dashboard-informative.mjs
   ---
-  duration_ms: 53.559874
+  duration_ms: 48.941779
   type: 'test'
-  location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-dashboard-informative.mjs:1:1'
-  failureType: 'testCodeFailure'
-  exitCode: 1
-  signal: ~
-  error: 'test failed'
-  code: 'ERR_TEST_FAILURE'
   ...
 # Subtest: FC widget uses real unit_master schema
 ok 55 - FC widget uses real unit_master schema
   ---
-  duration_ms: 1.099512
+  duration_ms: 1.249492
   type: 'test'
   ...
 # Subtest: FC sequential HM ignores lower/reset rows without poisoning next baseline
-not ok 56 - FC sequential HM ignores lower/reset rows without poisoning next baseline
+ok 56 - FC sequential HM ignores lower/reset rows without poisoning next baseline
   ---
-  duration_ms: 2.098077
+  duration_ms: 3.922896
   type: 'test'
-  location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-data-contract.mjs:14:1'
-  failureType: 'testCodeFailure'
-  error: |-
-    The input did not match the regular expression /hm<previous\)\{delta=null;\}\s*else previous=hm/. Input:
-    
-    '(function(){\n' +
-      '  "use strict";\n' +
-      '  const COLORS=["#2563eb","#16a34a","#f97316","#7c3aed","#dc2626","#0891b2","#ca8a04","#db2777","#4f46e5","#059669"];\n' +
-      '  const MAX_UNITS=10;\n' +
-      '\n' +
-      `  function esc(value){return String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));}\n` +
-      '  function num(value){const n=Number(value);return Number.isFinite(n)?n:0;}\n' +
-      '  function fmt(value,digits=1){return new Intl.NumberFormat("id-ID",{maximumFractionDigits:digits}).format(num(value));}\n' +
-      '  function fmtFc(value){return Number.isFinite(value)?new Intl.NumberFormat("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1}).format(value):"-";}\n' +
-      '  function addDays(value,days){\n' +
-      '    if(window.KPPTime?.addDays)return window.KPPTime.addDays(value,days);\n' +
-      '    const [y,m,d]=String(value).split("-").map(Number);const x=new Date(y,m-1,d);x.setDate(x.getDate()+days);\n' +
-      '    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;\n' +
-      '  }\n' +
-      '  function dateList(start,end){const out=[];let cur=start;let guard=0;while(cur<=end&&guard<3660){out.push(cur);cur=addDays(cur,1);guard++;}return out;}\n' +
-      '  function shortDate(value){const p=String(value).split("-");return p.length===3?`${p[2]}/${p[1]}`:value;}\n' +
-      "  function dayDiff(start,end){const a=String(start||'').split('-').map(Number),b=String(end||'').split('-').map(Number);if(a.length!==3||b.length!==3||a.some(v=>!Number.isFinite(v))||b.some(v=>!Number.isFinite(v)))return 0;return Math.max(0,Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,a[2]))/86400000));}\n" +
-      '  function maxPlausibleHmDelta(previousDate,currentDate){return Math.max(24,(dayDiff(previousDate,currentDate)+1)*24);}\n' +
-      '\n' +
-      '  function ensureStyle(){\n' +
-      '    if(document.getElementById("kppFcWidgetStyle"))return;\n' +
-      '    const style=document.createElement("style");style.id="kppFcWidgetStyle";style.textContent=`\n' +
-      '      .kpp-fc-widget{background:#fff;border:1px solid #e2e8f0;border-radius:15px;box-shadow:0 4px 16px rgba(15,23,42,.045);margin:0 0 18px;overflow:visible;color:#0f172a}\n' +
-      '      .kpp-fc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #edf1f6}\n' +
-      '      .kpp-fc-head h3{margin:0;font-size:16px;color:#0f172a}.kpp-fc-head p{margin:4px 0 0;font-size:10px;color:#64748b;line-height:1.35}\n' +
-      '      .kpp-fc-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.kpp-fc-period-pill{display:inline-flex;align-items:center;min-height:30px;padding:6px 9px;border-radius:999px;background:#eef6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:9px;font-weight:900;white-space:nowrap}\n' +
-      '      .kpp-fc-toggle{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:9px;padding:8px 11px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}\n' +
-      '      .kpp-fc-body{padding:14px 16px 16px}.kpp-fc-body[hidden]{display:none!important}\n' +
-      '      .kpp-fc-filters{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(130px,.8fr) minmax(130px,.8fr) auto;gap:9px;align-items:end;margin-bottom:12px}\n' +
-      '      .kpp-fc-field{min-width:0}.kpp-fc-field>label{display:block;margin:0 0 5px;font-size:9px;font-weight:900;color:#475569;letter-spacing:.02em}\n' +
-      '      .kpp-fc-field input{width:100%;height:40px;border:1px solid #cbd5e1;border-radius:9px;padding:0 10px;background:#fff;color:#0f172a;font-size:11px}\n' +
-      '      .kpp-fc-unit-picker{position:relative}.kpp-fc-unit-trigger{width:100%;min-height:40px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:7px;cursor:pointer;text-align:left}\n' +
-      '      .kpp-fc-chip-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}.kpp-fc-chip{display:inline-flex;padding:4px 6px;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-size:9px;font-weight:900}.kpp-fc-picker-placeholder{color:#94a3b8;font-size:10px}\n' +
-      '      .kpp-fc-unit-menu{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:15000;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 18px 40px rgba(15,23,42,.16);padding:8px;max-height:280px;overflow:hidden}\n' +
-      '      .kpp-fc-unit-menu[hidden]{display:none!important}.kpp-fc-unit-search{height:34px!important;margin-bottom:6px}.kpp-fc-unit-list{max-height:220px;overflow:auto;padding-right:3px}.kpp-fc-unit-option{display:flex;align-items:center;gap:7px;padding:6px;border-radius:7px;font-size:10px;color:#334155;cursor:pointer}.kpp-fc-unit-option:hover{background:#f1f5f9}.kpp-fc-unit-option input{width:14px;height:14px}\n' +
-      '      .kpp-fc-run{height:40px;border:0;border-radius:9px;padding:0 14px;background:#2563eb;color:#fff;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-run:disabled{opacity:.55;cursor:wait}\n' +
-      '      .kpp-fc-rangebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-3px 0 12px}.kpp-fc-range-label{font-size:8.5px;font-weight:900;color:#64748b;margin-right:2px}.kpp-fc-range-btn{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:999px;padding:6px 10px;font-size:8.5px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-range-btn:hover{background:#f8fafc}.kpp-fc-range-btn.active{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.kpp-fc-range-hint{font-size:8px;color:#94a3b8;margin-left:2px}\n' +
-      '      .kpp-fc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}.kpp-fc-kpi{border:1px solid #e2e8f0;border-radius:11px;padding:10px 11px;background:#f8fafc}.kpp-fc-kpi small{display:block;font-size:8px;color:#64748b;font-weight:900;margin-bottom:4px}.kpp-fc-kpi strong{font-size:16px;color:#0f172a}.kpp-fc-kpi.blue{background:#eff6ff}.kpp-fc-kpi.green{background:#f0fdf4}.kpp-fc-kpi.amber{background:#fffbeb}.kpp-fc-kpi.purple{background:#f5f3ff}\n' +
-      '      .kpp-fc-insight{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;margin:0 0 12px;border:1px solid #dbe5f1;border-radius:10px;background:#f8fafc;color:#334155;font-size:9px;line-height:1.45}.kpp-fc-insight b{color:#0f172a;white-space:nowrap}.kpp-fc-insight span{min-width:0}\n' +
-      '      .kpp-fc-chart-card{border:1px solid #e2e8f0;border-radius:11px;padding:10px;background:#fff}.kpp-fc-chart-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:5px}.kpp-fc-chart-title{font-size:11px;font-weight:900;color:#0f172a}.kpp-fc-legend{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.kpp-fc-legend-item{display:flex;align-items:center;gap:4px;font-size:8px;color:#475569;font-weight:800}.kpp-fc-dot{width:7px;height:7px;border-radius:50%}\n' +
-      '      .kpp-fc-chart{width:100%;overflow-x:auto}.kpp-fc-chart svg{display:block;width:100%;min-width:620px;height:auto}.kpp-fc-empty{padding:28px 10px;text-align:center;color:#64748b;font-size:10px}.kpp-fc-note{margin-top:7px;font-size:8px;color:#64748b;line-height:1.4}\n' +
-      '      .kpp-fc-summary-card{margin:0 0 10px;border:1px solid #93c5fd;border-radius:12px;background:linear-gradient(180deg,#f8fbff 0,#fff 42%);overflow:hidden;box-shadow:0 8px 22px rgba(37,99,235,.08)}.kpp-fc-summary-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid #dbeafe;background:#eff6ff}.kpp-fc-summary-head strong{font-size:12px;color:#1d4ed8}.kpp-fc-summary-head span{font-size:8.5px;color:#475569}.kpp-fc-summary-issues{font-weight:900;color:#b45309}.kpp-fc-summary-wrap{overflow:auto;-webkit-overflow-scrolling:touch}.kpp-fc-summary-table{width:100%;min-width:720px;border-collapse:collapse}.kpp-fc-summary-table th{position:static;background:#f8fafc;color:#475569;font-size:8px;padding:8px 9px;text-align:center;border-bottom:1px solid #e2e8f0}.kpp-fc-summary-table td{font-size:9px;padding:8px 9px;text-align:center;border-bottom:1px solid #f1f5f9;white-space:nowrap}.kpp-fc-summary-table tr:last-child td{border-bottom:0}.kpp-fc-summary-unit{font-weight:900;color:#0f172a}.kpp-fc-summary-fc{font-weight:900;color:#1d4ed8}.kpp-fc-summary-coverage{font-weight:900}.kpp-fc-summary-coverage.good{color:#15803d}.kpp-fc-summary-coverage.mid{color:#b45309}.kpp-fc-summary-coverage.low{color:#b91c1c}.kpp-fc-summary-table tbody tr[data-unit]{cursor:pointer;transition:background .15s ease,box-shadow .15s ease}.kpp-fc-summary-table tbody tr[data-unit]:hover{background:#eff6ff}.kpp-fc-summary-table tbody tr.focused{background:#dbeafe;box-shadow:inset 3px 0 0 #2563eb}.kpp-fc-focusbar{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:9px 11px;border:1px solid #93c5fd;border-radius:10px;background:#eff6ff}.kpp-fc-focusbar.active{display:flex}.kpp-fc-focusbar strong{font-size:10px;color:#1d4ed8}.kpp-fc-focusbar span{font-size:9px;color:#475569}.kpp-fc-focus-reset{border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:8px;padding:7px 10px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-detail-card{display:none;margin-top:10px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;overflow:hidden}.kpp-fc-detail-card.active{display:block}.kpp-fc-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border-bottom:1px solid #e2e8f0;background:#f8fafc}.kpp-fc-detail-head strong{font-size:11px}.kpp-fc-detail-head span{font-size:8.5px;color:#64748b}.kpp-fc-detail-wrap{overflow:auto;max-height:420px;-webkit-overflow-scrolling:touch}.kpp-fc-detail-table{width:100%;min-width:1120px;border-collapse:collapse}.kpp-fc-detail-table th{position:sticky;top:0;z-index:1;background:#0f1b34;color:#fff;font-size:8px;padding:8px 7px;text-align:center;white-space:nowrap}.kpp-fc-detail-table td{font-size:8.5px;padding:8px 7px;text-align:center;border-bottom:1px solid #e2e8f0;white-space:nowrap}.kpp-fc-detail-table tbody tr:nth-child(even){background:#f8fafc}.kpp-fc-detail-table tbody tr.issue{background:#fff7ed}.kpp-fc-detail-fc{font-weight:900;color:#1d4ed8}.kpp-fc-detail-qty{font-w'... 28763 more characters
-    
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected:
-  actual: |-
-    (function(){
-      "use strict";
-      const COLORS=["#2563eb","#16a34a","#f97316","#7c3aed","#dc2626","#0891b2","#ca8a04","#db2777","#4f46e5","#059669"];
-      const MAX_UNITS=10;
-    
-      function esc(value){return String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));}
-      function num(value){const n=Number(value);return Number.isFinite(n)?n:0;}
-      function fmt(value,digits=1){return new Intl.NumberFormat("id-ID",{maximumFractionDigits:digits}).format(num(value));}
-      function fmtFc(value){return Number.isFinite(value)?new Intl.NumberFormat("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1}).format(value):"-";}
-      function addDays(value,days){
-        if(window.KPPTime?.addDays)return window.KPPTime.addDays(value,days);
-        const [y,m,d]=String(value).split("-").map(Number);const x=new Date(y,m-1,d);x.setDate(x.getDate()+days);
-        return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
-      }
-      function dateList(start,end){const out=[];let cur=start;let guard=0;while(cur<=end&&guard<3660){out.push(cur);cur=addDays(cur,1);guard++;}return out;}
-      function shortDate(value){const p=String(value).split("-");return p.length===3?`${p[2]}/${p[1]}`:value;}
-      function dayDiff(start,end){const a=String(start||'').split('-').map(Number),b=String(end||'').split('-').map(Number);if(a.length!==3||b.length!==3||a.some(v=>!Number.isFinite(v))||b.some(v=>!Number.isFinite(v)))return 0;return Math.max(0,Math.round((Date.UTC(b[0],b[1]-1,b[2])-Date.UTC(a[0],a[1]-1,a[2]))/86400000));}
-      function maxPlausibleHmDelta(previousDate,currentDate){return Math.max(24,(dayDiff(previousDate,currentDate)+1)*24);}
-    
-      function ensureStyle(){
-        if(document.getElementById("kppFcWidgetStyle"))return;
-        const style=document.createElement("style");style.id="kppFcWidgetStyle";style.textContent=`
-          .kpp-fc-widget{background:#fff;border:1px solid #e2e8f0;border-radius:15px;box-shadow:0 4px 16px rgba(15,23,42,.045);margin:0 0 18px;overflow:visible;color:#0f172a}
-          .kpp-fc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #edf1f6}
-          .kpp-fc-head h3{margin:0;font-size:16px;color:#0f172a}.kpp-fc-head p{margin:4px 0 0;font-size:10px;color:#64748b;line-height:1.35}
-          .kpp-fc-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.kpp-fc-period-pill{display:inline-flex;align-items:center;min-height:30px;padding:6px 9px;border-radius:999px;background:#eef6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:9px;font-weight:900;white-space:nowrap}
-          .kpp-fc-toggle{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:9px;padding:8px 11px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}
-          .kpp-fc-body{padding:14px 16px 16px}.kpp-fc-body[hidden]{display:none!important}
-          .kpp-fc-filters{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(130px,.8fr) minmax(130px,.8fr) auto;gap:9px;align-items:end;margin-bottom:12px}
-          .kpp-fc-field{min-width:0}.kpp-fc-field>label{display:block;margin:0 0 5px;font-size:9px;font-weight:900;color:#475569;letter-spacing:.02em}
-          .kpp-fc-field input{width:100%;height:40px;border:1px solid #cbd5e1;border-radius:9px;padding:0 10px;background:#fff;color:#0f172a;font-size:11px}
-          .kpp-fc-unit-picker{position:relative}.kpp-fc-unit-trigger{width:100%;min-height:40px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:7px;cursor:pointer;text-align:left}
-          .kpp-fc-chip-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}.kpp-fc-chip{display:inline-flex;padding:4px 6px;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-size:9px;font-weight:900}.kpp-fc-picker-placeholder{color:#94a3b8;font-size:10px}
-          .kpp-fc-unit-menu{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:15000;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 18px 40px rgba(15,23,42,.16);padding:8px;max-height:280px;overflow:hidden}
-          .kpp-fc-unit-menu[hidden]{display:none!important}.kpp-fc-unit-search{height:34px!important;margin-bottom:6px}.kpp-fc-unit-list{max-height:220px;overflow:auto;padding-right:3px}.kpp-fc-unit-option{display:flex;align-items:center;gap:7px;padding:6px;border-radius:7px;font-size:10px;color:#334155;cursor:pointer}.kpp-fc-unit-option:hover{background:#f1f5f9}.kpp-fc-unit-option input{width:14px;height:14px}
-          .kpp-fc-run{height:40px;border:0;border-radius:9px;padding:0 14px;background:#2563eb;color:#fff;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-run:disabled{opacity:.55;cursor:wait}
-          .kpp-fc-rangebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-3px 0 12px}.kpp-fc-range-label{font-size:8.5px;font-weight:900;color:#64748b;margin-right:2px}.kpp-fc-range-btn{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:999px;padding:6px 10px;font-size:8.5px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-range-btn:hover{background:#f8fafc}.kpp-fc-range-btn.active{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}.kpp-fc-range-hint{font-size:8px;color:#94a3b8;margin-left:2px}
-          .kpp-fc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}.kpp-fc-kpi{border:1px solid #e2e8f0;border-radius:11px;padding:10px 11px;background:#f8fafc}.kpp-fc-kpi small{display:block;font-size:8px;color:#64748b;font-weight:900;margin-bottom:4px}.kpp-fc-kpi strong{font-size:16px;color:#0f172a}.kpp-fc-kpi.blue{background:#eff6ff}.kpp-fc-kpi.green{background:#f0fdf4}.kpp-fc-kpi.amber{background:#fffbeb}.kpp-fc-kpi.purple{background:#f5f3ff}
-          .kpp-fc-insight{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;margin:0 0 12px;border:1px solid #dbe5f1;border-radius:10px;background:#f8fafc;color:#334155;font-size:9px;line-height:1.45}.kpp-fc-insight b{color:#0f172a;white-space:nowrap}.kpp-fc-insight span{min-width:0}
-          .kpp-fc-chart-card{border:1px solid #e2e8f0;border-radius:11px;padding:10px;background:#fff}.kpp-fc-chart-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:5px}.kpp-fc-chart-title{font-size:11px;font-weight:900;color:#0f172a}.kpp-fc-legend{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.kpp-fc-legend-item{display:flex;align-items:center;gap:4px;font-size:8px;color:#475569;font-weight:800}.kpp-fc-dot{width:7px;height:7px;border-radius:50%}
-          .kpp-fc-chart{width:100%;overflow-x:auto}.kpp-fc-chart svg{display:block;width:100%;min-width:620px;height:auto}.kpp-fc-empty{padding:28px 10px;text-align:center;color:#64748b;font-size:10px}.kpp-fc-note{margin-top:7px;font-size:8px;color:#64748b;line-height:1.4}
-          .kpp-fc-summary-card{margin:0 0 10px;border:1px solid #93c5fd;border-radius:12px;background:linear-gradient(180deg,#f8fbff 0,#fff 42%);overflow:hidden;box-shadow:0 8px 22px rgba(37,99,235,.08)}.kpp-fc-summary-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid #dbeafe;background:#eff6ff}.kpp-fc-summary-head strong{font-size:12px;color:#1d4ed8}.kpp-fc-summary-head span{font-size:8.5px;color:#475569}.kpp-fc-summary-issues{font-weight:900;color:#b45309}.kpp-fc-summary-wrap{overflow:auto;-webkit-overflow-scrolling:touch}.kpp-fc-summary-table{width:100%;min-width:720px;border-collapse:collapse}.kpp-fc-summary-table th{position:static;background:#f8fafc;color:#475569;font-size:8px;padding:8px 9px;text-align:center;border-bottom:1px solid #e2e8f0}.kpp-fc-summary-table td{font-size:9px;padding:8px 9px;text-align:center;border-bottom:1px solid #f1f5f9;white-space:nowrap}.kpp-fc-summary-table tr:last-child td{border-bottom:0}.kpp-fc-summary-unit{font-weight:900;color:#0f172a}.kpp-fc-summary-fc{font-weight:900;color:#1d4ed8}.kpp-fc-summary-coverage{font-weight:900}.kpp-fc-summary-coverage.good{color:#15803d}.kpp-fc-summary-coverage.mid{color:#b45309}.kpp-fc-summary-coverage.low{color:#b91c1c}.kpp-fc-summary-table tbody tr[data-unit]{cursor:pointer;transition:background .15s ease,box-shadow .15s ease}.kpp-fc-summary-table tbody tr[data-unit]:hover{background:#eff6ff}.kpp-fc-summary-table tbody tr.focused{background:#dbeafe;box-shadow:inset 3px 0 0 #2563eb}.kpp-fc-focusbar{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:9px 11px;border:1px solid #93c5fd;border-radius:10px;background:#eff6ff}.kpp-fc-focusbar.active{display:flex}.kpp-fc-focusbar strong{font-size:10px;color:#1d4ed8}.kpp-fc-focusbar span{font-size:9px;color:#475569}.kpp-fc-focus-reset{border:1px solid #93c5fd;background:#fff;color:#1d4ed8;border-radius:8px;padding:7px 10px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.kpp-fc-detail-card{display:none;margin-top:10px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;overflow:hidden}.kpp-fc-detail-card.active{display:block}.kpp-fc-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border-bottom:1px solid #e2e8f0;background:#f8fafc}.kpp-fc-detail-head strong{font-size:11px}.kpp-fc-detail-head span{font-size:8.5px;color:#64748b}.kpp-fc-detail-wrap{overflow:auto;max-height:420px;-webkit-overflow-scrolling:touch}.kpp-fc-detail-table{width:100%;min-width:1120px;border-collapse:collapse}.kpp-fc-detail-table th{position:sticky;top:0;z-index:1;background:#0f1b34;color:#fff;font-size:8px;padding:8px 7px;text-align:center;white-space:nowrap}.kpp-fc-detail-table td{font-size:8.5px;padding:8px 7px;text-align:center;border-bottom:1px solid #e2e8f0;white-space:nowrap}.kpp-fc-detail-table tbody tr:nth-child(even){background:#f8fafc}.kpp-fc-detail-table tbody tr.issue{background:#fff7ed}.kpp-fc-detail-fc{font-weight:900;color:#1d4ed8}.kpp-fc-detail-qty{font-weight:900}.kpp-fc-badge{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}.kpp-fc-badge.valid{background:#dcfce7;color:#166534}.kpp-fc-badge.issue{background:#ffedd5;color:#9a3412}.kpp-fc-issues{margin:0 0 10px;border:1px solid #fdba74;border-radius:11px;background:#fff7ed;overflow:hidden}.kpp-fc-issues[hidden]{display:none!important}.kpp-fc-issues-head{display:flex;justify-content:space-between;gap:10px;padding:10px 11px;background:#ffedd5;border-bottom:1px solid #fed7aa;color:#9a3412}.kpp-fc-issues-head strong{font-size:10px}.kpp-fc-issues-head span{font-size:8.5px}.kpp-fc-issues-list{display:grid;gap:6px;padding:8px}.kpp-fc-issue-row{display:grid;grid-template-columns:minmax(70px,.7fr) minmax(72px,.8fr) minmax(80px,.8fr) 1.7fr;gap:8px;align-items:center;border:1px solid #fed7aa;border-radius:9px;background:#fff;padding:8px 9px;cursor:pointer}.kpp-fc-issue-row:hover{border-color:#fb923c;background:#fffaf5}.kpp-fc-issue-row b{font-size:9px;color:#9a3412}.kpp-fc-issue-row span{font-size:8.5px;color:#475569}.kpp-fc-legend-item[data-unit]{cursor:pointer;padding:3px 5px;border-radius:7px}.kpp-fc-legend-item[data-unit]:hover{background:#eff6ff}.kpp-fc-chart [data-unit]{cursor:pointer}.kpp-fc-status{min-height:15px;margin-top:7px;font-size:9px;color:#64748b}.kpp-fc-status.error{color:#b91c1c}
-          @media(max-width:760px){.kpp-fc-issue-row{grid-template-columns:1fr 1fr}.kpp-fc-issue-row span:last-child{grid-column:1/-1}.kpp-fc-head{padding:12px;align-items:flex-start}.kpp-fc-head-actions{justify-content:flex-start}.kpp-fc-body{padding:10px 10px 12px}.kpp-fc-filters{grid-template-columns:1fr 1fr}.kpp-fc-rangebar{gap:5px}.kpp-fc-range-btn{padding:6px 9px}.kpp-fc-field.units{grid-column:1/-1}.kpp-fc-run{grid-column:1/-1}.kpp-fc-kpis{grid-template-columns:1fr 1fr}.kpp-fc-chart-card{padding:8px}.kpp-fc-chart-top{align-items:flex-start;flex-direction:column}.kpp-fc-legend{justify-content:flex-start}.kpp-fc-focusbar{align-items:flex-start;flex-direction:column}.kpp-fc-kpi strong{font-size:14px}}
-          @media(max-width:420px){.kpp-fc-filters{grid-template-columns:1fr}.kpp-fc-field.units,.kpp-fc-run{grid-column:auto}.kpp-fc-kpis{gap:6px}.kpp-fc-kpi{padding:8px}.kpp-fc-kpi strong{font-size:13px}}
-        `;document.head.appendChild(style);
-      }
-    
-      async function fetchPaged(db,start,end,units){let all=[],from=0;const size=1000;while(true){let q=db.from("fuel_history").select("id,tanggal,jam,shift,wh,fuel_truck,unit,operator,fuelman_name,hm_akhir,hm_jalan,fuel").gte("tanggal",start).lte("tanggal",end).in("unit",units).order("tanggal",{ascending:true}).order("id",{ascending:true}).range(from,from+size-1);const {data,error}=await q;if(error)throw error;const rows=data||[];all=all.concat(rows);if(rows.length<size)break;from+=size;}return all;}
-      async function fetchBaselines(db,start,units){const pairs=await Promise.all(units.map(async unit=>{const {data,error}=await db.from("fuel_history").select("id,tanggal,unit,hm_akhir").eq("unit",unit).lt("tanggal",start).not("hm_akhir","is",null).order("tanggal",{ascending:false}).order("id",{ascending:false}).limit(1);if(error)throw error;return [unit,(data||[])[0]||null];}));return new Map(pairs);}
-      async function fetchEarliestDate(db,units){const {data,error}=await db.from("fuel_history").select("tanggal").in("unit",units).not("tanggal","is",null).order("tanggal",{ascending:true}).limit(1);if(error)throw error;return (data||[])[0]?.tanggal||null;}
-    
-      function buildMetrics(rows,baselines,units,start,end){
-        const perUnit=new Map(units.map(unit=>[unit,{unit,totalFuel:0,validFuel:0,hm:0,samples:0,transactions:0,daily:new Map(),details:[]}]))
-        rows.forEach(row=>{const unit=String(row.unit||"").trim().toUpperCase();if(perUnit.has(unit)){const entry=perUnit.get(unit);entry.totalFuel+=num(row.fuel);entry.transactions+=1;}});
-        units.forEach(unit=>{
-          const entry=perUnit.get(unit);const unitRows=rows.filter(row=>String(row.unit||"").trim().toUpperCase()===unit).sort((a,b)=>String(a.tanggal).localeCompare(String(b.tanggal))||num(a.id)-num(b.id));
-          const base=baselines.get(unit);let previous=base&&Number.isFinite(Number(base.hm_akhir))?Number(base.hm_akhir):null;let previousDate=base?.tanggal||null;
-          unitRows.forEach(row=>{
-            const fuel=num(row.fuel);const hmRaw=row.hm_akhir;const hm=hmRaw===null||hmRaw===undefined||hmRaw===""?null:Number(hmRaw);const previousHm=Number.isFinite(previous)?previous:null;let delta=null;let rawDelta=null;let issueReason='';
-            if(!Number.isFinite(hm))issueReason='HM akhir kosong';
-            else if(!Number.isFinite(previous)){issueReason='Belum ada HM pembanding';previous=hm;previousDate=row.tanggal;}
-            else{
-              rawDelta=hm-previous;
-              if(rawDelta<0)issueReason='HM turun dari referensi sebelumnya';
-              else if(rawDelta===0)issueReason='HM tidak berubah dari referensi sebelumnya';
-              else{
-                const maxDelta=maxPlausibleHmDelta(previousDate,row.tanggal);
-                if(rawDelta>maxDelta)issueReason=`Lonjakan HM ${fmt(rawDelta)} HM melebihi batas fisik longgar ${fmt(maxDelta)} HM`;
-                else{delta=rawDelta;previous=hm;previousDate=row.tanggal;}
-              }
-            }
-            const validDelta=Number.isFinite(delta)&&delta>0?delta:null;
-            if(validDelta!==null){entry.hm+=validDelta;entry.validFuel+=fuel;entry.samples+=1;const day=entry.daily.get(row.tanggal)||{fuel:0,hm:0};day.fuel+=fuel;day.hm+=validDelta;entry.daily.set(row.tanggal,day);}
-            entry.details.push({...row,unit,hm_previous:previousHm,hm_raw_delta:rawDelta,hm_delta:validDelta,fc:validDelta!==null?fuel/validDelta:null,fc_issue:validDelta===null&&fuel>0?issueReason:'',fc_status:validDelta!==null?'VALID':'CHECK'});
-          });
-        });
-        const dates=dateList(start,end);const series=units.map((unit,index)=>{const entry=perUnit.get(unit);return {unit,color:COLORS[index%COLORS.length],values:dates.map(date=>{const d=entry.daily.get(date);return d&&d.hm>0?d.fuel/d.hm:null;})};});
-        const list=Array.from(perUnit.values());const totalFuel=list.reduce((sum,x)=>sum+x.totalFuel,0);const validFuel=list.reduce((sum,x)=>sum+x.validFuel,0);const totalHm=list.reduce((sum,x)=>sum+x.hm,0);const samples=list.reduce((sum,x)=>sum+x.samples,0);const transactions=list.reduce((sum,x)=>sum+x.transactions,0);const coverage=transactions>0?(samples/transactions)*100:0;
-        const summaries=units.map(unit=>{const x=perUnit.get(unit);const issues=x.details.filter(row=>row.fc===null&&num(row.fuel)>0).length;return {unit,totalFuel:x.totalFuel,validFuel:x.validFuel,hm:x.hm,samples:x.samples,transactions:x.transactions,coverage:x.transactions>0?(x.samples/x.transactions)*100:0,fc:x.hm>0?x.validFuel/x.hm:null,issues};});
-        const details=list.flatMap(x=>x.details);const issues=details.filter(row=>row.fc===null&&num(row.fuel)>0).length;
-        return {dates,series,totalFuel,validFuel,totalHm,samples,transactions,coverage,summaries,details,issues,avg:totalHm>0?validFuel/totalHm:null};
-      }
-    
-      function renderSummary(host,metrics,focusUnit=""){
-        const rows=focusUnit?metrics.summaries.filter(item=>item.unit===focusUnit):metrics.summaries;
-        host.innerHTML=rows.map(item=>{const coverageClass=item.coverage>=80?'good':item.coverage>=50?'mid':'low';return `<tr data-unit="${esc(item.unit)}" class="${focusUnit===item.unit?'focused':''}" title="Klik untuk fokus ke ${esc(item.unit)}"><td class="kpp-fc-summary-unit">${esc(item.unit)}</td><td class="kpp-fc-summary-fc">${item.fc===null?'-':fmtFc(item.fc)+' L/HM'}</td><td>${fmt(item.totalFuel)} L</td><td>${fmt(item.hm)} HM</td><td>${item.samples} / ${item.transactions}</td><td class="kpp-fc-summary-coverage ${coverageClass}">${fmtFc(item.coverage)}%</td><td class="kpp-fc-summary-issues">${item.issues||0}</td></tr>`;}).join('')||'<tr><td colspan="7">Belum ada unit dipilih.</td></tr>';
-      }
-    
-      function focusMetrics(metrics,unit){
-        if(!unit)return metrics;
-        const summary=metrics.summaries.find(item=>item.unit===unit);if(!summary)return metrics;
-        return {...metrics,series:metrics.series.filter(item=>item.unit===unit),summaries:[summary],totalFuel:summary.totalFuel,validFuel:summary.validFuel,totalHm:summary.hm,samples:summary.samples,transactions:summary.transactions,coverage:summary.coverage,issues:summary.issues||0,avg:summary.fc};
-      }
-    
-      function displayDate(value){const p=String(value||'').split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:(value||'-');}
-      function renderDetail(host,metrics,unit){
-        const rows=metrics.details.filter(row=>row.unit===unit);
-        host.innerHTML=rows.map((row,index)=>`<tr class="${row.fc===null&&num(row.fuel)>0?'issue':''}"><td>${index+1}</td><td>${esc(displayDate(row.tanggal))}</td><td>${esc(row.jam?String(row.jam).slice(0,8):'-')}</td><td>${esc(row.shift??'-')}</td><td>${esc(row.wh||'-')}</td><td>${esc(row.fuel_truck||'-')}</td><td><b>${esc(row.unit)}</b></td><td>${row.hm_akhir===null||row.hm_akhir===undefined||row.hm_akhir===''?'-':fmt(row.hm_akhir)}</td><td>${row.hm_delta===null?'-':fmt(row.hm_delta)}</td><td class="kpp-fc-detail-qty">${fmt(row.fuel)} L</td><td class="kpp-fc-detail-fc">${row.fc===null?'-':fmtFc(row.fc)+' L/HM'}</td><td><span class="kpp-fc-badge ${row.fc===null?'issue':'valid'}" title="${esc(row.fc_issue||'FC valid')}">${row.fc===null?'PERLU CEK':'VALID'}</span></td><td>${esc(row.operator||'-')}</td><td>${esc(row.fuelman_name||'-')}</td></tr>`).join('')||'<tr><td colspan="14">Belum ada transaksi pada periode ini.</td></tr>';
-      }
-    
-      function renderIssues(host,metrics,focusUnit=""){
-        const rows=metrics.details.filter(row=>(!focusUnit||row.unit===focusUnit)&&row.fc===null&&num(row.fuel)>0);
-        if(!rows.length){host.hidden=true;host.innerHTML='';return;}
-        const shown=rows.slice(0,8);host.hidden=false;host.innerHTML=`<div class="kpp-fc-issues-head"><strong>⚠ ${rows.length} TRANSAKSI PENGISIAN PERLU CEK HM</strong><span>Fuel tetap dihitung ke total, tetapi transaksi ini tidak dipakai menghitung FC.</span></div><div class="kpp-fc-issues-list">${shown.map(row=>`<div class="kpp-fc-issue-row" data-unit="${esc(row.unit)}" title="Klik untuk fokus ke ${esc(row.unit)}"><b>${esc(row.unit)}</b><span>${esc(shortDate(row.tanggal))}</span><span><strong>${fmt(row.fuel)} L</strong> • HM ${row.hm_akhir===null||row.hm_akhir===undefined||row.hm_akhir===''?'-':fmt(row.hm_akhir)}</span><span>${esc(row.fc_issue||'HM belum membentuk FC valid')}</span></div>`).join('')}${rows.length>shown.length?`<div class="kpp-fc-note">+ ${rows.length-shown.length} transaksi lain. Fokus satu unit untuk mempersempit daftar.</div>`:''}</div>`;
-      }
-    
-      function renderInsight(host,metrics,start,end,mtdBounds){
-        const valid=metrics.summaries.filter(item=>Number.isFinite(item.fc));
-        const exactMtd=start===mtdBounds.start&&end===mtdBounds.end;
-        if(!valid.length){host.innerHTML=`<b>${exactMtd?'MTD':'PERIODE'}</b><span>${esc(shortDate(start))} - ${esc(shortDate(end))} • Belum ada FC valid untuk unit terpilih.</span>`;return;}
-        const highest=valid.reduce((best,item)=>!best||item.fc>best.fc?item:best,null);
-        const lowest=valid.reduce((best,item)=>!best||item.fc<best.fc?item:best,null);
-        const coverage=metrics.summaries.reduce((best,item)=>!best||item.coverage>best.coverage?item:best,null);
-        host.innerHTML=`<b>SNAPSHOT ${exactMtd?'MTD':'PERIODE'}</b><span>${esc(shortDate(start))} - ${esc(shortDate(end))} • FC tertinggi: <strong>${esc(highest.unit)} ${fmtFc(highest.fc)} L/HM</strong> • terendah: <strong>${esc(lowest.unit)} ${fmtFc(lowest.fc)} L/HM</strong> • coverage terbaik: <strong>${esc(coverage.unit)} ${fmtFc(coverage.coverage)}%</strong>. Bandingkan efisiensi idealnya pada tipe/EGI yang sama.</span>`;
-      }
-    
-      function renderSvg(host,metrics){
-        const {dates,series}=metrics;const values=series.flatMap(s=>s.values.filter(Number.isFinite));
-        if(!values.length){host.innerHTML='<div class="kpp-fc-empty">Belum ada pasangan HM berurutan yang valid untuk unit dan periode ini.</div>';return;}
-        const W=Math.max(900,Math.min(3200,90+(dates.length*18))),H=300,L=48,R=16,T=18,B=38;const plotW=W-L-R,plotH=H-T-B;const max=Math.max(...values);const yMax=Math.max(5,Math.ceil((max*1.15)/5)*5);const x=i=>L+(dates.length<=1?plotW/2:(i/(dates.length-1))*plotW);const y=v=>T+plotH-(v/yMax)*plotH;
-        let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik trend FC per unit">`;
-        for(let i=0;i<=4;i++){const val=(yMax/4)*i;const yy=y(val);svg+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e2e8f0" stroke-width="1"/><text x="${L-8}" y="${yy+3}" text-anchor="end" font-size="9" fill="#64748b">${fmtFc(val)}</text>`;}
-        const tickStep=Math.max(1,Math.ceil(dates.length/7));dates.forEach((date,i)=>{if(i%tickStep===0||i===dates.length-1)svg+=`<text x="${x(i)}" y="${H-12}" text-anchor="middle" font-size="8.5" fill="#64748b">${esc(shortDate(date))}</text>`;});
-        series.forEach(s=>{let segment=[];const flush=()=>{if(segment.length>1)svg+=`<polyline data-unit="${esc(s.unit)}" points="${segment.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;segment=[];};s.values.forEach((v,i)=>{if(Number.isFinite(v))segment.push(`${x(i)},${y(v)}`);else flush();});flush();s.values.forEach((v,i)=>{if(Number.isFinite(v))svg+=`<circle data-unit="${esc(s.unit)}" cx="${x(i)}" cy="${y(v)}" r="3.3" fill="#fff" stroke="${s.color}" stroke-width="2"><title>${esc(s.unit)} ${esc(shortDate(dates[i]))}: ${fmtFc(v)} L/HM</title></circle>`;});});
-        svg+=`<text x="${W/2}" y="${H-1}" text-anchor="middle" font-size="9" fill="#475569">Tanggal</text><text transform="translate(12 ${H/2}) rotate(-90)" text-anchor="middle" font-size="9" fill="#475569">FC (L/HM)</text></svg>`;host.innerHTML=svg;
-      }
-    
-      function mount(options){
-        ensureStyle();const host=document.getElementById(options.hostId);if(!host||host.dataset.kppFcMounted==="1")return;host.dataset.kppFcMounted="1";
-        const collapsible=!!options.collapsible;let collapsed=collapsible&&options.collapsedByDefault!==false;let initialized=false;let units=[];let selected=[];const today=window.KPPTime?.localDate?.()||new Date().toISOString().slice(0,10);const mtdBounds=window.KPPTime?.operationalMtdBounds?.()||{start:addDays(today,-13),end:today};const end=options.endDate||mtdBounds.end||today;const start=options.startDate||mtdBounds.start||addDays(end,-13);const defaultIsMtd=!options.startDate&&!options.endDate;
-        host.innerHTML=`<section class="kpp-fc-widget"><div class="kpp-fc-head"><div><h3>${esc(options.title||"Grafik FC per Unit")}</h3><p>Default mengikuti MTD operasional tanggal 26 sampai 25. Bandingkan sampai 10 unit dengan satu logika HM berurutan.</p></div><div class="kpp-fc-head-actions"><span class="kpp-fc-period-pill" data-period-pill>${defaultIsMtd?'MTD • ':''}${esc(shortDate(start))} - ${esc(shortDate(end))}</span>${collapsible?'<button type="button" class="kpp-fc-toggle"></button>':''}</div></div><div class="kpp-fc-body" ${collapsed?'hidden':''}><div class="kpp-fc-filters"><div class="kpp-fc-field units"><label>PILIH UNIT (MAKS. 10)</label><div class="kpp-fc-unit-picker"><button type="button" class="kpp-fc-unit-trigger"><span class="kpp-fc-chip-wrap"><span class="kpp-fc-picker-placeholder">Memuat unit...</span></span><span>⌄</span></button><div class="kpp-fc-unit-menu" hidden><input class="kpp-fc-unit-search" type="search" placeholder="Cari code unit..."><div class="kpp-fc-unit-list"></div></div></div></div><div class="kpp-fc-field"><label>TANGGAL AWAL</label><input class="kpp-fc-start" type="date" value="${start}"></div><div class="kpp-fc-field"><label>TANGGAL AKHIR</label><input class="kpp-fc-end" type="date" value="${end}"></div><button class="kpp-fc-run" type="button">TAMPILKAN GRAFIK</button></div><div class="kpp-fc-rangebar"><span class="kpp-fc-range-label">RENTANG CEPAT</span><button type="button" class="kpp-fc-range-btn active" data-range="mtd">MTD</button><button type="button" class="kpp-fc-range-btn" data-range="30d">30 HARI</button><button type="button" class="kpp-fc-range-btn" data-range="90d">90 HARI</button><button type="button" class="kpp-fc-range-btn" data-range="all">SEMUA DATA</button><span class="kpp-fc-range-hint">Atau ubah tanggal manual.</span></div><div class="kpp-fc-kpis"><div class="kpp-fc-kpi blue"><small>FC GABUNGAN TERPILIH</small><strong data-kpi="avg">-</strong></div><div class="kpp-fc-kpi green"><small>TOTAL FUEL TERPILIH</small><strong data-kpi="fuel">-</strong></div><div class="kpp-fc-kpi amber"><small>HM JALAN VALID</small><strong data-kpi="hm">-</strong></div><div class="kpp-fc-kpi purple"><small>COVERAGE HM</small><strong data-kpi="count">-</strong></div></div><div class="kpp-fc-insight" data-fc-insight><b>MTD</b><span>${esc(shortDate(start))} - ${esc(shortDate(end))} • Menunggu data unit terpilih.</span></div><div class="kpp-fc-summary-card"><div class="kpp-fc-summary-head"><strong>Ringkasan FC per Unit</strong><span>Klik satu baris unit untuk fokus. Coverage = sampel HM valid ÷ total transaksi unit.</span></div><div class="kpp-fc-summary-wrap"><table class="kpp-fc-summary-table"><thead><tr><th>UNIT</th><th>FC AVG</th><th>FUEL TOTAL</th><th>HM JALAN VALID</th><th>SAMPEL VALID</th><th>COVERAGE HM</th><th>PERLU CEK</th></tr></thead><tbody class="kpp-fc-summary-body"><tr><td colspan="7">Pilih unit lalu tampilkan grafik.</td></tr></tbody></table></div></div><div class="kpp-fc-issues" data-fc-issues hidden></div><div class="kpp-fc-focusbar"><div><strong data-focus-label>FOKUS UNIT</strong><br><span>Unit lain disembunyikan, grafik dan data transaksi hanya menampilkan unit ini.</span></div><button type="button" class="kpp-fc-focus-reset">TAMPILKAN SEMUA UNIT</button></div><div class="kpp-fc-chart-card"><div class="kpp-fc-chart-top"><span class="kpp-fc-chart-title">Trend FC Harian per Unit (L/HM)</span><div class="kpp-fc-legend"></div></div><div class="kpp-fc-chart"><div class="kpp-fc-empty">Pilih unit lalu tampilkan grafik.</div></div><div class="kpp-fc-note">HM jalan dihitung dari selisih HM transaksi berurutan per unit. HM turun/reset diabaikan. FC hanya memakai transaksi yang punya pasangan HM valid.</div></div><div class="kpp-fc-detail-card"><div class="kpp-fc-detail-head"><strong data-detail-title>Detail Transaksi Unit</strong><span>FC transaksi = QTY ÷ HM jalan valid.</span></div><div class="kpp-fc-detail-wrap"><table class="kpp-fc-detail-table"><thead><tr><th>NO</th><th>TANGGAL</th><th>JAM</th><th>SHIFT</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>HM</th><th>HM JALAN</th><th>QTY</th><th>FC</th><th>STATUS FC</th><th>OPERATOR</th><th>FUELMAN</th></tr></thead><tbody class="kpp-fc-detail-body"></tbody></table></div></div><div class="kpp-fc-status"></div></div></section>`;
-        const body=host.querySelector('.kpp-fc-body'),toggle=host.querySelector('.kpp-fc-toggle'),trigger=host.querySelector('.kpp-fc-unit-trigger'),menu=host.querySelector('.kpp-fc-unit-menu'),list=host.querySelector('.kpp-fc-unit-list'),search=host.querySelector('.kpp-fc-unit-search'),run=host.querySelector('.kpp-fc-run'),status=host.querySelector('.kpp-fc-status'),periodPill=host.querySelector('[data-period-pill]'),insight=host.querySelector('[data-fc-insight]'),startInput=host.querySelector('.kpp-fc-start'),endInput=host.querySelector('.kpp-fc-end'),rangeButtons=Array.from(host.querySelectorAll('.kpp-fc-range-btn')),summaryBody=host.querySelector('.kpp-fc-summary-body'),issuesHost=host.querySelector('[data-fc-issues]'),focusBar=host.querySelector('.kpp-fc-focusbar'),focusLabel=host.querySelector('[data-focus-label]'),focusReset=host.querySelector('.kpp-fc-focus-reset'),detailCard=host.querySelector('.kpp-fc-detail-card'),detailTitle=host.querySelector('[data-detail-title]'),detailBody=host.querySelector('.kpp-fc-detail-body'),chartTitle=host.querySelector('.kpp-fc-chart-title'),legend=host.querySelector('.kpp-fc-legend');let activeRange=defaultIsMtd?'mtd':'custom',focusedUnit='',lastMetrics=null;
-        const updateToggle=()=>{if(toggle)toggle.textContent=collapsed?'Tampilkan Grafik FC':'Sembunyikan Grafik FC';};
-        const updateRangeButtons=()=>{rangeButtons.forEach(btn=>btn.classList.toggle('active',btn.dataset.range===activeRange));};
-        const clearFocus=()=>{focusedUnit='';};
-        const setRange=(mode,startValue,endValue)=>{activeRange=mode;clearFocus();startInput.value=startValue;endInput.value=endValue;updateRangeButtons();};
-        const renderCurrentView=()=>{if(!lastMetrics)return;const view=focusMetrics(lastMetrics,focusedUnit);host.querySelector('[data-kpi="avg"]').textContent=view.avg===null?'-':fmtFc(view.avg)+' L/HM';host.querySelector('[data-kpi="fuel"]').textContent=fmt(view.totalFuel)+' L';host.querySelector('[data-kpi="hm"]').textContent=fmt(view.totalHm)+' HM';host.querySelector('[data-kpi="count"]').textContent=`${view.samples}/${view.transactions} • ${fmtFc(view.coverage)}%`;legend.innerHTML=view.series.map(item=>`<span class="kpp-fc-legend-item" data-unit="${esc(item.unit)}"><i class="kpp-fc-dot" style="background:${item.color}"></i>${esc(item.unit)}</span>`).join('');renderSvg(host.querySelector('.kpp-fc-chart'),view);renderSummary(summaryBody,lastMetrics,focusedUnit);renderIssues(issuesHost,lastMetrics,focusedUnit);renderInsight(insight,view,startInput.value,endInput.value,mtdBounds);focusBar.classList.toggle('active',!!focusedUnit);detailCard.classList.toggle('active',!!focusedUnit);chartTitle.textContent=focusedUnit?`Trend FC Harian ${focusedUnit} (L/HM)`:'Trend FC Harian per Unit (L/HM)';if(focusedUnit){focusLabel.textContent=`FOKUS UNIT ${focusedUnit}`;detailTitle.textContent=`Detail Transaksi ${focusedUnit}`;renderDetail(detailBody,lastMetrics,focusedUnit);}else{detailBody.innerHTML='';}};
-        const focusUnit=(unit)=>{if(!lastMetrics||!unit)return;focusedUnit=unit;renderCurrentView();status.className='kpp-fc-status';status.textContent=`Fokus ${focusedUnit}: unit lain disembunyikan. Klik TAMPILKAN SEMUA UNIT untuk kembali.`;};
-        updateToggle();updateRangeButtons();
-        const renderPicker=()=>{const wrap=host.querySelector('.kpp-fc-chip-wrap');wrap.innerHTML=selected.length?selected.map(u=>`<span class="kpp-fc-chip">${esc(u)}</span>`).join(''):'<span class="kpp-fc-picker-placeholder">Pilih maksimal 10 unit</span>';list.innerHTML=units.map(u=>`<label class="kpp-fc-unit-option" data-unit-label="${esc(u.toLowerCase())}"><input type="checkbox" value="${esc(u)}" ${selected.includes(u)?'checked':''}> <span>${esc(u)}</span></label>`).join('');};
-        const init=async()=>{
-          if(initialized)return true;
-          status.className='kpp-fc-status';
-          status.textContent='Memuat master unit...';
-          try{
-            const request=KPP.db.from('unit_master').select('code_unit,active').eq('active',true).order('code_unit',{ascending:true});
-            const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout memuat Master Unit. Coba lagi.')),8000));
-            const {data,error}=await Promise.race([request,timeout]);
-            if(error)throw error;
-            units=(data||[]).map(r=>String(r.code_unit||'').trim().toUpperCase()).filter(Boolean);
-            let saved=[];
-            try{saved=JSON.parse(localStorage.getItem('kppFcSelectedUnits')||'[]');}catch{}
-            selected=saved.filter(u=>units.includes(u)).slice(0,MAX_UNITS);
-            if(!selected.length)selected=units.slice(0,Math.min(3,units.length));
-            renderPicker();
-            initialized=true;
-            status.className='kpp-fc-status';
-            status.textContent=units.length?`${units.length} unit aktif tersedia.`:'Master unit aktif kosong.';
-            if(options.autoLoad!==false&&selected.length)await load();
-            return true;
-          }catch(error){
-            initialized=false;
-            units=[];
-            selected=[];
-            const wrap=host.querySelector('.kpp-fc-chip-wrap');
-            if(wrap)wrap.innerHTML='<span class="kpp-fc-picker-placeholder">Gagal memuat unit, klik untuk coba lagi</span>';
-            list.innerHTML='';
-            status.className='kpp-fc-status error';
-            status.textContent='Gagal memuat unit: '+error.message+' Klik PILIH UNIT untuk mencoba lagi.';
-            return false;
-          }
-        };
-        const load=async()=>{const s=startInput.value,e=endInput.value;if(!selected.length){status.className='kpp-fc-status error';status.textContent='Pilih minimal 1 unit.';return;}if(!s||!e||s>e){status.className='kpp-fc-status error';status.textContent='Rentang tanggal tidak valid.';return;}run.disabled=true;rangeButtons.forEach(btn=>btn.disabled=true);status.className='kpp-fc-status';status.textContent='Memuat data FC...';try{const [rows,baselines]=await Promise.all([fetchPaged(KPP.db,s,e,selected),fetchBaselines(KPP.db,s,selected)]);lastMetrics=buildMetrics(rows,baselines,selected,s,e);if(focusedUnit&&!selected.includes(focusedUnit))clearFocus();renderCurrentView();const exactMtd=s===mtdBounds.start&&e===mtdBounds.end;const label=exactMtd?'MTD':activeRange==='30d'?'30 HARI':activeRange==='90d'?'90 HARI':activeRange==='all'?'SEMUA DATA':'PERIODE';periodPill.textContent=`${label} • ${shortDate(s)} - ${shortDate(e)}`;status.textContent=`${lastMetrics.samples} sampel HM valid dari ${lastMetrics.transactions} transaksi • ${lastMetrics.issues} perlu cek • ${selected.length} unit dipilih • ${lastMetrics.dates.length} hari. Klik ringkasan, legend, grafik, atau peringatan untuk fokus.`;}catch(error){console.error(error);status.className='kpp-fc-status error';status.textContent='Gagal memuat grafik FC: '+error.message;}finally{run.disabled=false;rangeButtons.forEach(btn=>btn.disabled=false);}};
-        toggle?.addEventListener('click',async()=>{collapsed=!collapsed;body.hidden=collapsed;updateToggle();if(!collapsed){await init();if(initialized&&selected.length&&host.querySelector('[data-kpi="count"]').textContent==='-')await load();}});
-        trigger.addEventListener('click',async()=>{const ok=await init();if(!ok){menu.hidden=true;return;}menu.hidden=!menu.hidden;if(!menu.hidden)search.focus();});
-        list.addEventListener('change',event=>{const box=event.target.closest('input[type="checkbox"]');if(!box)return;const value=box.value;if(box.checked&&!selected.includes(value)){if(selected.length>=MAX_UNITS){box.checked=false;status.className='kpp-fc-status error';status.textContent='Maksimal 10 unit. Jika grafik terasa ramai, kurangi unit yang dipilih.';return;}selected.push(value);}else if(!box.checked){selected=selected.filter(u=>u!==value);}clearFocus();localStorage.setItem('kppFcSelectedUnits',JSON.stringify(selected));renderPicker();});
-        search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();list.querySelectorAll('.kpp-fc-unit-option').forEach(row=>row.style.display=!q||row.dataset.unitLabel.includes(q)?'flex':'none');});
-        document.addEventListener('click',event=>{if(!event.target.closest('.kpp-fc-unit-picker'))menu.hidden=true;});run.addEventListener('click',load);summaryBody.addEventListener('click',event=>{const row=event.target.closest('tr[data-unit]');if(row)focusUnit(row.dataset.unit||'');});legend.addEventListener('click',event=>{const item=event.target.closest('[data-unit]');if(item)focusUnit(item.dataset.unit||'');});host.querySelector('.kpp-fc-chart').addEventListener('click',event=>{const item=event.target.closest('[data-unit]');if(item)focusUnit(item.dataset.unit||'');});issuesHost.addEventListener('click',event=>{const item=event.target.closest('[data-unit]');if(item)focusUnit(item.dataset.unit||'');});focusReset.addEventListener('click',()=>{clearFocus();renderCurrentView();status.className='kpp-fc-status';status.textContent=`Kembali menampilkan ${selected.length} unit terpilih.`;});
-        [startInput,endInput].forEach(input=>input.addEventListener('change',()=>{activeRange='custom';clearFocus();updateRangeButtons();}));
-        rangeButtons.forEach(btn=>btn.addEventListener('click',async()=>{const ok=await init();if(!ok)return;const mode=btn.dataset.range;if(mode==='mtd')setRange('mtd',mtdBounds.start,mtdBounds.end);else if(mode==='30d')setRange('30d',addDays(today,-29),today);else if(mode==='90d')setRange('90d',addDays(today,-89),today);else if(mode==='all'){if(!selected.length){status.className='kpp-fc-status error';status.textContent='Pilih minimal 1 unit untuk mencari seluruh historinya.';return;}status.className='kpp-fc-status';status.textContent='Mencari transaksi pertama unit terpilih...';try{const earliest=await fetchEarliestDate(KPP.db,selected);if(!earliest){status.className='kpp-fc-status error';status.textContent='Belum ada histori untuk unit terpilih.';return;}setRange('all',earliest,today);}catch(error){status.className='kpp-fc-status error';status.textContent='Gagal mencari tanggal awal histori: '+error.message;return;}}await load();}));
-        if(!collapsed)init();
-      }
-      window.KPPFC={mount};
-    })();
-    
-  operator: 'match'
-  stack: |-
-    TestContext.<anonymous> (file:///home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-data-contract.mjs:15:10)
-    Test.runInAsyncScope (node:async_hooks:214:14)
-    Test.run (node:internal/test_runner/test:1047:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
-    Test.postRun (node:internal/test_runner/test:1173:19)
-    Test.run (node:internal/test_runner/test:1101:12)
-    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
   ...
 # Subtest: Dashboard and Logsheet cache-bust repaired FC runtime
-not ok 57 - Dashboard and Logsheet cache-bust repaired FC runtime
+ok 57 - Dashboard and Logsheet cache-bust repaired FC runtime
   ---
-  duration_ms: 1.386665
+  duration_ms: 1.511607
   type: 'test'
-  location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-data-contract.mjs:19:1'
-  failureType: 'testCodeFailure'
-  error: |-
-    The input did not match the regular expression /fc-chart\.js\?v=20260912g/. Input:
-    
-    '<!DOCTYPE html>\n' +
-      '<html lang="id">\n' +
-      '<head>\n' +
-      '<meta charset="UTF-8">\n' +
-      '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-      '<title>Dashboard - KPP FMS</title>\n' +
-      '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n' +
-      '<script>\n' +
-      'window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];\n' +
-      'window.KPP_ACTIVE_PAGE="dashboard";\n' +
-      '</script>\n' +
-      '<script src="wib-time.js?v=20260911b3"></script>\n' +
-      '<script src="auth.js?v=20260912-sidebar1"></script>\n' +
-      '<script src="storage-master.js"></script>\n' +
-      '<script src="fc-chart.js?v=20260912h"></script>\n' +
-      '<style>\n' +
-      '*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}\n' +
-      ':root{\n' +
-      '  --bg:#f4f6f8;\n' +
-      '  --panel:#ffffff;\n' +
-      '  --text:#111827;\n' +
-      '  --muted:#64748b;\n' +
-      '  --line:#e5e7eb;\n' +
-      '  --navy:#1f2937;\n' +
-      '  --blue:#2563eb;\n' +
-      '  --green:#16a34a;\n' +
-      '  --soft-blue:#eff6ff;\n' +
-      '  --soft-green:#ecfdf5;\n' +
-      '  --soft-amber:#fffbeb;\n' +
-      '  --soft-purple:#f5f3ff;\n' +
-      '}\n' +
-      'body{background:var(--bg);color:var(--text)}\n' +
-      '.header{background:var(--navy);color:#fff;padding:20px;text-align:center}\n' +
-      '.header h1{font-size:23px;margin-bottom:5px}\n' +
-      '.header p{font-size:14px;opacity:.8}\n' +
-      '.container{max-width:1200px;margin:26px auto;padding:18px}\n' +
-      '.top-bar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}\n' +
-      '.page-heading h2{font-size:22px;margin-bottom:4px}\n' +
-      '.page-heading p{font-size:12px;color:var(--muted)}\n' +
-      '.refresh-btn{background:var(--green);color:#fff;border:none;padding:10px 16px;border-radius:9px;cursor:pointer;font-weight:bold;min-height:42px}\n' +
-      '.refresh-btn:hover{filter:brightness(.96)}\n' +
-      '.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:10px;margin-bottom:18px;display:none}\n' +
-      '\n' +
-      '.overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;margin-bottom:16px}\n' +
-      '.overview-card{\n' +
-      '  background:linear-gradient(145deg,#ffffff,#f8fafc);\n' +
-      '  border:1px solid var(--line);\n' +
-      '  border-radius:18px;\n' +
-      '  padding:18px;\n' +
-      '  box-shadow:0 8px 24px rgba(15,23,42,.07);\n' +
-      '  min-width:0;\n' +
-      '}\n' +
-      '.overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}\n' +
-      '.overview-title{font-size:14px;font-weight:800;line-height:1.3}\n' +
-      '.overview-sub{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.35}\n' +
-      '.wide-hero-card{\n' +
-      '  background:linear-gradient(135deg,#ffffff 0%,#f8fbff 55%,#eef6ff 100%);\n' +
-      '  border:1px solid var(--line);border-radius:18px;padding:18px 24px;\n' +
-      '  box-shadow:0 8px 24px rgba(15,23,42,.07);margin-bottom:18px;\n' +
-      '  display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:118px;position:relative;overflow:hidden\n' +
-      '}\n' +
-      '.wide-hero-card::after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-55px;top:-75px;background:rgba(37,99,235,.06)}\n' +
-      '.wide-hero-main{display:flex;align-items:center;gap:16px;min-width:0;position:relative;z-index:1}\n' +
-      '.hero-icon{width:62px;height:62px;border-radius:17px;display:flex;align-items:center;justify-content:center;background:var(--soft-blue);font-size:32px;flex:0 0 auto}\n' +
-      '.hero-label{font-size:12px;color:var(--muted);font-weight:bold;letter-spacing:.5px;margin-bottom:5px}\n' +
-      '.hero-value{font-size:34px;font-weight:800;line-height:1.1}\n' +
-      '.hero-sub{font-size:11px;color:var(--muted);margin-top:6px}\n' +
-      '.wide-hero-side{font-size:11px;color:var(--muted);text-align:right;max-width:290px;line-height:1.45;position:relative;z-index:1}\n' +
-      '.trend-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;white-space:nowrap;background:#f1f5f9;color:#475569}\n' +
-      '.trend-badge.up{background:#fee2e2;color:#b91c1c}.trend-badge.down{background:#dcfce7;color:#166534}.trend-badge.flat{background:#f1f5f9;color:#475569}.trend-badge.stock-up{background:#dcfce7;color:#166534}.trend-badge.stock-down{background:#fee2e2;color:#b91c1c}\n' +
-      '.usage-bars{height:168px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:18px 4px 0;border-bottom:1px solid #cbd5e1}\n' +
-      '.usage-bar-item{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}\n' +
-      '.usage-bar-value{font-size:9px;font-weight:800;margin-bottom:5px;white-space:nowrap;color:#334155}\n' +
-      '.usage-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#60a5fa,#2563eb);box-shadow:0 4px 10px rgba(37,99,235,.16)}\n' +
-      '.usage-bar-date{font-size:9px;color:var(--muted);margin-top:7px;white-space:nowrap}\n' +
-      '.stock-trend-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#86efac,#16a34a);box-shadow:0 4px 10px rgba(22,163,74,.16)}\n' +
-      '.stock-trend-bar.safe{background:linear-gradient(180deg,#86efac,#16a34a)}\n' +
-      '.stock-trend-bar.low{background:linear-gradient(180deg,#fde68a,#f59e0b)}\n' +
-      '.stock-trend-bar.critical{background:linear-gradient(180deg,#fca5a5,#ef4444)}\n' +
-      '.stock-trend-bar.high{background:linear-gradient(180deg,#fdba74,#f97316)}\n' +
-      '.mtd-compare-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:7px}\n' +
-      '.mtd-compare-note{font-size:10px;color:var(--muted);line-height:1.35}\n' +
-      '.receipt-total{font-size:23px;font-weight:800;margin:2px 0 13px}.receipt-total small{font-size:10px;color:var(--muted);font-weight:normal}\n' +
-      '.receipt-bars{display:flex;flex-direction:column;gap:13px}\n' +
-      '.receipt-row{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center}\n' +
-      '.receipt-company{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n' +
-      '.receipt-track{height:14px;border-radius:999px;background:#e2e8f0;overflow:hidden}\n' +
-      '.receipt-fill{height:100%;min-width:3px;border-radius:999px;background:linear-gradient(90deg,#fb923c,#f97316)}\n' +
-      '.receipt-value{font-size:10px;font-weight:800;white-space:nowrap}\n' +
-      '.receipt-empty{font-size:11px;color:var(--muted);padding:18px 8px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px}\n' +
-      '\n' +
-      '.section{\n' +
-      '  background:var(--panel);\n' +
-      '  padding:20px;\n' +
-      '  border-radius:15px;\n' +
-      '  border:1px solid var(--line);\n' +
-      '  box-shadow:0 3px 12px rgba(15,23,42,.05);\n' +
-      '  margin-bottom:18px\n' +
-      '}\n' +
-      '.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}\n' +
-      '.section h2{font-size:18px;margin:0}\n' +
-      '.section-link{font-size:12px;text-decoration:none;color:var(--blue);font-weight:bold;white-space:nowrap}\n' +
-      '\n' +
-      '.daily-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}\n' +
-      '.daily-card{\n' +
-      '  border:1px solid var(--line);\n' +
-      '  border-radius:13px;\n' +
-      '  padding:15px;\n' +
-      '  min-height:124px;\n' +
-      '  position:relative;\n' +
-      '  overflow:hidden;\n' +
-      '  background:#fff\n' +
-      '}\n' +
-      '.daily-card::after{\n' +
-      '  content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-24px;top:-24px;background:rgba(148,163,184,.08)\n' +
-      '}\n' +
-      '.daily-card.blue{background:linear-gradient(145deg,#fff,var(--soft-blue))}\n' +
-      '.daily-card.green{background:linear-gradient(145deg,#fff,var(--soft-green))}\n' +
-      '.daily-card.amber{background:linear-gradient(145deg,#fff,var(--soft-amber))}\n' +
-      '.daily-card.purple{background:linear-gradient(145deg,#fff,var(--soft-purple))}\n' +
-      '.daily-icon{font-size:25px;margin-bottom:10px}\n' +
-      '.daily-label{font-size:10px;color:var(--muted);font-weight:bold;letter-spacing:.45px;margin-bottom:5px}\n' +
-      '.daily-value{font-size:22px;font-weight:800;line-height:1.2}\n' +
-      '.daily-sub{font-size:10px;color:var(--muted);margin-top:5px}\n' +
-      '\n' +
-      '.shift-container{display:grid;grid-template-columns:1fr 1fr;gap:14px}\n' +
-      '.shift-card{\n' +
-      '  background:linear-gradient(145deg,#fff,#f8fafc);\n' +
-      '  padding:18px;border-radius:12px;border:1px solid var(--line);\n' +
-      '  display:flex;align-items:center;gap:14px\n' +
-      '}\n' +
-      '.shift-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--soft-blue);font-size:24px;flex:0 0 auto}\n' +
-      '.shift-card h3{font-size:15px;margin-bottom:5px}\n' +
-      '.shift-fuel{font-size:22px;font-weight:800}\n' +
-      '\n' +
-      '.session-title-wrap{display:flex;align-items:center;gap:8px}\n' +
-      '.session-count{display:inline-flex;min-width:26px;height:26px;padding:0 8px;align-items:center;justify-content:center;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:bold}\n' +
-      '.session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}\n' +
-      '.session-card{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:11px;padding:14px}\n' +
-      '.session-card .name{font-weight:bold;font-size:14px;margin-bottom:7px}\n' +
-      '.session-card .meta{font-size:12px;color:#475569;line-height:1.55}\n' +
-      '.session-empty{padding:14px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;color:var(--muted);font-size:12px;text-align:center}\n' +
-      '\n' +
-      '.fc-head-meta{font-size:10px;color:var(--muted);font-weight:700;text-align:right}\n' +
-      '.fc-table-wrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:11px;-webkit-overflow-scrolling:touch}\n' +
-      '.fc-table{min-width:650px}\n' +
-      '.fc-value{font-weight:900;color:#166534}\n' +
-      '.fc-muted{color:var(--muted)}\n' +
-      '.fc-status{padding:14px;text-align:center;color:var(--muted);font-size:11px}\n' +
-      '.table-container{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px;-webkit-overflow-scrolling:touch}\n' +
-      'table{width:100%;border-collapse:collapse;min-width:950px;background:#fff}\n' +
-      'th{background:var(--navy);color:#fff;padding:12px;font-size:12px;white-space:nowrap;position:sticky;top:0;z-index:1}\n' +
-      'td{padding:10px;border-bottom:1px solid var(--line);text-align:center;font-size:12px;white-space:nowrap}\n' +
-      'tr:hover{background:#f8fafc}\n' +
-      '.status{text-align:center;color:#777;padding:26px;font-size:12px}\n' +
-      '\n' +
-      '/* ===== KPP-FMS GLOBAL NAV ===== */\n' +
-      '.app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}\n' +
-      '.app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:flex-start;gap:12px;align-items:center;overflow-x:auto;scrollbar-width:thin}\n' +
-      '.app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold;border:1px solid transparent}\n' +
-      '.app-nav a:hover{background:#374151;color:#fff}\n' +
-      '.app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}\n' +
-      '.kpp-u'... 40694 more characters
-    
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected:
-  actual: |-
-    <!DOCTYPE html>
-    <html lang="id">
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - KPP FMS</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-    window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
-    window.KPP_ACTIVE_PAGE="dashboard";
-    </script>
-    <script src="wib-time.js?v=20260911b3"></script>
-    <script src="auth.js?v=20260912-sidebar1"></script>
-    <script src="storage-master.js"></script>
-    <script src="fc-chart.js?v=20260912h"></script>
-    <style>
-    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-    :root{
-      --bg:#f4f6f8;
-      --panel:#ffffff;
-      --text:#111827;
-      --muted:#64748b;
-      --line:#e5e7eb;
-      --navy:#1f2937;
-      --blue:#2563eb;
-      --green:#16a34a;
-      --soft-blue:#eff6ff;
-      --soft-green:#ecfdf5;
-      --soft-amber:#fffbeb;
-      --soft-purple:#f5f3ff;
-    }
-    body{background:var(--bg);color:var(--text)}
-    .header{background:var(--navy);color:#fff;padding:20px;text-align:center}
-    .header h1{font-size:23px;margin-bottom:5px}
-    .header p{font-size:14px;opacity:.8}
-    .container{max-width:1200px;margin:26px auto;padding:18px}
-    .top-bar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
-    .page-heading h2{font-size:22px;margin-bottom:4px}
-    .page-heading p{font-size:12px;color:var(--muted)}
-    .refresh-btn{background:var(--green);color:#fff;border:none;padding:10px 16px;border-radius:9px;cursor:pointer;font-weight:bold;min-height:42px}
-    .refresh-btn:hover{filter:brightness(.96)}
-    .error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px;border-radius:10px;margin-bottom:18px;display:none}
-    
-    .overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;margin-bottom:16px}
-    .overview-card{
-      background:linear-gradient(145deg,#ffffff,#f8fafc);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:18px;
-      box-shadow:0 8px 24px rgba(15,23,42,.07);
-      min-width:0;
-    }
-    .overview-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
-    .overview-title{font-size:14px;font-weight:800;line-height:1.3}
-    .overview-sub{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.35}
-    .wide-hero-card{
-      background:linear-gradient(135deg,#ffffff 0%,#f8fbff 55%,#eef6ff 100%);
-      border:1px solid var(--line);border-radius:18px;padding:18px 24px;
-      box-shadow:0 8px 24px rgba(15,23,42,.07);margin-bottom:18px;
-      display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:118px;position:relative;overflow:hidden
-    }
-    .wide-hero-card::after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-55px;top:-75px;background:rgba(37,99,235,.06)}
-    .wide-hero-main{display:flex;align-items:center;gap:16px;min-width:0;position:relative;z-index:1}
-    .hero-icon{width:62px;height:62px;border-radius:17px;display:flex;align-items:center;justify-content:center;background:var(--soft-blue);font-size:32px;flex:0 0 auto}
-    .hero-label{font-size:12px;color:var(--muted);font-weight:bold;letter-spacing:.5px;margin-bottom:5px}
-    .hero-value{font-size:34px;font-weight:800;line-height:1.1}
-    .hero-sub{font-size:11px;color:var(--muted);margin-top:6px}
-    .wide-hero-side{font-size:11px;color:var(--muted);text-align:right;max-width:290px;line-height:1.45;position:relative;z-index:1}
-    .trend-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;white-space:nowrap;background:#f1f5f9;color:#475569}
-    .trend-badge.up{background:#fee2e2;color:#b91c1c}.trend-badge.down{background:#dcfce7;color:#166534}.trend-badge.flat{background:#f1f5f9;color:#475569}.trend-badge.stock-up{background:#dcfce7;color:#166534}.trend-badge.stock-down{background:#fee2e2;color:#b91c1c}
-    .usage-bars{height:168px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:18px 4px 0;border-bottom:1px solid #cbd5e1}
-    .usage-bar-item{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
-    .usage-bar-value{font-size:9px;font-weight:800;margin-bottom:5px;white-space:nowrap;color:#334155}
-    .usage-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#60a5fa,#2563eb);box-shadow:0 4px 10px rgba(37,99,235,.16)}
-    .usage-bar-date{font-size:9px;color:var(--muted);margin-top:7px;white-space:nowrap}
-    .stock-trend-bar{width:min(100%,38px);min-height:4px;border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,#86efac,#16a34a);box-shadow:0 4px 10px rgba(22,163,74,.16)}
-    .stock-trend-bar.safe{background:linear-gradient(180deg,#86efac,#16a34a)}
-    .stock-trend-bar.low{background:linear-gradient(180deg,#fde68a,#f59e0b)}
-    .stock-trend-bar.critical{background:linear-gradient(180deg,#fca5a5,#ef4444)}
-    .stock-trend-bar.high{background:linear-gradient(180deg,#fdba74,#f97316)}
-    .mtd-compare-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
-    .mtd-compare-note{font-size:10px;color:var(--muted);line-height:1.35}
-    .receipt-total{font-size:23px;font-weight:800;margin:2px 0 13px}.receipt-total small{font-size:10px;color:var(--muted);font-weight:normal}
-    .receipt-bars{display:flex;flex-direction:column;gap:13px}
-    .receipt-row{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center}
-    .receipt-company{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .receipt-track{height:14px;border-radius:999px;background:#e2e8f0;overflow:hidden}
-    .receipt-fill{height:100%;min-width:3px;border-radius:999px;background:linear-gradient(90deg,#fb923c,#f97316)}
-    .receipt-value{font-size:10px;font-weight:800;white-space:nowrap}
-    .receipt-empty{font-size:11px;color:var(--muted);padding:18px 8px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px}
-    
-    .section{
-      background:var(--panel);
-      padding:20px;
-      border-radius:15px;
-      border:1px solid var(--line);
-      box-shadow:0 3px 12px rgba(15,23,42,.05);
-      margin-bottom:18px
-    }
-    .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-    .section h2{font-size:18px;margin:0}
-    .section-link{font-size:12px;text-decoration:none;color:var(--blue);font-weight:bold;white-space:nowrap}
-    
-    .daily-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-    .daily-card{
-      border:1px solid var(--line);
-      border-radius:13px;
-      padding:15px;
-      min-height:124px;
-      position:relative;
-      overflow:hidden;
-      background:#fff
-    }
-    .daily-card::after{
-      content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-24px;top:-24px;background:rgba(148,163,184,.08)
-    }
-    .daily-card.blue{background:linear-gradient(145deg,#fff,var(--soft-blue))}
-    .daily-card.green{background:linear-gradient(145deg,#fff,var(--soft-green))}
-    .daily-card.amber{background:linear-gradient(145deg,#fff,var(--soft-amber))}
-    .daily-card.purple{background:linear-gradient(145deg,#fff,var(--soft-purple))}
-    .daily-icon{font-size:25px;margin-bottom:10px}
-    .daily-label{font-size:10px;color:var(--muted);font-weight:bold;letter-spacing:.45px;margin-bottom:5px}
-    .daily-value{font-size:22px;font-weight:800;line-height:1.2}
-    .daily-sub{font-size:10px;color:var(--muted);margin-top:5px}
-    
-    .shift-container{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .shift-card{
-      background:linear-gradient(145deg,#fff,#f8fafc);
-      padding:18px;border-radius:12px;border:1px solid var(--line);
-      display:flex;align-items:center;gap:14px
-    }
-    .shift-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--soft-blue);font-size:24px;flex:0 0 auto}
-    .shift-card h3{font-size:15px;margin-bottom:5px}
-    .shift-fuel{font-size:22px;font-weight:800}
-    
-    .session-title-wrap{display:flex;align-items:center;gap:8px}
-    .session-count{display:inline-flex;min-width:26px;height:26px;padding:0 8px;align-items:center;justify-content:center;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:bold}
-    .session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
-    .session-card{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:11px;padding:14px}
-    .session-card .name{font-weight:bold;font-size:14px;margin-bottom:7px}
-    .session-card .meta{font-size:12px;color:#475569;line-height:1.55}
-    .session-empty{padding:14px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;color:var(--muted);font-size:12px;text-align:center}
-    
-    .fc-head-meta{font-size:10px;color:var(--muted);font-weight:700;text-align:right}
-    .fc-table-wrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:11px;-webkit-overflow-scrolling:touch}
-    .fc-table{min-width:650px}
-    .fc-value{font-weight:900;color:#166534}
-    .fc-muted{color:var(--muted)}
-    .fc-status{padding:14px;text-align:center;color:var(--muted);font-size:11px}
-    .table-container{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px;-webkit-overflow-scrolling:touch}
-    table{width:100%;border-collapse:collapse;min-width:950px;background:#fff}
-    th{background:var(--navy);color:#fff;padding:12px;font-size:12px;white-space:nowrap;position:sticky;top:0;z-index:1}
-    td{padding:10px;border-bottom:1px solid var(--line);text-align:center;font-size:12px;white-space:nowrap}
-    tr:hover{background:#f8fafc}
-    .status{text-align:center;color:#777;padding:26px;font-size:12px}
-    
-    /* ===== KPP-FMS GLOBAL NAV ===== */
-    .app-nav{background:#111827;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid #374151;padding:9px 12px;position:sticky;top:0;z-index:999}
-    .app-nav-inner{max-width:1250px;margin:0 auto;display:flex;justify-content:flex-start;gap:12px;align-items:center;overflow-x:auto;scrollbar-width:thin}
-    .app-nav a{color:#e5e7eb;text-decoration:none;padding:10px 16px;border-radius:7px;white-space:nowrap;font-size:13px;font-weight:bold;border:1px solid transparent}
-    .app-nav a:hover{background:#374151;color:#fff}
-    .app-nav a.active{background:#2563eb;color:#fff;border-color:#60a5fa}
-    .kpp-userbar{background:#fff;border-bottom:1px solid var(--line)}
-    .kpp-userbar-inner{max-width:1250px;margin:0 auto;padding:8px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
-    .kpp-userbar-inner span{color:var(--muted)}
-    .kpp-userbar button{border:0;border-radius:7px;padding:8px 11px;background:#dc2626;color:#fff;font-weight:bold;cursor:pointer}
-    
-    @media(max-width:900px){
-      .container{padding:10px;margin:12px auto}
-      .header{padding:15px 10px}.header h1{font-size:18px}.header p{font-size:12px}
-      .top-bar{align-items:stretch}.page-heading h2{font-size:19px}
-      .refresh-btn{min-width:125px}
-      .overview-grid{grid-template-columns:1fr 1fr}.usage-card{grid-column:1}.receipt-trend-card{grid-column:2}.receipt-card{grid-column:1 / -1}.wide-hero-card{padding:17px 20px}
-      .daily-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-      .daily-card{padding:13px;min-height:115px}.daily-value{font-size:19px}
-      .section{padding:14px}.section h2{font-size:16px}
-      .shift-container{gap:9px}.shift-card{padding:13px}.shift-fuel{font-size:18px}
-      table{min-width:1250px}th,td{font-size:10px;padding:7px 6px}
-      .app-nav a{padding:9px 12px;font-size:12px}
-      .kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}
-    }
-    @media(max-width:560px){
-      .top-bar{display:block}.page-heading{margin-bottom:10px}.refresh-btn{width:100%}
-      .overview-grid{grid-template-columns:1fr}.usage-card,.receipt-trend-card,.receipt-card{grid-column:auto;grid-row:auto}.wide-hero-card{padding:17px;min-height:auto;align-items:flex-start}.wide-hero-side{display:none}.hero-value{font-size:28px}.hero-icon{width:54px;height:54px;font-size:28px}
-      .daily-grid{grid-template-columns:1fr}
-      .daily-label{font-size:9px}.daily-sub{font-size:9px}.daily-icon{font-size:22px}
-      .shift-container{grid-template-columns:1fr}
-      .section-head{align-items:flex-start}.section-link{font-size:11px}
-    }
-    
-    
-    /* ===== KPP-FMS CLEAN CONNECTED VISUAL v8 ===== */
-    :root{
-      --kpp-bg:#f5f7fb;
-      --kpp-card:#ffffff;
-      --kpp-text:#0f172a;
-      --kpp-muted:#64748b;
-      --kpp-line:#e6eaf0;
-      --kpp-blue:#2563eb;
-    }
-    body{background:var(--kpp-bg);color:var(--kpp-text)}
-    .container{max-width:1240px}
-    .top-bar{margin-bottom:18px}
-    .refresh-btn{background:#2563eb;box-shadow:0 3px 10px rgba(37,99,235,.16)}
-    
-    .overview-grid{gap:14px}
-    .overview-card{
-      background:#fff!important;
-      border:1px solid var(--kpp-line);
-      border-radius:16px;
-      box-shadow:0 5px 18px rgba(15,23,42,.04);
-      padding:18px
-    }
-    .overview-title{color:var(--kpp-text)}
-    .overview-sub{color:var(--kpp-muted)}
-    .usage-bars{border-bottom-color:#e2e8f0}
-    
-    /* Badge lebih kecil dan lembut */
-    .trend-badge{padding:5px 8px;font-size:9px;box-shadow:none}
-    .trend-badge.flat{background:#f1f5f9;color:#64748b}
-    .trend-badge.up{background:#fef2f2;color:#b91c1c}
-    .trend-badge.down{background:#ecfdf5;color:#15803d}
-    .trend-badge.stock-up{background:#ecfdf5;color:#15803d}
-    .trend-badge.stock-down{background:#fef2f2;color:#b91c1c}
-    
-    /* Hero MTD: satu fokus, tidak terlalu ramai */
-    .wide-hero-card{
-      background:#fff!important;
-      border:1px solid var(--kpp-line);
-      border-left:5px solid var(--kpp-blue);
-      border-radius:16px;
-      box-shadow:0 5px 18px rgba(15,23,42,.04);
-      min-height:108px
-    }
-    .wide-hero-card::after{display:none}
-    .hero-icon{width:54px;height:54px;border-radius:14px;background:#eff6ff;font-size:28px}
-    .hero-label{color:var(--kpp-muted)}
-    .hero-value{color:var(--kpp-text)}
-    .wide-hero-side{color:var(--kpp-muted)}
-    .mtd-compare-note{color:#94a3b8;font-size:9px}
-    
-    .section{border:1px solid var(--kpp-line);border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
-    .daily-grid{gap:12px}
-    .daily-card,
-    .daily-card.blue,
-    .daily-card.green,
-    .daily-card.amber,
-    .daily-card.purple{
-      background:#fff!important;
-      border:1px solid var(--kpp-line);
-      border-top:3px solid #dbeafe;
-      border-radius:13px;
-      box-shadow:0 2px 10px rgba(15,23,42,.025)
-    }
-    .daily-card::after{display:none}
-    .daily-icon{font-size:22px;margin-bottom:8px}
-    .daily-label{color:var(--kpp-muted)}
-    .daily-sub{color:#94a3b8}
-    
-    .shift-card{background:#fff;border-color:var(--kpp-line);box-shadow:0 2px 10px rgba(15,23,42,.025)}
-    .shift-icon{background:#eff6ff}
-    .session-card{background:#fff;border-color:#d7f0df;border-left:4px solid #22c55e}
-    .table-container{border-color:var(--kpp-line);border-radius:11px}
-    
-    @media(max-width:900px){
-      .overview-card,.section{box-shadow:none}
-    }
-    
-    
-    /* ===== KPP-FMS DASHBOARD STOCK RADIAL TREND v1 ===== */
-    #stockTrendBars.usage-bars{height:auto!important;min-height:132px;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;padding:8px 2px!important;border-bottom:0!important;overflow-x:auto!important;scrollbar-width:thin}
-    .stock-trend-ring-item{flex:1 0 72px;min-width:72px;display:flex;flex-direction:column;align-items:center;text-align:center}
-    .stock-trend-ring{--trend-pct:0;--trend-color:#16a34a;width:62px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--trend-color) calc(var(--trend-pct)*1%),#e8edf4 0)}
-    .stock-trend-ring::before{content:"";position:absolute;inset:7px;border-radius:50%;background:#fff}
-    .stock-trend-ring span{position:relative;z-index:1;font-size:10px;font-weight:900;color:var(--trend-color)}
-    .stock-trend-ring.safe{--trend-color:#16a34a}.stock-trend-ring.low{--trend-color:#f59e0b}.stock-trend-ring.critical{--trend-color:#ef4444}.stock-trend-ring.high{--trend-color:#f97316}
-    .stock-trend-ring-value{font-size:8px;font-weight:800;color:#334155;margin-top:5px;white-space:nowrap}.stock-trend-ring-date{font-size:8px;color:#64748b;margin-top:2px}
-    @media(max-width:560px){#stockTrendBars.usage-bars{gap:6px!important;min-height:116px}.stock-trend-ring-item{flex-basis:62px;min-width:62px}.stock-trend-ring{width:54px}.stock-trend-ring span{font-size:8.5px}.stock-trend-ring-value,.stock-trend-ring-date{font-size:7px}}
-    
-    
-    /* ===== KPP-FMS DUTY MONITOR v1 ===== */
-    .session-title-block{min-width:0}
-    .session-period{font-size:10px;color:var(--muted);font-weight:800;margin-top:4px}
-    .session-count{background:#dbeafe;color:#1d4ed8}
-    .session-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-    .session-card{position:relative;border:1px solid #dbe3ee;background:#fff;border-radius:13px;padding:14px;overflow:hidden}
-    .session-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#94a3b8}
-    .session-card.monitor-done::before{background:#16a34a}
-    .session-card.monitor-ready::before{background:#2563eb}
-    .session-card.monitor-pending::before{background:#f59e0b}
-    .session-card.monitor-missing::before,.session-card.monitor-anomaly::before{background:#dc2626}
-    .session-card .name{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px}
-    .session-card .name-main{font-weight:900;font-size:14px;line-height:1.3;min-width:0}
-    .session-card .duty-label{font-size:10px;color:#475569;font-weight:900;margin-top:3px}
-    .session-card .meta{font-size:11px;color:#475569;line-height:1.55}
-    .session-status-badge{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap;background:#f1f5f9;color:#475569}
-    .session-status-badge.done{background:#dcfce7;color:#166534}
-    .session-status-badge.ready{background:#dbeafe;color:#1d4ed8}
-    .session-status-badge.pending{background:#fef3c7;color:#92400e}
-    .session-status-badge.missing,.session-status-badge.anomaly{background:#fee2e2;color:#b91c1c}
-    .session-progress{height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin:10px 0 7px}
-    .session-progress>span{display:block;height:100%;background:#2563eb;border-radius:999px}
-    .session-card.monitor-done .session-progress>span{background:#16a34a}
-    .session-card.monitor-pending .session-progress>span{background:#f59e0b}
-    .session-card.monitor-missing .session-progress>span,.session-card.monitor-anomaly .session-progress>span{background:#dc2626}
-    .session-missing{margin-top:6px;font-size:10px;color:#b45309;font-weight:800;white-space:normal}
-    .session-card.monitor-missing .session-missing,.session-card.monitor-anomaly .session-missing{color:#b91c1c}
-    .session-empty{grid-column:1/-1}
-    @media(max-width:560px){
-      .session-grid{grid-template-columns:1fr}
-      .session-card{padding:12px}
-      .session-card .name-main{font-size:13px}
-    }
-    
-    </style>
-    <link rel="stylesheet" href="dashboard-ui.css">
-    <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
-    </head>
-    <body class="dashboard-workspace">
-    <div class="header">
-      <h1>KPP FUEL MANAGEMENT SYSTEM</h1>
-      <p>PT KPP - Dashboard Fuel Management</p>
-    </div>
-    <div id="kppUserBar" class="kpp-userbar"></div>
-    <div id="kppRoleNav"></div>
-    
-    <div class="container">
-      <div class="top-bar">
-        <div class="page-heading">
-          <span class="dashboard-eyebrow">CONTROL ROOM</span>
-          <h2>Kontrol Operasional Fuel</h2>
-          <p>Pemakaian, stok, penerimaan, dan aktivitas Fuelman dalam satu layar.</p>
-        </div>
-        <div class="refresh-cluster">
-          <span id="dashboardFreshness">Data operasional sampai H-1</span>
-          <button class="refresh-btn" id="refreshBtn">Muat Ulang Data</button>
-        </div>
-      </div>
-    
-      <div id="errorBox" class="error"></div>
-    
-      <div class="executive-grid">
-        <div class="wide-hero-card">
-          <div class="wide-hero-main">
-            <div class="hero-icon" aria-hidden="true">L</div>
-            <div>
-              <div class="hero-label">PEMAKAIAN PERIODE BERJALAN</div>
-              <div class="hero-value" id="totalFuelMTD">0 L</div>
-              <div class="hero-sub">Akumulasi pemakaian MTD sampai H-1</div>
-            </div>
-          </div>
-          <div class="wide-hero-side">
-            <div class="mtd-compare-wrap">
-              <span class="trend-badge flat" id="mtdCompareBadge">Belum ada pembanding</span>
-              <div class="mtd-compare-note" id="mtdCompareNote">Dibandingkan dengan periode sebelumnya.</div>
-            </div>
-          </div>
-        </div>
-    
-        <div class="section kpi-section">
-          <div class="section-head">
-            <h2>Indikator Utama</h2>
-            <a class="section-link" href="daily-report.html">Daily Report</a>
-          </div>
-          <div class="daily-grid">
-            <div class="daily-card blue">
-              <div class="daily-label">PEMAKAIAN KEMARIN</div>
-              <div class="daily-value" id="usageYesterday">0 L</div>
-              <div class="daily-sub" id="yesterdayLabel">-</div>
-            </div>
-            <div class="daily-card amber">
-              <div class="daily-label">RATA-RATA MTD</div>
-              <div class="daily-value" id="avgMTD">0 L/hari</div>
-              <div class="daily-sub" id="activeDays">0 hari aktif</div>
-            </div>
-            <div class="daily-card purple">
-              <div class="daily-label">ITO / DAY OF COVER</div>
-              <div class="daily-value" id="ito">0 hari</div>
-              <div class="daily-sub">Stock ÷ pemakaian kemarin</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    
-      <div class="section performance-section">
-        <div class="section-head">
-          <div>
-            <span class="section-kicker">TREN 5 HARI</span>
-            <h2>Performa Fuel</h2>
-          </div>
-        </div>
-        <div class="overview-grid">
-          <div class="overview-card usage-card">
-            <div class="overview-head">
-              <div>
-                <div class="overview-title">Pemakaian Harian</div>
-                <div class="overview-sub">Total pemakaian sampai H-1.</div>
-              </div>
-              <span class="trend-badge flat" id="usageTrendBadge">-</span>
-            </div>
-            <div class="usage-bars" id="usageTrendBars"></div>
-          </div>
-    
-          <div class="overview-card stock-trend-card">
-            <div class="overview-head">
-              <div>
-                <div class="overview-title">Posisi Total Stock</div>
-                <div class="overview-sub">Stock akhir hari sampai H-1.</div>
-              </div>
-              <span class="trend-badge flat" id="stockTrendBadge">-</span>
-            </div>
-            <div class="usage-bars" id="stockTrendBars"></div>
-          </div>
-    
-          <div class="overview-card receipt-card">
-            <div class="overview-head">
-              <div>
-                <div class="overview-title">Penerimaan per Transportir</div>
-                <div class="overview-sub">Akumulasi penerimaan MTD.</div>
-              </div>
-            </div>
-            <div class="receipt-total" id="receiptMTDTotal">0 L <small>total</small></div>
-            <div class="receipt-bars" id="receiptTransporterBars">
-              <div class="receipt-empty">Memuat penerimaan...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    
-      <div id="dashboardFcChart"></div>
-    
-      <div class="operations-grid">
-        <div class="section">
-          <div class="section-head">
-            <div>
-              <span class="section-kicker">PEMAKAIAN MTD</span>
-              <h2>Distribusi per Shift</h2>
-            </div>
-          </div>
-          <div class="shift-container">
-            <div class="shift-card">
-              <div class="shift-icon">S1</div>
-              <div><h3>Shift 1</h3><div class="shift-fuel" id="shift1Fuel">0 L</div></div>
-            </div>
-            <div class="shift-card">
-              <div class="shift-icon">S2</div>
-              <div><h3>Shift 2</h3><div class="shift-fuel" id="shift2Fuel">0 L</div></div>
-            </div>
-          </div>
-        </div>
-    
-        <div class="section">
-          <div class="section-head">
-            <div class="session-title-wrap">
-              <div class="session-title-block">
-                <span class="section-kicker">STATUS SHIFT</span>
-                <h2>Monitoring Petugas Shift</h2>
-                <div class="session-period" id="sessionPeriodLabel">-</div>
-              </div>
-              <span class="session-count" id="activeFuelmanCount">0/0</span>
-            </div>
-          </div>
-          <div id="activeSessions" class="session-grid">
-            <div class="session-empty">Memuat penanggung jawab shift...</div>
-          </div>
-        </div>
-      </div>
-    
-      <div class="section">
-        <div class="section-head">
-          <div>
-            <span class="section-kicker">AKTIVITAS TERBARU</span>
-            <h2>Transaksi Pengisian</h2>
-          </div>
-          <a class="section-link" href="logsheet.html">Buka Logsheet</a>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>No</th><th>Tanggal</th><th>Jam</th><th>Unit</th><th>Operator Unit</th><th>Fuelman</th><th>Fuel Truck</th><th>WH</th><th>HM Awal</th><th>HM Akhir</th><th>HM Jalan</th><th>Fuel</th><th>FC</th><th>Shift</th>
-              </tr>
-            </thead>
-            <tbody id="transactionTable"></tbody>
-          </table>
-        </div>
-        <div id="statusData" class="status">Mengambil data terbaru...</div>
-      </div>
-    </div>
-    
-    <script>
-    const db=KPP.db;
-    let STORAGE_ROWS=window.KPPStorage.fallbackRows();
-    let STORAGES=STORAGE_ROWS.map(row=>row.code);
-    let STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
-    let TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
-    async function loadStorageMaster(){
-      STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
-      STORAGES=STORAGE_ROWS.map(row=>row.code);
-      STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
-      TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+n(b),0);
-    }
-    function stockLevelState(total){
-      const pct=TOTAL_CAPACITY>0?(n(total)/TOTAL_CAPACITY)*100:0;
-      if(pct<20)return "critical";
-      if(pct<35)return "low";
-      if(pct>=90)return "high";
-      return "safe";
-    }
-    
-    function n(v){return Number(v)||0}
-    function pad(v){return String(v).padStart(2,"0")}
-    function formatAngka(v){return Number(v||0).toLocaleString("id-ID",{maximumFractionDigits:1})}
-    function formatIto(v){return Number(v||0).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})}
-    function formatTanggal(v){if(!v)return "-";const p=String(v).split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v}
-    function cell(t){const x=document.createElement("td");x.textContent=t;return x}
-    
-    function escapeHtml(value){
-      return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-    }
-    
-    function validHmRun(row){
-      if(row?.hm_ref_excluded===true)return null;
-      const awalRaw=row?.hm_awal, akhirRaw=row?.hm_akhir;
-      if(awalRaw===null||awalRaw===undefined||awalRaw===""||akhirRaw===null||akhirRaw===undefined||akhirRaw==="")return null;
-      const awal=Number(awalRaw), akhir=Number(akhirRaw);
-      if(!Number.isFinite(awal)||!Number.isFinite(akhir)||akhir<=awal)return null;
-      const expected=Math.round((akhir-awal)*10)/10;
-      if(!(expected>0))return null;
-      const storedRaw=row?.hm_jalan;
-      if(storedRaw!==null&&storedRaw!==undefined&&storedRaw!==""){
-        const stored=Number(storedRaw);
-        if(!Number.isFinite(stored)||stored<=0||Math.abs(stored-expected)>0.11)return null;
-      }
-      return expected;
-    }
-    function fuelConsumption(row){
-      const hm=validHmRun(row);
-      const fuel=Number(row?.fuel);
-      return hm>0&&Number.isFinite(fuel)&&fuel>0 ? fuel/hm : null;
-    }
-    function localDate(){return window.KPPTime.localDate();}
-    function dateMinusOne(value){
-      const [y,m,d]=value.split("-").map(Number);
-      const x=new Date(y,m-1,d);
-      x.setDate(x.getDate()-1);
-      return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
-    }
-    function dateShift(value,days){
-      const [y,m,d]=value.split("-").map(Number);
-      const x=new Date(y,m-1,d);
-      x.setDate(x.getDate()+days);
-      return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
-    }
-    function lastDates(endDate,count){
-      const out=[];
-      for(let i=count-1;i>=0;i--)out.push(dateShift(endDate,-i));
-      return out;
-    }
-    function daysInclusive(start,end){
-      const a=new Date(start+"T00:00:00");
-      const b=new Date(end+"T00:00:00");
-      return Math.max(1,Math.round((b-a)/86400000)+1);
-    }
-    function previousEquivalentWindow(currentPeriod,currentEnd){
-      const previousPeriod=operationalPeriod(dateMinusOne(currentPeriod.start));
-      const elapsed=daysInclusive(currentPeriod.start,currentEnd);
-      let end=dateShift(previousPeriod.start,elapsed-1);
-      if(end>previousPeriod.end)end=previousPeriod.end;
-      return {start:previousPeriod.start,end,period:previousPeriod};
-    }
-    function dateISO(y,m,d){return `${y}-${pad(m)}-${pad(d)}`}
-    function operationalPeriod(referenceDate){
-      const [y,m,d]=referenceDate.split("-").map(Number);
-      if(d>=26){
-        const start=dateISO(y,m,26);
-        const nextMonth=new Date(y,m,1);
-        const end=dateISO(nextMonth.getFullYear(),nextMonth.getMonth()+1,25);
-        return {start,end};
-      }
-      const prevMonth=new Date(y,m-2,1);
-      const start=dateISO(prevMonth.getFullYear(),prevMonth.getMonth()+1,26);
-      const end=dateISO(y,m,25);
-      return {start,end};
-    }
-    function currentOperationalShift(){
-      return window.KPPTime.operationalShift();
-    }
-    function shiftNumber(v){
-      const s=String(v||"").trim().toLowerCase();
-      if(s==="1"||s==="shift 1")return 1;
-      if(s==="2"||s==="shift 2")return 2;
-      return Number(v)||0;
-    }
-    function getFuelTruck(item){
-      const ft=String(item.fuel_truck||"").trim().toUpperCase();
-      if(ft)return ft;
-      const wh=window.KPPStorage.normalizeWarehouse(item.wh);
-      const match=STORAGE_ROWS.find(row=>row.storage_type==="FT" && window.KPPStorage.whCode(row)===wh);
-      return match?.code||"-";
-    }
-    function getWH(item){
-      const wh=window.KPPStorage.normalizeWarehouse(item.wh);
-      if(wh)return wh;
-      const ft=getFuelTruck(item);
-      const row=STORAGE_ROWS.find(item=>item.code===ft);
-      return row?window.KPPStorage.whCode(row)||"-":"-";
-    }
-    function getFuelman(item){return String(item.fuelman_name||item.fuelman_username||"").trim()||"-"}
-    function sourceFromFuel(row){
-      const ft=String(row.fuel_truck||"").trim().toUpperCase();
-      const direct=STORAGE_ROWS.find(item=>item.storage_type==="FT" && item.code===ft);
-      if(direct)return direct.code;
-      const wh=window.KPPStorage.normalizeWarehouse(row.wh);
-      const match=STORAGE_ROWS.find(item=>item.storage_type==="FT" && window.KPPStorage.whCode(item)===wh);
-      return match?.code||"";
-    }
-    
-    async function fetchPagedFuel(startDate,endDate){
-      let all=[],from=0,size=1000;
-      while(true){
-        const {data,error}=await db
-          .from("fuel_history")
-          .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
-          .gte("tanggal",startDate)
-          .lte("tanggal",endDate)
-          .order("tanggal",{ascending:true})
-          .order("id",{ascending:true})
-          .range(from,from+size-1);
-        if(error)throw error;
-        const rows=data||[];
-        all=all.concat(rows);
-        if(rows.length<size)break;
-        from+=size;
-      }
-      return all;
-    }
-    
-    async function fetchPagedReceipts(startDate,endDate){
-      let all=[],from=0,size=1000;
-      while(true){
-        const {data,error}=await db
-          .from("stock_movements")
-          .select("id,tanggal,shift,jenis,qty,transporter,destination_storage,destination_measured_qty")
-          .eq("jenis","RECEIPT")
-          .gte("tanggal",startDate)
-          .lte("tanggal",endDate)
-          .order("tanggal",{ascending:true})
-          .order("id",{ascending:true})
-          .range(from,from+size-1);
-        if(error)throw error;
-        const rows=data||[];
-        all=all.concat(rows);
-        if(rows.length<size)break;
-        from+=size;
-      }
-      return all;
-    }
-    
-    function canonicalTransporter(value){
-      const raw=String(value||"").trim();
-      if(!raw)return "TANPA NAMA";
-      const key=raw.toUpperCase().replace(/[^A-Z0-9]/g,"");
-      if(key.includes("SHA"))return "PT. SHA";
-      if(key.includes("DKA"))return "PT. DKA";
-      return raw;
-    }
-    
-    function renderUsageTrend(rows,endDate){
-      const dates=lastDates(endDate,5);
-      const sums=Object.fromEntries(dates.map(d=>[d,0]));
-      rows.forEach(row=>{if(Object.prototype.hasOwnProperty.call(sums,row.tanggal))sums[row.tanggal]+=n(row.fuel)});
-    
-      const activeDates=dates.filter(d=>n(sums[d])>0);
-      const values=activeDates.map(d=>n(sums[d]));
-      const max=Math.max(...values,1);
-      const host=document.getElementById("usageTrendBars");
-    
-      if(!activeDates.length){
-        host.innerHTML='<div class="trend-radial-empty">Belum ada pemakaian.</div>';
-      }else{
-        host.innerHTML=activeDates.map((d,i)=>{
-          const value=values[i];
-          const ringPct=Math.max(6,Math.min((value/max)*100,100));
-          const parts=d.split("-");
-          const month=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"][Math.max(0,Number(parts[1])-1)]||parts[1];
-          const label=`${parts[2]} ${month}`;
-          const compact=value>=1000?`${formatIto(value/1000)}K`:formatAngka(value);
-          return `<div class="trend-radial-item usage-radial-item${i===activeDates.length-1?" is-latest":""}">
-            <div class="trend-radial-label">${label}</div>
-            <div class="usage-trend-ring" style="--usage-pct:${ringPct}" title="${formatAngka(value)} L">
-              <div class="usage-ring-inner"><strong>${compact}</strong><small>L</small></div>
-            </div>
-            <div class="trend-ring-liter">${formatAngka(value)} L</div>
-            <div class="trend-ring-caption">PEMAKAIAN</div>
-          </div>`;
-        }).join("");
-      }
-    
-      const badge=document.getElementById("usageTrendBadge");
-      if(!values.length){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
-      if(values.length===1){badge.className="trend-badge flat";badge.textContent="1 hari data";return;}
-      const latest=values[values.length-1];
-      const previous=values[values.length-2];
-      if(previous<=0){badge.className="trend-badge up";badge.textContent="▲ Naik";return;}
-      const change=((latest-previous)/previous)*100;
-      if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil";}
-      else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%`;}
-      else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%`;}
-    }
-    
-    function renderStockTrend(points,endDate){
-      const dates=lastDates(endDate,5);
-      const byDate=Object.fromEntries((points||[]).map(p=>[p.tanggal,n(p.total)]));
-      const availableDates=dates.filter(d=>Object.prototype.hasOwnProperty.call(byDate,d));
-      const values=availableDates.map(d=>n(byDate[d]));
-      const host=document.getElementById("stockTrendBars");
-    
-      if(!availableDates.length){
-        host.innerHTML='<div class="trend-radial-empty">Belum ada posisi stock.</div>';
-      }else{
-        host.innerHTML=availableDates.map((d,i)=>{
-          const value=values[i];
-          const parts=d.split("-");
-          const month=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"][Math.max(0,Number(parts[1])-1)]||parts[1];
-          const label=`${parts[2]} ${month}`;
-          const state=stockLevelState(value);
-          const levelPct=TOTAL_CAPACITY>0?(value/TOTAL_CAPACITY)*100:0;
-          const ringPct=Math.max(0,Math.min(levelPct,100));
-          const stateText=state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
-          return `<div class="trend-radial-item stock-radial-item ${state}${i===availableDates.length-1?" is-latest":""}">
-            <div class="trend-radial-label">${label}</div>
-            <div class="stock-trend-ring ${state}" style="--trend-pct:${ringPct}" title="${formatAngka(value)} L">
-              <span>${formatIto(levelPct)}%</span>
-            </div>
-            <div class="trend-ring-liter">${formatAngka(value)} L</div>
-            <div class="trend-stock-status ${state}">${stateText}</div>
-          </div>`;
-        }).join("");
-      }
-    
-      const badge=document.getElementById("stockTrendBadge");
-      if(!values.length){badge.className="trend-badge flat";badge.textContent="Belum ada data";return;}
-      const latest=values[values.length-1];
-      const previous=values.length>1?values[values.length-2]:0;
-      const latestPct=TOTAL_CAPACITY>0?(latest/TOTAL_CAPACITY)*100:0;
-      const state=stockLevelState(latest);
-      const levelText=state==="critical"?" • KRITIS":state==="low"?" • RENDAH":state==="high"?" • TINGGI":" • AMAN";
-      if(values.length===1||previous<=0){badge.className=state==="critical"?"trend-badge stock-down":"trend-badge stock-up";badge.textContent=`${formatIto(latestPct)}%${levelText}`;return;}
-      const change=((latest-previous)/previous)*100;
-      if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent=`• Stabil ${formatIto(latestPct)}%${levelText}`;}
-      else if(change>0){badge.className="trend-badge stock-up";badge.textContent=`▲ ${formatIto(Math.abs(change))}%${levelText}`;}
-      else{badge.className="trend-badge stock-down";badge.textContent=`▼ ${formatIto(Math.abs(change))}%${levelText}`;}
-    }
-    
-    function renderReceipts(rows){
-      const sums={"PT. SHA":0,"PT. DKA":0};
-      rows.forEach(row=>{
-        const company=canonicalTransporter(row.transporter);
-        if(!(company in sums))sums[company]=0;
-        const receivedQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
-          ?n(row.destination_measured_qty)
-          :n(row.qty);
-        sums[company]+=receivedQty;
-      });
-      const entries=Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-      const total=entries.reduce((s,[,q])=>s+q,0);
-      const max=Math.max(...entries.map(([,q])=>q),1);
-      document.getElementById("receiptMTDTotal").innerHTML=`${formatAngka(total)} L <small>total</small>`;
-      const host=document.getElementById("receiptTransporterBars");
-      host.innerHTML=entries.map(([company,qty])=>{
-        const width=qty>0?Math.max(2,(qty/max)*100):0;
-        return `<div class="receipt-row"><div class="receipt-company">${escapeHtml(company)}</div><div class="receipt-track"><div class="receipt-fill" style="width:${width}%"></div></div><div class="receipt-value">${formatAngka(qty)} L</div></div>`;
-      }).join("");
-    }
-    
-    function renderMTDCompare(current,previous,window){
-      const badge=document.getElementById("mtdCompareBadge");
-      const note=document.getElementById("mtdCompareNote");
-      if(!previous){
-        badge.className="trend-badge flat";
-        badge.textContent="Belum ada pembanding";
-        note.textContent="Data periode sebelumnya belum tersedia.";
-        return;
-      }
-      const change=((current-previous)/previous)*100;
-      if(Math.abs(change)<0.05){badge.className="trend-badge flat";badge.textContent="• Stabil vs periode lalu";}
-      else if(change>0){badge.className="trend-badge up";badge.textContent=`▲ ${formatIto(Math.abs(change))}% vs periode lalu`;}
-      else{badge.className="trend-badge down";badge.textContent=`▼ ${formatIto(Math.abs(change))}% vs periode lalu`;}
-      note.textContent=`Pembanding: ${window.start.split("-").reverse().join("/")} s.d. ${window.end.split("-").reverse().join("/")}`;
-    }
-    
-    async function fetchLatest(){
-      const {data,error}=await db
-        .from("fuel_history")
-        .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
-        .order("tanggal",{ascending:false})
-        .order("id",{ascending:false})
-        .limit(200);
-      if(error)throw error;
-      return data||[];
-    }
-    
-    async function calculateStock(tanggal,shift){
-      const [o,m,f,c]=await Promise.all([
-        db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
-        db.from("stock_movements").select("jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",tanggal).eq("shift",shift),
-        db.from("fuel_history").select("fuel,fuel_truck,wh").eq("tanggal",tanggal).eq("shift",shift),
-        db.from("stock_closing").select("storage,actual_qty").eq("tanggal",tanggal).eq("shift",shift)
-      ]);
-      const err=o.error||m.error||f.error||c.error;
-      if(err)throw err;
-    
-      const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
-      (o.data||[]).forEach(row=>{if(row.storage in stock)stock[row.storage]=n(row.qty)});
-      (m.data||[]).forEach(row=>{
-        if(row.jenis==="RECEIPT"&&row.destination_storage in stock){
-          const receivedQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
-            ?n(row.destination_measured_qty)
-            :n(row.qty);
-          stock[row.destination_storage]+=receivedQty;
-        }
-        if(row.jenis==="TRANSFER"){
-          const sourceQty=row.source_measured_qty!==null&&row.source_measured_qty!==undefined
-            ?n(row.source_measured_qty)
-            :n(row.qty);
-          const destinationQty=row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
-            ?n(row.destination_measured_qty)
-            :n(row.qty);
-          if(row.source_storage in stock)stock[row.source_storage]-=sourceQty;
-          if(row.destination_storage in stock)stock[row.destination_storage]+=destinationQty;
-        }
-      });
-      (f.data||[]).forEach(row=>{const source=sourceFromFuel(row);if(source)stock[source]-=n(row.fuel)});
-      (c.data||[]).forEach(row=>{
-        if(row.storage in stock&&row.actual_qty!==null&&row.actual_qty!==undefined)stock[row.storage]=n(row.actual_qty);
-      });
-      return Object.values(stock).reduce((sum,v)=>sum+n(v),0);
-    }
-    
-    async function calculateStockTrend(endDate){
-      const dates=lastDates(endDate,5);
-      const results=[];
-      for(const tanggal of dates){
-        // Untuk H-1 dan hari historis, pakai posisi akhir hari (Shift 2).
-        // Jika belum ada jejak Shift 2 pada tanggal tertentu, fallback ke Shift 1.
-        const [o2,m2,f2,c2]=await Promise.all([
-          db.from("stock_opening").select("id").eq("tanggal",tanggal).eq("shift",2).limit(1),
-          db.from("stock_movements").select("id").eq("tanggal",tanggal).eq("shift",2).limit(1),
-          db.from("fuel_history").select("id").eq("tanggal",tanggal).eq("shift",2).limit(1),
-          db.from("stock_closing").select("id").eq("tanggal",tanggal).eq("shift",2).limit(1)
-        ]);
-        const err=o2.error||m2.error||f2.error||c2.error;
-        if(err)throw err;
-        const hasShift2=[o2,m2,f2,c2].some(r=>(r.data||[]).length>0);
-        const shift=hasShift2?2:1;
-        const total=await calculateStock(tanggal,shift);
-        results.push({tanggal,total,shift});
-      }
-      return results;
-    }
-    
-    async function loadActiveSessions(){
-      const host=document.getElementById("activeSessions");
-      const countEl=document.getElementById("activeFuelmanCount");
-      const periodEl=document.getElementById("sessionPeriodLabel");
-      const {tanggal,shift}=currentOperationalShift();
-      const shiftLabel=`Shift ${shift}`;
-      if(periodEl)periodEl.textContent=`${formatTanggal(tanggal)} • ${shiftLabel}`;
-    
-      const [sessionsResult,closingResult]=await Promise.all([
-        db.from("fuelman_sessions")
-          .select("id,user_id,fuelman_name,username,tanggal,shift,fuel_truck,jam_mulai,jam_selesai,status,duty_type,created_at")
-          .eq("tanggal",tanggal)
-          .eq("shift",shiftLabel)
-          .order("created_at",{ascending:true}),
-        db.from("stock_closing")
-          .select("storage,session_id,fuelman_user_id,actual_qty,sonding_height_cm")
-          .eq("tanggal",tanggal)
-          .eq("shift",shift)
-      ]);
-    
-      const error=sessionsResult.error||closingResult.error;
-      if(error){
-        host.innerHTML='<div class="session-empty">❌ Gagal membaca monitoring shift: '+escapeHtml(error.message)+'</div>';
-        countEl.textContent="0/0";
-        return;
-      }
-    
-      const sessions=sessionsResult.data||[];
-      const closings=closingResult.data||[];
-      const activeFT=STORAGE_ROWS.filter(row=>row.active!==false&&row.storage_type==="FT");
-      const activeMT=STORAGE_ROWS.filter(row=>row.active!==false&&row.storage_type==="MT").map(row=>row.code);
-    
-      const latestSession=(rows)=>rows.slice().sort((a,b)=>{
-        const activeDelta=(b.status==="ACTIVE"?1:0)-(a.status==="ACTIVE"?1:0);
-        if(activeDelta)return activeDelta;
-        return String(b.created_at||"").localeCompare(String(a.created_at||""));
-      })[0]||null;
-    
-      const assignments=[{
-        key:"PIC_TRANSFER",
-        title:"PIC TRANSFER",
-        subtitle:"Tanggung jawab semua MT aktif",
-        required:activeMT,
-        session:latestSession(sessions.filter(row=>(row.duty_type||"FUELMAN")==="PIC_TRANSFER"))
-      },...activeFT.map(ft=>({
-        key:ft.code,
-        title:ft.code,
-        subtitle:"FUELMAN • "+(window.KPPStorage.whCode(ft)||"FT"),
-        required:[ft.code],
-        session:latestSession(sessions.filter(row=>(row.duty_type||"FUELMAN")==="FUELMAN"&&String(row.fuel_truck||"").toUpperCase()===ft.code))
-      }))];
-    
-      let assignedCount=0;
-      const cards=assignments.map(item=>{
-        const session=item.session;
-        if(session)assignedCount++;
-        const closedSet=new Set(
-          closings
-            .filter(row=>session&&row.session_id===session.id&&row.fuelman_user_id===session.user_id)
-            .map(row=>String(row.storage||"").toUpperCase())
-        );
-        const closed=item.required.filter(code=>closedSet.has(code));
-        const missing=item.required.filter(code=>!closedSet.has(code));
-        const total=item.required.length;
-        const progress=total?Math.round((closed.length/total)*100):0;
-    
-        let state="missing",statusText="BELUM CHECK-IN";
-        if(session){
-          if(!total){state="anomaly";statusText="MASTER BELUM LENGKAP";}
-          else if(!missing.length&&session.status==="ENDED"){state="done";statusText="SELESAI";}
-          else if(!missing.length){state="ready";statusText="SIAP END SHIFT";}
-          else if(session.status==="ENDED"){state="anomaly";statusText="CEK DATA CLOSING";}
-          else{state="pending";statusText="CLOSING BELUM";}
-        }
-    
-        const person=session?(session.fuelman_name||session.username||"-"):"Belum ada petugas";
-        const start=session&&session.jam_mulai?String(session.jam_mulai).slice(0,8):"-";
-        const end=session&&session.jam_selesai?String(session.jam_selesai).slice(0,8):"-";
-        const requiredText=item.required.length?item.required.join(", "):"Tidak ada storage aktif";
-        const missingText=!session
-          ?"Menunggu check-in petugas."
-          :(!total?"Periksa Master MT/FT.":(missing.length?"Belum Closing: "+missing.join(", "):"Closing tanggung jawab sudah lengkap."));
-    
-        return `<div class="session-card monitor-${state}">
-          <div class="name">
-            <div><div class="name-main">${escapeHtml(person)}</div><div class="duty-label">${escapeHtml(item.title)} • ${escapeHtml(item.subtitle)}</div></div>
-            <span class="session-status-badge ${state}">${statusText}</span>
-          </div>
-          <div class="meta">
-            Wajib Closing: ${escapeHtml(requiredText)}<br>
-            Mulai: ${escapeHtml(start)}${session&&session.status==="ENDED"?` • Selesai: ${escapeHtml(end)}`:""}
-          </div>
-          <div class="session-progress"><span style="width:${progress}%"></span></div>
-          <div class="meta">Closing ${closed.length}/${total}</div>
-          <div class="session-missing">${escapeHtml(missingText)}</div>
-        </div>`;
-      });
-    
-      countEl.textContent=`${assignedCount}/${assignments.length}`;
-      host.innerHTML=cards.length?cards.join(""):'<div class="session-empty">Belum ada storage aktif untuk dimonitor.</div>';
-    }
-    
-    function renderLatest(rows){
-      const table=document.getElementById("transactionTable");
-      const status=document.getElementById("statusData");
-      table.innerHTML="";
-    
-      rows.forEach((item,index)=>{
-        const r=document.createElement("tr");
-        r.appendChild(cell(index+1));
-        r.appendChild(cell(formatTanggal(item.tanggal)));
-        r.appendChild(cell(item.jam?String(item.jam).substring(0,8):"-"));
-        r.appendChild(cell(item.unit||"(KOSONG)"));
-        r.appendChild(cell(item.operator||"-"));
-        r.appendChild(cell(getFuelman(item)));
-        r.appendChild(cell(getFuelTruck(item)));
-        r.appendChild(cell(getWH(item)));
-        r.appendChild(cell(n(item.hm_awal)>0?formatAngka(item.hm_awal):"-"));
-        r.appendChild(cell(item.hm_akhir!==null&&item.hm_akhir!==undefined&&item.hm_akhir!==""?formatAngka(item.hm_akhir):"-"));
-        r.appendChild(cell(n(item.hm_jalan)>0?formatAngka(item.hm_jalan)+" HM":"-"));
-        r.appendChild(cell(formatAngka(item.fuel)+" L"));
-        const fc=fuelConsumption(item);
-        r.appendChild(cell(fc===null?"-":formatIto(fc)+" L/HM"));
-        const shiftText=String(item.shift||"");
-        r.appendChild(cell(shiftText.toLowerCase().startsWith("shift")?shiftText:"Shift "+shiftText));
-        table.appendChild(r);
-      });
-    
-      status.style.display=rows.length?"none":"block";
-      if(!rows.length)status.textContent="Belum ada transaksi.";
-    }
-    
-    async function loadDashboard(){
-      const errorBox=document.getElementById("errorBox");
-      const status=document.getElementById("statusData");
-      errorBox.style.display="none";
-      status.style.display="block";
-      status.textContent="Mengambil data terbaru...";
-    
-      try{
-        const today=localDate();
-        const yesterday=dateMinusOne(today);
-        const period=operationalPeriod(yesterday);
-        const prevWindow=previousEquivalentWindow(period,yesterday);
-        const trendStart=dateShift(yesterday,-4);
-        const {tanggal:stockDate,shift:stockShift}=currentOperationalShift();
-    
-        const [mtdRows,prevMtdRows,yesterdayRows,trendFuelRows,totalStock,latestRows,receiptRows,stockTrendPoints]=await Promise.all([
-          fetchPagedFuel(period.start,yesterday),
-          fetchPagedFuel(prevWindow.start,prevWindow.end),
-          fetchPagedFuel(yesterday,yesterday),
-          fetchPagedFuel(trendStart,yesterday),
-          calculateStock(stockDate,stockShift),
-          fetchLatest(),
-          fetchPagedReceipts(period.start,yesterday),
-          calculateStockTrend(yesterday),
-          loadActiveSessions()
-        ]);
-    
-        let usageMTD=0,shift1=0,shift2=0;
-        mtdRows.forEach(row=>{
-          const qty=n(row.fuel);
-          usageMTD+=qty;
-          const sh=shiftNumber(row.shift);
-          if(sh===1)shift1+=qty;
-          if(sh===2)shift2+=qty;
-        });
-    
-        const previousUsageMTD=prevMtdRows.reduce((sum,row)=>sum+n(row.fuel),0);
-        const usageYesterday=yesterdayRows.reduce((sum,row)=>sum+n(row.fuel),0);
-        const activeDateSet=new Set(mtdRows.filter(row=>n(row.fuel)>0&&row.tanggal).map(row=>row.tanggal));
-        const activeDays=activeDateSet.size;
-        const avgMTD=activeDays?usageMTD/activeDays:0;
-        const ito=usageYesterday>0?totalStock/usageYesterday:0;
-    
-        document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
-        renderMTDCompare(usageMTD,previousUsageMTD,prevWindow);
-        document.getElementById("usageYesterday").textContent=formatAngka(usageYesterday)+" L";
-        document.getElementById("yesterdayLabel").textContent=formatTanggal(yesterday);
-        document.getElementById("avgMTD").textContent=formatAngka(avgMTD)+" L/hari";
-        document.getElementById("activeDays").textContent=activeDays+" hari aktif";
-        document.getElementById("ito").textContent=formatIto(ito)+" hari";
-        document.getElementById("shift1Fuel").textContent=formatAngka(shift1)+" L";
-        document.getElementById("shift2Fuel").textContent=formatAngka(shift2)+" L";
-    
-        renderUsageTrend(trendFuelRows,yesterday);
-        renderStockTrend(stockTrendPoints,yesterday);
-        renderReceipts(receiptRows);
-        renderLatest(latestRows);
-      }catch(error){
-        console.error(error);
-        errorBox.style.display="block";
-        errorBox.textContent="❌ Gagal mengambil data dashboard: "+error.message;
-        status.style.display="none";
-      }
-    }
-    
-    document.getElementById("refreshBtn").addEventListener("click",loadDashboard);
-    document.addEventListener("kpp-auth-ready",async()=>{
-      await loadStorageMaster();
-      await loadDashboard();
-    });
-    </script>
-    
-    <script>
-    (function mountDashboardFc(){
-      const run=()=>window.KPPFC?.mount({hostId:"dashboardFcChart",title:"Grafik FC per Unit",autoLoad:true,collapsible:false});
-      if(window.KPP_PROFILE)run();else document.addEventListener("kpp-auth-ready",run,{once:true});
-    })();
-    </script>
-    </body>
-    </html>
-    
-  operator: 'match'
-  stack: |-
-    TestContext.<anonymous> (file:///home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-data-contract.mjs:22:12)
-    Test.runInAsyncScope (node:async_hooks:214:14)
-    Test.run (node:internal/test_runner/test:1047:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
-    Test.postRun (node:internal/test_runner/test:1173:19)
-    Test.run (node:internal/test_runner/test:1101:12)
-    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
   ...
 # Subtest: FC summary rows can focus one unit
 ok 58 - FC summary rows can focus one unit
   ---
-  duration_ms: 1.740303
+  duration_ms: 3.043854
   type: 'test'
   ...
 # Subtest: focused unit exposes transaction detail table with FC
 ok 59 - focused unit exposes transaction detail table with FC
   ---
-  duration_ms: 0.230818
+  duration_ms: 0.261724
   type: 'test'
   ...
 # Subtest: FC query carries detail fields without changing source table
 ok 60 - FC query carries detail fields without changing source table
   ---
-  duration_ms: 0.146542
+  duration_ms: 0.14811
   type: 'test'
   ...
 # Subtest: all-unit summary remains the default view
 ok 61 - all-unit summary remains the default view
   ---
-  duration_ms: 0.260274
+  duration_ms: 0.221359
   type: 'test'
   ...
 # Subtest: dashboard.html loads FC focus-table runtime
 ok 62 - dashboard.html loads FC focus-table runtime
   ---
-  duration_ms: 0.295639
+  duration_ms: 0.410836
   type: 'test'
   ...
 # Subtest: logsheet.html loads FC focus-table runtime
 ok 63 - logsheet.html loads FC focus-table runtime
   ---
-  duration_ms: 0.357714
+  duration_ms: 0.414363
   type: 'test'
   ...
 # Subtest: FC defaults to operational MTD instead of rolling 14 days
 ok 64 - FC defaults to operational MTD instead of rolling 14 days
   ---
-  duration_ms: 0.978288
+  duration_ms: 0.896004
   type: 'test'
   ...
 # Subtest: FC explains active period and gives neutral quick snapshot
 ok 65 - FC explains active period and gives neutral quick snapshot
   ---
-  duration_ms: 2.004784
+  duration_ms: 1.036529
   type: 'test'
   ...
 # Subtest: Dashboard and Logsheet load refreshed FC runtime
 not ok 66 - Dashboard and Logsheet load refreshed FC runtime
   ---
-  duration_ms: 2.322624
+  duration_ms: 2.01056
   type: 'test'
   location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-mtd-context.mjs:22:1'
   failureType: 'testCodeFailure'
@@ -3180,31 +1671,31 @@ not ok 66 - Dashboard and Logsheet load refreshed FC runtime
 # Subtest: FC offers MTD, 30 day, 90 day and all-history presets
 ok 67 - FC offers MTD, 30 day, 90 day and all-history presets
   ---
-  duration_ms: 2.720053
+  duration_ms: 3.082347
   type: 'test'
   ...
 # Subtest: all-history preset finds earliest selected-unit transaction
 ok 68 - all-history preset finds earliest selected-unit transaction
   ---
-  duration_ms: 0.301781
+  duration_ms: 0.318993
   type: 'test'
   ...
 # Subtest: long date ranges remain renderable and chart becomes horizontally roomy
 ok 69 - long date ranges remain renderable and chart becomes horizontally roomy
   ---
-  duration_ms: 0.283977
+  duration_ms: 0.284588
   type: 'test'
   ...
 # Subtest: manual date changes leave quick preset mode
 ok 70 - manual date changes leave quick preset mode
   ---
-  duration_ms: 0.285631
+  duration_ms: 0.322068
   type: 'test'
   ...
 # Subtest: dashboard.html loads refreshed FC runtime
 not ok 71 - dashboard.html loads refreshed FC runtime
   ---
-  duration_ms: 2.710014
+  duration_ms: 2.80393
   type: 'test'
   location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-range-presets.mjs:33:3'
   failureType: 'testCodeFailure'
@@ -4467,7 +2958,7 @@ not ok 71 - dashboard.html loads refreshed FC runtime
 # Subtest: logsheet.html loads refreshed FC runtime
 not ok 72 - logsheet.html loads refreshed FC runtime
   ---
-  duration_ms: 1.467867
+  duration_ms: 1.477613
   type: 'test'
   location: '/home/runner/work/Kpp-fms/Kpp-fms/scripts/test-fc-range-presets.mjs:33:3'
   failureType: 'testCodeFailure'
@@ -6147,725 +4638,725 @@ not ok 72 - logsheet.html loads refreshed FC runtime
 # Subtest: FC unit loader times out visibly and can retry after transient failure
 ok 73 - FC unit loader times out visibly and can retry after transient failure
   ---
-  duration_ms: 2.016837
+  duration_ms: 1.027953
   type: 'test'
   ...
 # Subtest: unit picker stays closed when initialization fails
 ok 74 - unit picker stays closed when initialization fails
   ---
-  duration_ms: 0.27424
+  duration_ms: 0.172686
   type: 'test'
   ...
 # Subtest: package scripts use maintainable auto-discovery runner
 ok 75 - package scripts use maintainable auto-discovery runner
   ---
-  duration_ms: 10.259596
+  duration_ms: 21.106979
   type: 'test'
   ...
 # Subtest: Fuelman session queries are explicit and stale helpers are gone
 ok 76 - Fuelman session queries are explicit and stale helpers are gone
   ---
-  duration_ms: 2.327702
+  duration_ms: 14.068044
   type: 'test'
   ...
 # Subtest: temporary capacity rollout notes are removed and canonical docs remain
 ok 77 - temporary capacity rollout notes are removed and canonical docs remain
   ---
-  duration_ms: 1.875023
+  duration_ms: 5.396749
   type: 'test'
   ...
 # Subtest: project docs no longer describe the old baseline as current
 ok 78 - project docs no longer describe the old baseline as current
   ---
-  duration_ms: 5.256906
+  duration_ms: 2.660479
   type: 'test'
   ...
 # Subtest: measured Stock rows are server-stamped and immutable except RECEIPT PO/LO metadata
 ok 79 - measured Stock rows are server-stamped and immutable except RECEIPT PO/LO metadata
   ---
-  duration_ms: 3707.281726
+  duration_ms: 4204.856107
   type: 'test'
   ...
 # Subtest: final integrity migration is non-destructive and keeps legacy orphan explicitly NOT VALID
 ok 80 - final integrity migration is non-destructive and keeps legacy orphan explicitly NOT VALID
   ---
-  duration_ms: 1.714088
+  duration_ms: 4.486291
   type: 'test'
   ...
 # Subtest: riwayat loads Master MT/FT including inactive history
 ok 81 - riwayat loads Master MT/FT including inactive history
   ---
-  duration_ms: 0.930297
+  duration_ms: 1.075103
   type: 'test'
   ...
 # Subtest: logsheet-editor loads Master MT/FT including inactive history
 ok 82 - logsheet-editor loads Master MT/FT including inactive history
   ---
-  duration_ms: 0.165888
+  duration_ms: 0.176855
   type: 'test'
   ...
 # Subtest: riwayat resolves FT and WH from Master MT/FT without fixed WH aliases
 ok 83 - riwayat resolves FT and WH from Master MT/FT without fixed WH aliases
   ---
-  duration_ms: 0.169144
+  duration_ms: 0.176734
   type: 'test'
   ...
 # Subtest: logsheet editor accepts FT codes from Master MT/FT
 ok 84 - logsheet editor accepts FT codes from Master MT/FT
   ---
-  duration_ms: 0.321738
+  duration_ms: 0.298064
   type: 'test'
   ...
 # Subtest: existing history preserves explicit FT when master lookup is degraded
 ok 85 - existing history preserves explicit FT when master lookup is degraded
   ---
-  duration_ms: 0.260684
+  duration_ms: 0.191532
   type: 'test'
   ...
 # Subtest: new rows still require a registered FT
 ok 86 - new rows still require a registered FT
   ---
-  duration_ms: 0.264201
+  duration_ms: 0.265071
   type: 'test'
   ...
 # Subtest: FT canonicalizer removes whitespace and keeps dynamic codes
 ok 87 - FT canonicalizer removes whitespace and keeps dynamic codes
   ---
-  duration_ms: 1.320152
+  duration_ms: 1.692679
   type: 'test'
   ...
 # Subtest: database models shift duty and server-owned session lifecycle
 ok 88 - database models shift duty and server-owned session lifecycle
   ---
-  duration_ms: 5.091887
+  duration_ms: 3.017064
   type: 'test'
   ...
 # Subtest: PIC Transfer closing is all active MT while Fuelman closing stays on owned FT
 ok 89 - PIC Transfer closing is all active MT while Fuelman closing stays on owned FT
   ---
-  duration_ms: 0.344039
+  duration_ms: 0.404375
   type: 'test'
   ...
 # Subtest: Fuelman check-in chooses duty and PIC cannot use fueling UI
 ok 90 - Fuelman check-in chooses duty and PIC cannot use fueling UI
   ---
-  duration_ms: 0.283176
+  duration_ms: 0.373075
   type: 'test'
   ...
 # Subtest: PIC Transfer stock workspace is stock plus MT closing only
 ok 91 - PIC Transfer stock workspace is stock plus MT closing only
   ---
-  duration_ms: 0.265833
+  duration_ms: 0.312701
   type: 'test'
   ...
 # Subtest: backend blocks PIC Transfer from fueling and stock movement insert paths
 ok 92 - backend blocks PIC Transfer from fueling and stock movement insert paths
   ---
-  duration_ms: 0.199681
+  duration_ms: 0.28524
   type: 'test'
   ...
 # Subtest: one closing owner is guarded per shift period without rewriting legacy duplicates
 ok 93 - one closing owner is guarded per shift period without rewriting legacy duplicates
   ---
-  duration_ms: 0.154386
+  duration_ms: 0.253389
   type: 'test'
   ...
 # Subtest: legacy storage trigger accepts PIC Transfer without FT but still validates Fuelman FT
 ok 94 - legacy storage trigger accepts PIC Transfer without FT but still validates Fuelman FT
   ---
-  duration_ms: 0.264531
+  duration_ms: 0.235895
   type: 'test'
   ...
 # Subtest: legacy end-shift trigger requires all active MT for PIC Transfer
 ok 95 - legacy end-shift trigger requires all active MT for PIC Transfer
   ---
-  duration_ms: 0.251707
+  duration_ms: 0.300047
   type: 'test'
   ...
 # Subtest: global hardening: unsupported direct writes and trigger RPC exposure are removed
 ok 96 - global hardening: unsupported direct writes and trigger RPC exposure are removed
   ---
-  duration_ms: 4.289528
+  duration_ms: 2.684575
   type: 'test'
   ...
 # Subtest: global hardening: Unit and Storage identifiers are constrained to operational code alphabet
 ok 97 - global hardening: Unit and Storage identifiers are constrained to operational code alphabet
   ---
-  duration_ms: 0.579627
+  duration_ms: 0.342017
   type: 'test'
   ...
 # Subtest: System Health RPC is read-only, role-gated, WIB-aware and checks critical linkages
 ok 98 - System Health RPC is read-only, role-gated, WIB-aware and checks critical linkages
   ---
-  duration_ms: 1.32963
+  duration_ms: 0.719841
   type: 'test'
   ...
 # Subtest: System Health UI is management-only and renders RPC data with DOM text nodes
 ok 99 - System Health UI is management-only and renders RPC data with DOM text nodes
   ---
-  duration_ms: 0.364357
+  duration_ms: 0.225827
   type: 'test'
   ...
 # Subtest: System Health UI can focus attention and separates check count from affected item count
 ok 100 - System Health UI can focus attention and separates check count from affected item count
   ---
-  duration_ms: 0.273168
+  duration_ms: 0.185811
   type: 'test'
   ...
 # Subtest: management landing pages expose System Health
 ok 101 - management landing pages expose System Health
   ---
-  duration_ms: 0.23143
+  duration_ms: 0.15371
   type: 'test'
   ...
 # Subtest: dashboard operational shift uses centralized WIB helper
 ok 102 - dashboard operational shift uses centralized WIB helper
   ---
-  duration_ms: 2.887082
+  duration_ms: 3.241357
   type: 'test'
   ...
 # Subtest: dashboard stock calculation requests only required columns
 ok 103 - dashboard stock calculation requests only required columns
   ---
-  duration_ms: 0.644958
+  duration_ms: 0.761169
   type: 'test'
   ...
 # Subtest: stock operational load avoids broad select star payloads
 ok 104 - stock operational load avoids broad select star payloads
   ---
-  duration_ms: 0.947861
+  duration_ms: 1.972611
   type: 'test'
   ...
 # Subtest: server HM helper respects correction reset and excluded history
 ok 105 - server HM helper respects correction reset and excluded history
   ---
-  duration_ms: 1.592191
+  duration_ms: 1.796116
   type: 'test'
   ...
 # Subtest: CCR allocation is stamped after prepare trigger and rejects HM below server reference
 ok 106 - CCR allocation is stamped after prepare trigger and rejects HM below server reference
   ---
-  duration_ms: 0.503251
+  duration_ms: 0.615835
   type: 'test'
   ...
 # Subtest: all fueling routes prefer server HM and keep client value only as first-use fallback
 ok 107 - all fueling routes prefer server HM and keep client value only as first-use fallback
   ---
-  duration_ms: 0.952152
+  duration_ms: 0.966086
   type: 'test'
   ...
 # Subtest: migration is non-destructive to historical fuel rows
 ok 108 - migration is non-destructive to historical fuel rows
   ---
-  duration_ms: 0.462248
+  duration_ms: 0.480378
   type: 'test'
   ...
 # Subtest: anonymous role has no direct public table access
 ok 109 - anonymous role has no direct public table access
   ---
-  duration_ms: 1.016994
+  duration_ms: 1.346736
   type: 'test'
   ...
 # Subtest: authenticated role cannot truncate operational tables
 ok 110 - authenticated role cannot truncate operational tables
   ---
-  duration_ms: 0.270909
+  duration_ms: 0.320936
   type: 'test'
   ...
 # Subtest: Opening and Closing writes are forced through guarded RPCs
 ok 111 - Opening and Closing writes are forced through guarded RPCs
   ---
-  duration_ms: 0.61128
+  duration_ms: 0.752181
   type: 'test'
   ...
 # Subtest: logsheet loads Master MT/FT helper
 ok 112 - logsheet loads Master MT/FT helper
   ---
-  duration_ms: 1.366503
+  duration_ms: 1.188156
   type: 'test'
   ...
 # Subtest: logsheet warehouse and FT filters are generated dynamically
 ok 113 - logsheet warehouse and FT filters are generated dynamically
   ---
-  duration_ms: 0.335211
+  duration_ms: 0.328421
   type: 'test'
   ...
 # Subtest: logsheet validates WH against storage master and summarizes warehouses dynamically
 ok 114 - logsheet validates WH against storage master and summarizes warehouses dynamically
   ---
-  duration_ms: 0.429973
+  duration_ms: 0.511827
   type: 'test'
   ...
 # Subtest: logsheet renders large result sets in 300-row windows
 ok 115 - logsheet renders large result sets in 300-row windows
   ---
-  duration_ms: 0.977704
+  duration_ms: 1.453127
   type: 'test'
   ...
 # Subtest: changing filters resets the visible window
 ok 116 - changing filters resets the visible window
   ---
-  duration_ms: 0.171918
+  duration_ms: 0.251636
   type: 'test'
   ...
 # Subtest: Excel export still uses the complete matching dataset
 ok 117 - Excel export still uses the complete matching dataset
   ---
-  duration_ms: 0.358998
+  duration_ms: 0.527617
   type: 'test'
   ...
 # Subtest: Master Unit surfaces capacity completion state
 ok 118 - Master Unit surfaces capacity completion state
   ---
-  duration_ms: 1.174713
+  duration_ms: 2.085222
   type: 'test'
   ...
 # Subtest: Capacity filter only flags active units without configured capacity
 ok 119 - Capacity filter only flags active units without configured capacity
   ---
-  duration_ms: 0.361503
+  duration_ms: 0.40708
   type: 'test'
   ...
 # Subtest: consumed operator check-in keeps its fuel-history evidence
 ok 120 - consumed operator check-in keeps its fuel-history evidence
   ---
-  duration_ms: 3619.14432
+  duration_ms: 4649.719054
   type: 'test'
   ...
 # Subtest: migration changes only the FK and does not rewrite operational rows
 ok 121 - migration changes only the FK and does not rewrite operational rows
   ---
-  duration_ms: 1.416331
+  duration_ms: 1.279458
   type: 'test'
   ...
 # Subtest: operator HM is rejected early when below trusted server reference
 ok 122 - operator HM is rejected early when below trusted server reference
   ---
-  duration_ms: 4005.314538
+  duration_ms: 4403.316664
   type: 'test'
   ...
 # Subtest: operator check-in shows compact HM reference with clear purpose
 ok 123 - operator check-in shows compact HM reference with clear purpose
   ---
-  duration_ms: 1.279898
+  duration_ms: 1.20097
   type: 'test'
   ...
 # Subtest: HM reference RPC is QR scoped and read only
 ok 124 - HM reference RPC is QR scoped and read only
   ---
-  duration_ms: 0.596919
+  duration_ms: 0.507128
   type: 'test'
   ...
 # Subtest: operator HM: transaction, UUID session, shift, quota and reuse guards
 ok 125 - operator HM: transaction, UUID session, shift, quota and reuse guards
   ---
-  duration_ms: 4725.983942
+  duration_ms: 4685.711573
   type: 'test'
   ...
 # Subtest: stock mobile forces two radial cards per row
 ok 126 - stock mobile forces two radial cards per row
   ---
-  duration_ms: 1.630548
+  duration_ms: 1.704551
   type: 'test'
   ...
 # Subtest: daily report uses radial storage gauges
 ok 127 - daily report uses radial storage gauges
   ---
-  duration_ms: 0.281282
+  duration_ms: 0.35428
   type: 'test'
   ...
 # Subtest: dashboard stock trend uses mini radial gauges
 ok 128 - dashboard stock trend uses mini radial gauges
   ---
-  duration_ms: 3.29488
+  duration_ms: 0.241607
   type: 'test'
   ...
 # Subtest: lost acknowledgement retains request, exact replay, edit protection, reload and receipt
 ok 129 - lost acknowledgement retains request, exact replay, edit protection, reload and receipt
   ---
-  duration_ms: 37.152931
+  duration_ms: 26.143103
   type: 'test'
   ...
 # Subtest: storage failure prevents network; token omitted from device state; tabs share lock
 ok 130 - storage failure prevents network; token omitted from device state; tabs share lock
   ---
-  duration_ms: 3.182021
+  duration_ms: 0.989099
   type: 'test'
   ...
 # Subtest: receipt and fueling commit together; replay survives consumed check-in; scope and stale guard
 ok 131 - receipt and fueling commit together; replay survives consumed check-in; scope and stale guard
   ---
-  duration_ms: 4589.431011
+  duration_ms: 4565.737328
   type: 'test'
   ...
 # Subtest: stock alert renders dynamic content as text
 ok 132 - stock alert renders dynamic content as text
   ---
-  duration_ms: 2.467947
+  duration_ms: 1.800002
   type: 'test'
   ...
 # Subtest: pengisian fuel-truck options use DOM textContent
 ok 133 - pengisian fuel-truck options use DOM textContent
   ---
-  duration_ms: 0.844757
+  duration_ms: 0.57149
   type: 'test'
   ...
 # Subtest: dashboard escapes transporter names before HTML rendering
 ok 134 - dashboard escapes transporter names before HTML rendering
   ---
-  duration_ms: 1.975847
+  duration_ms: 1.279598
   type: 'test'
   ...
 # Subtest: HM correction history escapes database free text
 ok 135 - HM correction history escapes database free text
   ---
-  duration_ms: 0.746764
+  duration_ms: 0.563395
   type: 'test'
   ...
 # Subtest: Riwayat loads bounded pages instead of the entire fuel history
 ok 136 - Riwayat loads bounded pages instead of the entire fuel history
   ---
-  duration_ms: 1.338779
+  duration_ms: 1.510004
   type: 'test'
   ...
 # Subtest: Riwayat keeps explicit refresh and incremental load-more controls
 ok 137 - Riwayat keeps explicit refresh and incremental load-more controls
   ---
-  duration_ms: 0.253192
+  duration_ms: 0.318602
   type: 'test'
   ...
 # Subtest: Riwayat row values stay on DOM textContent path
 ok 138 - Riwayat row values stay on DOM textContent path
   ---
-  duration_ms: 0.186438
+  duration_ms: 0.235755
   type: 'test'
   ...
 # Subtest: Atasan has an explicit login label, redirect, and management navigation
 ok 139 - Atasan has an explicit login label, redirect, and management navigation
   ---
-  duration_ms: 2.07364
+  duration_ms: 1.911243
   type: 'test'
   ...
 # Subtest: Atasan can open every management page
 ok 140 - Atasan can open every management page
   ---
-  duration_ms: 6.645103
+  duration_ms: 6.273197
   type: 'test'
   ...
 # Subtest: account management can create the Atasan role
 ok 141 - account management can create the Atasan role
   ---
-  duration_ms: 0.330127
+  duration_ms: 0.29634
   type: 'test'
   ...
 # Subtest: repository migration mirrors the applied Atasan database boundary
 ok 142 - repository migration mirrors the applied Atasan database boundary
   ---
-  duration_ms: 0.388135
+  duration_ms: 0.445833
   type: 'test'
   ...
 # Subtest: browser writes are receipt-only and privileged utilities enforce role
 ok 143 - browser writes are receipt-only and privileged utilities enforce role
   ---
-  duration_ms: 3715.650111
+  duration_ms: 3415.384593
   type: 'test'
   ...
 # sidebar shell regression checks passed
 # Subtest: /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-sidebar-shell.mjs
 ok 43 - /home/runner/work/Kpp-fms/Kpp-fms/scripts/test-sidebar-shell.mjs
   ---
-  duration_ms: 107.579992
+  duration_ms: 32.999853
   type: 'test'
   ...
 # Subtest: Stock Akhir revision is server-locked to GL/Admin only
 ok 145 - Stock Akhir revision is server-locked to GL/Admin only
   ---
-  duration_ms: 1.758363
+  duration_ms: 1.685396
   type: 'test'
   ...
 # Subtest: revision requires a reason and journals old/new evidence
 ok 146 - revision requires a reason and journals old/new evidence
   ---
-  duration_ms: 0.575194
+  duration_ms: 0.549218
   type: 'test'
   ...
 # Subtest: revision preserves closing identity and safely follows carry-forward Opening
 ok 147 - revision preserves closing identity and safely follows carry-forward Opening
   ---
-  duration_ms: 1.573036
+  duration_ms: 1.564446
   type: 'test'
   ...
 # Subtest: Stock UI exposes revision only to GL/Admin and keeps initial Closing path
 ok 148 - Stock UI exposes revision only to GL/Admin and keeps initial Closing path
   ---
-  duration_ms: 2.514202
+  duration_ms: 2.774353
   type: 'test'
   ...
 # Subtest: saved final Closing is locked for non-revisers
 ok 149 - saved final Closing is locked for non-revisers
   ---
-  duration_ms: 1.022138
+  duration_ms: 0.987076
   type: 'test'
   ...
 # Subtest: Stock Closing RPC is SECURITY DEFINER after direct table writes are revoked
 ok 150 - Stock Closing RPC is SECURITY DEFINER after direct table writes are revoked
   ---
-  duration_ms: 1.809528
+  duration_ms: 2.213875
   type: 'test'
   ...
 # Subtest: privilege repair keeps the guarded atomic implementation unchanged
 ok 151 - privilege repair keeps the guarded atomic implementation unchanged
   ---
-  duration_ms: 0.555136
+  duration_ms: 0.664877
   type: 'test'
   ...
 # Subtest: privilege repair is non-destructive
 ok 152 - privilege repair is non-destructive
   ---
-  duration_ms: 0.479985
+  duration_ms: 0.444741
   type: 'test'
   ...
 # Subtest: stock radial gauge scales to card content instead of overflowing
 ok 153 - stock radial gauge scales to card content instead of overflowing
   ---
-  duration_ms: 1.337687
+  duration_ms: 1.424052
   type: 'test'
   ...
 # Subtest: logsheet shows HM Jalan next to HM and exports the same column
 ok 154 - logsheet shows HM Jalan next to HM and exports the same column
   ---
-  duration_ms: 0.586094
+  duration_ms: 0.642074
   type: 'test'
   ...
 # Subtest: HM cleanup reason is optional in UI while audit fallback remains server-side
 ok 155 - HM cleanup reason is optional in UI while audit fallback remains server-side
   ---
-  duration_ms: 0.216304
+  duration_ms: 0.272425
   type: 'test'
   ...
 # Subtest: Stock removes redundant bottom shortcut panel
 ok 156 - Stock removes redundant bottom shortcut panel
   ---
-  duration_ms: 1.564651
+  duration_ms: 1.812486
   type: 'test'
   ...
 # Subtest: Stock mobile v2 keeps transaction workflow compact
 ok 157 - Stock mobile v2 keeps transaction workflow compact
   ---
-  duration_ms: 0.31092
+  duration_ms: 0.32848
   type: 'test'
   ...
 # Subtest: Stock mobile workflow has compact collapsible process UI
 ok 158 - Stock mobile workflow has compact collapsible process UI
   ---
-  duration_ms: 1.399792
+  duration_ms: 1.207914
   type: 'test'
   ...
 # Subtest: Mobile defaults to compact focus and keeps closing form tighter
 ok 159 - Mobile defaults to compact focus and keeps closing form tighter
   ---
-  duration_ms: 0.407491
+  duration_ms: 0.335363
   type: 'test'
   ...
 # Subtest: stock movement RPC is idempotent, derives measured qty, and direct insert is closed
 ok 160 - stock movement RPC is idempotent, derives measured qty, and direct insert is closed
   ---
-  duration_ms: 3365.589767
+  duration_ms: 3123.349112
   type: 'test'
   ...
 # Subtest: Stock UI routes RECEIPT and TRANSFER through safe RPC only
 ok 161 - Stock UI routes RECEIPT and TRANSFER through safe RPC only
   ---
-  duration_ms: 1.596671
+  duration_ms: 1.200368
   type: 'test'
   ...
 # Subtest: stock position uses compact radial gauges
 ok 162 - stock position uses compact radial gauges
   ---
-  duration_ms: 1.991898
+  duration_ms: 1.453848
   type: 'test'
   ...
 # Subtest: stock cards no longer render horizontal capacity bars
 ok 163 - stock cards no longer render horizontal capacity bars
   ---
-  duration_ms: 0.216414
+  duration_ms: 0.265642
   type: 'test'
   ...
 # Subtest: radial UI preserves stock metrics and sounding estimate
 ok 164 - radial UI preserves stock metrics and sounding estimate
   ---
-  duration_ms: 0.283099
+  duration_ms: 0.295248
   type: 'test'
   ...
 # Master MT/FT online belum terbaca, memakai fallback aman: network down
 # Subtest: fallback master keeps existing MT and FT
 ok 165 - fallback master keeps existing MT and FT
   ---
-  duration_ms: 2.398186
+  duration_ms: 3.308834
   type: 'test'
   ...
 # Subtest: warehouse mapping is dynamic for new FT
 ok 166 - warehouse mapping is dynamic for new FT
   ---
-  duration_ms: 0.414564
+  duration_ms: 0.461322
   type: 'test'
   ...
 # Subtest: same-type MT can reuse the validated MT sounding profile
 ok 167 - same-type MT can reuse the validated MT sounding profile
   ---
-  duration_ms: 0.494814
+  duration_ms: 0.572301
   type: 'test'
   ...
 # Subtest: same-type FT can reuse the validated FT sounding profile
 ok 168 - same-type FT can reuse the validated FT sounding profile
   ---
-  duration_ms: 0.463886
+  duration_ms: 0.38094
   type: 'test'
   ...
 # Subtest: storage without a validated profile blocks sounding conversion
 ok 169 - storage without a validated profile blocks sounding conversion
   ---
-  duration_ms: 2.88769
+  duration_ms: 0.685215
   type: 'test'
   ...
 # Subtest: hard capacity never exceeds nominal or validated curve
 ok 170 - hard capacity never exceeds nominal or validated curve
   ---
-  duration_ms: 0.302365
+  duration_ms: 0.3441
   type: 'test'
   ...
 # Subtest: online master is cached per page and returned as defensive copies
 ok 171 - online master is cached per page and returned as defensive copies
   ---
-  duration_ms: 2.447258
+  duration_ms: 1.646873
   type: 'test'
   ...
 # Subtest: clearCache forces a fresh Master MT/FT request
 ok 172 - clearCache forces a fresh Master MT/FT request
   ---
-  duration_ms: 2.546654
+  duration_ms: 0.590927
   type: 'test'
   ...
 # Subtest: Master MT/FT failure falls back safely and exposes diagnostics
 ok 173 - Master MT/FT failure falls back safely and exposes diagnostics
   ---
-  duration_ms: 1.742934
+  duration_ms: 1.861428
   type: 'test'
   ...
 # Subtest: transfer audit uses source and destination sounding
 ok 174 - transfer audit uses source and destination sounding
   ---
-  duration_ms: 1.951623
+  duration_ms: 5.627462
   type: 'test'
   ...
 # Subtest: transfer audit stays incomplete until source sounding exists
 ok 175 - transfer audit stays incomplete until source sounding exists
   ---
-  duration_ms: 0.295271
+  duration_ms: 3.378055
   type: 'test'
   ...
 # Subtest: transfer audit calculates loss from both sounding results
 ok 176 - transfer audit calculates loss from both sounding results
   ---
-  duration_ms: 0.200475
+  duration_ms: 0.245073
   type: 'test'
   ...
 # Subtest: transfer audit rejects invalid sounding quantity
 ok 177 - transfer audit rejects invalid sounding quantity
   ---
-  duration_ms: 0.560947
+  duration_ms: 0.91528
   type: 'test'
   ...
 # Subtest: Fuelman UI locks Pengisian when ACTIVE session belongs to old operational shift
 ok 178 - Fuelman UI locks Pengisian when ACTIVE session belongs to old operational shift
   ---
-  duration_ms: 1.51067
+  duration_ms: 4.997836
   type: 'test'
   ...
 # Subtest: Pengisian rejects stale Fuelman session on load and immediately before save
 ok 179 - Pengisian rejects stale Fuelman session on load and immediately before save
   ---
-  duration_ms: 1.032918
+  duration_ms: 4.266674
   type: 'test'
   ...
 # Subtest: Existing delivery layer still prevents a second request while prior result is unresolved
 ok 180 - Existing delivery layer still prevents a second request while prior result is unresolved
   ---
-  duration_ms: 0.293598
+  duration_ms: 0.360071
   type: 'test'
   ...
 # Subtest: Role boundaries remain explicit for Fuelman and CCR workspaces
 ok 181 - Role boundaries remain explicit for Fuelman and CCR workspaces
   ---
-  duration_ms: 0.662607
+  duration_ms: 0.836301
   type: 'test'
   ...
 # Subtest: operational UI stays free of formula/explainer paragraphs
 ok 182 - operational UI stays free of formula/explainer paragraphs
   ---
-  duration_ms: 19.970766
+  duration_ms: 31.125179
   type: 'test'
   ...
 # Subtest: Unit Master exposes tank capacity only through GL/Admin control
 ok 183 - Unit Master exposes tank capacity only through GL/Admin control
   ---
-  duration_ms: 5.030069
+  duration_ms: 2.314384
   type: 'test'
   ...
 # Subtest: Pengisian loads and validates unit tank capacity
 ok 184 - Pengisian loads and validates unit tank capacity
   ---
-  duration_ms: 0.985409
+  duration_ms: 4.171705
   type: 'test'
   ...
 # Subtest: Database migration guards capacity role and fuel quantity
 ok 185 - Database migration guards capacity role and fuel quantity
   ---
-  duration_ms: 0.436304
+  duration_ms: 0.396349
   type: 'test'
   ...
 # Subtest: WIB helper stays correct around UTC date boundary
 ok 186 - WIB helper stays correct around UTC date boundary
   ---
-  duration_ms: 2.334167
+  duration_ms: 2.874633
   type: 'test'
   ...
 # Subtest: WIB helper resolves shift 1 and shift 2 explicitly
 ok 187 - WIB helper resolves shift 1 and shift 2 explicitly
   ---
-  duration_ms: 0.34318
+  duration_ms: 0.399034
   type: 'test'
   ...
 # Subtest: operational month remains 26 through 25 without browser timezone
 ok 188 - operational month remains 26 through 25 without browser timezone
   ---
-  duration_ms: 4.443844
+  duration_ms: 0.5082
   type: 'test'
   ...
 # Subtest: critical protected pages load versioned runtime and polish
 ok 189 - critical protected pages load versioned runtime and polish
   ---
-  duration_ms: 8.918737
+  duration_ms: 6.316068
   type: 'test'
   ...
 # Subtest: legacy current-date helpers no longer depend on browser timezone
 ok 190 - legacy current-date helpers no longer depend on browser timezone
   ---
-  duration_ms: 9.833876
+  duration_ms: 3.538729
   type: 'test'
   ...
 # Subtest: query performance migration covers high-volume history paths
 ok 191 - query performance migration covers high-volume history paths
   ---
-  duration_ms: 0.528206
+  duration_ms: 0.610113
   type: 'test'
   ...
 1..191
 # tests 191
 # suites 0
-# pass 185
-# fail 6
+# pass 188
+# fail 3
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 18797.085132
+# duration_ms 19292.538353
