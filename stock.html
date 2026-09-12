@@ -792,13 +792,11 @@ th{background:#f8fafc;color:#475569}
 }
 
 
-/* ===== KPP-FMS FUELMAN DUTY VISIBILITY v1 ===== */
+/* ===== KPP-FMS FUELMAN DUTY VISIBILITY v2 ===== */
+/* PIC transfer/bongkar tetap fokus di stock, tetapi harus bisa mencatat
+   penerimaan transporter, transfer antar storage, dan melihat pergerakan shift. */
 .pic-transfer-mode .converter-panel,
-.pic-transfer-mode .opening-panel,
-.pic-transfer-mode .receipt-panel,
-.pic-transfer-mode .transfer-panel,
-.pic-transfer-mode .movement-panel,
-.pic-transfer-mode .workflow-compact-tools{display:none!important}
+.pic-transfer-mode .opening-panel{display:none!important}
 
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
@@ -1008,7 +1006,7 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel workflow-panel receipt-panel" data-step="02">
-    <h3>2. Penerimaan Solar</h3>
+    <h3>2. Penerimaan Solar dari Transportir</h3>
     <div class="note" style="margin-bottom:12px">Flowmeter untuk audit transporter. Stock masuk mengikuti sounding tangki.</div>
     <div class="grid">
         <div>
@@ -1078,7 +1076,7 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel workflow-panel transfer-panel" data-step="03">
-    <h3>3. Transfer Antar Storage</h3>
+    <h3>3. Pergerakan / Transfer Antar Storage</h3>
 
     <div class="note" style="margin-bottom:12px">Transfer memakai sounding/tera sumber dan tujuan.</div>
 
@@ -3247,7 +3245,7 @@ function applyFuelmanIdentity(){
     document.getElementById("sessionDuty").textContent=picTransfer?"PIC TRANSFER":"FUELMAN";
     document.getElementById("sessionTruck").textContent=ACTIVE_FUELMAN_SESSION.fuel_truck||"-";
     document.getElementById("sessionTruckLine").classList.toggle("hidden",picTransfer);
-    document.getElementById("sessionResponsibility").textContent=picTransfer?"PIC TRANSFER: hanya melihat posisi stock dan wajib Closing semua MT aktif sebelum End Shift.":"FUELMAN: Closing hanya untuk FT yang sedang dibawa sebelum End Shift.";
+    document.getElementById("sessionResponsibility").textContent=picTransfer?"PIC TRANSFER / BONGKAR: catat penerimaan transporter, transfer antar storage, pantau pergerakan fuel, dan wajib Closing semua MT aktif sebelum End Shift.":"FUELMAN: Closing hanya untuk FT yang sedang dibawa sebelum End Shift.";
     document.getElementById("fuelmanSessionInfo").classList.remove("hidden");
 }
 
