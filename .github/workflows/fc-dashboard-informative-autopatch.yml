@@ -12,7 +12,9 @@ jobs:
         with:
           ref: feat/fc-dashboard-informative-v1
       - name: Apply FC dashboard improvements
-        run: python scripts/apply-fc-dashboard-informative.py
+        run: |
+          python scripts/apply-fc-dashboard-informative.py
+          python scripts/apply-fc-dashboard-test-refresh.py
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -21,7 +23,7 @@ jobs:
       - name: Run full repository checks
         run: npm run check
       - name: Remove temporary patch files
-        run: rm -f scripts/apply-fc-dashboard-informative.py .github/workflows/fc-dashboard-informative-autopatch.yml
+        run: rm -f scripts/apply-fc-dashboard-informative.py scripts/apply-fc-dashboard-test-refresh.py .github/workflows/fc-dashboard-informative-autopatch.yml
       - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
