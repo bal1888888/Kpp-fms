@@ -11,13 +11,13 @@ const newBaseline=`  function baselineKey(row){return \`${'${String(row?.tanggal
   function chooseHealthyBaseline(rows){
     const list=(rows||[]).filter(row=>Number.isFinite(Number(row.hm_akhir))).slice().sort((a,b)=>baselineKey(a).localeCompare(baselineKey(b)));
     if(!list.length)return null;
-    const score=list.map(()=>1);const parent=list.map(()=>-1);
+    const score=list.map(()=>1);
     for(let j=0;j<list.length;j++){
       for(let i=0;i<j;i++){
         const delta=Number(list[j].hm_akhir)-Number(list[i].hm_akhir);
         if(!(delta>0))continue;
         if(delta>maxPlausibleHmDelta(list[i].tanggal,list[j].tanggal))continue;
-        if(score[i]+1>score[j]){score[j]=score[i]+1;parent[j]=i;}
+        if(score[i]+1>score[j])score[j]=score[i]+1;
       }
     }
     let best=0;
@@ -36,7 +36,7 @@ replaceExact('system-health.html',oldHealth,newHealth);
 for(const file of ['dashboard.html','logsheet.html']){
   replaceExact(file,'fc-chart.js?v=20260912h','fc-chart.js?v=20260912i');
 }
-replaceExact('scripts/test-fc-anomaly-visibility.mjs','fc-chart\\.js\\?v=20260912h','fc-chart\\.js\\?v=20260912i');
+replaceExact('scripts/test-fc-anomaly-visibility.mjs','20260912h','20260912i');
 
 fs.writeFileSync('scripts/test-fc-baseline-duplicate-guard.mjs',`import test from 'node:test';
 import assert from 'node:assert/strict';
