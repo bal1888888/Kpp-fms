@@ -41,7 +41,7 @@ button{border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weigh
 .refresh-btn{background:#15803d;color:#fff}.download-btn{background:var(--blue);color:#fff}
 .refresh-btn:hover{background:#166534}.download-btn:hover{background:#1d4ed8}
 .table-wrapper{overflow:auto;border:1px solid #94a3b8;border-radius:12px;max-height:68vh;background:#fff;box-shadow:0 8px 20px rgba(15,23,42,.10)}
-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1420px}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1510px}
 th,td{border-right:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1;padding:8px 8px;font-size:11px;text-align:center;white-space:nowrap}
 th:last-child,td:last-child{border-right:0}
 thead th{background:#0f172a;color:#fff;font-weight:800;position:sticky;top:0;z-index:2;letter-spacing:.015em}
@@ -107,7 +107,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
     -webkit-overflow-scrolling:touch;
     border-radius:6px;
   }
-  table{min-width:1320px}
+  table{min-width:1410px}
   th,td{font-size:10px;padding:7px 6px}
   .actions{display:none}
   .app-nav-inner{justify-content:flex-start}
@@ -253,7 +253,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 <div class="table-wrapper">
 <table>
 <thead><tr>
-<th>LOG NO</th><th>TANGGAL</th><th>JAM</th><th>SHIFT</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>CEK</th>
+<th>LOG NO</th><th>TANGGAL</th><th>JAM</th><th>SHIFT</th><th>WH</th><th>FUEL TRUCK</th><th>CODE UNIT</th><th>EGI</th><th>CODE ELLIPS</th><th>HM</th><th>HM JALAN</th><th>QTY ISSUED</th><th>OPERATOR UNIT</th><th>FUELMAN</th><th>CEK</th>
 </tr></thead>
 <tbody id="logsheetBody"></tbody>
 </table>
@@ -275,7 +275,7 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
     <div class="modal-grid">
       <div class="modal-field"><label>HM Sekarang di Histori</label><input id="cleanupOldHm" readonly placeholder="Kosong"></div>
       <div class="modal-field"><label>HM yang Benar</label><input id="cleanupNewHm" type="number" min="0" step="0.1" placeholder="Isi HM histori yang benar"></div>
-      <div class="modal-field modal-full"><label>Alasan Rapikan</label><textarea id="cleanupReason" placeholder="Contoh: salah ketik 27826, seharusnya 2478"></textarea></div>
+      <div class="modal-field modal-full"><label>Alasan Rapikan (Opsional)</label><textarea id="cleanupReason" placeholder="Opsional. Jika kosong, sistem memberi catatan audit otomatis."></textarea></div>
     </div>
     <div class="modal-info"><b>Edit histori saja.</b> HM resmi diubah lewat HM Master / Bulk Fix.</div>
     <div class="modal-actions"><button type="button" class="modal-cancel" id="cleanupCancelBtn">BATAL</button><button type="button" class="modal-save" id="cleanupSaveBtn">SIMPAN HISTORI AMAN</button></div>
@@ -822,6 +822,26 @@ function td(text,cls="",title=""){
   return cell;
 }
 
+function getHmJalan(item){
+  const awalRaw=item?.hm_awal;
+  const akhirRaw=item?.hm_akhir;
+  const hasAwal=awalRaw!==null && awalRaw!==undefined && awalRaw!=="";
+  const hasAkhir=akhirRaw!==null && akhirRaw!==undefined && akhirRaw!=="";
+
+  if(hasAwal && hasAkhir){
+    const awal=Number(awalRaw);
+    const akhir=Number(akhirRaw);
+    if(Number.isFinite(awal) && Number.isFinite(akhir)) return akhir-awal;
+  }
+
+  const stored=item?.hm_jalan;
+  if(stored!==null && stored!==undefined && stored!=="" && Number.isFinite(Number(stored))){
+    return Number(stored);
+  }
+
+  return null;
+}
+
 function renderTable(data){
   const body=document.getElementById("logsheetBody");
   body.innerHTML="";
@@ -829,6 +849,7 @@ function renderTable(data){
   data.slice(0,LOGSHEET_VISIBLE_LIMIT).forEach((item,index)=>{
     const unit=String(item.unit||"").trim().toUpperCase();
     const m=MASTER_UNIT[unit]||{egi:"",ellipse:""};
+    const hmJalan=getHmJalan(item);
     const row=document.createElement("tr");
 
     row.appendChild(td(item.id||index+1));
@@ -841,6 +862,7 @@ function renderTable(data){
     row.appendChild(td(m.egi||"-","egi-cell"));
     row.appendChild(td(m.ellipse||unit||"-"));
     row.appendChild(td(item.hm_akhir!==null && item.hm_akhir!==undefined && item.hm_akhir!=="" ? formatAngka(item.hm_akhir) : "-"));
+    row.appendChild(td(hmJalan!==null ? formatAngka(hmJalan) : "-"));
     row.appendChild(td(formatAngka(item.fuel),"qty"));
     row.appendChild(td(item.operator||"-"));
     row.appendChild(td(getFuelman(item)));
@@ -1004,14 +1026,13 @@ async function saveHmCleanup(){
   const currentIsBlank=currentHm===null||currentHm===undefined||currentHm==="";
   if(currentIsBlank && newHm===null){alert("HM histori masih kosong. Masukkan HM yang benar terlebih dahulu.");return}
   if(newHm!==null&&(!Number.isFinite(newHm)||newHm<0)){alert("HM baru tidak valid.");return}
-  if(!reason){alert("Alasan rapikan HM wajib diisi.");return}
   const btn=document.getElementById("cleanupSaveBtn");
   btn.disabled=true;btn.textContent="MENYIMPAN...";
   try{
     const {data,error}=await supabaseClient.rpc("kpp_cleanup_history_hm",{
       p_record_id:Number(HM_CLEANUP_ROW.id),
       p_new_hm:newHm,
-      p_reason:reason
+      p_reason:reason||null
     });
     if(error)throw error;
     closeHmCleanup();
@@ -1059,6 +1080,7 @@ async function downloadExcel(){
       "EGI",
       "CODE ELLIPS",
       "HM",
+      "HM JALAN",
       "QTY ISSUED",
       "OPERATOR UNIT",
       "STD + Fuelman",
@@ -1066,13 +1088,13 @@ async function downloadExcel(){
     ];
 
     // Lebar kolom tetap mengikuti bentuk logsheet lama, dengan Fuel Truck ditambahkan.
-    const widths=[11,13,10,7,9,12,13,34,16,12,14,22,17,55];
+    const widths=[11,13,10,7,9,12,13,34,16,12,12,14,22,17,55];
     widths.forEach((width,index)=>{
       ws.getColumn(index+1).width=width;
     });
 
     // ===== IDENTITAS / JUDUL - mengikuti gaya logsheet lama =====
-    ws.mergeCells("A2:N2");
+    ws.mergeCells("A2:O2");
     const companyCell=ws.getCell("A2");
     companyCell.value="PT. KALIMANTAN PRIMA PERSADA";
     companyCell.font={
@@ -1083,7 +1105,7 @@ async function downloadExcel(){
     };
     companyCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A3:N3");
+    ws.mergeCells("A3:O3");
     const subtitleCell=ws.getCell("A3");
     subtitleCell.value="Integrated Mining Services";
     subtitleCell.font={
@@ -1094,7 +1116,7 @@ async function downloadExcel(){
     };
     subtitleCell.alignment={vertical:"middle",horizontal:"left"};
 
-    ws.mergeCells("A5:N5");
+    ws.mergeCells("A5:O5");
     const titleCell=ws.getCell("A5");
 
     const mode=document.getElementById("dateMode").value;
@@ -1126,7 +1148,7 @@ async function downloadExcel(){
 
     // Total Qty Issued diletakkan tepat di kolom QTY ISSUED seperti logsheet lama.
     const totalFuel=data.reduce((sum,item)=>sum+(Number(item.fuel)||0),0);
-    const totalCell=ws.getCell("K7");
+    const totalCell=ws.getCell("L7");
     totalCell.value=totalFuel;
     totalCell.numFmt="0";
     totalCell.font={name:"Calibri",size:16,bold:true,color:{argb:"FF000000"}};
@@ -1139,11 +1161,11 @@ async function downloadExcel(){
     ws.getCell("B8").value="JINGGA = ERROR DATA";
     ws.mergeCells("F8:I8");
     ws.getCell("F8").value="MERAH = DOUBLE POSTING";
-    ws.mergeCells("J8:N8");
+    ws.mergeCells("J8:O8");
     ws.getCell("J8").value="";
 
     const gold="FFBF9000";
-    const legendRanges=["A8:A8","B8:E8","F8:I8","J8:N8"];
+    const legendRanges=["A8:A8","B8:E8","F8:I8","J8:O8"];
 
     legendRanges.forEach(range=>{
       const r=ws.getCell(range.split(":")[0]);
@@ -1152,7 +1174,7 @@ async function downloadExcel(){
     });
 
     // Beri border emas pada seluruh baris keterangan.
-    for(let col=1;col<=14;col++){
+    for(let col=1;col<=15;col++){
       const c=ws.getCell(8,col);
       c.border={
         top:{style:"medium",color:{argb:gold}},
@@ -1219,6 +1241,7 @@ async function downloadExcel(){
         m.egi||"",
         m.ellipse||unit,
         item.hm_akhir ?? "",
+        getHmJalan(item) ?? "",
         Number(item.fuel)||0,
         item.operator||"",
         getFuelman(item)==="-" ? "" : getFuelman(item),
@@ -1245,8 +1268,9 @@ async function downloadExcel(){
 
       // Format tanggal, HM, dan Qty.
       row.getCell(2).numFmt="dd/mm/yyyy";
-      row.getCell(10).numFmt="0";
-      row.getCell(11).numFmt="0";
+      row.getCell(10).numFmt="0.##";
+      row.getCell(11).numFmt="0.##";
+      row.getCell(12).numFmt="0";
 
       // Kolom EGI dibuat tetap rapi walau nama panjang.
       row.getCell(8).alignment={
@@ -1256,7 +1280,7 @@ async function downloadExcel(){
       };
 
       // Status sesuai aturan KPP-FMS sekarang.
-      const statusCell=row.getCell(14);
+      const statusCell=row.getCell(15);
 
       if(rowStatus.kind==="double"){
         statusCell.fill={
