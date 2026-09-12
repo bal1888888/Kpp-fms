@@ -13,6 +13,20 @@ jobs:
           ref: feat/fc-range-presets-v1
       - name: Apply FC range presets patch
         run: python scripts/apply-fc-range-presets.py
+      - name: Refresh FC asset regression assertions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in (
+              'scripts/test-fc-data-contract.mjs',
+              'scripts/test-fc-mtd-context.mjs',
+              'scripts/test-fc-dashboard-informative.mjs',
+          ):
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('20260912e', '20260912f')
+              path.write_text(text, encoding='utf-8')
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 20
