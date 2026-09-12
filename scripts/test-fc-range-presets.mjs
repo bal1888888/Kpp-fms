@@ -21,7 +21,7 @@ test('all-history preset finds earliest selected-unit transaction',()=>{
 test('long date ranges remain renderable and chart becomes horizontally roomy',()=>{
   assert.match(src,/guard<3660/);
   assert.match(src,/dates\.length\*18/);
-  assert.match(src,/metrics\.dates\.length} hari/);
+  assert.match(src,/lastMetrics\.dates\.length} hari/);
 });
 
 test('manual date changes leave quick preset mode',()=>{
@@ -32,6 +32,6 @@ test('manual date changes leave quick preset mode',()=>{
 for(const file of ['dashboard.html','logsheet.html']){
   test(`${file} loads refreshed FC runtime`,()=>{
     const html=fs.readFileSync(file,'utf8');
-    assert.match(html,/fc-chart\.js\?v=20260912f/);
+    assert.match(html,/fc-chart\.js\?v=20260912g/);
   });
 }

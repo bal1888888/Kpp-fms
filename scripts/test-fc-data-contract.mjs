@@ -12,12 +12,13 @@ test("FC widget uses real unit_master schema",()=>{
 });
 
 test("FC sequential HM ignores lower/reset rows without poisoning next baseline",()=>{
-  assert.match(fc,/hm<previous\)\{delta=null;return;\}previous=hm/);
+  assert.match(fc,/hm<previous\)\{delta=null;\}\s*else previous=hm/);
+  assert.doesNotMatch(fc,/hm<previous\)\{delta=null;previous=hm/);
 });
 
 test("Dashboard and Logsheet cache-bust repaired FC runtime",()=>{
   for(const file of ["dashboard.html","logsheet.html"]){
     const html=fs.readFileSync(new URL("../"+file,import.meta.url),"utf8");
-    assert.match(html,/fc-chart\.js\?v=20260912f/);
+    assert.match(html,/fc-chart\.js\?v=20260912g/);
   }
 });

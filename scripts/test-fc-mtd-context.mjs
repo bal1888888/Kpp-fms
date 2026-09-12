@@ -22,6 +22,6 @@ test('FC explains active period and gives neutral quick snapshot',()=>{
 test('Dashboard and Logsheet load refreshed FC runtime',()=>{
   for(const file of ['dashboard.html','logsheet.html']){
     const html=fs.readFileSync(file,'utf8');
-    assert.match(html,/fc-chart\.js\?v=20260912f/);
+    assert.match(html,/fc-chart\.js\?v=20260912g/);
   }
 });
