@@ -12,6 +12,10 @@ test('stock radial gauge scales to card content instead of overflowing', () => {
 
 test('logsheet shows HM Jalan next to HM and exports the same column', () => {
   assert.match(logsheet, /<th>HM<\/th><th>HM JALAN<\/th><th>QTY ISSUED<\/th>/);
+  assert.match(logsheet, /function buildHmJalanMap\(data\)/);
+  assert.match(logsheet, /HM_JALAN_MAP=buildHmJalanMap\(ALL_DATA\)/);
+  assert.match(logsheet, /if\(Number\.isFinite\(previous\) && hm>=previous\)\{\s*jalan=hm-previous;/);
+  assert.doesNotMatch(logsheet, /return akhir-awal/);
   assert.match(logsheet, /function getHmJalan\(item\)/);
   assert.match(logsheet, /row\.appendChild\(td\(hmJalan!==null \? formatAngka\(hmJalan\) : "-"\)\)/);
   assert.match(logsheet, /"HM",\s*"HM JALAN",\s*"QTY ISSUED"/);
