@@ -13,6 +13,36 @@ jobs:
           ref: feat/fc-range-presets-v1
       - name: Apply FC focus table patch
         run: python scripts/apply-fc-focus-table.py
+      - name: Refresh FC regression assertions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'scripts/test-dashboard-fc-unit.mjs': [
+                  ('Ringkasan Unit Terpilih', 'Ringkasan FC per Unit'),
+              ],
+              'scripts/test-fc-dashboard-informative.mjs': [
+                  ('Ringkasan Unit Terpilih', 'Ringkasan FC per Unit'),
+                  ('metrics.samples}/${metrics.transactions}', 'lastMetrics.samples}/${lastMetrics.transactions}'),
+              ],
+              'scripts/test-fc-data-contract.mjs': [
+                  ('assert.match(fc,/hm<previous\\)\\{delta=null;return;\\}previous=hm/);', "assert.match(fc,/hm<previous\\)\\{delta=null;\\}\\s*else previous=hm/);\n  assert.doesNotMatch(fc,/hm<previous\\)\\{delta=null;previous=hm/);"),
+              ],
+              'scripts/test-fc-range-presets.mjs': [
+                  ('metrics\\.dates\\.length} hari', 'lastMetrics\\.dates\\.length} hari'),
+              ],
+          }
+
+          for name, pairs in replacements.items():
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              for old, new in pairs:
+                  if old not in text:
+                      raise SystemExit(f'missing regression anchor in {name}: {old}')
+                  text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 20
