@@ -1,0 +1,161 @@
+name: Patch Stock Movement Mobile
+on:
+  push:
+    branches: [fix/stock-movement-mobile-compact-v1]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/stock-movement-mobile-compact-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --ignore-scripts
+      - name: Compact movement panel on mobile
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('stock.html')
+          s=p.read_text()
+          marker='/* ===== KPP-FMS FUELMAN DUTY VISIBILITY v2 ===== */'
+          assert marker in s, 'marker CSS stock tidak ditemukan'
+          block=r'''/* ===== KPP-FMS MOVEMENT MOBILE COMPACT v3 ===== */
+          @media(max-width:700px){
+            .movement-panel{
+              padding:10px!important;
+              margin-bottom:8px!important;
+              border-radius:12px!important;
+            }
+            .movement-panel .panel-title-row{
+              margin:0!important;
+              min-height:38px!important;
+              align-items:center!important;
+              gap:8px!important;
+            }
+            .movement-panel .panel-title-row h3{
+              margin:0!important;
+              font-size:14px!important;
+              line-height:1.15!important;
+            }
+            .movement-panel .panel-toggle-btn{
+              padding:6px 8px!important;
+              min-height:31px!important;
+              min-width:74px!important;
+              font-size:8px!important;
+              line-height:1!important;
+              border-radius:7px!important;
+            }
+            #movementPanelContent:not(.hidden){margin-top:7px!important}
+            .movement-panel .admin-tools{
+              display:grid!important;
+              grid-template-columns:minmax(0,1fr) auto!important;
+              align-items:center!important;
+              gap:7px!important;
+              padding:7px 8px!important;
+              margin:0 0 7px!important;
+              border-radius:9px!important;
+            }
+            .movement-panel .admin-tools.hidden{display:none!important}
+            .movement-panel .admin-tools b{
+              display:block!important;
+              font-size:10px!important;
+              line-height:1.2!important;
+            }
+            .movement-panel .admin-tools .note{
+              margin-top:2px!important;
+              font-size:8px!important;
+              line-height:1.2!important;
+            }
+            .movement-panel .admin-tools button{
+              width:auto!important;
+              min-width:0!important;
+              min-height:31px!important;
+              padding:6px 8px!important;
+              font-size:8px!important;
+              line-height:1.1!important;
+              white-space:nowrap!important;
+              border-radius:7px!important;
+            }
+            .movement-panel .table-wrap{
+              width:100%!important;
+              max-width:100%!important;
+              overflow-x:auto!important;
+              border:1px solid #e2e8f0!important;
+              border-radius:9px!important;
+              -webkit-overflow-scrolling:touch;
+            }
+            .movement-panel table{
+              min-width:560px!important;
+              margin:0!important;
+              table-layout:auto!important;
+            }
+            .movement-panel th,
+            .movement-panel td{
+              padding:5px 4px!important;
+              font-size:8.5px!important;
+              line-height:1.2!important;
+              vertical-align:middle!important;
+            }
+            .movement-panel th{
+              font-size:8px!important;
+              letter-spacing:.01em!important;
+              white-space:nowrap!important;
+            }
+            .movement-panel td:nth-child(2),
+            .movement-panel td:nth-child(3),
+            .movement-panel td:nth-child(4),
+            .movement-panel td:nth-child(5),
+            .movement-panel td:nth-child(6){white-space:nowrap!important}
+            .movement-panel td:nth-child(7),
+            .movement-panel td:nth-child(8){max-width:110px!important;white-space:normal!important;word-break:break-word!important}
+            .movement-panel .checkbox-cell input,
+            .movement-panel td input[type="checkbox"]{
+              width:16px!important;
+              height:16px!important;
+              min-height:0!important;
+              padding:0!important;
+            }
+            .movement-panel td button,
+            .movement-panel td .small-btn{
+              width:auto!important;
+              min-height:28px!important;
+              padding:5px 6px!important;
+              font-size:7.5px!important;
+              white-space:nowrap!important;
+            }
+          }
+          @media(max-width:380px){
+            .movement-panel table{min-width:520px!important}
+            .movement-panel th,.movement-panel td{padding:4px 3px!important;font-size:8px!important}
+            .movement-panel .panel-title-row h3{font-size:13px!important}
+          }
+
+          '''
+          if 'KPP-FMS MOVEMENT MOBILE COMPACT v3' not in s:
+              s=s.replace(marker,block+marker,1)
+          p.write_text(s)
+          PY
+      - name: Verify patch
+        run: |
+          grep -q 'KPP-FMS MOVEMENT MOBILE COMPACT v3' stock.html
+          grep -q 'min-width:560px!important' stock.html
+          grep -q 'grid-template-columns:minmax(0,1fr) auto!important' stock.html
+      - run: npm run check
+      - name: Remove temporary workflow and commit
+        shell: bash
+        run: |
+          rm -f .github/workflows/patch-stock-movement-mobile.yml
+          git config user.name "kpp-mining"
+          git config user.email "iqbalinsani1017@gmail.com"
+          git add stock.html .github/workflows/patch-stock-movement-mobile.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: padatkan pergerakan fuel di mobile"
+          git push origin HEAD:fix/stock-movement-mobile-compact-v1
