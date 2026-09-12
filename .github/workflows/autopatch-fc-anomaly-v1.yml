@@ -27,6 +27,11 @@ jobs:
           s=p.read_text(encoding='utf-8')
           s=s.replace('"      .kpp-fc-summary-head{','".kpp-fc-summary-head{')
           s=s.replace('"      .kpp-fc-detail-table tbody tr:nth-child','".kpp-fc-detail-table tbody tr:nth-child')
+          old="replace_once('<th>FC</th><th>OPERATOR</th>', '<th>FC</th><th>STATUS FC</th><th>OPERATOR</th>', 'detail status header')"
+          new="src=src.replace('<th>FC</th>', '<th>FC</th><th>STATUS FC</th>', 1)"
+          if old not in s:
+              raise SystemExit('detail header patch anchor missing')
+          s=s.replace(old,new,1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Apply focused patch
@@ -35,6 +40,11 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Full regression
         run: npm run check
+      - name: Verify key FC safety markers
+        run: |
+          grep -q 'STATUS FC' fc-chart.js
+          grep -q 'TRANSAKSI PENGISIAN PERLU CEK HM' fc-chart.js
+          grep -q 'rawDelta>maxDelta' fc-chart.js
       - name: Remove temporary patch machinery
         run: |
           rm scripts/patch-fc-anomaly-v1.py
