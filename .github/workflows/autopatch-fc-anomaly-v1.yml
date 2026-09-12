@@ -19,6 +19,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Normalize temporary patch anchors
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/patch-fc-anomaly-v1.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('"      .kpp-fc-summary-head{','".kpp-fc-summary-head{')
+          s=s.replace('"      .kpp-fc-detail-table tbody tr:nth-child','".kpp-fc-detail-table tbody tr:nth-child')
+          p.write_text(s,encoding='utf-8')
+          PY
       - name: Apply focused patch
         run: python3 scripts/patch-fc-anomaly-v1.py
       - name: Install dependencies
