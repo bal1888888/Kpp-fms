@@ -72,10 +72,41 @@
     const body=host.querySelector('.kpp-fc-body'),toggle=host.querySelector('.kpp-fc-toggle'),trigger=host.querySelector('.kpp-fc-unit-trigger'),menu=host.querySelector('.kpp-fc-unit-menu'),list=host.querySelector('.kpp-fc-unit-list'),search=host.querySelector('.kpp-fc-unit-search'),run=host.querySelector('.kpp-fc-run'),status=host.querySelector('.kpp-fc-status');
     const updateToggle=()=>{if(toggle)toggle.textContent=collapsed?'Tampilkan Grafik FC':'Sembunyikan Grafik FC';};updateToggle();
     const renderPicker=()=>{const wrap=host.querySelector('.kpp-fc-chip-wrap');wrap.innerHTML=selected.length?selected.map(u=>`<span class="kpp-fc-chip">${esc(u)}</span>`).join(''):'<span class="kpp-fc-picker-placeholder">Pilih maksimal 4 unit</span>';list.innerHTML=units.map(u=>`<label class="kpp-fc-unit-option" data-unit-label="${esc(u.toLowerCase())}"><input type="checkbox" value="${esc(u)}" ${selected.includes(u)?'checked':''}> <span>${esc(u)}</span></label>`).join('');};
-    const init=async()=>{if(initialized)return;initialized=true;status.textContent='Memuat master unit...';try{const {data,error}=await KPP.db.from('unit_master').select('code,active').eq('active',true).order('code',{ascending:true});if(error)throw error;units=(data||[]).map(r=>String(r.code||'').trim().toUpperCase()).filter(Boolean);let saved=[];try{saved=JSON.parse(localStorage.getItem('kppFcSelectedUnits')||'[]');}catch{}selected=saved.filter(u=>units.includes(u)).slice(0,MAX_UNITS);if(!selected.length)selected=units.slice(0,Math.min(3,units.length));renderPicker();status.textContent=units.length?`${units.length} unit aktif tersedia.`:'Master unit aktif kosong.';if(options.autoLoad!==false&&selected.length)await load();}catch(error){status.className='kpp-fc-status error';status.textContent='Gagal memuat unit: '+error.message;}};
+    const init=async()=>{
+      if(initialized)return true;
+      status.className='kpp-fc-status';
+      status.textContent='Memuat master unit...';
+      try{
+        const request=KPP.db.from('unit_master').select('code,active').eq('active',true).order('code',{ascending:true});
+        const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timeout memuat Master Unit. Coba lagi.')),8000));
+        const {data,error}=await Promise.race([request,timeout]);
+        if(error)throw error;
+        units=(data||[]).map(r=>String(r.code||'').trim().toUpperCase()).filter(Boolean);
+        let saved=[];
+        try{saved=JSON.parse(localStorage.getItem('kppFcSelectedUnits')||'[]');}catch{}
+        selected=saved.filter(u=>units.includes(u)).slice(0,MAX_UNITS);
+        if(!selected.length)selected=units.slice(0,Math.min(3,units.length));
+        renderPicker();
+        initialized=true;
+        status.className='kpp-fc-status';
+        status.textContent=units.length?`${units.length} unit aktif tersedia.`:'Master unit aktif kosong.';
+        if(options.autoLoad!==false&&selected.length)await load();
+        return true;
+      }catch(error){
+        initialized=false;
+        units=[];
+        selected=[];
+        const wrap=host.querySelector('.kpp-fc-chip-wrap');
+        if(wrap)wrap.innerHTML='<span class="kpp-fc-picker-placeholder">Gagal memuat unit, klik untuk coba lagi</span>';
+        list.innerHTML='';
+        status.className='kpp-fc-status error';
+        status.textContent='Gagal memuat unit: '+error.message+' Klik PILIH UNIT untuk mencoba lagi.';
+        return false;
+      }
+    };
     const load=async()=>{const s=host.querySelector('.kpp-fc-start').value,e=host.querySelector('.kpp-fc-end').value;if(!selected.length){status.className='kpp-fc-status error';status.textContent='Pilih minimal 1 unit.';return;}if(!s||!e||s>e){status.className='kpp-fc-status error';status.textContent='Rentang tanggal tidak valid.';return;}run.disabled=true;status.className='kpp-fc-status';status.textContent='Memuat data FC...';try{const [rows,baselines]=await Promise.all([fetchPaged(KPP.db,s,e,selected),fetchBaselines(KPP.db,s,selected)]);const metrics=buildMetrics(rows,baselines,selected,s,e);host.querySelector('[data-kpi="avg"]').textContent=metrics.avg===null?'-':fmtFc(metrics.avg)+' L/HM';host.querySelector('[data-kpi="fuel"]').textContent=fmt(metrics.totalFuel)+' L';host.querySelector('[data-kpi="hm"]').textContent=fmt(metrics.totalHm)+' HM';host.querySelector('[data-kpi="count"]').textContent=rows.length+' transaksi';host.querySelector('.kpp-fc-legend').innerHTML=metrics.series.map(s=>`<span class="kpp-fc-legend-item"><i class="kpp-fc-dot" style="background:${s.color}"></i>${esc(s.unit)}</span>`).join('');renderSvg(host.querySelector('.kpp-fc-chart'),metrics);status.textContent=`${metrics.samples} sampel HM valid dari ${rows.length} transaksi.`;}catch(error){console.error(error);status.className='kpp-fc-status error';status.textContent='Gagal memuat grafik FC: '+error.message;}finally{run.disabled=false;}};
     toggle?.addEventListener('click',async()=>{collapsed=!collapsed;body.hidden=collapsed;updateToggle();if(!collapsed){await init();if(initialized&&selected.length&&host.querySelector('[data-kpi="count"]').textContent==='-')await load();}});
-    trigger.addEventListener('click',async()=>{await init();menu.hidden=!menu.hidden;if(!menu.hidden)search.focus();});
+    trigger.addEventListener('click',async()=>{const ok=await init();if(!ok){menu.hidden=true;return;}menu.hidden=!menu.hidden;if(!menu.hidden)search.focus();});
     list.addEventListener('change',event=>{const box=event.target.closest('input[type="checkbox"]');if(!box)return;const value=box.value;if(box.checked&&!selected.includes(value)){if(selected.length>=MAX_UNITS){box.checked=false;status.className='kpp-fc-status error';status.textContent='Maksimal 4 unit agar grafik tetap terbaca.';return;}selected.push(value);}else if(!box.checked){selected=selected.filter(u=>u!==value);}localStorage.setItem('kppFcSelectedUnits',JSON.stringify(selected));renderPicker();});
     search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();list.querySelectorAll('.kpp-fc-unit-option').forEach(row=>row.style.display=!q||row.dataset.unitLabel.includes(q)?'flex':'none');});
     document.addEventListener('click',event=>{if(!event.target.closest('.kpp-fc-unit-picker'))menu.hidden=true;});run.addEventListener('click',load);
