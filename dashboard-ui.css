@@ -127,7 +127,6 @@
 }
 @media(prefers-reduced-motion:reduce){.dashboard-workspace *{scroll-behavior:auto!important;transition:none!important}}
 
-
 /* ===== KPP-FMS PREMIUM RADIAL PERFORMANCE v2 ===== */
 .dashboard-workspace .performance-section{
   border-color:#c9d9ed;
@@ -255,4 +254,81 @@
   .dashboard-workspace #stockTrendBars.usage-bars{grid-template-columns:repeat(auto-fit,minmax(48px,1fr))!important;gap:4px!important}
   .dashboard-workspace .stock-trend-ring,.dashboard-workspace .usage-trend-ring{width:45px!important}
   .dashboard-workspace .trend-ring-liter{font-size:6.5px}
+}
+
+/* ===== KPP-FMS DAILY USAGE BAR RESTORE v1 ===== */
+.dashboard-workspace #usageTrendBars.usage-bars{
+  height:176px!important;
+  min-height:176px!important;
+  display:flex!important;
+  grid-template-columns:none!important;
+  align-items:flex-end!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  padding:18px 4px 0!important;
+  border-bottom:1px solid #cbd5e1!important;
+  overflow:visible!important;
+}
+.dashboard-workspace #usageTrendBars .usage-radial-item{
+  height:100%!important;
+  flex:1 1 0!important;
+  min-width:0!important;
+  padding:0 2px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  transform:none!important;
+}
+.dashboard-workspace #usageTrendBars .trend-ring-liter{
+  order:1!important;
+  margin:0 0 5px!important;
+  color:#334155!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+.dashboard-workspace #usageTrendBars .usage-trend-ring{
+  order:2!important;
+  width:min(100%,38px)!important;
+  height:calc(var(--usage-pct) * 1%)!important;
+  min-height:5px!important;
+  aspect-ratio:auto!important;
+  border-radius:8px 8px 2px 2px!important;
+  display:block!important;
+  position:relative!important;
+  background:linear-gradient(180deg,#60a5fa,#2563eb)!important;
+  box-shadow:0 4px 10px rgba(37,99,235,.14)!important;
+}
+.dashboard-workspace #usageTrendBars .usage-trend-ring::before,
+.dashboard-workspace #usageTrendBars .usage-ring-inner{display:none!important}
+.dashboard-workspace #usageTrendBars .trend-radial-label{
+  order:3!important;
+  width:auto!important;
+  margin:7px 0 0!important;
+  color:#64748b!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+.dashboard-workspace #usageTrendBars .trend-ring-caption{display:none!important}
+.dashboard-workspace #usageTrendBars .trend-radial-empty{width:100%;align-self:center}
+@media(max-width:720px){
+  .dashboard-workspace #usageTrendBars.usage-bars{
+    height:154px!important;
+    min-height:154px!important;
+    display:flex!important;
+    gap:5px!important;
+    padding:14px 2px 0!important;
+  }
+  .dashboard-workspace #usageTrendBars .usage-trend-ring{width:min(100%,32px)!important}
+  .dashboard-workspace #usageTrendBars .trend-ring-liter,
+  .dashboard-workspace #usageTrendBars .trend-radial-label{font-size:7.5px!important}
 }
