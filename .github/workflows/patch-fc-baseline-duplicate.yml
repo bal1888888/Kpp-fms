@@ -1,0 +1,30 @@
+name: Patch FC baseline duplicate
+on:
+  push:
+    branches:
+      - fix/fc-baseline-duplicate-v1
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/fc-baseline-duplicate-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/patch-fc-baseline-duplicate.mjs
+      - run: npm run check
+      - name: Commit hasil patch
+        run: |
+          git config user.name "kpp-fms-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm scripts/patch-fc-baseline-duplicate.mjs .github/workflows/patch-fc-baseline-duplicate.yml
+          git add fc-chart.js system-health.html dashboard.html logsheet.html scripts/test-fc-anomaly-visibility.mjs scripts/test-fc-baseline-duplicate-guard.mjs migrations/20260912_fuel_duplicate_guard.sql
+          git commit -m "fix: sehatkan baseline FC dan kunci double posting"
+          git push origin HEAD:fix/fc-baseline-duplicate-v1
