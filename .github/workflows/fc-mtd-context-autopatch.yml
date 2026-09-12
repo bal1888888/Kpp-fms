@@ -13,6 +13,8 @@ jobs:
           ref: feat/fc-mtd-context-v1
       - name: Apply FC MTD context patch
         run: python scripts/apply-fc-mtd-context.py
+      - name: Refresh FC asset regression assertions
+        run: sed -i 's/20260912d/20260912e/g' scripts/test-fc-dashboard-informative.mjs scripts/test-fc-data-contract.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: 20
