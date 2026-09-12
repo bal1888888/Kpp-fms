@@ -34,6 +34,6 @@ test('all-unit summary remains the default view',()=>{
 for(const file of ['dashboard.html','logsheet.html']){
   test(`${file} loads FC focus-table runtime`,()=>{
     const html=fs.readFileSync(file,'utf8');
-    assert.match(html,/fc-chart\.js\?v=20260912g/);
+    assert.match(html,/fc-chart\.js\?v=20260912h/);
   });
 }
