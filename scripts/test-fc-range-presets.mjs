@@ -32,6 +32,6 @@ test('manual date changes leave quick preset mode',()=>{
 for(const file of ['dashboard.html','logsheet.html']){
   test(`${file} loads refreshed FC runtime`,()=>{
     const html=fs.readFileSync(file,'utf8');
-    assert.match(html,/fc-chart\.js\?v=20260912g/);
+    assert.match(html,/fc-chart\.js\?v=20260912h/);
   });
 }
