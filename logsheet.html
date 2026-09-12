@@ -13,8 +13,9 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="logsheet";
 </script>
 <script src="wib-time.js?v=20260911b3"></script>
-<script src="auth.js?v=20260911b3"></script>
+<script src="auth.js?v=20260912-sidebar1"></script>
 <script src="storage-master.js"></script>
+<script src="fc-chart.js?v=20260912a"></script>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
@@ -249,6 +250,8 @@ tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#eff6ff}
 </div>
 
 <div id="errorBox" class="error"></div>
+
+<div id="logsheetFcChart"></div>
 
 <div class="table-wrapper">
 <table>
@@ -1537,6 +1540,13 @@ if(mobileFilterToggle){
 document.addEventListener("kpp-auth-ready",()=>{
   loadData();
 });
+</script>
+
+<script>
+(function mountLogsheetFc(){
+  const run=()=>window.KPPFC?.mount({hostId:"logsheetFcChart",title:"Grafik FC per Unit",collapsible:true,collapsedByDefault:true,autoLoad:false});
+  if(window.KPP_PROFILE)run();else document.addEventListener("kpp-auth-ready",run,{once:true});
+})();
 </script>
 </body>
 </html>

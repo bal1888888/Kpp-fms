@@ -10,8 +10,9 @@ window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="dashboard";
 </script>
 <script src="wib-time.js?v=20260911b3"></script>
-<script src="auth.js?v=20260911b3"></script>
+<script src="auth.js?v=20260912-sidebar1"></script>
 <script src="storage-master.js"></script>
+<script src="fc-chart.js?v=20260912a"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 :root{
@@ -425,6 +426,8 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
       </div>
     </div>
   </div>
+
+  <div id="dashboardFcChart"></div>
 
   <div class="section" id="fcSection">
     <div class="section-head">
@@ -1116,6 +1119,13 @@ document.addEventListener("kpp-auth-ready",async()=>{
   await loadStorageMaster();
   await loadDashboard();
 });
+</script>
+
+<script>
+(function mountDashboardFc(){
+  const run=()=>window.KPPFC?.mount({hostId:"dashboardFcChart",title:"Grafik FC per Unit",autoLoad:true,collapsible:false});
+  if(window.KPP_PROFILE)run();else document.addEventListener("kpp-auth-ready",run,{once:true});
+})();
 </script>
 </body>
 </html>
