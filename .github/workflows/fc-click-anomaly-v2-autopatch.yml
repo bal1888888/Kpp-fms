@@ -11,6 +11,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/fc-click-anomaly-v2
+      - name: Repair patch anchor
+        run: python scripts/fix-fc-patch-anchor.py
       - name: Apply patch
         run: python scripts/apply-fc-click-anomaly-v2.py
       - uses: actions/setup-node@v4
@@ -22,7 +24,7 @@ jobs:
         run: npm run check
       - name: Remove temporary patch files
         if: success()
-        run: rm -f scripts/apply-fc-click-anomaly-v2.py .github/workflows/fc-click-anomaly-v2-autopatch.yml
+        run: rm -f scripts/apply-fc-click-anomaly-v2.py scripts/fix-fc-patch-anchor.py .github/workflows/fc-click-anomaly-v2-autopatch.yml
       - name: Commit patch
         if: success()
         run: |
