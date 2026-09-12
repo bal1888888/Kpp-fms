@@ -36,6 +36,27 @@ jobs:
           PY
       - name: Apply focused patch
         run: python3 scripts/patch-fc-anomaly-v1.py
+      - name: Align regression expectations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('scripts/test-fc-anomaly-visibility.mjs')
+          s=p.read_text(encoding='utf-8')
+          old="src.indexOf('kpp-fc-summary-card') < src.indexOf('kpp-fc-chart-card')"
+          new='src.indexOf(\'<div class="kpp-fc-summary-card">\') < src.indexOf(\'<div class="kpp-fc-chart-card">\')'
+          if old not in s:
+              raise SystemExit('summary-order regression anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+
+          p=Path('scripts/test-fc-chart-widget.mjs')
+          s=p.read_text(encoding='utf-8')
+          old='for(const needle of ["fetchBaselines","hm>=previous","validFuel/totalHm","Maksimal 10 unit","HM turun/reset diabaikan"]){if(!widget.includes(needle))throw new Error(`missing FC safety marker: ${needle}`);}'
+          new='for(const needle of ["fetchBaselines","rawDelta<0","rawDelta>maxDelta","validFuel/totalHm","Maksimal 10 unit","TRANSAKSI PENGISIAN PERLU CEK HM"]){if(!widget.includes(needle))throw new Error(`missing FC safety marker: ${needle}`);}'
+          if old not in s:
+              raise SystemExit('legacy FC safety-marker regression anchor missing')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
       - name: Install dependencies
         run: npm ci --ignore-scripts
       - name: Full regression with diagnostics
@@ -51,12 +72,12 @@ jobs:
       - name: Persist diagnostics on failure
         if: steps.regression.outputs.exit_code != '0'
         run: |
-          git restore fc-chart.js dashboard.html logsheet.html scripts/test-fc-focus-table.mjs || true
+          git restore fc-chart.js dashboard.html logsheet.html scripts/test-fc-focus-table.mjs scripts/test-fc-chart-widget.mjs || true
           rm -f scripts/test-fc-anomaly-visibility.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add FC_ANOMALY_DIAGNOSTICS.txt
-          git commit -m "chore: capture FC regression failure"
+          git commit -m "chore: refresh FC regression failure"
           git push origin HEAD:fix/fc-anomaly-visibility-v1
           exit 1
       - name: Verify key FC safety markers
