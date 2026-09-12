@@ -8,6 +8,7 @@ const legacyCompat=fs.readFileSync(new URL("../supabase/migrations/2026091112200
 const fuelman=fs.readFileSync(new URL("../fuelman.html",import.meta.url),"utf8");
 const stock=fs.readFileSync(new URL("../stock.html",import.meta.url),"utf8");
 const pengisian=fs.readFileSync(new URL("../pengisian.html",import.meta.url),"utf8");
+const picMovement=fs.readFileSync(new URL("../supabase/migrations/20260912203000_pic_bongkar_stock_movement_v1.sql",import.meta.url),"utf8");
 
 test("database models shift duty and server-owned session lifecycle",()=>{
   assert.match(migration,/duty_type/);
@@ -35,20 +36,26 @@ test("Fuelman check-in chooses duty and PIC cannot use fueling UI",()=>{
   assert.match(pengisian,/PIC TRANSFER tidak memiliki akses Pengisian Fuel/);
 });
 
-test("PIC Transfer stock workspace is stock plus MT closing only",()=>{
+test("PIC Transfer stock workspace exposes bongkar, transfer, movement, and MT closing",()=>{
   assert.match(stock,/pic-transfer-mode/);
   assert.match(stock,/\.pic-transfer-mode \.converter-panel/);
   assert.match(stock,/\.pic-transfer-mode \.opening-panel/);
-  assert.match(stock,/\.pic-transfer-mode \.receipt-panel/);
-  assert.match(stock,/\.pic-transfer-mode \.transfer-panel/);
-  assert.match(stock,/\.pic-transfer-mode \.movement-panel/);
+  assert.doesNotMatch(stock,/\.pic-transfer-mode \.receipt-panel/);
+  assert.doesNotMatch(stock,/\.pic-transfer-mode \.transfer-panel/);
+  assert.doesNotMatch(stock,/\.pic-transfer-mode \.movement-panel/);
+  assert.match(stock,/Penerimaan Solar dari Transportir/);
+  assert.match(stock,/Pergerakan \/ Transfer Antar Storage/);
 });
 
-test("backend blocks PIC Transfer from fueling and stock movement insert paths",()=>{
+test("backend blocks PIC from fueling but permits guarded receipt and transfer in active shift",()=>{
   assert.match(migration,/PIC TRANSFER tidak diizinkan melakukan Pengisian Fuel/);
-  assert.match(migration,/PIC TRANSFER hanya dapat melihat stock dan menyimpan Stock Closing MT/);
   assert.match(migration,/trg_kpp_fuel_history_session_duty_guard/);
-  assert.match(migration,/trg_kpp_stock_movement_fuelman_duty_guard/);
+  assert.match(picMovement,/create or replace function public\.kpp_stock_movement_fuelman_duty_guard/);
+  assert.match(picMovement,/new\.tanggal is distinct from v_session\.tanggal/);
+  assert.match(picMovement,/new\.shift is distinct from v_shift/);
+  assert.match(picMovement,/not in \(\'RECEIPT\',\'TRANSFER\'\)/);
+  assert.match(picMovement,/PIC BONGKAR hanya boleh mencatat Penerimaan Transportir atau Transfer Storage/);
+  assert.match(picMovement,/trg_kpp_stock_movement_fuelman_duty_guard/);
 });
 
 test("one closing owner is guarded per shift period without rewriting legacy duplicates",()=>{
