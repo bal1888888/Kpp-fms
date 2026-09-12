@@ -24,7 +24,7 @@ jobs:
               ],
               'scripts/test-fc-dashboard-informative.mjs': [
                   ('Ringkasan Unit Terpilih', 'Ringkasan FC per Unit'),
-                  ('metrics.samples}/${metrics.transactions}', 'lastMetrics.samples}/${lastMetrics.transactions}'),
+                  ('metrics.samples}/${metrics.transactions}', 'view.samples}/${view.transactions}'),
               ],
               'scripts/test-fc-data-contract.mjs': [
                   ('assert.match(fc,/hm<previous\\)\\{delta=null;return;\\}previous=hm/);', "assert.match(fc,/hm<previous\\)\\{delta=null;\\}\\s*else previous=hm/);\n  assert.doesNotMatch(fc,/hm<previous\\)\\{delta=null;previous=hm/);"),
