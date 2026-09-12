@@ -1,0 +1,38 @@
+name: FC anomaly autopatch
+
+on:
+  push:
+    branches:
+      - fix/fc-anomaly-visibility-v1
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused patch
+        run: python3 scripts/patch-fc-anomaly-v1.py
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Full regression
+        run: npm run check
+      - name: Remove temporary patch machinery
+        run: |
+          rm scripts/patch-fc-anomaly-v1.py
+          rm .github/workflows/autopatch-fc-anomaly-v1.yml
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: surface invalid FC transactions and break chart gaps"
+          git push origin HEAD:fix/fc-anomaly-visibility-v1
