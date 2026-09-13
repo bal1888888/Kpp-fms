@@ -5,7 +5,7 @@
 
   const STYLE_ID="kppFcStandardAlertStyle";
   const standards=new Map();
-  let observer=null;
+  const observers=[];
   let queued=false;
 
   const db=()=>window.KPP?.db||window.kppDb||null;
@@ -70,7 +70,10 @@
     }else{
       delete row.dataset.fcStandard;
       if(row.title?.startsWith("FC rata-rata"))row.removeAttribute("title");
-      if(fcCell){delete fcCell.dataset.fcStandard;if(fcCell.title?.startsWith("FC rata-rata"))fcCell.removeAttribute("title");}
+      if(fcCell){
+        delete fcCell.dataset.fcStandard;
+        if(fcCell.title?.startsWith("FC rata-rata"))fcCell.removeAttribute("title");
+      }
     }
   }
 
@@ -128,22 +131,52 @@
     return true;
   }
 
-  function watch(){
-    observer?.disconnect();
-    observer=new MutationObserver(queueApply);
-    observer.observe(document.body,{childList:true,subtree:true});
+  function stopWatching(){
+    while(observers.length)observers.pop().disconnect();
+  }
+
+  function watchTarget(target){
+    if(!target)return;
+    const observer=new MutationObserver(queueApply);
+    observer.observe(target,{childList:true,subtree:true,characterData:true});
+    observers.push(observer);
+  }
+
+  async function watchFcPanels(){
+    stopWatching();
+    let attempts=0;
+    while(attempts<80){
+      const detailed=document.querySelector("#dashboardFcChart .kpp-fc-summary-table tbody")||document.querySelector(".kpp-fc-summary-table tbody");
+      const compact=document.querySelector("#kppPresentationFcSummary .kpp-pv-summary");
+      if(detailed||compact){
+        watchTarget(detailed);
+        if(compact&&compact!==detailed)watchTarget(compact);
+        queueApply();
+        return true;
+      }
+      await new Promise(resolve=>setTimeout(resolve,100));
+      attempts++;
+    }
+    return false;
   }
 
   async function install(){
     ensureStyle();
-    watch();
     let attempts=0;
     while(!db()&&attempts<80){await new Promise(r=>setTimeout(r,100));attempts++;}
     await loadStandards();
+    await watchFcPanels();
     queueApply();
   }
 
-  window.KPPFCStandard={refresh:async()=>{await loadStandards();queueApply();}};
+  window.KPPFCStandard={
+    refresh:async()=>{
+      await loadStandards();
+      await watchFcPanels();
+      queueApply();
+    }
+  };
+
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});
   else install();
 })();
