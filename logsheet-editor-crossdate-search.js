@@ -28,6 +28,12 @@
     return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(value||"-");
   }
 
+  function formatNumber(value){
+    if(value===null||value===undefined||value==="")return "-";
+    const n=Number(value);
+    return Number.isFinite(n)?n.toLocaleString("id-ID",{maximumFractionDigits:1}):String(value);
+  }
+
   function numberKey(value){
     if(value===null||value===undefined||value==="")return "NULL";
     const n=Number(String(value).replace(",","."));
@@ -99,7 +105,6 @@
     const byDate=new Map();
     const strictKeys=new Set();
     const stableKeys=new Set();
-
     const strictGroups=new Map();
     const stableGroups=new Map();
     const sessionGroups=new Map();
@@ -154,17 +159,27 @@
       .kpp-crossdate-actions button{min-height:34px;padding:7px 10px;border-radius:8px;font-size:10px;font-weight:900;cursor:pointer}
       .kpp-crossdate-export{border:0;background:#16a34a;color:#fff}
       .kpp-crossdate-close{border:1px solid #cbd5e1;background:#fff;color:#475569}
-      .kpp-crossdate-dates{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-      .kpp-crossdate-date{border:1px solid #bfdbfe;background:#fff;color:#1d4ed8;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;cursor:pointer}
-      .kpp-crossdate-date:hover{background:#eff6ff}
-      .kpp-crossdate-date.has-double{border-color:#fca5a5;background:#fff1f2;color:#b91c1c}
-      .kpp-crossdate-double{display:inline-flex;align-items:center;margin-left:4px;padding:2px 6px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:8px;font-weight:900}
       .kpp-crossdate-summary-double{display:inline-flex;align-items:center;margin-top:7px;padding:5px 8px;border:1px solid #fecaca;border-radius:8px;background:#fff1f2;color:#b91c1c;font-size:10px;font-weight:900}
+      .kpp-crossdate-tablewrap{width:100%;max-width:100%;max-height:58vh;overflow:auto;margin-top:10px;border:1px solid #dbe5f0;border-radius:9px;background:#fff;-webkit-overflow-scrolling:touch}
+      .kpp-crossdate-table{width:100%;min-width:980px;border-collapse:collapse;background:#fff}
+      .kpp-crossdate-table th{position:sticky;top:0;z-index:2;background:#10243f;color:#fff;font-size:9px;padding:8px 6px;white-space:nowrap}
+      .kpp-crossdate-table td{font-size:10px;padding:7px 6px;border-bottom:1px solid #e5e7eb;text-align:center;white-space:nowrap}
+      .kpp-crossdate-table tr:hover td{background:#eff6ff}
+      .kpp-crossdate-table tr.has-double td{background:#fff7f7}
+      .kpp-crossdate-double{display:inline-flex;align-items:center;padding:3px 7px;border:1px solid #fecaca;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:8px;font-weight:900;white-space:nowrap}
+      .kpp-crossdate-ok{color:#64748b;font-size:9px;font-weight:800}
+      .kpp-crossdate-edit{border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:7px;padding:6px 9px;min-height:0;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}
+      .kpp-crossdate-edit:hover{background:#dbeafe}
       .kpp-crossdate-empty{padding:12px;border:1px dashed #cbd5e1;border-radius:8px;background:#fff;color:#64748b;font-size:11px;text-align:center}
       #gridBody tr.kpp-editor-double-row td{background:#fff7f7!important}
       #gridBody tr.kpp-editor-double-row td.row-no{background:#fee2e2!important;color:#b91c1c!important}
       .kpp-editor-double-badge{display:inline-flex;align-items:center;margin:3px 0 0 5px;padding:3px 6px;border:1px solid #fecaca;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:8px;font-weight:900;white-space:nowrap}
-      @media(max-width:900px){#${BUTTON_ID}{flex:1 1 145px}.kpp-crossdate-head{display:block}.kpp-crossdate-actions{margin-top:9px}}
+      @media(max-width:900px){
+        #${BUTTON_ID}{flex:1 1 145px}
+        .kpp-crossdate-head{display:block}
+        .kpp-crossdate-actions{margin-top:9px}
+        .kpp-crossdate-tablewrap{max-height:52vh}
+      }
     `;
     document.head.appendChild(style);
   }
@@ -218,11 +233,34 @@
           <button type="button" class="kpp-crossdate-close">TUTUP</button>
         </div>
       </div>
-      <div class="kpp-crossdate-hint">Klik salah satu tanggal untuk membuka transaksi tanggal itu di tabel editor. Mode semua tanggal hanya untuk pencarian supaya data beda tanggal tidak tercampur saat disimpan.</div>
-      ${dates.length?`<div class="kpp-crossdate-dates">${dates.map(([date,count])=>{
-        const doubleCount=duplicateState.byDate.get(String(date))?.size||0;
-        return `<button type="button" class="kpp-crossdate-date${doubleCount?" has-double":""}" data-date="${esc(date)}">${formatDate(date)} • ${count}${doubleCount?` <span class="kpp-crossdate-double">DOUBLE ${doubleCount}</span>`:""}</button>`;
-      }).join("")}</div>`:'<div class="kpp-crossdate-empty">Tidak ada transaksi untuk unit tersebut.</div>'}
+      <div class="kpp-crossdate-hint">Riwayat semua tanggal ditampilkan di bawah. Klik <b>EDIT TANGGAL</b> pada transaksi yang mau diperbaiki; editor akan membuka tanggal itu dan tetap memfilter unit ${esc(unit)}.</div>
+      ${rows.length?`
+        <div class="kpp-crossdate-tablewrap">
+          <table class="kpp-crossdate-table">
+            <thead>
+              <tr><th>TANGGAL</th><th>JAM</th><th>UNIT</th><th>HM AWAL</th><th>HM ISI</th><th>HM JALAN</th><th>QTY</th><th>SHIFT</th><th>FT</th><th>STATUS</th><th>AKSI</th></tr>
+            </thead>
+            <tbody>
+              ${rows.map(row=>{
+                const flagged=duplicateState.duplicateIds.has(String(row.id));
+                return `<tr class="${flagged?"has-double":""}">
+                  <td>${formatDate(row.tanggal)}</td>
+                  <td>${esc(String(row.jam||"-").slice(0,5))}</td>
+                  <td><b>${esc(row.unit||"-")}</b></td>
+                  <td>${formatNumber(row.hm_awal)}</td>
+                  <td>${formatNumber(row.hm_akhir)}</td>
+                  <td>${formatNumber(row.hm_jalan)}</td>
+                  <td>${formatNumber(row.fuel)} L</td>
+                  <td>${esc(row.shift||"-")}</td>
+                  <td>${esc(row.fuel_truck||"-")}</td>
+                  <td>${flagged?'<span class="kpp-crossdate-double">⚠ DOUBLE</span>':'<span class="kpp-crossdate-ok">OK</span>'}</td>
+                  <td><button type="button" class="kpp-crossdate-edit" data-date="${esc(row.tanggal)}">EDIT TANGGAL</button></td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `:'<div class="kpp-crossdate-empty">Tidak ada transaksi untuk unit tersebut.</div>'}
     `;
   }
 
@@ -381,8 +419,8 @@
     });
 
     panel.addEventListener("click",event=>{
-      const dateBtn=event.target.closest(".kpp-crossdate-date");
-      if(dateBtn){openDate(dateBtn.dataset.date);return;}
+      const editBtn=event.target.closest(".kpp-crossdate-edit");
+      if(editBtn){openDate(editBtn.dataset.date);return;}
       if(event.target.closest(".kpp-crossdate-export")){exportAllDates();return;}
       if(event.target.closest(".kpp-crossdate-close")){panel.hidden=true;}
     });

@@ -14,20 +14,22 @@ test('cross-date lookup searches one exact unit across paged fuel history',()=>{
   assert.match(crossDate,/SEMUA TANGGAL/);
 });
 
-test('cross-date lookup stays read-only until user opens a single editor date',()=>{
+test('cross-date lookup stays read-only until user opens one date in the normal editor',()=>{
   assert.doesNotMatch(crossDate,/\.insert\s*\(/i);
   assert.doesNotMatch(crossDate,/\.update\s*\(/i);
   assert.doesNotMatch(crossDate,/\.delete\s*\(/i);
   assert.doesNotMatch(crossDate,/\.upsert\s*\(/i);
   assert.match(crossDate,/dateInput\.value=date/);
   assert.match(crossDate,/await\s+loadDate\(\)/);
-  assert.match(crossDate,/panel\)panel\.hidden=true/);
+  assert.match(crossDate,/EDIT TANGGAL/);
 });
 
-test('cross-date lookup no longer renders a misleading read-only transaction table',()=>{
-  assert.doesNotMatch(crossDate,/kpp-crossdate-tablewrap/);
-  assert.doesNotMatch(crossDate,/<table class=\"kpp-crossdate-table\"/);
-  assert.match(crossDate,/Klik salah satu tanggal untuk membuka transaksi tanggal itu di tabel editor/);
+test('cross-date lookup renders useful all-date transaction table without date chips',()=>{
+  assert.match(crossDate,/kpp-crossdate-tablewrap/);
+  assert.match(crossDate,/<table class=\"kpp-crossdate-table\"/);
+  assert.match(crossDate,/class=\"kpp-crossdate-edit\"/);
+  assert.doesNotMatch(crossDate,/kpp-crossdate-dates/);
+  assert.doesNotMatch(crossDate,/kpp-crossdate-date/);
 });
 
 test('cross-date lookup identifies duplicate or potential duplicate rows',()=>{
@@ -55,7 +57,7 @@ test('daily usage trend uses relative scaling without a connecting SVG line',()=
 
 test('new enhancements are page-scoped from WIB runtime',()=>{
   assert.match(time,/KPP_ACTIVE_PAGE===\"logsheet-editor\"/);
-  assert.match(time,/logsheet-editor-crossdate-search\.js\?v=20260913c3/);
+  assert.match(time,/logsheet-editor-crossdate-search\.js\?v=20260913c4/);
   assert.match(time,/KPP_ACTIVE_PAGE===\"dashboard\"/);
   assert.match(time,/dashboard-usage-bars-v2\.js\?v=20260913c3/);
 });
