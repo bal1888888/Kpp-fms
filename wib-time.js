@@ -65,7 +65,7 @@
   // the shared WIB helpers and no additional network/script work.
   if(typeof document!=="undefined" && root.KPP_ACTIVE_PAGE==="hm-master"){
     const script=document.createElement("script");
-    script.src="hm-master-capacity-quick.js?v=20260913a1";
+    script.src="hm-master-capacity-picker-v2.js?v=20260913b1";
     script.async=true;
     document.head.appendChild(script);
   }
