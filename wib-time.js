@@ -83,5 +83,6 @@
 
   if(root.KPP_ACTIVE_PAGE==="dashboard"){
     loadPageScript("dashboard-usage-bars-v2.js?v=20260913c3");
+    loadPageScript("dashboard-stock-delta-v1.js?v=20260913a1");
   }
 })(typeof window!=="undefined"?window:globalThis);
