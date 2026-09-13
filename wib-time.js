@@ -78,10 +78,10 @@
   if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
     loadPageScript("logsheet-editor-hardening.js?v=20260913c2");
     loadPageScript("logsheet-editor-hm-sequence-guard.js?v=20260913a1");
-    loadPageScript("logsheet-editor-crossdate-search.js?v=20260913c1");
+    loadPageScript("logsheet-editor-crossdate-search.js?v=20260913c3");
   }
 
   if(root.KPP_ACTIVE_PAGE==="dashboard"){
-    loadPageScript("dashboard-usage-bars-v2.js?v=20260913c1");
+    loadPageScript("dashboard-usage-bars-v2.js?v=20260913c3");
   }
 })(typeof window!=="undefined"?window:globalThis);
