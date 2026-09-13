@@ -30,6 +30,15 @@ test("stock thresholds remain operationally safe",()=>{
   assert.match(guard,/p<50.*WASPADA/s);
 });
 
+test("stock guard cannot create a whole-body mutation feedback loop",()=>{
+  assert.doesNotMatch(guard,/rootObserver/);
+  assert.doesNotMatch(guard,/observe\(body/);
+  assert.match(guard,/stockObserver\.observe\(host/);
+  assert.match(guard,/stockObserver\?\.disconnect\(\)/);
+  assert.match(guard,/if\(status\.textContent!==info\.label\)/);
+  assert.match(guard,/patchQueued/);
+});
+
 test("extra dashboard queries are read-only",()=>{
   assert.match(polish,/fuel_history/);
   assert.match(polish,/stock_movements/);
@@ -42,9 +51,10 @@ test("extra dashboard queries are read-only",()=>{
 });
 
 test("dashboard runtime loads reference polish after command center",()=>{
-  assert.match(time,/dashboard-command-center-v2\.js\?v=20260913f1/);
-  assert.match(time,/dashboard-reference-polish-v3\.js\?v=20260913g1/);
-  assert.match(time,/dashboard-reference-polish-guard-v3\.js\?v=20260913g1/);
+  assert.match(time,/dashboard-command-center-v2\.js\?v=20260913f2/);
+  assert.match(time,/dashboard-reference-polish-v3\.js\?v=20260913g2/);
+  assert.match(time,/dashboard-reference-polish-guard-v3\.js\?v=20260913h1/);
+  assert.match(time,/waitFor\(\(\)=>document\.getElementById\("kppCommandKpis"\)/);
 });
 
 test("reference polish scripts are syntactically valid",()=>{
