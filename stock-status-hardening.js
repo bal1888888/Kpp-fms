@@ -79,7 +79,9 @@
       card.classList.add(cardClassFor(state));
       clearRadialStates(radial);
       radial?.classList.add(state);
-      if(statusEl)statusEl.textContent=status;
+      if(statusEl && String(statusEl.textContent||"").trim()!==status){
+        statusEl.textContent=status;
+      }
     });
   }
 
@@ -102,7 +104,8 @@
       if(!raw)return;
 
       if(/^\d+(?:[.,]\d+)?%\s*\|\s*(AMAN|RENDAH|KRITIS|TINGGI|WASPADA)$/i.test(raw)){
-        el.textContent=raw.replace(/(AMAN|RENDAH|KRITIS|TINGGI|WASPADA)$/i,status);
+        const next=raw.replace(/(AMAN|RENDAH|KRITIS|TINGGI|WASPADA)$/i,status);
+        if(next!==raw)el.textContent=next;
         ["safe","low","caution","critical","high"].forEach(key=>el.classList.remove(`capacity-${key}-text`));
         el.classList.add(`capacity-${state}-text`);
         return;
@@ -110,7 +113,7 @@
 
       // Untuk layout hero baru: hanya nilai status tunggal yang diganti.
       // Badge seperti "AMAN 3" tidak disentuh.
-      if(/^(AMAN|RENDAH|KRITIS|TINGGI|WASPADA)$/i.test(raw)){
+      if(/^(AMAN|RENDAH|KRITIS|TINGGI|WASPADA)$/i.test(raw) && raw!==status){
         el.textContent=status;
       }
     });
