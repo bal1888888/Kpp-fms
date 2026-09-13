@@ -85,7 +85,6 @@
     loadPageScript("dashboard-usage-bars-v2.js?v=20260913c3");
     loadPageScript("dashboard-stock-delta-v1.js?v=20260913a3");
     loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a1");
-    loadPageScript("dashboard-command-center-v1.js?v=20260913e1");
-    loadPageScript("dashboard-command-center-hotfix-v1.js?v=20260913e1");
+    loadPageScript("dashboard-command-center-v2.js?v=20260913f1");
   }
 })(typeof window!=="undefined"?window:globalThis);
