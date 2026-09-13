@@ -61,6 +61,19 @@
   }
   root.KPPTime=Object.freeze({TZ,parts,localDate,localTime,addDays,daysInMonth,operationalShift,operationalPeriod,operationalMtdBounds,formatDateTime});
 
+  function loadPageStyle(href){
+    if(typeof document==="undefined")return false;
+    const base=href.split("?")[0];
+    const existing=[...document.querySelectorAll('link[rel="stylesheet"]')].find(link=>link.href&&link.href.includes(base)&&link.href.includes("20260913navy1"));
+    if(existing)return true;
+    const link=document.createElement("link");
+    link.rel="stylesheet";
+    link.href=href;
+    link.dataset.kppGlobalPolish="navy1";
+    document.head.appendChild(link);
+    return true;
+  }
+
   function loadPageScript(src,{async=true}={}){
     if(typeof document==="undefined")return Promise.resolve(false);
     return new Promise(resolve=>{
@@ -97,6 +110,9 @@
       check();
     });
   }
+
+  /* Selalu muat polish global terbaru sesudah stylesheet lama supaya tema konsisten di semua halaman. */
+  loadPageStyle("kpp-ui-polish.css?v=20260913navy1");
 
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
