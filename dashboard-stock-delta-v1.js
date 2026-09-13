@@ -1,9 +1,9 @@
-// KPP-FMS Dashboard stock movement indicators v1
-// Adds per-day stock change chips without changing stock values or status logic.
+// KPP-FMS Dashboard stock movement indicators v2
+// Adds compact per-day stock change badges directly on each stock radial ring.
 (() => {
   "use strict";
 
-  const STYLE_ID="kppStockDeltaV1Style";
+  const STYLE_ID="kppStockDeltaV2Style";
   const CHIP_CLASS="kpp-stock-delta";
   let observer=null;
   let watchedHost=null;
@@ -13,17 +13,20 @@
     const style=document.createElement("style");
     style.id=STYLE_ID;
     style.textContent=`
-      .${CHIP_CLASS}{
-        display:inline-flex;align-items:center;justify-content:center;gap:3px;
-        margin-top:4px;padding:3px 6px;border-radius:999px;border:1px solid transparent;
-        font-size:7px;font-weight:900;line-height:1;white-space:nowrap;letter-spacing:.01em;
+      #stockTrendBars .stock-trend-ring{overflow:visible!important}
+      #stockTrendBars .${CHIP_CLASS}{
+        position:absolute;z-index:6;right:-7px;top:5px;
+        display:inline-flex;align-items:center;justify-content:center;gap:2px;
+        min-height:16px;padding:2px 5px;border-radius:999px;border:1px solid transparent;
+        box-shadow:0 2px 7px rgba(15,23,42,.12);
+        font-size:6.5px;font-weight:900;line-height:1;white-space:nowrap;letter-spacing:.01em;
       }
-      .${CHIP_CLASS}.up{background:#ecfdf5;border-color:#bbf7d0;color:#15803d}
-      .${CHIP_CLASS}.down{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
-      .${CHIP_CLASS}.flat{background:#f1f5f9;border-color:#e2e8f0;color:#64748b}
-      .${CHIP_CLASS}.start{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
+      #stockTrendBars .${CHIP_CLASS}.up{background:#dcfce7;border-color:#86efac;color:#166534}
+      #stockTrendBars .${CHIP_CLASS}.down{background:#ffedd5;border-color:#fdba74;color:#c2410c}
+      #stockTrendBars .${CHIP_CLASS}.flat{background:#f1f5f9;border-color:#cbd5e1;color:#64748b}
+      #stockTrendBars .${CHIP_CLASS}.start{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
       @media(max-width:560px){
-        .${CHIP_CLASS}{font-size:6.5px;padding:3px 5px;margin-top:3px}
+        #stockTrendBars .${CHIP_CLASS}{right:-8px;top:4px;min-height:14px;font-size:5.8px;padding:2px 4px}
       }
     `;
     document.head.appendChild(style);
@@ -39,6 +42,13 @@
 
   function formatLiter(value){
     return new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(Math.abs(Number(value)||0));
+  }
+
+  function formatCompact(value){
+    const v=Math.abs(Number(value)||0);
+    if(v>=1000000)return `${new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(v/1000000)}M`;
+    if(v>=1000)return `${new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(v/1000)}K`;
+    return new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(v);
   }
 
   function formatPct(value){
@@ -65,14 +75,15 @@
 
     items.forEach((item,index)=>{
       const current=itemValue(item);
-      if(!Number.isFinite(current))return;
+      const ring=item.querySelector(".stock-trend-ring");
+      if(!Number.isFinite(current)||!ring)return;
 
       const chip=document.createElement("div");
       chip.className=CHIP_CLASS;
 
       if(index===0){
         chip.classList.add("start");
-        chip.textContent="• AWAL";
+        chip.textContent="AWAL";
         chip.title="Posisi awal pada rentang 5 hari yang tampil.";
       }else{
         const previous=itemValue(items[index-1]);
@@ -83,22 +94,20 @@
 
         if(Math.abs(diff)<0.5){
           chip.classList.add("flat");
-          chip.textContent="• TETAP";
+          chip.textContent="TETAP";
           chip.title=`Stock tetap dibanding ${previousLabel}.`;
         }else if(diff>0){
           chip.classList.add("up");
-          chip.textContent=`▲ ${formatLiter(diff)} L`;
+          chip.textContent=`▲+${formatCompact(diff)}`;
           chip.title=`Stock bertambah ${formatLiter(diff)} L (${formatPct(pct)}%) dibanding ${previousLabel}.`;
         }else{
           chip.classList.add("down");
-          chip.textContent=`▼ ${formatLiter(diff)} L`;
+          chip.textContent=`▼${formatCompact(diff)}`;
           chip.title=`Stock berkurang ${formatLiter(diff)} L (${formatPct(pct)}%) dibanding ${previousLabel}.`;
         }
       }
 
-      const status=item.querySelector(".trend-stock-status");
-      if(status)status.insertAdjacentElement("afterend",chip);
-      else item.appendChild(chip);
+      ring.appendChild(chip);
     });
   }
 

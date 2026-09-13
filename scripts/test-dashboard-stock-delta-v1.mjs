@@ -9,14 +9,15 @@ test('stock delta indicator compares each stock day with the previous visible da
   assert.match(delta,/function\s+patchHost\(host\)/);
   assert.match(delta,/\.stock-radial-item/);
   assert.match(delta,/const diff=current-previous/);
-  assert.match(delta,/▲ \$\{formatLiter\(diff\)\} L/);
-  assert.match(delta,/▼ \$\{formatLiter\(diff\)\} L/);
+  assert.match(delta,/▲\+\$\{formatCompact\(diff\)\}/);
+  assert.match(delta,/▼\$\{formatCompact\(diff\)\}/);
   assert.match(delta,/TETAP/);
+  assert.match(delta,/ring\.appendChild\(chip\)/);
 });
 
 test('stock delta indicator uses dashboard theme colors and does not alter source data',()=>{
-  assert.match(delta,/background:#ecfdf5/);
-  assert.match(delta,/background:#fff7ed/);
+  assert.match(delta,/background:#dcfce7/);
+  assert.match(delta,/background:#ffedd5/);
   assert.doesNotMatch(delta,/\.from\(/);
   assert.doesNotMatch(delta,/\.update\(/);
   assert.doesNotMatch(delta,/\.insert\(/);
@@ -24,7 +25,7 @@ test('stock delta indicator uses dashboard theme colors and does not alter sourc
 });
 
 test('dashboard runtime loads stock delta enhancement',()=>{
-  assert.match(time,/dashboard-stock-delta-v1\.js\?v=20260913a1/);
+  assert.match(time,/dashboard-stock-delta-v1\.js\?v=20260913a2/);
 });
 
 test('stock delta script is syntactically valid',()=>{
