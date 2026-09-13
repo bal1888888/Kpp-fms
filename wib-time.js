@@ -118,6 +118,7 @@
       await loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a2",{async:false});
       await loadPageScript("dashboard-presentation-layout-v1.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
+      await loadPageScript("dashboard-compact-trends-v3.js?v=20260913a1",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
