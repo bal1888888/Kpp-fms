@@ -7,6 +7,7 @@
   const FILTER_STYLE_ID="kpp-logsheet-editor-filter-style";
   const FILTER_BAR_ID="kppLogsheetEditorFilters";
   const PATCH_FLAG="KPP_EDITOR_ANTIDOUBLE_INSTALLED";
+  const hmCorrectedStableKeys=new Set();
 
   function numberKey(value){
     if(typeof window.stableNumber==="function")return window.stableNumber(value);
@@ -40,24 +41,60 @@
     return String(row?.fuel_truck||"").trim().toUpperCase();
   }
 
+  function stableIdentity(tanggal,row){
+    return [
+      String(tanggal||""),
+      String(row?.unit||"").trim().toUpperCase(),
+      numberKey(row?.fuel),
+      shiftKey(row?.shift),
+      ftKey(row)
+    ].join("|");
+  }
+
+  function isHmCorrectedRow(row){
+    if(row?.hm_ref_excluded!==true)return false;
+    const reason=String(row?.hm_ref_excluded_reason||"").trim().toUpperCase();
+    return reason.startsWith("HM DIRAPIKAN") ||
+      reason.includes("KOREKSI HM") ||
+      reason.includes("HM DIKOREKSI") ||
+      reason.includes("EDIT HM");
+  }
+
+  function rememberHmCorrections(rows){
+    (rows||[]).forEach(row=>{
+      if(isHmCorrectedRow(row)){
+        hmCorrectedStableKeys.add(stableIdentity(row.tanggal,row));
+      }
+    });
+  }
+
   function installAntiDoublePatch(){
     if(window[PATCH_FLAG])return true;
     if(typeof window.duplicateSignature!=="function")return false;
 
     const strictSignature=window.duplicateSignature;
+    const originalFetchExistingRange=window.fetchExistingRange;
     window.KPP_EDITOR_STRICT_DUPLICATE_SIGNATURE=strictSignature;
 
-    // HM sengaja TIDAK menjadi identitas transaksi. Jika HM histori diedit,
-    // re-import file lama harus tetap dianggap SUDAH ADA, bukan transaksi baru.
-    // Fingerprint aman memakai atribut operasional yang tidak ikut koreksi HM.
+    // fetchExistingRange dipakai saat preview import dan tepat sebelum INSERT.
+    // Di sini kita ingat transaksi yang HM-nya memang pernah dikoreksi.
+    if(typeof originalFetchExistingRange==="function"){
+      window.fetchExistingRange=async function(...args){
+        const result=await originalFetchExistingRange.apply(this,args);
+        rememberHmCorrections(result);
+        return result;
+      };
+    }
+
+    // Data normal tetap memakai fingerprint lama yang mencakup HM, sehingga dua
+    // pengisian sah dengan Qty/Shift/FT sama tidak otomatis dianggap sama.
+    // Khusus transaksi yang tercatat pernah dikoreksi HM, fallback mengabaikan HM.
     window.duplicateSignature=function(tanggal,row){
-      return [
-        String(tanggal||""),
-        String(row?.unit||"").trim().toUpperCase(),
-        numberKey(row?.fuel),
-        shiftKey(row?.shift),
-        ftKey(row)
-      ].join("|");
+      const stable=stableIdentity(tanggal,row);
+      if(isHmCorrectedRow(row) || hmCorrectedStableKeys.has(stable)){
+        return `HM_EDIT|${stable}`;
+      }
+      return `STRICT|${strictSignature(tanggal,row)}`;
     };
 
     window[PATCH_FLAG]=true;
@@ -293,7 +330,7 @@
     if(!help)return;
     const note=document.createElement("div");
     note.className="editor-antidouble-note";
-    note.innerHTML="<b>ANTI-DOUBLE HM EDIT AKTIF.</b> Import ulang tetap dianggap SUDAH ADA walau HM histori sudah pernah dikoreksi. Pencocokan memakai Tanggal + Unit + Qty + Shift + Fuel Truck, jadi perubahan HM tidak membuat transaksi lama terlihat BARU lagi.";
+    note.innerHTML="<b>ANTI-DOUBLE HM EDIT AKTIF.</b> Untuk transaksi yang tercatat pernah dikoreksi HM, import ulang tetap dianggap SUDAH ADA walau nilai HM di file lama berbeda. Data normal tetap dibandingkan dengan fingerprint lengkap agar pengisian sah tidak ikut tertahan.";
     help.insertAdjacentElement("afterend",note);
   }
 
