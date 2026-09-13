@@ -6,12 +6,12 @@ const delta=fs.readFileSync("dashboard-stock-delta-v1.js","utf8");
 const gap=fs.readFileSync("fc-chart-gap-bridge-v1.js","utf8");
 const time=fs.readFileSync("wib-time.js","utf8");
 
-test("stock delta badge is rendered directly on the radial ring",()=>{
-  assert.match(delta,/item\.querySelector\("\.stock-trend-ring"\)/);
-  assert.match(delta,/ring\.appendChild\(chip\)/);
-  assert.match(delta,/▲\+\$\{formatCompact\(diff\)\}/);
-  assert.match(delta,/▼\$\{formatCompact\(diff\)\}/);
-  assert.doesNotMatch(delta,/status\.insertAdjacentElement\("afterend",chip\)/);
+test("stock radial keeps current stock green and the remaining capacity red",()=>{
+  assert.match(delta,/--trend-fill:#11a861/);
+  assert.match(delta,/--trend-empty:#ef4444/);
+  assert.match(delta,/background:conic-gradient/);
+  assert.match(delta,/cleanLegacyBadges/);
+  assert.doesNotMatch(delta,/ring\.appendChild\(chip\)/);
 });
 
 test("FC missing samples are bridged visually without inventing FC values",()=>{
@@ -22,8 +22,8 @@ test("FC missing samples are bridged visually without inventing FC values",()=>{
   assert.doesNotMatch(gap,/interpolat/i);
 });
 
-test("dashboard loads current stock ring delta and FC gap bridge",()=>{
-  assert.match(time,/dashboard-stock-delta-v1\.js\?v=20260913a2/);
+test("dashboard loads current stock radial visual and FC gap bridge",()=>{
+  assert.match(time,/dashboard-stock-delta-v1\.js\?v=20260913a3/);
   assert.match(time,/fc-chart-gap-bridge-v1\.js\?v=20260913a1/);
 });
 
