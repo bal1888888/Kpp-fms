@@ -1,12 +1,13 @@
-// KPP-FMS CCR Auto Quota v1
-// HM awal = HM pada pengisian fuel valid terakhir. Jatah = (HM akhir CCR - HM awal) x FC standar.
+// KPP-FMS CCR Auto Quota v2 hardening
+// Source of truth: server preview RPC + server INSERT trigger.
+// HM awal jatah = HM akhir pada pengisian fuel valid terakhir.
 (() => {
   "use strict";
 
   let requestSeq=0;
   let lastSnapshot=null;
-  let patchedReference=false;
-  let patchedEdit=false;
+  let readersPatched=false;
+  let editPatched=false;
 
   const db=()=>window.KPP?.db||window.kppDb||null;
   const upper=value=>String(value??"").trim().toUpperCase();
@@ -53,22 +54,13 @@
   function ensureUi(){
     const {hm,maxQty}=els();
     if(!hm||!maxQty)return null;
-
-    const qtyWrap=maxQty.parentElement;
-    const qtyLabel=qtyWrap?.querySelector("label");
-    if(qtyLabel&&!qtyLabel.dataset.kppAutoQuota){
-      qtyLabel.dataset.kppAutoQuota="1";
-      qtyLabel.textContent="Qty Jatah (L)";
-    }
-
     if(hm.parentElement&&!hm.parentElement.querySelector("[data-kpp-hm-lock-note]")){
       const note=document.createElement("div");
       note.className="input-help";
       note.dataset.kppHmLockNote="1";
-      note.textContent="HM akhir ini menjadi HM jatah dan dikunci setelah jatah disimpan.";
+      note.textContent="HM akhir ini menjadi HM jatah dan dikunci setelah jatah otomatis tersimpan.";
       hm.parentElement.appendChild(note);
     }
-
     let card=document.getElementById("kppAutoQuotaCard");
     if(!card){
       card=document.createElement("div");
@@ -85,14 +77,14 @@
         <div class="kpp-auto-quota-note" data-auto-note>HM awal jatah selalu mengambil HM dari transaksi pengisian fuel valid terakhir.</div>`;
       const grid=document.querySelector(".allocation-fields");
       if(grid?.parentElement)grid.insertAdjacentElement("afterend",card);
-      else qtyWrap?.insertAdjacentElement("afterend",card);
+      else maxQty.parentElement?.insertAdjacentElement("afterend",card);
     }
     return card;
   }
 
-  function updateLimit(){
+  function refreshFinalLimit(){
     if(typeof window.updateLimit==="function"){
-      try{window.updateLimit();return;}catch(_){/* fallback below */}
+      try{window.updateLimit();return;}catch(_){/* fallback */}
     }
     const {maxQty,tolerance,finalLimit}=els();
     if(!finalLimit)return;
@@ -100,59 +92,72 @@
     finalLimit.textContent=fmtLit((Number.isFinite(q)?q:0)+(Number.isFinite(t)?t:0));
   }
 
-  function setManualMode(message,{lastHm=null,source=""}={}){
-    const {maxQty,hmPrevious,hmPreviousSource,hm}=els();
-    const card=ensureUi();
-    if(!card)return;
-    maxQty.readOnly=false;
-    maxQty.classList.remove("kpp-auto-locked");
-    const label=maxQty.parentElement?.querySelector("label");
-    if(label)label.textContent="Qty Jatah Manual (L)";
-    if(lastHm!==null&&hmPrevious){hmPrevious.value=String(lastHm);}
-    if(hmPreviousSource){hmPreviousSource.textContent=source||message;}
-    card.className="kpp-auto-quota warn";
-    card.querySelector("[data-auto-state]").textContent="MANUAL / BELUM LENGKAP";
-    card.querySelector("[data-auto-start]").textContent=lastHm===null?"-":`${fmt(lastHm,1)} HM`;
-    card.querySelector("[data-auto-end]").textContent=num(hm?.value)===null?"-":`${fmt(num(hm.value),1)} HM`;
-    card.querySelector("[data-auto-fc]").textContent=lastSnapshot?.standard?`${fmt(lastSnapshot.standard,1)} L/HM`:"-";
-    card.querySelector("[data-auto-quota]").textContent="MANUAL";
-    card.querySelector("[data-auto-note]").textContent=message;
-    updateLimit();
+  async function loadSnapshot(unit){
+    const client=db();
+    if(!client)throw new Error("Database belum siap.");
+    const {data,error}=await client.rpc("ccr_auto_quota_preview",{p_unit:unit});
+    if(error)throw error;
+    const row=data||{};
+    return {
+      unit:upper(row.unit||unit),
+      standard:num(row.fc_standard_lphm),
+      lastHm:num(row.last_fueling_hm),
+      fuelId:row.last_fueling_id??null,
+      source:String(row.source||""),
+      reason:String(row.reason||""),
+      baselineValid:row.baseline_valid===true,
+      autoReady:row.auto_ready===true
+    };
   }
 
-  function setError(message,snapshot){
-    const {maxQty,hmPrevious,hmPreviousSource,hm}=els();
+  function paint(snapshot,{state,kind="",quotaText="-",note="",showStart=true}={}){
     const card=ensureUi();
     if(!card)return;
-    maxQty.value="";
-    maxQty.readOnly=true;
-    maxQty.classList.remove("kpp-auto-locked");
-    if(snapshot?.lastHm!==null&&snapshot?.lastHm!==undefined&&hmPrevious)hmPrevious.value=String(snapshot.lastHm);
-    if(hmPreviousSource)hmPreviousSource.textContent=snapshot?.source||message;
-    card.className="kpp-auto-quota error";
-    card.querySelector("[data-auto-state]").textContent="PERIKSA HM";
-    card.querySelector("[data-auto-start]").textContent=snapshot?.lastHm==null?"-":`${fmt(snapshot.lastHm,1)} HM`;
-    card.querySelector("[data-auto-end]").textContent=num(hm?.value)===null?"-":`${fmt(num(hm.value),1)} HM`;
+    card.className=`kpp-auto-quota${kind?" "+kind:""}`;
+    card.querySelector("[data-auto-state]").textContent=state||"-";
+    card.querySelector("[data-auto-start]").textContent=showStart&&snapshot?.lastHm!==null?`${fmt(snapshot.lastHm,1)} HM`:"-";
+    card.querySelector("[data-auto-end]").textContent=num(els().hm?.value)===null?"-":`${fmt(num(els().hm.value),1)} HM`;
     card.querySelector("[data-auto-fc]").textContent=snapshot?.standard?`${fmt(snapshot.standard,1)} L/HM`:"-";
-    card.querySelector("[data-auto-quota]").textContent="-";
-    card.querySelector("[data-auto-note]").textContent=message;
-    updateLimit();
+    card.querySelector("[data-auto-quota]").textContent=quotaText;
+    card.querySelector("[data-auto-note]").textContent=note||snapshot?.reason||"-";
+  }
+
+  function setManualMode(snapshot,message){
+    const {maxQty,hmPrevious,hmPreviousSource}=els();
+    if(maxQty){maxQty.readOnly=false;maxQty.classList.remove("kpp-auto-locked");}
+    const label=maxQty?.parentElement?.querySelector("label");
+    if(label)label.textContent="Qty Jatah Manual (L)";
+    if(hmPrevious)hmPrevious.value=snapshot?.baselineValid&&snapshot.lastHm!==null?String(snapshot.lastHm):"";
+    if(hmPreviousSource)hmPreviousSource.textContent=snapshot?.source||message;
+    paint(snapshot,{state:"MANUAL / BELUM LENGKAP",kind:"warn",quotaText:"MANUAL",note:message});
+    refreshFinalLimit();
+  }
+
+  function setBlocked(snapshot,message){
+    const {maxQty,hmPrevious,hmPreviousSource}=els();
+    if(maxQty){maxQty.value="";maxQty.readOnly=true;maxQty.classList.remove("kpp-auto-locked");}
+    if(hmPrevious)hmPrevious.value="";
+    if(hmPreviousSource)hmPreviousSource.textContent=message;
+    paint(snapshot,{state:"BLOKIR • REVIEW HM",kind:"error",quotaText:"-",note:message});
+    refreshFinalLimit();
   }
 
   function applyAuto(snapshot){
     const {hm,maxQty,hmPrevious,hmPreviousSource}=els();
-    const card=ensureUi();
-    if(!card)return;
     const hmEnd=num(hm?.value);
     if(hmEnd===null){
-      setManualMode("Masukkan HM akhir CCR untuk menghitung jatah otomatis.",{lastHm:snapshot.lastHm,source:snapshot.source});
+      setManualMode(snapshot,"Masukkan HM akhir CCR untuk menghitung jatah otomatis.");
       return;
     }
     if(hmEnd<=snapshot.lastHm){
-      setError(`HM akhir harus lebih besar dari HM pengisian terakhir ${fmt(snapshot.lastHm,1)} HM.`,snapshot);
+      setBlocked(snapshot,`HM akhir harus lebih besar dari HM pengisian terakhir ${fmt(snapshot.lastHm,1)} HM.`);
       return;
     }
     const runtime=Math.round((hmEnd-snapshot.lastHm)*10)/10;
+    if(runtime>72){
+      setBlocked(snapshot,`HM Jalan ${fmt(runtime,1)} sejak pengisian terakhir terlalu besar. Review HM history/HM unit sebelum membuat jatah.`);
+      return;
+    }
     const quota=Math.round(runtime*snapshot.standard);
     maxQty.value=String(quota);
     maxQty.readOnly=true;
@@ -161,48 +166,13 @@
     if(label)label.textContent="Qty Jatah Otomatis (L)";
     if(hmPrevious)hmPrevious.value=String(snapshot.lastHm);
     if(hmPreviousSource)hmPreviousSource.textContent=snapshot.source;
-    card.className="kpp-auto-quota ready";
-    card.querySelector("[data-auto-state]").textContent="AUTO • TERKUNCI SAAT DISIMPAN";
-    card.querySelector("[data-auto-start]").textContent=`${fmt(snapshot.lastHm,1)} HM`;
-    card.querySelector("[data-auto-end]").textContent=`${fmt(hmEnd,1)} HM`;
-    card.querySelector("[data-auto-fc]").textContent=`${fmt(snapshot.standard,1)} L/HM`;
-    card.querySelector("[data-auto-quota]").textContent=`${fmtLit(quota)} L`;
-    card.querySelector("[data-auto-note]").textContent=`Rumus: (${fmt(hmEnd,1)} - ${fmt(snapshot.lastHm,1)}) HM × ${fmt(snapshot.standard,1)} L/HM = ${fmtLit(quota)} L. Server menghitung ulang sebelum menyimpan.`;
-    updateLimit();
-  }
-
-  async function loadSnapshot(unit){
-    const client=db();
-    if(!client)throw new Error("Database belum siap.");
-
-    const [masterResult,fuelResult]=await Promise.all([
-      client.from("unit_master")
-        .select("code_unit,fc_standard_lphm,active")
-        .eq("code_unit",unit)
-        .limit(1),
-      client.from("fuel_history")
-        .select("id,tanggal,jam,hm_akhir,fuel")
-        .eq("unit",unit)
-        .eq("hm_ref_excluded",false)
-        .is("duplicate_of_id",null)
-        .gt("fuel",0)
-        .not("hm_akhir","is",null)
-        .order("tanggal",{ascending:false})
-        .order("jam",{ascending:false})
-        .order("id",{ascending:false})
-        .limit(1)
-    ]);
-
-    if(masterResult.error)throw masterResult.error;
-    if(fuelResult.error)throw fuelResult.error;
-    const master=masterResult.data?.[0]||null;
-    const fuel=fuelResult.data?.[0]||null;
-    const standard=num(master?.fc_standard_lphm);
-    const lastHm=num(fuel?.hm_akhir);
-    const source=fuel
-      ? `HM pengisian terakhir #${fuel.id} • ${fuel.tanggal}${fuel.jam?" "+String(fuel.jam).slice(0,5):""}`
-      : "Belum ada histori pengisian fuel valid.";
-    return {unit,standard:standard&&standard>0?standard:null,lastHm,source,fuelId:fuel?.id||null};
+    paint(snapshot,{
+      state:"AUTO • TERKUNCI SAAT DISIMPAN",
+      kind:"ready",
+      quotaText:`${fmtLit(quota)} L`,
+      note:`Rumus: (${fmt(hmEnd,1)} - ${fmt(snapshot.lastHm,1)}) HM × ${fmt(snapshot.standard,1)} L/HM = ${fmtLit(quota)} L. Server menghitung ulang sebelum menyimpan.`
+    });
+    refreshFinalLimit();
   }
 
   async function refresh(){
@@ -215,59 +185,104 @@
       if(maxQty){maxQty.readOnly=false;maxQty.classList.remove("kpp-auto-locked");}
       if(hmPrevious)hmPrevious.value="";
       if(hmPreviousSource)hmPreviousSource.textContent="HM awal jatah = HM pengisian terakhir.";
-      const card=document.getElementById("kppAutoQuotaCard");
-      if(card){card.className="kpp-auto-quota";card.querySelector("[data-auto-state]").textContent="MENUNGGU UNIT";}
+      paint(null,{state:"MENUNGGU UNIT",note:"Pilih unit untuk membaca baseline pengisian terakhir dan standar FC."});
       return;
     }
-
     try{
       const snapshot=await loadSnapshot(unit);
       if(seq!==requestSeq)return;
       lastSnapshot=snapshot;
+      if(snapshot.lastHm!==null&&!snapshot.baselineValid){
+        setBlocked(snapshot,snapshot.reason||"HM pengisian terakhir belum lolos validasi server.");
+        return;
+      }
       if(snapshot.lastHm===null){
-        setManualMode("Belum ada histori pengisian valid. Jatah otomatis belum bisa dihitung; gunakan Qty manual untuk masa transisi.",{lastHm:null,source:snapshot.source});
+        setManualMode(snapshot,"Belum ada histori pengisian valid. Jatah otomatis belum bisa dihitung; Qty manual tetap tersedia untuk first-use.");
         return;
       }
       if(!snapshot.standard){
-        setManualMode("Standar FC unit belum diisi di Master Unit & HM. Isi standar FC agar jatah menjadi otomatis.",{lastHm:snapshot.lastHm,source:snapshot.source});
+        setManualMode(snapshot,"Standar FC unit belum diisi di Master Unit & HM. Isi standar FC agar jatah menjadi otomatis.");
         return;
       }
       applyAuto(snapshot);
     }catch(error){
       if(seq!==requestSeq)return;
       console.warn("Auto quota CCR:",error?.message||error);
-      setManualMode("Jatah otomatis gagal dimuat. Qty manual tetap tersedia agar operasi tidak terhenti.");
+      setBlocked(lastSnapshot,`Preview jatah gagal diverifikasi server: ${error?.message||error}. Jangan simpan sebelum koneksi/akses normal.`);
     }
   }
 
-  function patchReference(){
-    if(patchedReference||typeof window.loadHmReference!=="function")return;
-    patchedReference=true;
-    const original=window.loadHmReference;
-    window.loadHmReference=async function(...args){
-      const result=await original.apply(this,args);
-      await refresh();
-      return result;
+  function patchLegacyReaders(){
+    if(readersPatched)return;
+    const originalLoadUnits=window.loadUnits;
+    const originalHmReader=window.ambilHmTerakhir;
+    if(typeof originalLoadUnits!=="function"||typeof originalHmReader!=="function")return;
+
+    window.loadUnits=async function(){
+      const client=db();
+      if(!client)throw new Error("Database belum siap.");
+      const {data,error}=await client.rpc("ccr_unit_directory");
+      if(error)throw error;
+      const list=document.getElementById("unitList");
+      if(!list)return;
+      list.replaceChildren();
+      for(const row of (data||[])){
+        const option=document.createElement("option");
+        option.value=String(row.code_unit||"");
+        option.textContent=String(row.egi||"");
+        list.appendChild(option);
+      }
     };
+
+    window.ambilHmTerakhir=async function(unit){
+      const snapshot=await loadSnapshot(upper(unit));
+      if(snapshot.baselineValid&&snapshot.lastHm!==null){
+        return {hm:snapshot.lastHm,source:snapshot.source};
+      }
+      return {hm:0,source:snapshot.reason||"Belum ada HM pengisian terakhir yang valid."};
+    };
+    readersPatched=true;
   }
 
-  function lockEditFields(){
-    ["editHmPrevious","editHm","editMaxQty"].forEach(id=>{
-      const input=document.getElementById(id);
-      if(!input)return;
-      input.readOnly=true;
-      input.title="HM dan jatah otomatis terkunci. Batalkan jatah lalu buat baru untuk koreksi.";
-      input.style.background="#f1f5f9";
-    });
+  async function applyEditLock(){
+    const id=Number(document.getElementById("editId")?.value||0);
+    if(!id)return;
+    const saveBtn=document.getElementById("saveEditBtn");
+    const hm=document.getElementById("editHm");
+    const qty=document.getElementById("editMaxQty");
+    if(hm)hm.readOnly=true;
+    if(qty)qty.readOnly=true;
+    if(saveBtn)saveBtn.disabled=true;
+    try{
+      const client=db();
+      if(!client)throw new Error("Database belum siap.");
+      const {data,error}=await client.from("ccr_allocations")
+        .select("id,fc_standard_lphm,operator_checkin_id")
+        .eq("id",id).maybeSingle();
+      if(error)throw error;
+      const autoLocked=num(data?.fc_standard_lphm)!==null&&Number(data.fc_standard_lphm)>0;
+      if(hm){
+        hm.readOnly=autoLocked||data?.operator_checkin_id!=null;
+        hm.title=autoLocked?"HM jatah otomatis terkunci. Batalkan lalu buat jatah baru untuk koreksi.":"";
+      }
+      if(qty){
+        qty.readOnly=autoLocked;
+        qty.title=autoLocked?"Qty jatah otomatis terkunci oleh snapshot FC.":"";
+      }
+      if(saveBtn)saveBtn.disabled=false;
+    }catch(error){
+      console.warn("CCR edit lock:",error?.message||error);
+      if(saveBtn){saveBtn.disabled=true;saveBtn.title="Gagal memverifikasi status lock jatah. Tutup lalu buka ulang setelah koneksi normal.";}
+    }
   }
 
   function patchEdit(){
-    if(patchedEdit||typeof window.openGlEdit!=="function")return;
-    patchedEdit=true;
+    if(editPatched||typeof window.openGlEdit!=="function")return;
+    editPatched=true;
     const original=window.openGlEdit;
     window.openGlEdit=function(...args){
       const result=original.apply(this,args);
-      setTimeout(lockEditFields,0);
+      setTimeout(applyEditLock,0);
       return result;
     };
   }
@@ -275,8 +290,10 @@
   function bind(){
     ensureStyle();
     ensureUi();
-    patchReference();
+    patchLegacyReaders();
     patchEdit();
+    setTimeout(()=>{patchLegacyReaders();patchEdit();},50);
+    setTimeout(()=>{patchLegacyReaders();patchEdit();},500);
 
     const {unit,hm}=els();
     let inputTimer=0;
@@ -285,20 +302,18 @@
       inputTimer=setTimeout(refresh,250);
     });
     unit?.addEventListener("change",()=>setTimeout(refresh,0));
-    hm?.addEventListener("input",()=>{if(lastSnapshot?.unit===upper(unit?.value))applyAutoOrFallback();else refresh();});
-    hm?.addEventListener("change",()=>{if(lastSnapshot?.unit===upper(unit?.value))applyAutoOrFallback();else refresh();});
+    hm?.addEventListener("input",()=>{
+      if(lastSnapshot?.unit===upper(unit?.value)&&lastSnapshot.baselineValid&&lastSnapshot.standard)applyAuto(lastSnapshot);
+      else refresh();
+    });
+    hm?.addEventListener("change",()=>{
+      if(lastSnapshot?.unit===upper(unit?.value)&&lastSnapshot.baselineValid&&lastSnapshot.standard)applyAuto(lastSnapshot);
+      else refresh();
+    });
     document.addEventListener("click",event=>{
-      if(event.target?.closest?.(".checkin-use"))setTimeout(refresh,80);
+      if(event.target?.closest?.(".checkin-use"))setTimeout(refresh,100);
     },true);
-
-    function applyAutoOrFallback(){
-      if(!lastSnapshot)return;
-      if(lastSnapshot.lastHm===null){setManualMode("Belum ada histori pengisian valid. Jatah otomatis belum bisa dihitung; gunakan Qty manual untuk masa transisi.",{source:lastSnapshot.source});return;}
-      if(!lastSnapshot.standard){setManualMode("Standar FC unit belum diisi di Master Unit & HM. Isi standar FC agar jatah menjadi otomatis.",{lastHm:lastSnapshot.lastHm,source:lastSnapshot.source});return;}
-      applyAuto(lastSnapshot);
-    }
-
-    setTimeout(()=>{patchReference();patchEdit();refresh();},0);
+    setTimeout(refresh,0);
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});
