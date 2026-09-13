@@ -170,6 +170,7 @@
   async function openDate(date){
     if(typeof loadDate!=="function")return;
     const dateInput=document.getElementById("editorDate");
+    const filterInput=document.getElementById("editorFilterText");
     if(!dateInput)return;
 
     if(typeof isDirty!=="undefined" && isDirty){
@@ -179,8 +180,10 @@
 
     dateInput.value=date;
     await loadDate();
-    document.getElementById("editorFilterText").value=activeUnit;
-    if(typeof window.KPP_EDITOR_APPLY_FILTERS==="function")window.KPP_EDITOR_APPLY_FILTERS();
+    if(filterInput){
+      filterInput.value=activeUnit;
+      filterInput.dispatchEvent(new Event("input",{bubbles:true}));
+    }
     document.getElementById("gridBody")?.closest(".panel")?.scrollIntoView({behavior:"smooth",block:"start"});
   }
 
