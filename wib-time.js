@@ -72,6 +72,7 @@
   // Page-specific enhancement loaders. Other pages only receive shared WIB helpers.
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
+    loadPageScript("hm-master-review-panel.js?v=20260913d1");
   }
 
   if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
