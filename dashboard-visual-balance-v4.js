@@ -81,6 +81,40 @@
       align-self:start!important;
     }
 
+    /* Rapatkan blok tren: Pemakaian Fuel Harian naik tepat di bawah Total Stock. */
+    .dashboard-workspace.kpp-presentation-v1 .kpp-performance-shell{
+      row-gap:5px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .usage-card{
+      min-height:0!important;
+      margin-top:-2px!important;
+      padding-top:9px!important;
+      padding-bottom:8px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .usage-card .overview-head{
+      margin-bottom:4px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .kpp-usage-day-card{
+      min-height:132px!important;
+      padding-top:6px!important;
+      padding-bottom:5px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .kpp-usage-chartbox{
+      height:48px!important;
+      margin-top:4px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .kpp-usage-chartbox::before{
+      top:16px!important;
+    }
+    .dashboard-workspace.kpp-presentation-v1 .kpp-usage-chartbox::after{
+      top:32px!important;
+    }
+
+    /* Naikkan baris Trend FC + Ringkasan FC supaya tidak tertinggal jauh di bawah. */
+    #kppPresentationBottom{
+      margin-top:5px!important;
+    }
+
     /* Sedikit rapatkan ruang vertikal supaya presentasi terasa padat, bukan kosong. */
     .dashboard-workspace .stock-trend-card{min-height:0!important}
     .dashboard-workspace .usage-card{min-height:0!important}
@@ -90,6 +124,17 @@
     @media(max-width:1100px){
       .dashboard-workspace .operations-grid>.section:nth-child(2) .session-grid{
         grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      }
+    }
+    @media(max-width:900px){
+      .dashboard-workspace.kpp-presentation-v1 .usage-card{
+        margin-top:0!important;
+      }
+      .dashboard-workspace.kpp-presentation-v1 .kpp-usage-day-card{
+        min-height:136px!important;
+      }
+      #kppPresentationBottom{
+        margin-top:8px!important;
       }
     }
     @media(max-width:700px){
