@@ -127,6 +127,10 @@
       // Lock the information hierarchy to the approved presentation mockup. This runtime
       // only rearranges dashboard content and never touches the existing left sidebar.
       await loadPageScript("dashboard-presentation-layout-v1.js?v=20260913a1",{async:false});
+
+      // Final presentation polish: full-width desktop canvas, compact 5-day cards,
+      // clearer trend chips, and a clean divider between shift distribution and monitoring.
+      await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
