@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const crossDate=await readFile(new URL('../logsheet-editor-crossdate-search.js',import.meta.url),'utf8');
 const usage=await readFile(new URL('../dashboard-usage-bars-v2.js',import.meta.url),'utf8');
+const command=await readFile(new URL('../dashboard-command-center-v2.js',import.meta.url),'utf8');
 const time=await readFile(new URL('../wib-time.js',import.meta.url),'utf8');
 
 test('cross-date lookup searches one exact unit across paged fuel history',()=>{
@@ -47,22 +48,24 @@ test('cross-date lookup can export all dates and duplicate indication',()=>{
   assert.match(crossDate,/Logsheet_\$\{activeUnit\}_Semua_Tanggal\.xlsx/);
 });
 
-test('daily usage trend uses relative scaling without a connecting SVG line',()=>{
+test('daily usage trend keeps relative scaling logic without a connecting SVG line',()=>{
   assert.match(usage,/function\s+relativeHeight\(value,min,max\)/);
   assert.match(usage,/return\s+32\+\(\(value-min\)\/\(max-min\)\)\*56/);
-  assert.match(usage,/SKALA RELATIF 5 HARI/);
   assert.doesNotMatch(usage,/createElementNS\(ns,"polyline"\)/);
   assert.doesNotMatch(usage,/function\s+drawLine/);
+  assert.match(command,/kpp-usage-day-grid/);
+  assert.match(command,/35\+\(\(item\.value-min\)\/span\)\*60/);
 });
 
-test('new enhancements are page-scoped from WIB runtime',()=>{
+test('new enhancements are page-scoped and dashboard no longer loads redundant usage observer',()=>{
   assert.match(time,/KPP_ACTIVE_PAGE===\"logsheet-editor\"/);
   assert.match(time,/logsheet-editor-crossdate-search\.js\?v=20260913c4/);
   assert.match(time,/KPP_ACTIVE_PAGE===\"dashboard\"/);
-  assert.match(time,/dashboard-usage-bars-v2\.js\?v=20260913c3/);
+  assert.match(time,/dashboard-command-center-v2\.js\?v=20260913f2/);
+  assert.doesNotMatch(time,/dashboard-usage-bars-v2\.js/);
 });
 
 test('enhancement scripts are syntactically valid',()=>{
   assert.doesNotThrow(()=>new Function(crossDate));
-  assert.doesNotThrow(()=>new Function(usage));
+  assert.doesNotThrow(()=>new Function(command));
 });

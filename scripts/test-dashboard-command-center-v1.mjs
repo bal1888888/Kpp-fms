@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const cc=fs.readFileSync("dashboard-command-center-v2.js","utf8");
-const badge=fs.readFileSync("dashboard-stock-status-badge-v1.js","utf8");
+const guard=fs.readFileSync("dashboard-reference-polish-guard-v3.js","utf8");
 const time=fs.readFileSync("wib-time.js","utf8");
 
 test("command center keeps existing sidebar untouched and upgrades dashboard content",()=>{
@@ -32,25 +32,26 @@ test("stock state includes warning band and storage snapshot is read only",()=>{
   assert.match(cc,/stock_movements/);
   assert.match(cc,/stock_closing/);
   assert.match(cc,/nominal_capacity_liter/);
-  assert.match(badge,/p<50.*WASPADA/s);
-  assert.match(badge,/stockTrendBadge/);
-  assert.doesNotMatch(cc,/\.insert\(/);
-  assert.doesNotMatch(cc,/\.update\(/);
-  assert.doesNotMatch(cc,/\.delete\(/);
-  assert.doesNotMatch(cc,/\.upsert\(/);
-  assert.doesNotMatch(badge,/\.insert\(/);
-  assert.doesNotMatch(badge,/\.update\(/);
-  assert.doesNotMatch(badge,/\.delete\(/);
+  assert.match(guard,/p<50.*WASPADA/s);
+  assert.match(guard,/stockTrendBadge/);
+  for(const source of [cc,guard]){
+    assert.doesNotMatch(source,/\.insert\(/);
+    assert.doesNotMatch(source,/\.update\(/);
+    assert.doesNotMatch(source,/\.delete\(/);
+    assert.doesNotMatch(source,/\.upsert\(/);
+  }
 });
 
-test("dashboard runtime loads command center v2 and stock status alignment",()=>{
-  assert.match(time,/dashboard-command-center-v2\.js\?v=20260913f1/);
-  assert.match(time,/dashboard-stock-status-badge-v1\.js\?v=20260913f1/);
-  assert.doesNotMatch(time,/dashboard-command-center-v1\.js/);
-  assert.doesNotMatch(time,/dashboard-command-center-hotfix-v1\.js/);
+test("dashboard runtime defers command center until DOM ready and removes redundant helpers",()=>{
+  assert.match(time,/onDomReady\(async\(\)=>/);
+  assert.match(time,/dashboard-command-center-v2\.js\?v=20260913f2/);
+  assert.match(time,/dashboard-reference-polish-guard-v3\.js\?v=20260913h1/);
+  assert.doesNotMatch(time,/dashboard-usage-bars-v2\.js/);
+  assert.doesNotMatch(time,/dashboard-stock-delta-v1\.js/);
+  assert.doesNotMatch(time,/dashboard-stock-status-badge-v1\.js/);
 });
 
 test("command center scripts are syntactically valid",()=>{
   assert.doesNotThrow(()=>new Function(cc));
-  assert.doesNotThrow(()=>new Function(badge));
+  assert.doesNotThrow(()=>new Function(guard));
 });
