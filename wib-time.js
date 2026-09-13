@@ -98,6 +98,12 @@
     });
   }
 
+  // Global desktop-only decorative rails. The runtime measures real empty margins,
+  // so the FT075 / HD7457 imagery never covers forms, cards, tables, or the sidebar.
+  onDomReady(()=>{
+    loadPageScript("kpp-site-visual-rails-v1.js?v=20260913a1");
+  });
+
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
     loadPageScript("hm-master-review-panel.js?v=20260913d1");
