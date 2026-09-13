@@ -61,11 +61,17 @@
   }
   root.KPPTime=Object.freeze({TZ,parts,localDate,localTime,addDays,daysInMonth,operationalShift,operationalPeriod,operationalMtdBounds,formatDateTime});
 
-  // HM Master enhancement loader. Kept conditional so other pages only receive
-  // the shared WIB helpers and no additional network/script work.
+  // Page-specific enhancement loaders. Other pages only receive the shared WIB helpers.
   if(typeof document!=="undefined" && root.KPP_ACTIVE_PAGE==="hm-master"){
     const script=document.createElement("script");
     script.src="hm-master-capacity-picker-v2.js?v=20260913b1";
+    script.async=true;
+    document.head.appendChild(script);
+  }
+
+  if(typeof document!=="undefined" && root.KPP_ACTIVE_PAGE==="logsheet-editor"){
+    const script=document.createElement("script");
+    script.src="logsheet-editor-hm-sequence-guard.js?v=20260913a1";
     script.async=true;
     document.head.appendChild(script);
   }
