@@ -219,4 +219,12 @@
     heightForLiters,
     hardCapacityMap
   });
+
+  if(window.KPP_ACTIVE_PAGE==="logsheet-editor" && !document.querySelector("script[data-kpp-logsheet-editor-hardening]")){
+    const script=document.createElement("script");
+    script.src="logsheet-editor-hardening.js?v=20260913a1";
+    script.defer=true;
+    script.dataset.kppLogsheetEditorHardening="1";
+    document.head.appendChild(script);
+  }
 })();
