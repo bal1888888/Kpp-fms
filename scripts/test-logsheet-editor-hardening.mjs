@@ -10,17 +10,26 @@ test('Logsheet Editor memuat hardening khusus halaman editor', () => {
   assert.match(storage, /logsheet-editor-hardening\.js\?v=20260913a1/);
 });
 
-test('anti-double fingerprint tidak bergantung pada HM', () => {
-  const start = helper.indexOf('window.duplicateSignature=function');
-  const end = helper.indexOf('window[PATCH_FLAG]=true', start);
-  assert.ok(start >= 0 && end > start, 'override duplicateSignature harus ada');
+test('anti-double punya stable identity tanpa HM untuk histori yang dikoreksi', () => {
+  const stableStart = helper.indexOf('function stableIdentity');
+  const stableEnd = helper.indexOf('function isHmCorrectedRow', stableStart);
+  assert.ok(stableStart >= 0 && stableEnd > stableStart, 'stableIdentity harus ada');
 
-  const block = helper.slice(start, end);
-  assert.match(block, /row\?\.unit/);
-  assert.match(block, /numberKey\(row\?\.fuel\)/);
-  assert.match(block, /shiftKey\(row\?\.shift\)/);
-  assert.match(block, /ftKey\(row\)/);
-  assert.doesNotMatch(block, /hm_akhir|HM SAAT ISI/i);
+  const stableBlock = helper.slice(stableStart, stableEnd);
+  assert.match(stableBlock, /row\?\.unit/);
+  assert.match(stableBlock, /numberKey\(row\?\.fuel\)/);
+  assert.match(stableBlock, /shiftKey\(row\?\.shift\)/);
+  assert.match(stableBlock, /ftKey\(row\)/);
+  assert.doesNotMatch(stableBlock, /hm_akhir|HM SAAT ISI/i);
+
+  assert.match(helper, /reason\.startsWith\(\"HM DIRAPIKAN\"\)/);
+  assert.match(helper, /hmCorrectedStableKeys\.has\(stable\)/);
+  assert.match(helper, /return `STRICT\|\$\{strictSignature\(tanggal,row\)\}`/);
+});
+
+test('fetchExistingRange mengingat transaksi yang memang pernah dikoreksi HM', () => {
+  assert.match(helper, /originalFetchExistingRange/);
+  assert.match(helper, /rememberHmCorrections\(result\)/);
 });
 
 test('filter editor menyediakan pencarian dan filter operasional', () => {
