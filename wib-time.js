@@ -98,10 +98,9 @@
     });
   }
 
-  // Global desktop-only decorative rails. The runtime measures real empty margins,
-  // so the FT075 / HD7457 imagery never covers forms, cards, tables, or the sidebar.
+  // Global desktop-only decorative rails. Runtime hanya mengisi margin kosong nyata.
   onDomReady(()=>{
-    loadPageScript("kpp-site-visual-rails-v1.js?v=20260913a1");
+    loadPageScript("kpp-site-visual-rails-v1.js?v=20260913b2");
   });
 
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
@@ -125,6 +124,7 @@
       await loadPageScript("dashboard-presentation-layout-v1.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-compact-trends-v3.js?v=20260913a1",{async:false});
+      await loadPageScript("dashboard-visual-balance-v4.js?v=20260913a1",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
