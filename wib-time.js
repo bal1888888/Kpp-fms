@@ -61,18 +61,26 @@
   }
   root.KPPTime=Object.freeze({TZ,parts,localDate,localTime,addDays,daysInMonth,operationalShift,operationalPeriod,operationalMtdBounds,formatDateTime});
 
-  // Page-specific enhancement loaders. Other pages only receive the shared WIB helpers.
-  if(typeof document!=="undefined" && root.KPP_ACTIVE_PAGE==="hm-master"){
+  function loadPageScript(src){
+    if(typeof document==="undefined")return;
     const script=document.createElement("script");
-    script.src="hm-master-capacity-picker-v2.js?v=20260913b1";
+    script.src=src;
     script.async=true;
     document.head.appendChild(script);
   }
 
-  if(typeof document!=="undefined" && root.KPP_ACTIVE_PAGE==="logsheet-editor"){
-    const script=document.createElement("script");
-    script.src="logsheet-editor-hm-sequence-guard.js?v=20260913a1";
-    script.async=true;
-    document.head.appendChild(script);
+  // Page-specific enhancement loaders. Other pages only receive shared WIB helpers.
+  if(root.KPP_ACTIVE_PAGE==="hm-master"){
+    loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
+  }
+
+  if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
+    loadPageScript("logsheet-editor-hardening.js?v=20260913c2");
+    loadPageScript("logsheet-editor-hm-sequence-guard.js?v=20260913a1");
+    loadPageScript("logsheet-editor-crossdate-search.js?v=20260913c1");
+  }
+
+  if(root.KPP_ACTIVE_PAGE==="dashboard"){
+    loadPageScript("dashboard-usage-bars-v2.js?v=20260913c1");
   }
 })(typeof window!=="undefined"?window:globalThis);
