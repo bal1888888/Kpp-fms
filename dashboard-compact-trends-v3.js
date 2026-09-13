@@ -53,11 +53,23 @@
     .dashboard-workspace.kpp-presentation-v1 #stockTrendBars .stock-trend-ring{
       width:70px!important;
       height:70px!important;
+      min-width:70px!important;
+      min-height:70px!important;
+      max-width:70px!important;
+      max-height:70px!important;
+      flex:0 0 70px!important;
+      flex-shrink:0!important;
+      aspect-ratio:1 / 1!important;
+      align-self:center!important;
+      border-radius:50%!important;
+      transform:none!important;
+      box-sizing:border-box!important;
       margin:0 auto!important;
       box-shadow:0 3px 9px rgba(15,39,72,.05)!important;
     }
     .dashboard-workspace.kpp-presentation-v1 #stockTrendBars .stock-trend-ring::before{
       inset:9px!important;
+      border-radius:50%!important;
     }
     .dashboard-workspace.kpp-presentation-v1 #stockTrendBars .stock-trend-ring span{
       font-size:12px!important;
