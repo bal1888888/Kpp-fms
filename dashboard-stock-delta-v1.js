@@ -1,10 +1,10 @@
-// KPP-FMS Dashboard stock movement indicators v2
-// Adds compact per-day stock change badges directly on each stock radial ring.
+// KPP-FMS Dashboard stock radial visual v3
+// Keeps current stock green, renders missing capacity in red, and removes per-day delta text badges.
 (() => {
   "use strict";
 
-  const STYLE_ID="kppStockDeltaV2Style";
-  const CHIP_CLASS="kpp-stock-delta";
+  const STYLE_ID="kppStockRadialVisualV3Style";
+  const LEGACY_BADGE_CLASS="kpp-stock-delta";
   let observer=null;
   let watchedHost=null;
 
@@ -13,122 +13,55 @@
     const style=document.createElement("style");
     style.id=STYLE_ID;
     style.textContent=`
-      #stockTrendBars .stock-trend-ring{overflow:visible!important}
-      #stockTrendBars .${CHIP_CLASS}{
-        position:absolute;z-index:6;right:-7px;top:5px;
-        display:inline-flex;align-items:center;justify-content:center;gap:2px;
-        min-height:16px;padding:2px 5px;border-radius:999px;border:1px solid transparent;
-        box-shadow:0 2px 7px rgba(15,23,42,.12);
-        font-size:6.5px;font-weight:900;line-height:1;white-space:nowrap;letter-spacing:.01em;
+      #stockTrendBars .stock-radial-item{
+        background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+        border:1px solid #dbe7f1;
+        border-radius:16px;
+        box-shadow:0 7px 18px rgba(15,23,42,.06);
       }
-      #stockTrendBars .${CHIP_CLASS}.up{background:#dcfce7;border-color:#86efac;color:#166534}
-      #stockTrendBars .${CHIP_CLASS}.down{background:#ffedd5;border-color:#fdba74;color:#c2410c}
-      #stockTrendBars .${CHIP_CLASS}.flat{background:#f1f5f9;border-color:#cbd5e1;color:#64748b}
-      #stockTrendBars .${CHIP_CLASS}.start{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
+      #stockTrendBars .stock-radial-item.is-latest{
+        border-color:#22c55e;
+        box-shadow:0 8px 22px rgba(34,197,94,.13);
+      }
+      #stockTrendBars .stock-trend-ring{
+        --trend-fill:#11a861;
+        --trend-empty:#ef4444;
+        overflow:hidden!important;
+        background:conic-gradient(
+          var(--trend-fill) 0 calc(var(--trend-pct)*1%),
+          var(--trend-empty) calc(var(--trend-pct)*1%) 100%
+        )!important;
+        box-shadow:0 5px 14px rgba(15,23,42,.08);
+      }
+      #stockTrendBars .stock-trend-ring::before{
+        box-shadow:inset 0 0 0 1px rgba(15,23,42,.035);
+      }
+      #stockTrendBars .stock-trend-ring span{
+        color:#07883f!important;
+        text-shadow:0 1px 0 rgba(255,255,255,.75);
+      }
+      #stockTrendBars .${LEGACY_BADGE_CLASS}{display:none!important}
       @media(max-width:560px){
-        #stockTrendBars .${CHIP_CLASS}{right:-8px;top:4px;min-height:14px;font-size:5.8px;padding:2px 4px}
+        #stockTrendBars .stock-radial-item{
+          box-shadow:0 4px 12px rgba(15,23,42,.055);
+        }
       }
     `;
     document.head.appendChild(style);
   }
 
-  function parseLiter(text){
-    const raw=String(text||"").toUpperCase().replace(/L/g,"").trim();
-    if(!raw)return null;
-    const normalized=raw.replace(/\./g,"").replace(",",".").replace(/[^0-9.-]/g,"");
-    const value=Number(normalized);
-    return Number.isFinite(value)?value:null;
-  }
-
-  function formatLiter(value){
-    return new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(Math.abs(Number(value)||0));
-  }
-
-  function formatCompact(value){
-    const v=Math.abs(Number(value)||0);
-    if(v>=1000000)return `${new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(v/1000000)}M`;
-    if(v>=1000)return `${new Intl.NumberFormat("id-ID",{maximumFractionDigits:1}).format(v/1000)}K`;
-    return new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(v);
-  }
-
-  function formatPct(value){
-    return new Intl.NumberFormat("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1}).format(Math.abs(Number(value)||0));
-  }
-
-  function itemValue(item){
-    return parseLiter(item.querySelector(".trend-ring-liter")?.textContent);
-  }
-
-  function itemLabel(item){
-    return String(item.querySelector(".trend-radial-label")?.textContent||"").trim();
-  }
-
-  function removeExisting(host){
-    host.querySelectorAll(`.${CHIP_CLASS}`).forEach(el=>el.remove());
-  }
-
-  function patchHost(host){
+  function cleanLegacyBadges(host){
     if(!host)return;
-    const items=[...host.querySelectorAll(".stock-radial-item")];
-    removeExisting(host);
-    if(!items.length)return;
-
-    items.forEach((item,index)=>{
-      const current=itemValue(item);
-      const ring=item.querySelector(".stock-trend-ring");
-      if(!Number.isFinite(current)||!ring)return;
-
-      const chip=document.createElement("div");
-      chip.className=CHIP_CLASS;
-
-      if(index===0){
-        chip.classList.add("start");
-        chip.textContent="AWAL";
-        chip.title="Posisi awal pada rentang 5 hari yang tampil.";
-      }else{
-        const previous=itemValue(items[index-1]);
-        if(!Number.isFinite(previous))return;
-        const diff=current-previous;
-        const pct=previous!==0?(diff/previous)*100:0;
-        const previousLabel=itemLabel(items[index-1])||"posisi sebelumnya";
-
-        if(Math.abs(diff)<0.5){
-          chip.classList.add("flat");
-          chip.textContent="TETAP";
-          chip.title=`Stock tetap dibanding ${previousLabel}.`;
-        }else if(diff>0){
-          chip.classList.add("up");
-          chip.textContent=`▲+${formatCompact(diff)}`;
-          chip.title=`Stock bertambah ${formatLiter(diff)} L (${formatPct(pct)}%) dibanding ${previousLabel}.`;
-        }else{
-          chip.classList.add("down");
-          chip.textContent=`▼${formatCompact(diff)}`;
-          chip.title=`Stock berkurang ${formatLiter(diff)} L (${formatPct(pct)}%) dibanding ${previousLabel}.`;
-        }
-      }
-
-      ring.appendChild(chip);
-    });
+    host.querySelectorAll(`.${LEGACY_BADGE_CLASS}`).forEach(el=>el.remove());
   }
 
   function observeHost(host){
-    if(watchedHost===host)return;
+    if(!host||watchedHost===host)return;
     observer?.disconnect();
     watchedHost=host;
-
-    observer=new MutationObserver(mutations=>{
-      const operationalChange=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(node=>{
-        if(node.nodeType!==1)return false;
-        return !node.classList?.contains(CHIP_CLASS);
-      }));
-      if(!operationalChange)return;
-      observer.disconnect();
-      patchHost(host);
-      observer.observe(host,{childList:true,subtree:true});
-    });
-
+    cleanLegacyBadges(host);
+    observer=new MutationObserver(()=>cleanLegacyBadges(host));
     observer.observe(host,{childList:true,subtree:true});
-    patchHost(host);
   }
 
   function install(){
