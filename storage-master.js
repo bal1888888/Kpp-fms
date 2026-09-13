@@ -227,4 +227,12 @@
     script.dataset.kppLogsheetEditorHardening="1";
     document.head.appendChild(script);
   }
+
+  if(window.KPP_ACTIVE_PAGE==="stock" && !document.querySelector("script[data-kpp-stock-status-hardening]")){
+    const script=document.createElement("script");
+    script.src="stock-status-hardening.js?v=20260913a1";
+    script.defer=true;
+    script.dataset.kppStockStatusHardening="1";
+    document.head.appendChild(script);
+  }
 })();
