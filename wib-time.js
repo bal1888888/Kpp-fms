@@ -98,11 +98,6 @@
     });
   }
 
-  // Global desktop-only decorative rails. Runtime hanya mengisi margin kosong nyata.
-  onDomReady(()=>{
-    loadPageScript("kpp-site-visual-rails-v1.js?v=20260913b2");
-  });
-
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
     loadPageScript("hm-master-review-panel.js?v=20260913d1");
