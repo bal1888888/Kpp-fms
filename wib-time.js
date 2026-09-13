@@ -69,7 +69,6 @@
     document.head.appendChild(script);
   }
 
-  // Page-specific enhancement loaders. Other pages only receive shared WIB helpers.
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
     loadPageScript("hm-master-review-panel.js?v=20260913d1");
@@ -86,5 +85,6 @@
     loadPageScript("dashboard-stock-delta-v1.js?v=20260913a3");
     loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a1");
     loadPageScript("dashboard-command-center-v2.js?v=20260913f1");
+    loadPageScript("dashboard-stock-status-badge-v1.js?v=20260913f1");
   }
 })(typeof window!=="undefined"?window:globalThis);
