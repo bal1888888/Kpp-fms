@@ -2,16 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const delta=fs.readFileSync("dashboard-stock-delta-v1.js","utf8");
+const guard=fs.readFileSync("dashboard-reference-polish-guard-v3.js","utf8");
 const gap=fs.readFileSync("fc-chart-gap-bridge-v1.js","utf8");
 const time=fs.readFileSync("wib-time.js","utf8");
 
 test("stock radial keeps current stock green and the remaining capacity red",()=>{
-  assert.match(delta,/--trend-fill:#11a861/);
-  assert.match(delta,/--trend-empty:#ef4444/);
-  assert.match(delta,/background:conic-gradient/);
-  assert.match(delta,/cleanLegacyBadges/);
-  assert.doesNotMatch(delta,/ring\.appendChild\(chip\)/);
+  assert.match(guard,/--trend-fill:#11a861/);
+  assert.match(guard,/--trend-empty:#ef4444/);
+  assert.match(guard,/background:conic-gradient/);
+  assert.match(guard,/kpp-stock-delta/);
 });
 
 test("FC missing samples are bridged visually without inventing FC values",()=>{
@@ -22,12 +21,13 @@ test("FC missing samples are bridged visually without inventing FC values",()=>{
   assert.doesNotMatch(gap,/interpolat/i);
 });
 
-test("dashboard loads current stock radial visual and FC gap bridge",()=>{
-  assert.match(time,/dashboard-stock-delta-v1\.js\?v=20260913a3/);
-  assert.match(time,/fc-chart-gap-bridge-v1\.js\?v=20260913a1/);
+test("dashboard loads consolidated stock guard and FC gap bridge",()=>{
+  assert.match(time,/dashboard-reference-polish-guard-v3\.js\?v=20260913h1/);
+  assert.match(time,/fc-chart-gap-bridge-v1\.js\?v=20260913a2/);
+  assert.doesNotMatch(time,/dashboard-stock-delta-v1\.js/);
 });
 
 test("dashboard enhancement scripts are syntactically valid",()=>{
-  assert.doesNotThrow(()=>new Function(delta));
+  assert.doesNotThrow(()=>new Function(guard));
   assert.doesNotThrow(()=>new Function(gap));
 });
