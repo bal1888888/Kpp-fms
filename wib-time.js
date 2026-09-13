@@ -120,6 +120,10 @@
     loadPageScript("hm-master-fc-standard-v1.js?v=20260913a1");
   }
 
+  if(root.KPP_ACTIVE_PAGE==="ccr"){
+    loadPageScript("ccr-auto-quota-v1.js?v=20260913a1");
+  }
+
   if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
     loadPageScript("logsheet-editor-hardening.js?v=20260913c2");
     loadPageScript("logsheet-editor-hm-sequence-guard.js?v=20260913a1");
