@@ -117,6 +117,7 @@
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
     loadPageScript("hm-master-review-panel.js?v=20260913d1");
+    loadPageScript("hm-master-fc-standard-v1.js?v=20260913a1");
   }
 
   if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
@@ -136,6 +137,7 @@
       await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-compact-trends-v3.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-visual-balance-v4.js?v=20260913a2",{async:false});
+      await loadPageScript("fc-standard-alert-v1.js?v=20260913a1",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
