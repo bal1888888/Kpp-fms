@@ -31,6 +31,12 @@ test('status 38,5 persen tidak lagi AMAN', () => {
   assert.equal(classify(90), 'high');
 });
 
+test('mutation observer tidak menulis ulang text yang sudah sama', () => {
+  assert.match(helper, /statusEl && String\(statusEl\.textContent\|\|\"\"\)\.trim\(\)!==status/);
+  assert.match(helper, /if\(next!==raw\)el\.textContent=next/);
+  assert.match(helper, /&& raw!==status\)\{/);
+});
+
 test('helper valid sebagai JavaScript', () => {
   assert.doesNotThrow(() => new Function(helper));
 });
