@@ -9,6 +9,35 @@
   const style=document.createElement("style");
   style.id=STYLE_ID;
   style.textContent=`
+    /* Desktop: isi seluruh ruang kerja setelah sidebar. Jangan batasi dashboard ke max-width lama. */
+    @media(min-width:901px){
+      html body.kpp-sidebar-shell.dashboard-workspace{
+        background:
+          radial-gradient(circle at 84% 7%,rgba(37,99,235,.14),transparent 24%),
+          linear-gradient(180deg,#0b1f36 0%,#102b49 56%,#0a192c 100%)!important;
+        background-attachment:fixed!important;
+      }
+      html body.kpp-sidebar-shell.dashboard-workspace > .container,
+      html body.kpp-sidebar-shell.dashboard-workspace.kpp-command-center-v2 > .container,
+      html body.kpp-sidebar-shell.dashboard-workspace.kpp-reference-v3 > .container,
+      html body.kpp-sidebar-shell.dashboard-workspace.kpp-presentation-v1 > .container{
+        width:auto!important;
+        max-width:none!important;
+        min-width:0!important;
+        margin:10px 12px 24px!important;
+        padding-left:14px!important;
+        padding-right:14px!important;
+        box-sizing:border-box!important;
+      }
+      .dashboard-workspace .kpp-performance-shell,
+      .dashboard-workspace #kppPresentationBottom,
+      .dashboard-workspace #kppCommandKpis{
+        width:100%!important;
+        max-width:none!important;
+        min-width:0!important;
+      }
+    }
+
     /* Monitoring Petugas: gunakan seluruh lebar, 3 card sejajar di desktop. */
     .dashboard-workspace .operations-grid{
       display:block!important;
@@ -127,6 +156,9 @@
       }
     }
     @media(max-width:900px){
+      html body.kpp-sidebar-shell.dashboard-workspace{
+        background:linear-gradient(180deg,#0b1f36 0%,#0d2744 58%,#0a192c 100%)!important;
+      }
       .dashboard-workspace.kpp-presentation-v1 .usage-card{
         margin-top:0!important;
       }
