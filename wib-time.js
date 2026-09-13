@@ -123,6 +123,10 @@
       // FC gap bridge is independent and can come last. Old usage/stock helper runtimes
       // are intentionally not loaded anymore because Command Center already owns them.
       await loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a2",{async:false});
+
+      // Lock the information hierarchy to the approved presentation mockup. This runtime
+      // only rearranges dashboard content and never touches the existing left sidebar.
+      await loadPageScript("dashboard-presentation-layout-v1.js?v=20260913a1",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
