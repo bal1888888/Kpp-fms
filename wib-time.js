@@ -86,5 +86,6 @@
     loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a1");
     loadPageScript("dashboard-command-center-v2.js?v=20260913f1");
     loadPageScript("dashboard-stock-status-badge-v1.js?v=20260913f1");
+    loadPageScript("dashboard-reference-polish-v3.js?v=20260913g1");
   }
 })(typeof window!=="undefined"?window:globalThis);
