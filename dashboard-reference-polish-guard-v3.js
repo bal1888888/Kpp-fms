@@ -1,10 +1,13 @@
 // KPP-FMS dashboard reference polish async guard v3
+// Performance-safe stock status synchronizer. Never observes the whole document.
 (() => {
   "use strict";
 
   const STYLE_ID="kppDashboardReferenceGuardV3Style";
+  const LEVEL_CLASSES=["kpp-level-critical","kpp-level-low","kpp-level-warning","kpp-level-safe","kpp-level-high"];
   let stockObserver=null;
-  let rootObserver=null;
+  let watchedHost=null;
+  let patchQueued=false;
 
   function parseId(value){
     const raw=String(value??"").replace(/L|%/gi,"").trim();
@@ -41,45 +44,65 @@
     document.head.appendChild(style);
   }
 
-  function patchStock(){
-    const host=document.getElementById("stockTrendBars");
-    if(!host)return false;
+  function patchStock(host=watchedHost){
+    if(!host||!host.isConnected)return false;
     const items=[...host.querySelectorAll(".stock-radial-item")];
     if(!items.length)return false;
+
     items.forEach(item=>{
       const pct=parseId(item.querySelector(".stock-trend-ring span")?.textContent);
       if(!Number.isFinite(pct))return;
       const info=state(pct);
-      item.classList.remove("kpp-level-critical","kpp-level-low","kpp-level-warning","kpp-level-safe","kpp-level-high");
-      item.classList.add(`kpp-level-${info.key}`);
+      const expectedLevel=`kpp-level-${info.key}`;
+
+      if(!item.classList.contains(expectedLevel)){
+        item.classList.remove(...LEVEL_CLASSES);
+        item.classList.add(expectedLevel);
+      }
+
       const status=item.querySelector(".trend-stock-status");
-      if(status){status.className=`trend-stock-status ${info.key}`;status.textContent=info.label;}
+      if(status){
+        const expectedClass=`trend-stock-status ${info.key}`;
+        if(status.className!==expectedClass)status.className=expectedClass;
+        if(status.textContent!==info.label)status.textContent=info.label;
+      }
     });
     return true;
   }
 
-  function ensureObserver(){
-    const host=document.getElementById("stockTrendBars");
+  function observeHost(host){
     if(!host)return false;
-    if(!stockObserver){
-      stockObserver=new MutationObserver(()=>patchStock());
-      stockObserver.observe(host,{childList:true,subtree:true,characterData:true});
-    }
-    patchStock();
+    if(watchedHost===host&&stockObserver)return true;
+
+    stockObserver?.disconnect();
+    watchedHost=host;
+    stockObserver=new MutationObserver(()=>{
+      if(patchQueued)return;
+      patchQueued=true;
+      queueMicrotask(()=>{
+        patchQueued=false;
+        if(!watchedHost?.isConnected)return;
+        stockObserver?.disconnect();
+        patchStock(watchedHost);
+        stockObserver?.observe(watchedHost,{childList:true,subtree:true,characterData:true});
+      });
+    });
+    stockObserver.observe(host,{childList:true,subtree:true,characterData:true});
+    patchStock(host);
     return true;
   }
 
   function install(){
     injectStyle();
-    ensureObserver();
-    const body=document.body;
-    if(body&&!rootObserver){
-      rootObserver=new MutationObserver(()=>{ensureObserver();patchStock();});
-      rootObserver.observe(body,{childList:true,subtree:true});
-    }
+    return observeHost(document.getElementById("stockTrendBars"));
   }
 
-  document.addEventListener("DOMContentLoaded",install,{once:true});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});
+  else install();
+
   let tries=0;
-  const timer=setInterval(()=>{tries++;install();if((patchStock()&&document.getElementById("kppStorageColumnHead"))||tries>=180)clearInterval(timer);},120);
+  const timer=setInterval(()=>{
+    tries+=1;
+    if(install()||tries>=60)clearInterval(timer);
+  },150);
 })();
