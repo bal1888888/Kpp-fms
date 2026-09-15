@@ -113,6 +113,7 @@
 
   /* Selalu muat polish global terbaru sesudah stylesheet lama supaya tema konsisten di semua halaman. */
   loadPageStyle("kpp-ui-polish.css?v=20260913navy1");
+  loadPageScript("lubricant-nav-v1.js?v=20260915a2");
 
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
@@ -143,7 +144,7 @@
       await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-compact-trends-v3.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-visual-balance-v4.js?v=20260913a2",{async:false});
-      await loadPageScript("fc-standard-alert-v1.js?v=20260913a1",{async:false});
+      await loadPageScript("fc-standard-alert-v1.js?v=20260913a2",{async:false});
     });
   }
 })(typeof window!=="undefined"?window:globalThis);
