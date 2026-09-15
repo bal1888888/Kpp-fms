@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lubricant Management - KPP FMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
+window.KPP_ACTIVE_PAGE="lubricant";
+</script>
+<script src="wib-time.js?v=20260915-lube1"></script>
+<script src="auth.js?v=20260912-sidebar1"></script>
+<link rel="stylesheet" href="lubricant.css?v=20260915a1">
+<link rel="stylesheet" href="kpp-ui-polish.css?v=20260913navy1">
+</head>
+<body>
+<div class="header"><h1>KPP TRAM LUBRICANT MANAGEMENT</h1><div>Oil Yard • LO • Lube Skid</div></div>
+<div id="kppUserBar" class="kpp-userbar"></div>
+<div id="kppRoleNav"></div>
+
+<main class="lube-wrap">
+  <section class="lube-hero">
+    <div>
+      <span class="eyebrow">LUBRICANT / OIL CONTROL</span>
+      <h1>Stock Oli & Pergerakan Lubricant</h1>
+      <p>Alur awal V1: Supplier → YARD → LO / Lube Skid. Grease tetap berada di Yard. Semua receipt dan transfer menyimpan saldo sebelum/sesudah untuk audit.</p>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-soft" href="admin.html">MENU MANAJEMEN</a>
+      <button class="btn btn-primary" id="lubeRefreshBtn" type="button">↻ REFRESH DATA</button>
+    </div>
+  </section>
+
+  <section class="kpi-grid" aria-label="Ringkasan stock lubricant">
+    <article class="kpi"><small>STOCK OIL DI YARD</small><strong id="kpiYard">0 L</strong><span>Akumulasi produk kategori OIL di central Yard.</span></article>
+    <article class="kpi"><small>STOCK OIL LO / LUBE SKID</small><strong id="kpiMobile">0 L</strong><span>Total saldo oli yang sudah didistribusikan dari Yard.</span></article>
+    <article class="kpi"><small>MASTER PRODUK</small><strong id="kpiProducts">0</strong><span>Oli dan grease aktif pada master lubricant.</span></article>
+    <article class="kpi"><small>MOVEMENT TERAKHIR</small><strong id="kpiLast">Belum ada</strong><span id="kpiLastSub">History movement masih kosong</span></article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><span class="eyebrow">LIVE BALANCE</span><h2>Stock per Storage & Jenis Oli</h2><p>Yard menampilkan seluruh produk. LO dan Lube Skid menampilkan compartment SAE10 / SAE15 / SAE30 / SAE90.</p></div><span class="pill">Saldo sistem</span></div>
+    <div class="stock-grid" id="stockGrid"><div class="empty">Memuat stock lubricant...</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><span class="eyebrow">STOCK MOVEMENT</span><h2>Input Pergerakan Stock</h2><p>Penerimaan supplier masuk ke Yard. Transfer internal hanya bergerak dari Yard menuju LO atau Lube Skid.</p></div></div>
+    <div class="ops-grid">
+      <article class="op-card">
+        <h3>📦 Penerimaan Supplier → Yard</h3>
+        <div class="form-grid">
+          <div class="field wide"><label>Jenis Oli / Grease</label><select id="receiptProduct"><option value="">-- Pilih produk --</option></select></div>
+          <div class="field"><label>Packaging</label><select id="receiptPackaging"><option value="">-- Pilih produk dulu --</option></select></div>
+          <div class="field" id="receiptCountField"><label>Jumlah Kemasan</label><input id="receiptCount" type="number" min="0" step="1" placeholder="Contoh: 5 drum"></div>
+          <div class="field" id="receiptQtyField" style="display:none"><label>Qty Manual</label><input id="receiptQty" type="number" min="0" step="0.01" placeholder="Liter / kg"></div>
+          <div class="field"><label>Supplier</label><input id="receiptSupplier" placeholder="Nama supplier"></div>
+          <div class="field"><label>No. Dokumen / DO</label><input id="receiptDoc" placeholder="Nomor DO / referensi"></div>
+          <div class="field wide"><label>Catatan</label><textarea id="receiptNote" placeholder="Catatan penerimaan jika ada"></textarea></div>
+        </div>
+        <div class="preview" id="receiptPreview">Pilih produk untuk melihat kalkulasi penerimaan.</div>
+        <div class="form-actions"><button type="button" class="btn btn-green" id="receiptSave">SIMPAN PENERIMAAN</button></div>
+        <div class="status" id="receiptStatus"></div>
+      </article>
+
+      <article class="op-card">
+        <h3>🚚 Transfer Yard → LO / Lube Skid</h3>
+        <div class="form-grid">
+          <div class="field wide"><label>Jenis Oli</label><select id="transferProduct"><option value="">-- Pilih oli --</option></select></div>
+          <div class="field wide"><label>Tujuan</label><select id="transferDestination"><option value="">-- Pilih LO / Lube Skid --</option></select></div>
+          <div class="field"><label>Qty Transfer (L)</label><input id="transferQty" type="number" min="0" step="0.01" placeholder="Contoh: 500"></div>
+          <div class="field"><label>Sumber</label><input value="YARD" readonly></div>
+          <div class="field wide"><label>Catatan</label><textarea id="transferNote" placeholder="Contoh: top up SAE30 ke LO"></textarea></div>
+        </div>
+        <div class="preview">Transfer bersifat dua sisi: saldo YARD berkurang dan saldo tujuan bertambah dalam satu transaksi server.</div>
+        <div class="form-actions"><button type="button" class="btn btn-primary" id="transferSave">SIMPAN TRANSFER</button></div>
+        <div class="status" id="transferStatus"></div>
+      </article>
+
+      <article class="op-card">
+        <h3>📏 Stock Taking LO / Lube Skid</h3>
+        <div class="form-grid">
+          <div class="field"><label>Storage</label><select id="readingStorage"><option value="">-- Pilih storage --</option></select></div>
+          <div class="field"><label>Jenis Oli</label><select id="readingProduct"><option value="">-- Pilih storage dulu --</option></select></div>
+          <div class="field wide" id="readingInputHost"><div class="hint">Pilih LO atau Lube Skid.</div></div>
+          <div class="field wide"><label>Catatan</label><textarea id="readingNote" placeholder="Opsional"></textarea></div>
+        </div>
+        <div class="preview">LO memakai tabel tera 0–140 mm. Lube Skid memakai indikator bar 0 / 200 / 400 / 600 / 800 / 1000 L. Reading tidak mengubah saldo otomatis, tetapi mencatat variance fisik vs sistem.</div>
+        <div class="form-actions"><button type="button" class="btn btn-dark" id="readingSave">SIMPAN READING</button></div>
+        <div class="status" id="readingStatus"></div>
+      </article>
+
+      <article class="op-card">
+        <h3>➕ Tambah LO / Lube Skid</h3>
+        <div class="form-grid">
+          <div class="field"><label>Kode Storage</label><input id="storageCode" placeholder="Contoh: LO01 / LSK01"></div>
+          <div class="field"><label>Tipe</label><select id="storageType"><option value="">-- Pilih tipe --</option><option value="LO">LO</option><option value="LUBE_SKID">LUBE SKID</option></select></div>
+          <div class="field wide"><label>Nama Storage</label><input id="storageName" placeholder="Contoh: LO 01 / Lube Skid Pit A"></div>
+        </div>
+        <div class="preview">LO otomatis dibuat dengan 4 compartment @ 2.400 L. Lube Skid otomatis dibuat dengan 4 compartment @ 1.000 L untuk SAE10 / SAE15 / SAE30 / SAE90.</div>
+        <div class="form-actions"><button type="button" class="btn btn-soft" id="storageSave">SIMPAN STORAGE</button></div>
+        <div class="status" id="storageStatus"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><span class="eyebrow">MASTER DATA</span><h2>Master Lubricant & Storage</h2><p>Daftar awal untuk mengecek nomenklatur oli, packaging, serta konfigurasi storage sebelum kita lanjut ke pemakaian mekanik.</p></div></div>
+    <div class="master-grid">
+      <div class="mini-table-wrap">
+        <table class="mini-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Unit</th><th>Drum</th><th>IBC</th></tr></thead><tbody id="productBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table>
+      </div>
+      <div class="mini-table-wrap">
+        <table class="mini-table"><thead><tr><th>Storage</th><th>Tipe</th><th>Konfigurasi</th></tr></thead><tbody id="storageBody"><tr><td colspan="3">Memuat...</td></tr></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><span class="eyebrow">AUDIT TRAIL</span><h2>History Pergerakan Stock</h2><p>Menampilkan receipt supplier dan transfer Yard ke LO / Lube Skid beserta petugas serta referensi dokumen.</p></div><span class="pill" id="historyCount">0 transaksi</span></div>
+    <div class="history-tools">
+      <select id="historyType"><option value="">Semua movement</option></select>
+      <input id="historySearch" type="search" placeholder="Cari produk, storage, supplier, petugas...">
+    </div>
+    <div class="history-wrap">
+      <table class="history-table"><thead><tr><th>Waktu</th><th>Tipe</th><th>Produk</th><th>Dari</th><th>Ke</th><th>Qty</th><th>Supplier / Dok</th><th>Petugas / Catatan</th></tr></thead><tbody id="historyBody"><tr><td colspan="8">Memuat history...</td></tr></tbody></table>
+    </div>
+  </section>
+</main>
+<script src="lubricant.js?v=20260915a1"></script>
+</body>
+</html>
