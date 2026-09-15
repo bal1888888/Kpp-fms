@@ -1,0 +1,62 @@
+name: Lubricant sidebar core hotfix
+
+on:
+  push:
+    branches:
+      - fix/lubricant-sidebar-core-v2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lubricant-sidebar-core-v2
+          fetch-depth: 0
+      - name: Patch core navigation and bust cache
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          auth = Path('auth.js')
+          text = auth.read_text(encoding='utf-8')
+
+          old = '        ["stock", "stock.html", "🛢️ Stock"],\n        ["logsheet", "logsheet.html", "📄 Logsheet"],'
+          new = '        ["stock", "stock.html", "🛢️ Stock"],\n        ["lubricant", "lubricant.html", "🛢️ Lubricant / Oli"],\n        ["logsheet", "logsheet.html", "📄 Logsheet"],'
+          count = text.count(old)
+          if count != 2:
+              raise SystemExit(f'Expected 2 GL/Admin navigation anchors, found {count}')
+          text = text.replace(old, new)
+
+          old_sub = '      stock: "Stock & Closing Fuel",\n      logsheet: "Daily Fuel Logsheet",'
+          new_sub = '      stock: "Stock & Closing Fuel",\n      lubricant: "Lubricant Stock & Movement",\n      logsheet: "Daily Fuel Logsheet",'
+          if old_sub not in text:
+              raise SystemExit('pageSubtitle anchor not found')
+          text = text.replace(old_sub, new_sub, 1)
+          auth.write_text(text, encoding='utf-8')
+
+          changed = 0
+          for html in Path('.').glob('*.html'):
+              src = html.read_text(encoding='utf-8')
+              out = re.sub(r'auth\.js\?v=[^"\']+', 'auth.js?v=20260915-lubricant2', src)
+              out = re.sub(r'wib-time\.js\?v=[^"\']+', 'wib-time.js?v=20260915-lubricant2', out)
+              if out != src:
+                  html.write_text(out, encoding='utf-8')
+                  changed += 1
+          print(f'Cache-busted HTML files: {changed}')
+
+          workflow = Path('.github/workflows/lubricant-sidebar-core-hotfix.yml')
+          if workflow.exists():
+              workflow.unlink()
+      - name: Commit patch
+        run: |
+          git config user.name "kpp-fms-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add auth.js '*.html' .github/workflows/lubricant-sidebar-core-hotfix.yml
+          git commit -m "fix: masukkan lubricant ke core sidebar dan bust cache"
+          git push origin HEAD:fix/lubricant-sidebar-core-v2
