@@ -10,9 +10,9 @@ const sql=fs.readFileSync(new URL("../supabase/migrations/20260915170000_lubrica
 
 test("lubricant page loads usage module after core runtime",()=>{
   assert.match(html,/lubricant-usage-v1\.css\?v=20260915c1/);
-  assert.match(html,/lubricant-usage-v1\.js\?v=20260915c1/);
-  assert.ok(html.indexOf("lubricant.js?v=20260915a1")<html.indexOf("lubricant-usage-v1.js?v=20260915c1"));
-  assert.match(html,/Supplier → YARD → LO \/ Lube Skid → Stock Taking → Pemakaian Unit/);
+  assert.match(html,/lubricant-usage-v1\.js\?v=20260915c2/);
+  assert.ok(html.indexOf("lubricant.js?v=20260915a1")<html.indexOf("lubricant-usage-v1.js?v=20260915c2"));
+  assert.match(html,/Supplier → YARD → LO \/ Lube Skid → Stock Taking → Planner WELL\/TRACK → Pemakaian Unit/);
 });
 
 test("usage migration is server authoritative and idempotent",()=>{
@@ -39,7 +39,7 @@ test("usage UI captures unit mechanic planner HM shift and supports CSV",()=>{
   for(const token of ["usageUnit","usageMechanic","usageMechanicNrp","usagePlanner","usagePlannerRef","usageHm","usageShift","usageExport"]){
     assert.match(js,new RegExp(token));
   }
-  assert.match(js,/lubricant_issue_to_unit/);
+  assert.match(js,/lubricant_issue_to_unit_v2/);
   assert.match(js,/WELL/);
   assert.match(js,/TRACK/);
   assert.match(js,/MANUAL/);
