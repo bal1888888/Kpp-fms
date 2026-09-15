@@ -20,7 +20,7 @@
     panel.id="lubeUsagePanel";
     panel.innerHTML=`
       <div class="panel-head lube-usage-head">
-        <div><span class="eyebrow">PEMAKAIAN KE UNIT</span><h2>Oil Logsheet Mekanik</h2><p>Oli keluar dari LO / Lube Skid ke unit. Grease keluar langsung dari Yard. Sumber planner WELL, TRACK, atau input manual ikut tersimpan untuk audit.</p></div>
+        <div><span class="eyebrow">PEMAKAIAN KE UNIT</span><h2>Oil Logsheet Mekanik</h2><p>Oli keluar dari LO / Lube Skid ke unit. Grease keluar langsung dari Yard. Job WELL / TRACK bisa dipilih dari Planner Inbox, sementara pekerjaan breakdown tetap bisa dicatat MANUAL.</p></div>
         <span class="usage-badge">STEP 5 • AKTIF</span>
       </div>
       <div class="lube-usage-layout">
@@ -52,7 +52,7 @@
             <div><small>OIL</small><strong id="usageTodayOil">0 L</strong></div>
             <div><small>GREASE</small><strong id="usageTodayGrease">0 KG</strong></div>
           </div>
-          <div class="preview"><b>Planner trace:</b> WELL / TRACK / MANUAL disimpan per transaksi. Nomor WO atau referensi tidak diwajibkan agar pekerjaan breakdown tetap bisa dicatat, tetapi sebaiknya diisi jika tersedia.</div>
+          <div class="preview"><b>Planner trace:</b> job WELL / TRACK yang dipilih akan otomatis berubah OPEN → USED bersamaan dengan transaksi stock. MANUAL tetap tersedia untuk breakdown tanpa WO.</div>
           <div class="preview" id="usageLatest">Belum ada pemakaian unit.</div>
         </aside>
       </div>
@@ -73,7 +73,7 @@
     const step=$$(".lube-flow-step").find(n=>(n.textContent||"").includes("Pemakaian ke Unit"));
     if(!step) return;
     step.classList.remove("future");step.classList.add("usage-live");
-    const small=$("small",step);if(small)small.textContent="Aktif: logsheet mekanik + referensi WELL / TRACK / MANUAL.";
+    const small=$("small",step);if(small)small.textContent="Aktif: Planner Inbox WELL/TRACK + Oil Logsheet + pemakaian manual.";
   }
 
   function bind(){
@@ -157,16 +157,18 @@
     const before=num(balance(src.id,p.id)?.quantity);if(qty>before){setStatus(`Stock ${src.code} tidak cukup. Tersedia ${fmt(before,2)} ${p.base_unit}.`,"err");return;}
     const button=$("#usageSave");button.disabled=true;setStatus("Menyimpan pemakaian dan mengurangi stock...");
     try{
-      const hmRaw=$("#usageHm")?.value;const shiftRaw=$("#usageShift")?.value;
-      const {data,error}=await db().rpc("lubricant_issue_to_unit",{
+      const hmRaw=$("#usageHm")?.value;const shiftRaw=$("#usageShift")?.value;const plannerJobId=Number(root.KPP_LUBE_SELECTED_PLANNER_JOB_ID)||null;
+      const {data,error}=await db().rpc("lubricant_issue_to_unit_v2",{
         p_request_id:crypto.randomUUID(),p_source_code:src.code,p_product_code:p.code,p_unit_code:unit,p_quantity:qty,
         p_planner_source:$("#usagePlanner")?.value||"MANUAL",p_planner_ref:$("#usagePlannerRef")?.value.trim()||null,
         p_mechanic_name:mechanic,p_mechanic_nrp:$("#usageMechanicNrp")?.value.trim()||null,
-        p_hm:hmRaw===""?null:Number(hmRaw),p_shift:shiftRaw===""?null:Number(shiftRaw),p_note:$("#usageNote")?.value.trim()||null
+        p_hm:hmRaw===""?null:Number(hmRaw),p_shift:shiftRaw===""?null:Number(shiftRaw),p_note:$("#usageNote")?.value.trim()||null,
+        p_planner_job_id:plannerJobId
       });
       if(error)throw error;if(data?.ok===false)throw new Error(data.message||"Pemakaian gagal disimpan.");
-      setStatus(`Pemakaian ${p.alias||p.name} ke ${unit} tersimpan. Stock ${src.code} sudah berkurang.`,"ok");
+      setStatus(`Pemakaian ${p.alias||p.name} ke ${unit} tersimpan. Stock ${src.code} sudah berkurang.${plannerJobId?" Planner job sudah ditandai USED.":""}`,"ok");
       $("#usageQty").value="";$("#usagePlannerRef").value="";$("#usageHm").value="";$("#usageNote").value="";
+      root.dispatchEvent(new CustomEvent("kpp:lube-usage-saved",{detail:{plannerJobId}}));
       await load();
       $("#lubeRefreshBtn")?.click();
     }catch(error){console.error(error);setStatus(error.message||"Gagal menyimpan pemakaian.","err");}
