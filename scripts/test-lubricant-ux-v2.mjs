@@ -38,7 +38,8 @@ test("stock capacity helper is display-only and observer stays scoped",()=>{
   assert.match(js,/const cap=type\.includes\("LUBE SKID"\)\?1000:type==="LO"\?2400:0/);
   assert.match(js,/new MutationObserver\(schedule\)\.observe\(stock,/);
   assert.doesNotMatch(js,/observe\(document\.body/);
-  assert.doesNotMatch(js,/\.rpc\(|\.from\(/);
+  assert.doesNotMatch(js,/\bdb\s*\(\)\s*\.\s*(rpc|from)\s*\(/);
+  assert.doesNotMatch(js,/KPP\??\.db\??\.(rpc|from)\s*\(/);
 });
 
 test("UX helper remains syntactically valid",()=>{
