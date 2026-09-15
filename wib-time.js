@@ -113,6 +113,7 @@
 
   /* Selalu muat polish global terbaru sesudah stylesheet lama supaya tema konsisten di semua halaman. */
   loadPageStyle("kpp-ui-polish.css?v=20260913navy1");
+  loadPageScript("lubricant-nav-v1.js?v=20260915a2");
 
   if(root.KPP_ACTIVE_PAGE==="hm-master"){
     loadPageScript("hm-master-capacity-picker-v2.js?v=20260913b1");
