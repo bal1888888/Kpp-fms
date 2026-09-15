@@ -13,6 +13,7 @@ window.KPP_ACTIVE_PAGE="lubricant";
 <script src="auth.js?v=20260915-lubricant2"></script>
 <link rel="stylesheet" href="lubricant.css?v=20260915a1">
 <link rel="stylesheet" href="lubricant-ux-v2.css?v=20260915b1">
+<link rel="stylesheet" href="lubricant-usage-v1.css?v=20260915c1">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260913navy1">
 </head>
 <body>
@@ -25,7 +26,7 @@ window.KPP_ACTIVE_PAGE="lubricant";
     <div>
       <span class="eyebrow">LUBRICANT / OIL CONTROL</span>
       <h1>Stock Oli & Pergerakan Lubricant</h1>
-      <p>Alur awal V1: Supplier → YARD → LO / Lube Skid. Grease tetap berada di Yard. Semua receipt dan transfer menyimpan saldo sebelum/sesudah untuk audit.</p>
+      <p>Alur aktif: Supplier → YARD → LO / Lube Skid → Stock Taking → Pemakaian Unit. Grease tetap Yard → Unit. Receipt, transfer, dan usage menyimpan saldo sebelum/sesudah untuk audit.</p>
     </div>
     <div class="hero-actions">
       <a class="btn btn-soft" href="admin.html">MENU MANAJEMEN</a>
@@ -106,7 +107,7 @@ window.KPP_ACTIVE_PAGE="lubricant";
   </section>
 
   <section class="panel">
-    <div class="panel-head"><div><span class="eyebrow">MASTER DATA</span><h2>Master Lubricant & Storage</h2><p>Daftar awal untuk mengecek nomenklatur oli, packaging, serta konfigurasi storage sebelum kita lanjut ke pemakaian mekanik.</p></div></div>
+    <div class="panel-head"><div><span class="eyebrow">MASTER DATA</span><h2>Master Lubricant & Storage</h2><p>Referensi nomenklatur oli, packaging, dan konfigurasi storage yang dipakai receipt, transfer, stock taking, serta oil logsheet.</p></div></div>
     <div class="master-grid">
       <div class="mini-table-wrap">
         <table class="mini-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Unit</th><th>Drum</th><th>IBC</th></tr></thead><tbody id="productBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table>
@@ -118,7 +119,7 @@ window.KPP_ACTIVE_PAGE="lubricant";
   </section>
 
   <section class="panel">
-    <div class="panel-head"><div><span class="eyebrow">AUDIT TRAIL</span><h2>History Pergerakan Stock</h2><p>Menampilkan receipt supplier dan transfer Yard ke LO / Lube Skid beserta petugas serta referensi dokumen.</p></div><span class="pill" id="historyCount">0 transaksi</span></div>
+    <div class="panel-head"><div><span class="eyebrow">AUDIT TRAIL</span><h2>History Pergerakan Stock</h2><p>Menampilkan receipt supplier, transfer Yard ke LO / Lube Skid, dan movement pemakaian ke unit beserta petugas serta referensi dokumen.</p></div><span class="pill" id="historyCount">0 transaksi</span></div>
     <div class="history-tools">
       <select id="historyType"><option value="">Semua movement</option></select>
       <input id="historySearch" type="search" placeholder="Cari produk, storage, supplier, petugas...">
@@ -130,5 +131,6 @@ window.KPP_ACTIVE_PAGE="lubricant";
 </main>
 <script src="lubricant.js?v=20260915a1"></script>
 <script src="lubricant-ux-v2.js?v=20260915b1"></script>
+<script src="lubricant-usage-v1.js?v=20260915c1"></script>
 </body>
 </html>

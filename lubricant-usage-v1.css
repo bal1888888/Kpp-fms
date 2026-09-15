@@ -1,0 +1,28 @@
+.lube-usage-panel{border-color:#bfdbfe;background:linear-gradient(180deg,#fff,#f8fbff)}
+.lube-usage-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.lube-usage-head .usage-badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:9px;font-weight:900;letter-spacing:.07em;white-space:nowrap}
+.lube-usage-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:14px;align-items:start}
+.lube-usage-card{padding:14px;border:1px solid #dbe4ef;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.lube-usage-card h3{margin:0 0 10px;font-size:13px;color:#0f172a}
+.lube-usage-note{margin-bottom:11px;padding:10px 11px;border-radius:10px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-size:9px;line-height:1.45}
+.lube-usage-note b{color:#1d4ed8}
+.lube-usage-preview{margin-top:10px;padding:10px 11px;border:1px dashed #93c5fd;border-radius:10px;background:#f8fbff;color:#334155;font-size:9px;line-height:1.5}
+.lube-usage-preview strong{color:#0f172a}
+.lube-usage-status{min-height:18px;margin-top:8px;font-size:9px;font-weight:700}
+.lube-usage-status.ok{color:#15803d}.lube-usage-status.err{color:#b91c1c}
+.lube-usage-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.lube-usage-summary>div{padding:10px;border-radius:11px;background:#f8fafc;border:1px solid #e2e8f0}
+.lube-usage-summary small{display:block;color:#64748b;font-size:8px;font-weight:800;letter-spacing:.04em}
+.lube-usage-summary strong{display:block;margin-top:3px;font-size:15px;color:#0f172a}
+.lube-usage-log{margin-top:14px;overflow-x:auto;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+.lube-usage-log table{width:100%;border-collapse:collapse;min-width:980px;font-size:9px}
+.lube-usage-log th,.lube-usage-log td{padding:9px 10px;border-bottom:1px solid #eef2f7;text-align:left;vertical-align:top}
+.lube-usage-log th{position:sticky;top:0;background:#f8fafc;color:#475569;font-size:8px;text-transform:uppercase;letter-spacing:.05em}
+.lube-usage-log td b{display:block;color:#0f172a}.lube-usage-log td small{display:block;color:#64748b;margin-top:2px}
+.lube-usage-tools{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px}
+.lube-usage-tools input{max-width:360px}
+.lube-usage-empty{padding:22px;text-align:center;color:#64748b;font-size:10px}
+.lube-flow-step.usage-live{opacity:1;border-color:rgba(96,165,250,.38);background:rgba(37,99,235,.12)}
+.lube-flow-step.usage-live>b{background:#16a34a}
+@media(max-width:980px){.lube-usage-layout{grid-template-columns:1fr}.lube-usage-summary{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){.lube-usage-head{flex-direction:column}.lube-usage-summary{grid-template-columns:1fr 1fr}.lube-usage-tools{align-items:stretch;flex-direction:column}.lube-usage-tools input,.lube-usage-tools .btn{width:100%;max-width:none}.lube-usage-card{padding:12px}.lube-usage-log{width:100%;max-width:100%}}
