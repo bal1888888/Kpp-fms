@@ -123,6 +123,7 @@
 
   if(root.KPP_ACTIVE_PAGE==="ccr"){
     loadPageScript("ccr-auto-quota-v1.js?v=20260913b2");
+    onDomReady(()=>loadPageScript("ccr-direct-hm-v1.js?v=20260915a1",{async:false}));
   }
 
   if(root.KPP_ACTIVE_PAGE==="logsheet-editor"){
