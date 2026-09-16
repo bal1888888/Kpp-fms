@@ -1,5 +1,6 @@
 // KPP-FMS CCR Quota Input v4
-// Satu modul untuk memilih check-in, membaca baseline server, input HM CCR, dan lock Qty Jatah.
+// Satu modul untuk memilih check-in, membaca baseline server, input HM CCR, lock Qty Jatah,
+// dan mengambil Limit Toleransi Penjatahan dari Master Unit.
 (() => {
   "use strict";
 
@@ -16,6 +17,7 @@
   let picking=false;
   let observer=null;
   let inputTimer=0;
+  let editPatched=false;
 
   function el(id){return document.getElementById(id);}
   function currentTime(){
@@ -34,6 +36,19 @@
     if(input)input.value=valid?fmt(last,1):"Belum ada";
     if(source)source.textContent=CURRENT_HM_REF.source;
     if(typeof updateHmIntel==="function")updateHmIntel();
+  }
+
+  function setTolerance(row){
+    const input=el("toleranceQty");
+    if(!input)return;
+    const value=number(row?.quota_tolerance_liter);
+    input.readOnly=true;
+    input.classList.add("kpp-tolerance-locked");
+    input.value=value===null?"":String(value);
+    input.title=value===null
+      ?"Pilih unit untuk membaca Limit Toleransi Penjatahan dari Master Unit."
+      :`Terkunci dari Master Unit: ${fmtL(value)} L`;
+    if(typeof updateLimit==="function")updateLimit();
   }
 
   function quotaCard(){
@@ -69,6 +84,7 @@
       .kpp-aq-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:9px}.kpp-aq-head b{font-size:12px;color:#0f2748}.kpp-aq-head span{font-size:9px;font-weight:900;color:#64748b}
       .kpp-aq-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.kpp-aq-grid>div{background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:9px;min-width:0}.kpp-aq-grid small{display:block;font-size:8px;color:#64748b;font-weight:900;margin-bottom:4px}.kpp-aq-grid strong{display:block;font-size:13px;color:#0f172a;overflow:hidden;text-overflow:ellipsis}.kpp-aq-grid .quota strong{font-size:18px;color:#166534}.kpp-auto-quota-v4 p{margin:8px 0 0;font-size:9px;line-height:1.45;color:#475569}
       #maxQty.kpp-quota-locked{background:#ecfdf5!important;border-color:#86efac!important;color:#166534!important;font-weight:900!important}
+      #toleranceQty.kpp-tolerance-locked{background:#eff6ff!important;border-color:#93c5fd!important;color:#1d4ed8!important;font-weight:900!important}
       @media(max-width:760px){.kpp-aq-grid{grid-template-columns:1fr 1fr}}@media(max-width:430px){.kpp-aq-grid{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
@@ -136,14 +152,17 @@
     if(seq!==snapshotSeq)return null;
     snapshot=data||{};
     setRef(snapshot);
+    setTolerance(snapshot);
     applyQuota();
     return snapshot;
   }
 
   async function refreshSnapshot(){
     const unit=upper(el("unit")?.value);
-    if(!unit){snapshot=null;CURRENT_HM_REF={hm:0,source:"Belum pilih unit"};HM_REFERENCE_LOADING=false;setRef(null);setManual("Pilih check-in atau unit terlebih dahulu.");return;}
-    try{await loadSnapshot(unit);}catch(error){HM_REFERENCE_LOADING=false;snapshot=null;setBlocked(`Referensi HM gagal dibaca: ${error.message}`);}
+    if(!unit){
+      snapshot=null;CURRENT_HM_REF={hm:0,source:"Belum pilih unit"};HM_REFERENCE_LOADING=false;setRef(null);setTolerance(null);setManual("Pilih check-in atau unit terlebih dahulu.");return;
+    }
+    try{await loadSnapshot(unit);}catch(error){HM_REFERENCE_LOADING=false;snapshot=null;setTolerance(null);setBlocked(`Referensi HM gagal dibaca: ${error.message}`);}
   }
 
   function relabel(){
@@ -155,6 +174,23 @@
     if(label)label.textContent="HM Penjatahan CCR";
     if(hint)hint.textContent="Masukkan HM yang dibaca CCR saat membuat jatah. Field ini baru terkunci setelah jatah tersimpan.";
     const timeHelp=el("hmTakenTime")?.parentElement?.querySelector(".input-help");if(timeHelp)timeHelp.textContent="Waktu CCR membaca HM unit untuk penjatahan.";
+
+    const tolerance=el("toleranceQty");
+    if(tolerance){
+      tolerance.readOnly=true;
+      tolerance.classList.add("kpp-tolerance-locked");
+      const toleranceWrap=tolerance.parentElement;
+      const toleranceLabel=toleranceWrap?.querySelector("label");
+      if(toleranceLabel)toleranceLabel.textContent="Limit Toleransi Penjatahan (L)";
+      let toleranceHelp=toleranceWrap?.querySelector('[data-kpp-tolerance-help="1"]');
+      if(!toleranceHelp){
+        toleranceHelp=document.createElement("div");
+        toleranceHelp.className="input-help";
+        toleranceHelp.dataset.kppToleranceHelp="1";
+        toleranceWrap?.appendChild(toleranceHelp);
+      }
+      if(toleranceHelp)toleranceHelp.textContent="Otomatis dari Master Unit dan dikunci untuk CCR. Perubahan master berlaku untuk jatah berikutnya.";
+    }
   }
 
   function decorateRows(){
@@ -182,7 +218,6 @@
     const body=el("monitorBody");if(!body)return false;
     observer?.disconnect();
     observer=new MutationObserver(()=>decorateRows());
-    // Penting: hanya perubahan baris langsung. Jangan observe subtree, supaya dekorasi tombol tidak memicu loop CPU.
     observer.observe(body,{childList:true});
     decorateRows();
     return true;
@@ -214,49 +249,66 @@
       el("tanggal").value=row.tanggal;el("shift").value=row.shift;el("operator").value=row.operator_name||"";el("operator").readOnly=true;
       el("hm").value="";el("hm").readOnly=false;el("hm").placeholder=`HM penjatahan, minimal ${fmt(row.hm_awal,1)}`;
       el("hmTakenTime").value=currentTime();el("hmTakenTime").readOnly=false;
-      el("maxQty").value="";el("toleranceQty").value="0";el("requestReason").value="";el("note").value="";
+      el("maxQty").value="";setTolerance(null);el("requestReason").value="";el("note").value="";
       const selected=el("checkinSelected");if(selected){selected.style.display="block";selected.innerHTML=`<b>Check-in terpilih:</b> ${esc(row.unit)} • ${esc(row.operator_name)} • NRP ${esc(row.nrp||"—")} • HM check-in ${fmt(row.hm_awal,1)}.<br><b>CCR isi HM penjatahan.</b> Operator unit jatah tidak perlu mengirim HM kedua.`;}
       if(typeof updateQrDisplay==="function")updateQrDisplay();
       await loadSnapshot(row.unit);
       if(typeof refreshFillingNo==="function")await refreshFillingNo();
       if(typeof updateHmIntel==="function")updateHmIntel();
-      if(status)status.textContent="Check-in dipilih. Masukkan HM Penjatahan CCR; Qty Jatah dihitung otomatis dari baseline pengisian terakhir × FC.";
+      if(status)status.textContent="Check-in dipilih. Masukkan HM Penjatahan CCR; Qty Jatah dihitung otomatis dan Limit Toleransi diambil dari Master Unit.";
       el("hm").focus();
     }catch(error){if(status)status.textContent=`❌ ${error.message}`;}
     finally{picking=false;decorateRows();}
   }
 
+  function patchEditTolerance(){
+    if(editPatched||typeof window.openGlEdit!=="function")return false;
+    editPatched=true;
+    const original=window.openGlEdit;
+    window.openGlEdit=function(...args){
+      const result=original.apply(this,args);
+      const tolerance=el("editTolerance");
+      if(tolerance){
+        tolerance.readOnly=true;
+        tolerance.title="Limit toleransi adalah snapshot dari Master Unit dan tidak dapat diedit pada jatah yang sudah dibuat.";
+      }
+      return result;
+    };
+    return true;
+  }
+
   async function saveQuota(event){
     event.preventDefault();event.stopImmediatePropagation();
-    const btn=el("saveBtn"),status=el("formStatus");btn.disabled=true;btn.textContent="MENYIMPAN...";status.textContent="Memeriksa HM penjatahan dan jatah server...";
+    const btn=el("saveBtn"),status=el("formStatus");btn.disabled=true;btn.textContent="MENYIMPAN...";status.textContent="Memeriksa HM penjatahan, toleransi master, dan jatah server...";
     try{
       const pending=readCcrAllocationPending();
       if(pending){const recovered=await submitCcrAllocationReliable();if(recovered.error)throw recovered.error;alert(`✅ Jatah ${recovered.data?.unit||""} pengisian ke-${recovered.data?.filling_no||"-"} sudah terkonfirmasi di server.`);location.reload();return;}
       if(CURRENT_OPERATOR_CHECKIN){const fresh=await fetchCheckin(CURRENT_OPERATOR_CHECKIN.id);await ensureAvailable(fresh);if(upper(fresh.unit)!==upper(el("unit").value)||fresh.tanggal!==el("tanggal").value||fresh.shift!==el("shift").value)throw new Error("Pilihan unit/tanggal/shift berubah. Pilih ulang check-in.");CURRENT_OPERATOR_CHECKIN=fresh;el("operator").value=fresh.operator_name||"";}
       const next=await refreshFillingNo();
+      await refreshSnapshot();
       applyQuota();
       const err=validate(next);if(err)throw new Error(err);
       const unit=upper(el("unit").value);
-      const payload={tanggal:el("tanggal").value,shift:el("shift").value,unit,barcode_code:unit,nrp:CURRENT_OPERATOR_CHECKIN?.nrp||null,operator_unit:clean(el("operator").value),hm_previous_ref:CURRENT_HM_REF.hm>0?Number(CURRENT_HM_REF.hm):null,hm_previous_source:CURRENT_HM_REF.source||null,hm_ccr:number(el("hm").value),hm_taken_time:el("hmTakenTime").value,hm_work_since_previous:(CURRENT_HM_REF.hm>0&&number(el("hm").value)!==null&&number(el("hm").value)>=CURRENT_HM_REF.hm)?Math.round((number(el("hm").value)-CURRENT_HM_REF.hm)*10)/10:null,max_qty:number(el("maxQty").value),tolerance_qty:number(el("toleranceQty").value)||0,request_reason:next>=2?clean(el("requestReason").value):null,note:clean(el("note").value)||null,created_by:window.KPP_SESSION?.user?.id||null,created_by_name:PROFILE?.display_name||null,created_by_role:PROFILE?.role||null,operator_checkin_id:CURRENT_OPERATOR_CHECKIN?.id||null,operator_hm_awal:CURRENT_OPERATOR_CHECKIN?.hm_awal??null,operator_checkin_at:CURRENT_OPERATOR_CHECKIN?.created_at||null};
+      const payload={tanggal:el("tanggal").value,shift:el("shift").value,unit,barcode_code:unit,nrp:CURRENT_OPERATOR_CHECKIN?.nrp||null,operator_unit:clean(el("operator").value),hm_previous_ref:CURRENT_HM_REF.hm>0?Number(CURRENT_HM_REF.hm):null,hm_previous_source:CURRENT_HM_REF.source||null,hm_ccr:number(el("hm").value),hm_taken_time:el("hmTakenTime").value,hm_work_since_previous:(CURRENT_HM_REF.hm>0&&number(el("hm").value)!==null&&number(el("hm").value)>=CURRENT_HM_REF.hm)?Math.round((number(el("hm").value)-CURRENT_HM_REF.hm)*10)/10:null,max_qty:number(el("maxQty").value),tolerance_qty:number(el("toleranceQty").value),request_reason:next>=2?clean(el("requestReason").value):null,note:clean(el("note").value)||null,created_by:window.KPP_SESSION?.user?.id||null,created_by_name:PROFILE?.display_name||null,created_by_role:PROFILE?.role||null,operator_checkin_id:CURRENT_OPERATOR_CHECKIN?.id||null,operator_hm_awal:CURRENT_OPERATOR_CHECKIN?.hm_awal??null,operator_checkin_at:CURRENT_OPERATOR_CHECKIN?.created_at||null};
       const result=await submitCcrAllocationReliable(payload);if(result.error)throw result.error;
       const data=result.data,limit=Number(data.max_qty||0)+Number(data.tolerance_qty||0);
-      status.innerHTML=data.status==="ACTIVE"?`✅ <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} ACTIVE.</b> HM CCR ${fmt(data.hm_ccr,1)} • Jatah ${fmtL(data.max_qty)} L • Batas ${fmtL(limit)} L.`:`🟡 <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} PENDING GL.</b> Jatah ${fmtL(data.max_qty)} L menunggu approval.`;
+      status.innerHTML=data.status==="ACTIVE"?`✅ <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} ACTIVE.</b> HM CCR ${fmt(data.hm_ccr,1)} • Jatah ${fmtL(data.max_qty)} L • Toleransi ${fmtL(data.tolerance_qty)} L • Batas ${fmtL(limit)} L.`:`🟡 <b>${esc(data.unit)} — Pengisian ke-${data.filling_no} PENDING GL.</b> Jatah ${fmtL(data.max_qty)} L + toleransi ${fmtL(data.tolerance_qty)} L menunggu approval.`;
       if(typeof loadRows==="function")await loadRows();CURRENT_OPERATOR_CHECKIN=null;CHECKIN_MONITOR?.clearSelection?.();if(typeof loadOperatorCheckins==="function")await loadOperatorCheckins();
-      el("operator").value="";el("operator").readOnly=false;el("hm").value="";el("hm").readOnly=false;el("hmTakenTime").value=currentTime();el("maxQty").value="";el("maxQty").readOnly=false;el("maxQty").classList.remove("kpp-quota-locked");el("toleranceQty").value="0";el("requestReason").value="";el("note").value="";const selected=el("checkinSelected");if(selected){selected.style.display="none";selected.textContent="";}snapshot=null;await refreshFillingNo();if(typeof updateLimit==="function")updateLimit();if(typeof updateHmIntel==="function")updateHmIntel();
+      el("operator").value="";el("operator").readOnly=false;el("hm").value="";el("hm").readOnly=false;el("hmTakenTime").value=currentTime();el("maxQty").value="";el("maxQty").readOnly=false;el("maxQty").classList.remove("kpp-quota-locked");setTolerance(null);el("requestReason").value="";el("note").value="";const selected=el("checkinSelected");if(selected){selected.style.display="none";selected.textContent="";}snapshot=null;await refreshFillingNo();if(typeof updateLimit==="function")updateLimit();if(typeof updateHmIntel==="function")updateHmIntel();
     }catch(error){console.error(error);status.textContent=`❌ ${error.message}`;}
     finally{btn.disabled=false;btn.textContent="💾 SIMPAN JATAH";}
   }
 
   function bind(){
-    ensureStyle();quotaCard();relabel();
-    let tries=0;const timer=setInterval(()=>{tries++;relabel();if(watchRows()||tries>=60)clearInterval(timer);},100);
+    ensureStyle();quotaCard();relabel();patchEditTolerance();
+    let tries=0;const timer=setInterval(()=>{tries++;relabel();patchEditTolerance();if(watchRows()||tries>=60)clearInterval(timer);},100);
     document.addEventListener("click",event=>{const button=event.target.closest?.("button[data-kpp-quota-checkin]");if(!button)return;event.preventDefault();selectCheckin(button.dataset.kppQuotaCheckin);},true);
     el("saveBtn")?.addEventListener("click",saveQuota,true);
     el("hm")?.addEventListener("input",applyQuota);
     el("hm")?.addEventListener("change",applyQuota);
     el("unit")?.addEventListener("input",()=>{clearTimeout(inputTimer);inputTimer=setTimeout(refreshSnapshot,300);});
     el("unit")?.addEventListener("change",()=>setTimeout(refreshSnapshot,0));
-    setTimeout(()=>{const unit=upper(el("unit")?.value);if(unit)refreshSnapshot();else setManual("Pilih check-in atau unit terlebih dahulu.");},0);
+    setTimeout(()=>{const unit=upper(el("unit")?.value);if(unit)refreshSnapshot();else{setTolerance(null);setManual("Pilih check-in atau unit terlebih dahulu.");}},0);
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});else bind();
