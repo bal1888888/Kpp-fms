@@ -7,7 +7,7 @@ const storage = await readFile(new URL('../storage-master.js', import.meta.url),
 
 test('stock page memuat status hardening', () => {
   assert.match(storage, /KPP_ACTIVE_PAGE===\"stock\"/);
-  assert.match(storage, /stock-status-hardening\.js\?v=20260913a1/);
+  assert.match(storage, /stock-status-hardening\.js\?v=20260916-integrity1/);
 });
 
 test('zona stock memakai KRITIS RENDAH WASPADA AMAN dan TINGGI', () => {
