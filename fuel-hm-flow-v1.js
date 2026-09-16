@@ -25,13 +25,14 @@
       if(small)small.textContent="HM PENJATAHAN CCR";
     }
     const input=document.getElementById("currentHm");
-    if(input?.readOnly && window.currentCCRAllocation){
+    const ccrVisible=box&&!box.classList.contains("hidden");
+    if(input?.readOnly&&ccrVisible){
       const label=input.closest(".form-group")?.querySelector("label");
       if(label)label.textContent="HM Penjatahan CCR";
       input.placeholder="HM dari jatah CCR";
     }
     const mode=document.getElementById("fuelingModeBox");
-    if(mode && /MODE CCR/i.test(mode.textContent||"")){
+    if(mode&&/MODE CCR/i.test(mode.textContent||"")){
       mode.textContent="MODE CCR • HM Penjatahan dan batas liter mengikuti jatah CCR. Fuelman hanya input Qty aktual.";
     }
   }
