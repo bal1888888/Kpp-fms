@@ -82,4 +82,15 @@
     render();return {send:(action,payload)=>run(()=>manager.send(action,payload)),read:manager.read};
   }
   root.KPPReliable={create,mount,timeWib};
+
+  // operator-checkin.html tidak memakai auth/wib-time loader. Muat policy HM setelah parser selesai.
+  if(typeof document!=="undefined" && /(?:^|\/)operator-checkin\.html$/i.test(location.pathname)){
+    document.addEventListener("DOMContentLoaded",()=>{
+      if([...document.scripts].some(s=>s.src&&s.src.includes("operator-checkin-flow-v4.js")))return;
+      const script=document.createElement("script");
+      script.src="operator-checkin-flow-v4.js?v=20260916b1";
+      script.async=false;
+      document.head.appendChild(script);
+    },{once:true});
+  }
 })(globalThis);

@@ -2,17 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const js=fs.readFileSync('ccr-auto-quota-v1.js','utf8');
+const legacyJs=fs.readFileSync('ccr-auto-quota-v1.js','utf8');
+const js=fs.readFileSync('ccr-quota-input-v4.js','utf8');
 const time=fs.readFileSync('wib-time.js','utf8');
 const v2=fs.readFileSync('supabase/migrations/20260913155000_ccr_auto_quota_hardening_v2.sql','utf8');
 const v3=fs.readFileSync('supabase/migrations/20260913161000_ccr_auto_quota_hardening_v3.sql','utf8');
 
-test('CCR auto quota preview uses restricted RPC instead of direct master/history reads',()=>{
+test('CCR runtime v4 memakai restricted preview RPC tanpa memuat runtime legacy',()=>{
   assert.match(js,/rpc\("ccr_auto_quota_preview"/);
-  assert.match(js,/rpc\("ccr_unit_directory"/);
   assert.doesNotMatch(js,/\.from\("unit_master"\)/);
   assert.doesNotMatch(js,/\.from\("fuel_history"\)/);
-  assert.match(time,/ccr-auto-quota-v1\.js\?v=20260913b2/);
+  assert.doesNotMatch(time,/ccr-auto-quota-v1\.js/);
+  assert.match(time,/ccr-quota-input-v4\.js\?v=20260916b1/);
+  assert.match(legacyJs,/rpc\("ccr_auto_quota_preview"/);
 });
 
 test('last filling remains the exact quota baseline but legacy outliers are rejected',()=>{
@@ -39,21 +41,20 @@ test('auto snapshot lock includes HM capture time',()=>{
   assert.match(v2,/new\.hm_taken_time is distinct from old\.hm_taken_time/i);
 });
 
-test('manual legacy allocations are not blindly locked in GL edit UI',()=>{
-  assert.doesNotMatch(js,/function lockEditFields\(\)/);
-  assert.match(js,/const autoLocked=num\(data\?\.fc_standard_lphm\)!==null&&Number\(data\.fc_standard_lphm\)>0/);
-  assert.match(js,/qty\.readOnly=autoLocked/);
-  assert.match(js,/hm\.readOnly=autoLocked\|\|data\?\.operator_checkin_id!=null/);
+test('client v4 locks Qty, not HM input, before submit',()=>{
+  assert.match(js,/q\.readOnly=true/);
+  assert.match(js,/el\("hm"\)\.readOnly=false/);
+  assert.match(js,/AUTO • QTY TERKUNCI/);
 });
 
 test('client blocks untrusted baseline and server preview is role-scoped',()=>{
-  assert.match(js,/BLOKIR • REVIEW HM/);
-  assert.match(js,/snapshot\.lastHm!==null&&!snapshot\.baselineValid/);
+  assert.match(js,/Baseline HM belum valid/);
+  assert.match(js,/snapshot\.baseline_valid!==true/);
   assert.match(v2,/v_role not in \('ccr','gl','admin','atasan'\)/i);
   assert.match(v2,/revoke all on function public\.ccr_auto_quota_preview\(text\) from public, anon/i);
   assert.match(v2,/grant execute on function public\.ccr_auto_quota_preview\(text\) to authenticated/i);
 });
 
-test('CCR auto quota runtime remains syntactically valid',()=>{
+test('CCR quota runtime v4 remains syntactically valid',()=>{
   assert.doesNotThrow(()=>new Function(js));
 });
