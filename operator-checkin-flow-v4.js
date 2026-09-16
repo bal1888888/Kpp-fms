@@ -32,6 +32,8 @@
       if(!actualBtn||!submit)return;
 
       if(policy.is_ccr_quota){
+        const brandCopy=document.querySelector(".brand p");
+        if(brandCopy)brandCopy.textContent="Check-in operator sekali. HM penjatahan selanjutnya dibaca CCR.";
         actualBtn.hidden=true;actualBtn.disabled=true;
         if(tabs)tabs.style.gridTemplateColumns="1fr";
         const n=note();n.hidden=false;n.textContent=quotaMessage();
@@ -108,10 +110,9 @@
       if(el("unit")?.value&&el("token")?.value){await loadPolicy();break;}
       await new Promise(r=>setTimeout(r,100));
     }
-    // validateQr/loadActiveCheckin dapat selesai setelah policy; terapkan lagi.
-    setTimeout(applyPolicy,150);
-    setTimeout(applyPolicy,500);
-    setTimeout(applyPolicy,1200);
+    // validateQr/loadActiveCheckin bisa lebih lambat dari policy. Jaga UI selama 5 detik tanpa polling database.
+    let ticks=0;
+    const settle=setInterval(()=>{ticks++;applyPolicy();if(ticks>=20)clearInterval(settle);},250);
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
