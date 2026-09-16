@@ -7,14 +7,15 @@ const [oldMigration,v2Migration,v3Migration,loader,patch]=await Promise.all([
   readFile('supabase/migrations/20260916113000_ccr_quota_checkin_hm_v2.sql','utf8'),
   readFile('supabase/migrations/20260916120000_ccr_quota_input_v3.sql','utf8'),
   readFile('wib-time.js','utf8'),
-  readFile('ccr-quota-input-v3.js','utf8')
+  readFile('ccr-quota-input-v4.js','utf8')
 ]);
 
-test('patch direct-HM lama tidak dimuat lagi',()=>{
+test('runtime CCR lama tidak dimuat dan v4 menjadi satu-satunya enhancement quota',()=>{
   assert.match(oldMigration,/create or replace function public\.ccr_set_checkin_hm/i);
   assert.doesNotMatch(loader,/ccr-direct-hm-v1\.js/);
-  assert.match(loader,/ccr-auto-quota-v1\.js/);
-  assert.match(loader,/ccr-quota-input-v3\.js/);
+  assert.doesNotMatch(loader,/ccr-auto-quota-v1\.js/);
+  assert.doesNotMatch(loader,/ccr-quota-input-v3\.js/);
+  assert.match(loader,/ccr-quota-input-v4\.js\?v=20260916b1/);
 });
 
 test('v2 terdokumentasi sebagai riwayat, v3 mengembalikan check-in ke ACTIVE',()=>{
@@ -37,12 +38,18 @@ test('server menerima check-in ACTIVE atau READY tetapi HM penjatahan tetap mili
   assert.doesNotMatch(v3Migration,/new\.hm_taken_time\s*:=\s*timezone\('Asia\/Jakarta',v_checkin\.hm_actual_at\)/i);
 });
 
-test('frontend meminta CCR mengisi HM dan menyimpan Qty hasil auto quota',()=>{
+test('frontend meminta CCR mengisi HM dan mengunci Qty hasil auto quota',()=>{
   assert.match(patch,/HM Penjatahan CCR/);
   assert.match(patch,/Pilih → CCR isi HM penjatahan/);
   assert.match(patch,/data-kpp-quota-checkin/);
   assert.match(patch,/event\.stopImmediatePropagation\(\)/);
-  assert.match(patch,/max_qty:num\(document\.getElementById\("maxQty"\)\.value\)/);
+  assert.match(patch,/max_qty:number\(el\("maxQty"\)\.value\)/);
+  assert.match(patch,/q\.readOnly=true/);
+});
+
+test('observer CCR tidak mengamati subtree sehingga dekorasi tidak memicu loop CPU',()=>{
+  assert.match(patch,/observer\.observe\(body,\{childList:true\}\)/);
+  assert.doesNotMatch(patch,/observer\.observe\(body,\{childList:true,subtree:true\}\)/);
 });
 
 test('backfill v3 hanya membatalkan auto-promotion yang belum pernah dipakai',()=>{
