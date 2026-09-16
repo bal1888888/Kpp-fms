@@ -59,7 +59,8 @@
         note.textContent="Pilih → CCR isi HM penjatahan";
         button.insertAdjacentElement("afterend",note);
       }
-      button.textContent=clean(original.textContent)||"PILIH";
+      const desired=clean(original.textContent)||"PILIH";
+      if(button.textContent!==desired)button.textContent=desired;
       button.disabled=picking;
     });
     return true;
@@ -69,8 +70,9 @@
     const body=document.getElementById("monitorBody");
     if(!body)return false;
     observer?.disconnect();
-    observer=new MutationObserver(decorateRows);
-    observer.observe(body,{childList:true,subtree:true});
+    observer=new MutationObserver(()=>decorateRows());
+    // Compatibility hotfix: hanya perubahan baris langsung. Jangan observe subtree karena dekorasi tombol sendiri dapat memicu loop CPU.
+    observer.observe(body,{childList:true});
     decorateRows();
     return true;
   }
