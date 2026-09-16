@@ -11,7 +11,7 @@ const loader=fs.readFileSync('wib-time.js','utf8');
 
 test('unit jatah mendapat policy khusus dan operator HM kedua diblok server',()=>{
   assert.match(sql,/operator_checkin_flow_info/i);
-  assert.match(sql,/u\.fc_standard_lphm is not null and u\.fc_standard_lphm>0/i);
+  assert.match(sql,/u\.fc_standard_lphm is not null and u\.fc_standard_lphm\s*>\s*0/i);
   assert.match(sql,/Unit ini memakai jatah CCR\. Operator cukup check-in awal/i);
   assert.match(sql,/Check-in ini sudah dipakai untuk jatah CCR\. HM berikutnya menjadi tanggung jawab CCR/i);
   assert.match(operator,/Tidak perlu kirim HM kedua/i);
