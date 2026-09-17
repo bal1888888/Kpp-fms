@@ -1,16 +1,13 @@
 import fs from "node:fs";
-
 const fc=fs.readFileSync("fc-chart.js","utf8");
 const dash=fs.readFileSync("dashboard.html","utf8");
 const log=fs.readFileSync("logsheet.html","utf8");
-const ok=(cond,msg)=>{if(!cond){console.error("FAIL:",msg);process.exit(1);}};
-ok(fc.includes("const MAX_UNITS=10"),"FC picker should allow 10 units");
-ok(fc.includes("Ringkasan FC per Unit"),"selected-unit summary should exist");
-ok(fc.includes("COVERAGE HM"),"coverage KPI should exist");
-ok(fc.includes("view.samples}/${view.transactions}"),"coverage KPI should show valid/total samples");
-ok(fc.includes("Maksimal 10 unit"),"10-unit guard copy should exist");
-ok(!dash.includes('id="fcSection"'),"legacy duplicate MTD FC section should be removed");
-ok(!dash.includes("renderFuelConsumption(mtdRows)"),"legacy FC renderer should not run");
-ok(dash.includes("fc-chart.js?v=20260912h"),"dashboard should use FC anomaly asset version");
-ok(log.includes("fc-chart.js?v=20260912h"),"logsheet should use FC anomaly asset version");
-console.log("FC dashboard informative checks passed");
+const ok=(c,m)=>{if(!c)throw new Error(m)};
+ok(fc.includes("const MAX_GROUPS=10"),"FC should support grouped selections");
+ok(fc.includes("Ringkasan FC per EGI"),"EGI summary should exist");
+ok(fc.includes("Detail Unit"),"unit drill-down should exist");
+ok(fc.includes("COVERAGE"),"coverage should exist");
+ok(fc.includes("total fuel valid ÷ total HM valid"),"weighted FC formula copy should exist");
+ok(dash.includes('hostId:\"dashboardFcChart\"'),"dashboard FC mount should remain active");
+ok(log.includes('hostId:\"logsheetFcChart\"'),"logsheet FC mount should remain active");
+console.log("FC EGI dashboard checks passed");

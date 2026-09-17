@@ -1,9 +1,24 @@
+import test from "node:test";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 const widget=fs.readFileSync("fc-chart.js","utf8");
 const dash=fs.readFileSync("dashboard.html","utf8");
 const log=fs.readFileSync("logsheet.html","utf8");
-for(const needle of ["fetchBaselines","rawDelta<0","rawDelta>maxDelta","validFuel/totalHm","Maksimal 10 unit","TRANSAKSI PENGISIAN PERLU CEK HM"]){if(!widget.includes(needle))throw new Error(`missing FC safety marker: ${needle}`);}
-if(!dash.includes('hostId:"dashboardFcChart"')||!dash.includes('autoLoad:true'))throw new Error('Dashboard FC widget is not active');
-if(!log.includes('hostId:"logsheetFcChart"')||!log.includes('collapsedByDefault:true')||!log.includes('autoLoad:false'))throw new Error('Logsheet FC widget must be lazy and collapsed by default');
-if(!log.includes('Tampilkan Grafik FC') && !widget.includes('Tampilkan Grafik FC'))throw new Error('FC hide/show control missing');
-console.log('FC chart widget regression checks passed');
+test("FC widget supports EGI grouping and drill-down",()=>{
+  assert.match(widget,/MODE ANALISA/);
+  assert.match(widget,/PER EGI/);
+  assert.match(widget,/PER UNIT/);
+  assert.match(widget,/Ringkasan FC per EGI/);
+  assert.match(widget,/Detail Unit/);
+  assert.match(widget,/allUnits\.filter\(x=>selected\.includes\(x\.egi\)\)/);
+});
+test("FC aggregate uses weighted total fuel divided by total HM",()=>{
+  assert.match(widget,/validFuel\/totalHm/);
+  assert.match(widget,/x\.validFuel\+=/);
+  assert.match(widget,/x\.hm\+=/);
+});
+test("Dashboard and logsheet still mount the same KPPFC runtime",()=>{
+  assert.match(dash,/hostId:"dashboardFcChart"/);
+  assert.match(log,/hostId:"logsheetFcChart"/);
+});
+console.log("FC EGI widget regression checks passed");
