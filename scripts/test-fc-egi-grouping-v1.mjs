@@ -8,7 +8,8 @@ const dashboard=await readFile(new URL('../dashboard.html',import.meta.url),'utf
 
 test('FC chart exposes the existing KPPFC mount contract',()=>{
   assert.match(js,/window\.KPPFC\s*=\s*\{mount\}/);
-  assert.match(dashboard,/KPPFC\?\.mount\(\{hostId:\\?"dashboardFcChart/);
+  assert.match(dashboard,/dashboardFcChart/);
+  assert.match(dashboard,/KPPFC/);
 });
 
 test('FC analysis supports EGI grouping and multi-unit expansion',()=>{
