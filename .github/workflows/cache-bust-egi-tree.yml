@@ -1,0 +1,34 @@
+name: Refresh FC EGI Tree Assets
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh asset version
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['dashboard.html','logsheet.html']:
+              p=Path(name)
+              s=p.read_text(encoding='utf-8')
+              s=s.replace('fc-egi-tree-logsheet.js?v=20260917','fc-egi-tree-logsheet.js?v=20260917b')
+              if 'fc-egi-tree-logsheet.js?v=20260917b' not in s:
+                  marker='<script src="fc-chart.js?v=20260912h"></script>'
+                  if marker in s:
+                      s=s.replace(marker, marker+'\n<script src="fc-egi-tree-logsheet.js?v=20260917b"></script>',1)
+              p.write_text(s,encoding='utf-8')
+          Path('.github/workflows/cache-bust-egi-tree.yml').unlink(missing_ok=True)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html logsheet.html .github/workflows/cache-bust-egi-tree.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: refresh FC EGI tree picker asset [skip ci]"
+          git push
