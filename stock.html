@@ -947,7 +947,6 @@ th{background:#f8fafc;color:#475569}
 .pic-transfer-mode .converter-panel,
 .pic-transfer-mode .opening-panel{display:none!important}
 
-.stock-mode-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 14px;padding:12px 14px;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:12px;background:#eff6ff;color:#1e3a5f}.stock-mode-banner strong{display:block;font-size:12px}.stock-mode-banner span{display:block;margin-top:3px;font-size:10px;color:#64748b}.stock-mode-banner select{width:auto;min-width:220px;font-weight:800}.stock-mode-banner.live{border-color:#fecaca;border-left-color:#dc2626;background:#fff7f7;color:#991b1b}.stock-mode-banner.live span{color:#7f1d1d}@media(max-width:700px){.stock-mode-banner{align-items:stretch;flex-direction:column}.stock-mode-banner select{width:100%}}
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
@@ -1084,8 +1083,6 @@ th{background:#f8fafc;color:#475569}
     <span id="sessionTruckLine">Fuel Truck: <span id="sessionTruck">-</span><br></span>
     <span id="sessionResponsibility">Tanggal/shift dan tanggung jawab Closing mengikuti session.</span>
 </div>
-
-<div class="stock-mode-banner" id="stockModeBanner"><div><strong>MODE BACKFILL • REKONSILIASI</strong><span>Input historis boleh sementara belum balance. Validasi ketat aktif saat MODE LIVE.</span></div><select id="stockOperationMode" aria-label="Mode operasi stock"><option value="BACKFILL">BACKFILL / REKONSILIASI</option><option value="LIVE">LIVE OPERASIONAL</option></select></div>
 
 <div class="panel period-panel">
     <div class="panel-title-row">
@@ -1565,7 +1562,6 @@ async function dispatchStockMovementRequest(request){
 }
 
 async function sendStockMovementSafe(payload){
-    payload={...payload,operation_mode:getStockOperationMode()};
     const run=async()=>{
         try{
             let pending=readPendingStockMovement();
@@ -1629,24 +1625,3111 @@ function toggleStockPanel(panelKey){
     setStockPanelCollapsed(panelKey,!content.classList.contains("hidden"),true);
 }
 
-function getStockOperationMode(){return document.getElementById("stockOperationMode")?.value==="LIVE"?"LIVE":"BACKFILL";}
-
-function getStockOperationMode(){return document.getElementById("stockOperationMode")?.value==="LIVE"?"LIVE":"BACKFILL";}
-
-const stockModeSelect=document.getElementById("stockOperationMode");
-const stockModeBanner=document.getElementById("stockModeBanner");
-function refreshStockModeUI(){
-    const live=getStockOperationMode()==="LIVE";
-    stockModeBanner?.classList.toggle("live",live);
-    const title=stockModeBanner?.querySelector("strong");
-    const note=stockModeBanner?.querySelector("span");
-    if(title)title.textContent=live?"MODE LIVE • OPERASIONAL":"MODE BACKFILL • REKONSILIASI";
-    if(note)note.textContent=live
-        ?"Stock source dan kapasitas wajib valid sebelum transaksi disimpan."
-        :"Input historis boleh sementara belum balance. Validasi ketat aktif saat MODE LIVE.";
+function restoreStockPanelVisibility(){
+    Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{
+        let collapsed=false;
+        try{
+            const stored=localStorage.getItem(config.storageKey);
+            collapsed=stored===null
+                ? (panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches)
+                : stored==="1";
+        }catch{
+            collapsed=panelKey==="movement" && window.matchMedia("(max-width: 700px)").matches;
+        }
+        setStockPanelCollapsed(panelKey,collapsed,false);
+    });
 }
-stockModeSelect?.addEventListener("change",()=>{refreshStockModeUI();loadStock();});
-refreshStockModeUI();
+
+
+
+
+function storageRow(storage){return window.KPPStorage.byCode(STORAGE_ROWS,storage);}
+function storageLabel(storage){return window.KPPStorage.label(storageRow(storage)||{code:storage});}
+function teraLookup(storage,height){return window.KPPStorage.lookup(TERA,STORAGE_ROWS,storage,height);}
+function teraHeightForLiters(storage,liters){return window.KPPStorage.heightForLiters(TERA,STORAGE_ROWS,storage,liters);}
+
+function capacity(storage){
+    return n(STORAGE_CAPACITY[storage]);
+}
+
+function capacityPercent(storage,qty){
+    const cap=capacity(storage);
+    return cap>0 ? (n(qty)/cap)*100 : 0;
+}
+
+function pct(value){
+    return Number(value||0).toLocaleString(
+        "id-ID",
+        {minimumFractionDigits:1,maximumFractionDigits:1}
+    );
+}
+
+function capacityState(storage,qty){
+    const p=capacityPercent(storage,qty);
+    if(p<STOCK_CRITICAL_PCT)return "critical";
+    if(p<STOCK_WARNING_PCT)return "low";
+    if(p>=CAPACITY_WARNING_PCT)return "high";
+    return "safe";
+}
+
+function capacityMessage(storage,qty){
+    const cap=capacity(storage);
+    const p=capacityPercent(storage,qty);
+
+    return (
+        storage+" = "+fmt(qty)+
+        " / "+fmt(cap)+
+        " ("+pct(p)+"%)"
+    );
+}
+
+function validateCapacityHard(storage,projectedQty,context=""){
+    const cap=n(STORAGE_HARD_CAPACITY[storage]);
+
+    if(!cap)return true;
+
+    if(projectedQty>cap){
+        alert(
+            "[DIBLOKIR] KAPASITAS TERKUNCI\n\n"+
+            storage+" maksimal menurut tabel tera "+fmt(cap)+".\n"+
+            "Perkiraan stock setelah "+context+": "+fmt(projectedQty)+".\n\n"+
+            "Transaksi diblokir agar tangki tidak melewati kapasitas."
+        );
+        return false;
+    }
+
+    return true;
+}
+
+function confirmNearCapacity(storage,projectedQty,context=""){
+    const p=capacityPercent(storage,projectedQty);
+
+    if(p<CAPACITY_WARNING_PCT)return true;
+
+    const title=p>=100
+        ?"[KRITIS] TANGKI MENCAPAI 100%"
+        :"[PERINGATAN] TANGKI MENDEKATI PENUH";
+
+    return confirm(
+        title+"\n\n"+
+        capacityMessage(storage,projectedQty)+"\n"+
+        (context?context+"\n":"")+
+        "\nLanjutkan transaksi?"
+    );
+}
+
+function showCapacityAlertOnce(stock){
+    if(STOCK_SAVE_LOCK)return;
+
+    const critical=STORAGES
+        .filter(storage=>capacityPercent(storage,stock[storage])<STOCK_CRITICAL_PCT)
+        .map(storage=>capacityMessage(storage,stock[storage]));
+    const high=STORAGES
+        .filter(storage=>capacityPercent(storage,stock[storage])>=CAPACITY_WARNING_PCT)
+        .map(storage=>capacityMessage(storage,stock[storage]));
+
+    const banner=document.getElementById("stockLevelAlert");
+    if(banner){
+        if(critical.length){
+            banner.className="stock-level-alert show danger";
+            banner.textContent="[PERINGATAN] Stock menipis: "+critical.join("  |  ")+". Rencanakan penerimaan / transfer.";
+        }else if(high.length){
+            banner.className="stock-level-alert show warn";
+            banner.textContent="[INFO] Stock mendekati penuh: "+high.join("  |  ")+". Cek kapasitas sebelum penerimaan / transfer.";
+        }else{
+            banner.className="stock-level-alert";
+            banner.textContent="";
+        }
+    }
+
+    const warnings=[];
+    if(critical.length)warnings.push("[ALARM] STOCK MENIPIS\n"+critical.join("\n"));
+    if(high.length)warnings.push("[PERINGATAN] MENDEKATI PENUH\n"+high.join("\n"));
+    if(!warnings.length){
+        LAST_CAPACITY_ALERT_SIGNATURE="";
+        return;
+    }
+
+    const signature=warnings.join("|");
+    if(signature===LAST_CAPACITY_ALERT_SIGNATURE)return;
+    LAST_CAPACITY_ALERT_SIGNATURE=signature;
+
+    setTimeout(()=>{
+        if(STOCK_SAVE_LOCK)return;
+        alert(warnings.join("\n\n"));
+    },250);
+}
+
+function projectedStockAfterEdit(oldRow,newRow){
+    const projected={...CURRENT_SYSTEM_STOCK};
+
+    // Hilangkan efek transaksi lama dari stock saat ini.
+    if(oldRow.jenis==="RECEIPT" && oldRow.destination_storage){
+        projected[oldRow.destination_storage]-=n(oldRow.qty);
+    }
+
+    if(oldRow.jenis==="TRANSFER"){
+        if(oldRow.source_storage){
+            projected[oldRow.source_storage]+=n(oldRow.qty);
+        }
+        if(oldRow.destination_storage){
+            projected[oldRow.destination_storage]-=n(oldRow.qty);
+        }
+    }
+
+    // Terapkan transaksi baru.
+    if(newRow.jenis==="RECEIPT" && newRow.destination_storage){
+        projected[newRow.destination_storage]+=n(newRow.qty);
+    }
+
+    if(newRow.jenis==="TRANSFER"){
+        if(newRow.source_storage){
+            projected[newRow.source_storage]-=n(newRow.qty);
+        }
+        if(newRow.destination_storage){
+            projected[newRow.destination_storage]+=n(newRow.qty);
+        }
+    }
+
+    return projected;
+}
+
+function esc(value){
+    return String(value??"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
+function isStockEditor(){
+    return !!(
+        CURRENT_PROFILE &&
+        ["gl","admin","atasan"].includes(CURRENT_PROFILE.role)
+    );
+}
+
+function canReviseClosing(){
+    return !!(
+        CURRENT_PROFILE &&
+        ["gl","admin"].includes(CURRENT_PROFILE.role)
+    );
+}
+
+function beginStockSave(message){
+    if(STOCK_SAVE_LOCK){
+        return false;
+    }
+
+    STOCK_SAVE_LOCK=true;
+
+    const overlay=document.getElementById("stockSaveOverlay");
+    const title=document.getElementById("stockSaveTitle");
+    const msg=document.getElementById("stockSaveMessage");
+    const spinner=document.getElementById("stockSaveSpinner");
+    const note=document.getElementById("stockSignalNote");
+
+    title.textContent=" SEDANG MENYIMPAN";
+    msg.textContent=message || "Data sedang dikirim ke server. Jangan tekan tombol lagi dan jangan pindah halaman.";
+    spinner.style.display="block";
+    note.textContent="Jika sinyal lambat, tunggu sampai muncul konfirmasi berhasil/gagal.";
+    overlay.classList.remove("hidden");
+
+    clearTimeout(STOCK_SAVE_TIMER_1);
+    clearTimeout(STOCK_SAVE_TIMER_2);
+
+    STOCK_SAVE_TIMER_1=setTimeout(()=>{
+        if(STOCK_SAVE_LOCK){
+            msg.textContent=" Masih menunggu respon server...";
+            note.textContent="Jangan tekan SIMPAN lagi. Sistem masih menunggu koneksi agar tidak membuat transaksi ganda.";
+        }
+    },8000);
+
+    STOCK_SAVE_TIMER_2=setTimeout(()=>{
+        if(STOCK_SAVE_LOCK){
+            msg.textContent=" Sinyal sangat lambat - transaksi masih diproses.";
+            note.textContent="Tetap tunggu sampai sistem menyatakan BERHASIL atau GAGAL. Tombol lain sengaja dikunci.";
+        }
+    },20000);
+
+    return true;
+}
+
+async function finishStockSave(success,message){
+    clearTimeout(STOCK_SAVE_TIMER_1);
+    clearTimeout(STOCK_SAVE_TIMER_2);
+
+    const overlay=document.getElementById("stockSaveOverlay");
+    const title=document.getElementById("stockSaveTitle");
+    const msg=document.getElementById("stockSaveMessage");
+    const spinner=document.getElementById("stockSaveSpinner");
+    const note=document.getElementById("stockSignalNote");
+
+    spinner.style.display="none";
+    title.textContent=success?"[OK] TERSIMPAN":"[GAGAL] GAGAL";
+    msg.textContent=message || (success?"Data sudah masuk ke server.":"Data gagal disimpan.");
+    note.textContent=success
+        ?"Sekarang tombol dan navigasi sudah dibuka kembali."
+        :"Silakan cek pesan error sebelum mencoba lagi.";
+
+    await new Promise(resolve=>setTimeout(resolve,success?750:1100));
+
+    STOCK_SAVE_LOCK=false;
+    overlay.classList.add("hidden");
+}
+
+window.addEventListener("beforeunload",function(event){
+    if(!STOCK_SAVE_LOCK)return;
+    event.preventDefault();
+    event.returnValue="";
+});
+
+document.addEventListener("click",function(event){
+    if(!STOCK_SAVE_LOCK)return;
+
+    const link=event.target.closest("a[href]");
+    if(link){
+        event.preventDefault();
+        event.stopPropagation();
+    }
+},true);
+
+function setAdminMovementTools(){
+    const show=isStockEditor();
+
+    document.getElementById("stockAdminTools")
+        .classList.toggle("hidden",!show);
+
+    document.getElementById("selectHead")
+        .classList.toggle("hidden",!show);
+
+    document.getElementById("actionHead")
+        .classList.toggle("hidden",!show);
+}
+
+function fillStorageSelect(id,allowBlank=false){
+    const el=document.getElementById(id);
+    if(!el)return;
+
+    el.innerHTML=allowBlank?'<option value="">-</option>':"";
+
+    STORAGES.forEach(storage=>{
+        const option=document.createElement("option");
+        option.value=storage;
+        option.textContent=storageLabel(storage);
+        el.appendChild(option);
+    });
+}
+
+function canonicalTransporter(value){
+    const raw=String(value||"").trim();
+    if(!raw)return "";
+    const key=raw.toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(key.includes("SHA"))return "PT. SHA";
+    if(key.includes("DKA"))return "PT. DKA";
+    return raw;
+}
+
+function syncEditMovementFields(){
+    const jenis=document.getElementById("editJenis").value;
+    const source=document.getElementById("editSource");
+    const transporter=document.getElementById("editTransporter");
+
+    if(jenis==="RECEIPT"){
+        source.value="";
+        source.disabled=true;
+        transporter.disabled=false;
+    }else{
+        source.disabled=false;
+        transporter.disabled=true;
+        transporter.value="";
+    }
+}
+
+function openMovementEditor(id){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin/Atasan.");
+        return;
+    }
+
+    const row=CURRENT_MOVEMENTS.find(r=>String(r.id)===String(id));
+    if(!row){
+        alert("Transaksi tidak ditemukan. Refresh stock lalu coba lagi.");
+        return;
+    }
+
+    if(row.calculation_method && row.calculation_method!=="MANUAL_EDIT_BY_ADMIN_GL"){
+        alert(
+            "Transaksi ini berasal dari pengukuran sounding/flowmeter dan dikunci untuk menjaga audit.\n\n"+
+            "Jika datanya salah, hapus transaksi lalu input ulang dengan hasil pengukuran yang benar."
+        );
+        return;
+    }
+
+    document.getElementById("editMovementId").value=row.id;
+    document.getElementById("editTanggal").value=row.tanggal||"";
+    document.getElementById("editJam").value=(row.jam||"").slice(0,8);
+    document.getElementById("editShift").value=String(row.shift||1);
+    document.getElementById("editJenis").value=row.jenis||"TRANSFER";
+    document.getElementById("editSource").value=row.source_storage||"";
+    document.getElementById("editDestination").value=row.destination_storage||"";
+    document.getElementById("editQty").value=row.qty??"";
+    document.getElementById("editOperator").value=row.operator||"";
+    document.getElementById("editTransporter").value=canonicalTransporter(row.transporter);
+    document.getElementById("editNote").value=row.note||"";
+
+    syncEditMovementFields();
+
+    document.getElementById("stockEditOverlay")
+        .classList.remove("hidden");
+}
+
+function closeMovementEditor(){
+    if(STOCK_SAVE_LOCK)return;
+    document.getElementById("stockEditOverlay")
+        .classList.add("hidden");
+}
+
+async function saveMovementEdit(){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin/Atasan.");
+        return;
+    }
+
+    const id=Number(document.getElementById("editMovementId").value);
+    const tanggal=document.getElementById("editTanggal").value;
+    const jam=document.getElementById("editJam").value;
+    const shift=Number(document.getElementById("editShift").value);
+    const jenis=document.getElementById("editJenis").value;
+    const source_storage=
+        jenis==="TRANSFER"
+            ? document.getElementById("editSource").value
+            : null;
+    const destination_storage=document.getElementById("editDestination").value;
+    const qty=n(document.getElementById("editQty").value);
+    const operator=document.getElementById("editOperator").value.trim();
+    const transporter=
+        jenis==="RECEIPT"
+            ? document.getElementById("editTransporter").value.trim()||null
+            : null;
+    const note=document.getElementById("editNote").value.trim()||null;
+
+    if(!id||!tanggal||![1,2].includes(shift)||qty<=0||!destination_storage){
+        alert("Lengkapi data transaksi.");
+        return;
+    }
+
+    if(jenis==="RECEIPT"&&!transporter){
+        alert("Pilih perusahaan transportir.");
+        return;
+    }
+
+    if(jenis==="TRANSFER"){
+        if(!source_storage){
+            alert("Pilih storage sumber.");
+            return;
+        }
+
+        if(source_storage===destination_storage){
+            alert("Storage sumber dan tujuan tidak boleh sama.");
+            return;
+        }
+    }
+
+    const oldRow=CURRENT_MOVEMENTS.find(
+        row=>String(row.id)===String(id)
+    );
+
+    if(!oldRow){
+        alert("Transaksi lama tidak ditemukan. Refresh halaman lalu coba lagi.");
+        return;
+    }
+
+    const newRow={
+        jenis,
+        source_storage,
+        destination_storage,
+        qty
+    };
+
+    const projected=projectedStockAfterEdit(oldRow,newRow);
+
+    for(const storage of STORAGES){
+        if(!validateCapacityHard(
+            storage,
+            projected[storage],
+            "Edit transaksi stock"
+        ))return;
+    }
+
+    const warnStorage=STORAGES.find(
+        storage=>
+            projected[storage]!==CURRENT_SYSTEM_STOCK[storage] &&
+            capacityPercent(storage,projected[storage])>=CAPACITY_WARNING_PCT
+    );
+
+    if(
+        warnStorage &&
+        !confirmNearCapacity(
+            warnStorage,
+            projected[warnStorage],
+            "Edit transaksi stock"
+        )
+    )return;
+
+    if(!beginStockSave("Menyimpan koreksi transaksi stock..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .update({
+            tanggal,
+            jam:jam||null,
+            shift,
+            jenis,
+            source_storage,
+            destination_storage,
+            qty,
+            operator,
+            transporter,
+            note,
+            calculation_method:"MANUAL_EDIT_BY_ADMIN_GL",
+            arrival_at:null,
+            document_reference:null,
+            meter_start_liter:null,
+            meter_end_liter:null,
+            transporter_measured_qty:null,
+            source_height_before_cm:null,
+            source_liter_before:null,
+            source_height_after_cm:null,
+            source_liter_after:null,
+            destination_height_before_cm:null,
+            destination_liter_before:null,
+            destination_height_after_cm:null,
+            destination_liter_after:null,
+            source_measured_qty:null,
+            destination_measured_qty:null,
+            measurement_loss_qty:null,
+            tera_version:null
+        })
+        .eq("id",id);
+
+    if(error){
+        await finishStockSave(false,"Koreksi gagal: "+error.message);
+        return;
+    }
+
+    document.getElementById("stockEditOverlay")
+        .classList.add("hidden");
+
+    await loadStock();
+    await finishStockSave(true,"Koreksi transaksi sudah tersimpan.");
+}
+
+async function deleteMovement(id){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin/Atasan.");
+        return;
+    }
+
+    const row=CURRENT_MOVEMENTS.find(r=>String(r.id)===String(id));
+    if(!row)return;
+
+    const ok=confirm(
+        "Hapus transaksi stock ini?\n\n"+
+        "Jam: "+(row.jam||"-")+"\n"+
+        "Jenis: "+row.jenis+"\n"+
+        "Dari: "+(row.source_storage||"-")+"\n"+
+        "Ke: "+(row.destination_storage||"-")+"\n"+
+        "Qty: "+fmt(row.qty)+"\n\n"+
+        "Aksi ini tercatat di audit log."
+    );
+
+    if(!ok)return;
+
+    if(!beginStockSave("Menghapus transaksi stock..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .delete()
+        .eq("id",id);
+
+    if(error){
+        await finishStockSave(false,"Hapus gagal: "+error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,"Transaksi stock sudah dihapus.");
+}
+
+async function deleteSelectedMovements(){
+    if(!isStockEditor()){
+        alert("Khusus GL/Admin/Atasan.");
+        return;
+    }
+
+    const ids=Array.from(
+        document.querySelectorAll(".stock-move-check:checked")
+    ).map(el=>Number(el.value)).filter(Boolean);
+
+    if(!ids.length){
+        alert("Centang transaksi stock yang mau dihapus.");
+        return;
+    }
+
+    const ok=confirm(
+        "Hapus "+ids.length+" transaksi stock terpilih?\n\n"+
+        "Gunakan ini untuk membersihkan transaksi spam/duplikat.\n"+
+        "Semua penghapusan tetap tercatat di audit log."
+    );
+
+    if(!ok)return;
+
+    if(!beginStockSave("Menghapus "+ids.length+" transaksi stock terpilih..."))return;
+
+    const {error}=await db
+        .from("stock_movements")
+        .delete()
+        .in("id",ids);
+
+    if(error){
+        await finishStockSave(false,"Hapus gagal: "+error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,ids.length+" transaksi stock sudah dihapus.");
+}
+
+function localDate(){return window.KPPTime.localDate();}
+
+function localTime(){return window.KPPTime.localTime();}
+
+function n(value){return Number(value||0)}
+function r1(value){return Math.round((n(value)+Number.EPSILON)*10)/10}
+
+function fmt(value){
+    return n(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+}
+
+function fmtSigned(value){
+    const number=n(value);
+    return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+}
+
+function receiptAuditLabel(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=r1(value);
+    const amount=Math.abs(number).toLocaleString("id-ID",{maximumFractionDigits:1})+" L";
+    if(number>0)return "LOSS "+amount;
+    if(number<0)return "GAIN/LEBIH "+amount;
+    return "SESUAI 0 L";
+}
+
+function receiptAuditReport(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=r1(value);
+    const amount=reportLiters(Math.abs(number));
+    if(number>0)return "LOSS "+amount;
+    if(number<0)return "GAIN/LEBIH "+amount;
+    return "SESUAI (0 Liter)";
+}
+
+function fmtCm(value){
+    return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1})+" cm";
+}
+
+function soundingOfficerName(){
+    const fuelmanName=ACTIVE_FUELMAN_SESSION?.fuelman_name;
+    const profileName=CURRENT_PROFILE?.display_name||CURRENT_PROFILE?.name||CURRENT_PROFILE?.username;
+    const emailName=window.KPP_SESSION?.user?.email?.split("@")[0];
+    return String(fuelmanName||profileName||emailName||"").trim();
+}
+
+function reportStorageName(storage){
+    const value=String(storage||"-").toUpperCase();
+    return /^MT\d{2}$/.test(value)
+        ? `MT ${value.slice(2)}`
+        : value;
+}
+
+function reportNumber(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    return Number(value).toLocaleString("id-ID",{maximumFractionDigits:1});
+}
+
+function reportLiters(value){
+    const formatted=reportNumber(value);
+    return formatted==="-"?"-":formatted+" Liter";
+}
+
+function reportKiloliters(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    return (Number(value)/1000).toLocaleString("id-ID",{
+        minimumFractionDigits:1,
+        maximumFractionDigits:1
+    })+" KL";
+}
+
+function reportSignedLiters(value){
+    if(value===null || value===undefined || value==="" || !Number.isFinite(Number(value)))return "-";
+    const number=Number(value);
+    return (number>0?"+":"")+number.toLocaleString("id-ID",{maximumFractionDigits:1})+" Liter";
+}
+
+function reportDateTime(timeValue=""){
+    const tanggal=document.getElementById("tanggal")?.value||localDate();
+    const time=String(timeValue||localTime()).slice(0,5);
+    return `${tanggal} ${time}`;
+}
+
+function receiptPeriodFromDate(value){
+    const match=String(value||"").match(/^\d{4}-\d{2}-(\d{2})/);
+    if(!match)return null;
+    const day=Number(match[1]);
+    if(day<1 || day>31)return null;
+    return day<=14?1:2;
+}
+
+function receiptPeriodLabel(value){
+    const period=receiptPeriodFromDate(value);
+    return period===1?"PERIODE 1":period===2?"PERIODE 2":"-";
+}
+
+function receiptPeriodDetail(value){
+    const period=receiptPeriodFromDate(value);
+    return period===1
+        ? "PERIODE 1 (1-14)"
+        : period===2
+            ? "PERIODE 2 (15-AKHIR BULAN)"
+            : "-";
+}
+
+function syncReceiptHistoryPeriodDates(){
+    const periodEl=document.getElementById("receiptHistoryPeriod");
+    const fromInput=document.getElementById("receiptHistoryDateFrom");
+    const toInput=document.getElementById("receiptHistoryDateTo");
+    if(!periodEl||!fromInput||!toInput)return;
+    const period=periodEl.value;
+    if(period==="all")return;
+
+    const base=toInput.value||localDate();
+    const [year,month]=base.split("-").map(Number);
+    if(!year || !month)return;
+
+    const prefix=`${year}-${String(month).padStart(2,"0")}-`;
+    if(period==="1"){
+        fromInput.value=prefix+"01";
+        toInput.value=prefix+"14";
+        return;
+    }
+
+    const lastDay=String(window.KPPTime.daysInMonth(year,month)).padStart(2,"0");
+    const periodEnd=prefix+lastDay;
+    const today=localDate();
+    fromInput.value=prefix+"15";
+    toInput.value=prefix===today.slice(0,8)?today:periodEnd;
+}
+
+function safeTeraFromInput(storage,inputId){
+    try{
+        return teraFromInput(storage,inputId);
+    }catch{
+        return null;
+    }
+}
+
+function soundingReportBlock(storage,phase,tera,operator,dateTime){
+    return [
+        `${reportStorageName(storage)} ${phase}`,
+        `High: ${tera?reportNumber(tera.matchedHeightCm)+" cm":"-"}`,
+        `Volume: ${tera?reportLiters(tera.liters):"-"}`,
+        `Volume KL: ${tera?reportKiloliters(tera.liters):"-"}`,
+        `Operator: ${operator||"-"}`,
+        `Tanggal: ${dateTime}`
+    ].join("\n");
+}
+
+function buildOpeningCopyReport(openingTera=null,timeValue=""){
+    const {shift}=getPeriod();
+    const storage=document.getElementById("openingStorage").value;
+    const tera=openingTera||safeTeraFromInput(storage,"openingHeight");
+    const operator=document.getElementById("openingOperator").value.trim()||soundingOfficerName();
+    return soundingReportBlock(storage,`AWAL SHIFT ${shift}`,tera,operator,reportDateTime(timeValue));
+}
+
+function buildReceiptCopyReport(measurement=null,operatorOverride="",dateTimeOverride=""){
+    const {shift}=getPeriod();
+    const destination=document.getElementById("receiptDestination").value;
+    const transporter=document.getElementById("receiptTransporter").value||"-";
+    const reference=document.getElementById("receiptReference").value.trim().toUpperCase()||"BELUM DIISI";
+    const operator=operatorOverride||document.getElementById("receiptOperator").value.trim()||soundingOfficerName();
+    const dateTime=dateTimeOverride||reportDateTime(document.getElementById("receiptArrivalTime").value);
+    const data=measurement||{};
+
+    return [
+        "PENERIMAAN TRANSPORTIR",
+        `Transportir: ${transporter}`,
+        `PO/LO: ${reference}`,
+        `Tujuan: ${destination}`,
+        `Shift: ${shift}`,
+        `Periode: ${receiptPeriodDetail(document.getElementById("tanggal").value)}`,
+        "",
+        soundingReportBlock(destination,"SEBELUM BONGKAR",data.tankBefore,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SETELAH BONGKAR",data.tankAfter,operator,dateTime),
+        "",
+        "HASIL BONGKARAN",
+        `Flowmeter Awal: ${reportLiters(data.meterStart)}`,
+        `Flowmeter Akhir: ${reportLiters(data.meterEnd)}`,
+        `Qty Menurut Transporter: ${reportLiters(data.transporterQty)}`,
+        `Aktual Diterima ${destination}: ${reportLiters(data.tankQty)}`,
+        `Hasil Audit Bongkaran: ${receiptAuditReport(data.loss)}`,
+        `Stock Bertambah: ${reportLiters(data.tankQty)} (mengikuti hasil sonding)`
+    ].join("\n");
+}
+
+function buildTransferCopyReport(measurement=null,operatorOverride="",dateTimeOverride=""){
+    const {shift}=getPeriod();
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination").value;
+    const operator=operatorOverride||document.getElementById("transferOperator").value.trim()||soundingOfficerName();
+    const dateTime=dateTimeOverride||reportDateTime();
+    const data=measurement||{};
+    const loss=data.loss!==undefined?data.loss:null;
+
+    return [
+        `TRANSFER ${source} KE ${destination}`,
+        `Shift: ${shift}`,
+        "",
+        soundingReportBlock(source,"SEBELUM TRANSFER",data.sourceBefore,operator,dateTime),
+        "",
+        soundingReportBlock(source,"SETELAH TRANSFER",data.sourceAfter,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SEBELUM MENERIMA",data.destinationBefore,operator,dateTime),
+        "",
+        soundingReportBlock(destination,"SETELAH MENERIMA",data.destinationAfter,operator,dateTime),
+        "",
+        "HASIL TRANSFER",
+        `Keluar Menurut Tera ${source}: ${reportLiters(data.sourceQty)}`,
+        `Masuk Menurut Tera ${destination}: ${reportLiters(data.destinationQty)}`,
+        `Selisih Sumber vs Tujuan / Loss: ${reportSignedLiters(loss)}`
+    ].join("\n");
+}
+
+function closingStoragesForAccount(){
+    if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman" && ACTIVE_FUELMAN_SESSION))return STORAGES;
+    if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){
+        return STORAGE_ROWS.filter(row=>row.active!==false && row.storage_type==="MT").map(row=>row.code);
+    }
+    return ACTIVE_FUELMAN_SESSION.fuel_truck?[ACTIVE_FUELMAN_SESSION.fuel_truck]:[];
+}
+
+function buildClosingCopyReport(){
+    const {tanggal,shift}=getPeriod();
+    const operator=document.getElementById("closingOperator").value.trim()||soundingOfficerName()||"-";
+    const note=document.getElementById("closingNote").value.trim();
+    const storages=closingStoragesForAccount();
+    let complete=true;
+    let systemTotal=0;
+    let actualTotal=0;
+
+    const blocks=storages.map(storage=>{
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        const heightInput=document.getElementById(`height-${storage}`);
+        const actualInput=document.getElementById(`actual-${storage}`);
+        systemTotal+=systemQty;
+
+        if(!heightInput || heightInput.value==="" || !actualInput || actualInput.value===""){
+            complete=false;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                "High: BELUM DISONDING",
+                "Volume: -",
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                "Selisih: -"
+            ].join("\n");
+        }
+
+        try{
+            const tera=teraLookup(storage,heightInput.value);
+            const actualQty=n(tera.liters);
+            const difference=r1(actualQty-systemQty);
+            actualTotal+=actualQty;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                `High: ${reportNumber(tera.matchedHeightCm)} cm`,
+                `Volume: ${reportLiters(actualQty)}`,
+                `Volume KL: ${reportKiloliters(actualQty)}`,
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                `Selisih: ${reportSignedLiters(difference)}`
+            ].join("\n");
+        }catch{
+            complete=false;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                "High: DATA TIDAK VALID",
+                "Volume: -",
+                `Stock Sistem: ${reportLiters(systemQty)}`,
+                "Selisih: -"
+            ].join("\n");
+        }
+    });
+
+    const totalDifference=complete?r1(actualTotal-systemTotal):null;
+    const text=[
+        "HASIL SONDING AKHIR / STOCK CLOSING",
+        `Tanggal: ${tanggal}`,
+        `Shift: ${shift}`,
+        `Petugas Sonding: ${operator}`,
+        "",
+        blocks.join("\n\n"),
+        "",
+        "TOTAL STOCK CLOSING",
+        `Total Stock Sistem: ${reportLiters(systemTotal)}`,
+        `Total Stock Fisik: ${complete?reportLiters(actualTotal):"BELUM LENGKAP"}`,
+        `Total Selisih: ${complete?reportSignedLiters(totalDifference):"BELUM LENGKAP"}`,
+        `Keterangan: ${note||"-"}`
+    ].join("\n");
+
+    return {text,complete};
+}
+
+function setCopyPreview(id,text){
+    const el=document.getElementById(id);
+    if(el)el.textContent=text;
+}
+
+function renderOpeningCopyPreview(tera=null){
+    setCopyPreview("openingCopyPreview",buildOpeningCopyReport(tera));
+}
+
+function renderReceiptCopyPreview(measurement=null){
+    const hasCurrent=[
+        "receiptMeterStart","receiptMeterEnd","receiptTankHeightBefore","receiptTankHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    setCopyPreview(
+        "receiptCopyPreview",
+        !hasCurrent && LAST_COPY_REPORTS.receipt
+            ? LAST_COPY_REPORTS.receipt
+            : buildReceiptCopyReport(measurement)
+    );
+}
+
+function renderTransferCopyPreview(measurement=null){
+    const hasCurrent=[
+        "transferSourceHeightBefore","transferSourceHeightAfter",
+        "transferDestinationHeightBefore","transferDestinationHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    setCopyPreview(
+        "transferCopyPreview",
+        !hasCurrent && LAST_COPY_REPORTS.transfer
+            ? LAST_COPY_REPORTS.transfer
+            : buildTransferCopyReport(measurement)
+    );
+}
+
+function renderClosingCopyPreview(){
+    const report=buildClosingCopyReport();
+    setCopyPreview(
+        "closingCopyPreview",
+        !report.complete && LAST_COPY_REPORTS.closing
+            ? LAST_COPY_REPORTS.closing
+            : report.text
+    );
+}
+
+function showCopyToast(message,isError=false){
+    const toast=document.getElementById("copyToast");
+    if(!toast)return;
+    clearTimeout(COPY_TOAST_TIMER);
+    toast.textContent=message;
+    toast.classList.toggle("error",isError);
+    toast.classList.add("show");
+    COPY_TOAST_TIMER=setTimeout(()=>toast.classList.remove("show"),2800);
+}
+
+async function copyReportText(text,label){
+    try{
+        if(navigator.clipboard && window.isSecureContext){
+            await navigator.clipboard.writeText(text);
+        }else{
+            const textarea=document.createElement("textarea");
+            textarea.value=text;
+            textarea.style.position="fixed";
+            textarea.style.opacity="0";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const copied=document.execCommand("copy");
+            textarea.remove();
+            if(!copied)throw new Error("Copy gagal");
+        }
+        showCopyToast(`[OK] ${label} berhasil di-copy.`);
+    }catch{
+        showCopyToast("[GAGAL] Browser tidak mengizinkan copy otomatis.",true);
+    }
+}
+
+function copyOpeningReport(){
+    const storage=document.getElementById("openingStorage").value;
+    const tera=safeTeraFromInput(storage,"openingHeight");
+    const text=tera?buildOpeningCopyReport(tera):LAST_COPY_REPORTS.opening;
+    if(!text){
+        showCopyToast("Lengkapi sounding awal shift terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan awal shift");
+}
+
+function copyReceiptReport(){
+    const hasCurrent=[
+        "receiptMeterStart","receiptMeterEnd","receiptTankHeightBefore","receiptTankHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    const measurement=updateReceiptCalculation();
+    const complete=!!(
+        measurement?.tankBefore && measurement?.tankAfter &&
+        measurement?.meterStart!==null && measurement?.meterEnd!==null
+    );
+    const text=complete?buildReceiptCopyReport(measurement):(!hasCurrent?LAST_COPY_REPORTS.receipt:"");
+    if(!text){
+        showCopyToast("Lengkapi flowmeter dan sounding penerimaan terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan penerimaan");
+}
+
+function copyTransferReport(){
+    const hasCurrent=[
+        "transferSourceHeightBefore","transferSourceHeightAfter",
+        "transferDestinationHeightBefore","transferDestinationHeightAfter"
+    ].some(id=>document.getElementById(id).value!=="");
+    const measurement=updateTransferCalculation();
+    const complete=!!(
+        measurement?.sourceQty>0 &&
+        measurement?.sourceBefore && measurement?.sourceAfter &&
+        measurement?.sourceSoundingQty>0 &&
+        measurement?.destinationBefore && measurement?.destinationAfter
+    );
+    const text=complete?buildTransferCopyReport(measurement):(!hasCurrent?LAST_COPY_REPORTS.transfer:"");
+    if(!text){
+        showCopyToast("Lengkapi sounding sumber dan sounding tujuan terlebih dahulu.",true);
+        return;
+    }
+    copyReportText(text,"Laporan transfer");
+}
+
+function copyClosingReport(){
+    const report=buildClosingCopyReport();
+    if(!report.complete){
+        showCopyToast("Lengkapi semua sonding akhir terlebih dahulu.",true);
+        return;
+    }
+    LAST_COPY_REPORTS.closing=report.text;
+    renderClosingCopyPreview();
+    copyReportText(report.text,"Hasil sonding akhir");
+}
+
+function teraFromInput(storage,inputId){
+    const input=document.getElementById(inputId);
+    if(!input || input.value==="")return null;
+    return teraLookup(storage,input.value);
+}
+
+function updateQuickConverter(){
+    const storage=document.getElementById("converterStorage").value;
+    const result=document.getElementById("converterResult");
+
+    try{
+        const tera=teraFromInput(storage,"converterHeight");
+        result.classList.remove("error");
+        if(!tera){
+            result.innerHTML="<small>HASIL KONVERSI</small><strong>- L</strong><span>Masukkan tinggi sonding.</span>";
+            return;
+        }
+
+        result.innerHTML=`
+            <small>${tera.curve}  |  TINGGI TERPAKAI ${fmtCm(tera.matchedHeightCm)}</small>
+            <strong>${fmt(tera.liters)}</strong>
+            <span>Maksimum tabel: ${fmtCm(tera.maxHeightCm)} = ${fmt(tera.maxLiters)}</span>
+        `;
+    }catch(error){
+        result.classList.add("error");
+        result.innerHTML=`<small>KONVERSI GAGAL</small><strong>-</strong><span>${esc(error.message)}</span>`;
+    }
+}
+
+function updateOpeningConversion(){
+    const storage=document.getElementById("openingStorage").value;
+    const qty=document.getElementById("openingQty");
+    document.getElementById("openingHeightLabel").textContent=
+        `Sonding ${storage} Awal Shift (CM)`;
+    document.getElementById("openingHeight").placeholder=
+        `Tinggi sounding ${storage}`;
+    try{
+        const tera=teraFromInput(storage,"openingHeight");
+        qty.value=tera?tera.liters:"";
+        document.getElementById("openingStatus").textContent=tera
+            ? ` ${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`
+            : "";
+        renderOpeningCopyPreview(tera);
+    }catch(error){
+        qty.value="";
+        document.getElementById("openingStatus").textContent="[GAGAL] "+error.message;
+        renderOpeningCopyPreview(null);
+    }
+}
+
+function updateReceiptCalculation(){
+    const startInput=document.getElementById("receiptMeterStart");
+    const endInput=document.getElementById("receiptMeterEnd");
+    const qtyInput=document.getElementById("receiptQty");
+    const tankQtyInput=document.getElementById("receiptTankQty");
+    const lossInput=document.getElementById("receiptLoss");
+    const destination=document.getElementById("receiptDestination").value;
+
+    document.getElementById("receiptTankBeforeLabel").textContent=
+        `Sonding ${destination} Sebelum Bongkar (CM)`;
+    document.getElementById("receiptTankAfterLabel").textContent=
+        `Sonding ${destination} Sesudah Bongkar (CM)`;
+    document.getElementById("receiptTankQtyLabel").textContent=
+        `Qty Masuk ${destination} Menurut Tera (Liter)`;
+    document.getElementById("receiptTankHeightBefore").placeholder=
+        `Sonding awal ${destination}`;
+    document.getElementById("receiptTankHeightAfter").placeholder=
+        `Sonding akhir ${destination}`;
+
+    try{
+        const meterStart=startInput.value===""?null:n(startInput.value);
+        const meterEnd=endInput.value===""?null:n(endInput.value);
+        const transporterQty=
+            meterStart===null || meterEnd===null
+                ? null
+                : r1(meterEnd-meterStart);
+
+        const tankBefore=teraFromInput(destination,"receiptTankHeightBefore");
+        const tankAfter=teraFromInput(destination,"receiptTankHeightAfter");
+        const tankQty=
+            tankBefore && tankAfter
+                ? r1(tankAfter.liters-tankBefore.liters)
+                : null;
+        const loss=
+            transporterQty!==null && tankQty!==null
+                ? r1(transporterQty-tankQty)
+                : null;
+
+        qtyInput.value=transporterQty!==null && transporterQty>0?transporterQty:"";
+        tankQtyInput.value=tankQty!==null && tankQty>0?tankQty:"";
+        lossInput.value=loss!==null?loss:"";
+
+        const parts=[];
+        if(transporterQty!==null){
+            parts.push(
+                transporterQty>0
+                    ? `Transporter ${fmt(transporterQty)}`
+                    : "Flowmeter akhir harus lebih besar dari awal"
+            );
+        }
+        if(tankQty!==null){
+            parts.push(
+                tankQty>0
+                    ? `Masuk ${destination} ${fmt(tankQty)}`
+                    : `Sonding ${destination} sesudah harus lebih tinggi dari sebelum`
+            );
+        }
+        if(loss!==null)parts.push(receiptAuditLabel(loss));
+
+        document.getElementById("receiptStatus").textContent=
+            parts.length?" "+parts.join("  |  "):"";
+
+        const result={
+            meterStart,
+            meterEnd,
+            transporterQty,
+            tankBefore,
+            tankAfter,
+            tankQty,
+            loss
+        };
+        renderReceiptCopyPreview(result);
+        return result;
+    }catch(error){
+        qtyInput.value="";
+        tankQtyInput.value="";
+        lossInput.value="";
+        document.getElementById("receiptStatus").textContent="[GAGAL] "+error.message;
+        renderReceiptCopyPreview(null);
+        return null;
+    }
+}
+
+async function loadTransporterOptions(){
+    const receiptSelect=document.getElementById("receiptTransporter");
+    const editSelect=document.getElementById("editTransporter");
+    const selected=receiptSelect.value;
+    const editSelected=editSelect.value;
+    const fallback=["PT. SHA","PT. DKA"];
+
+    const {data,error}=await db
+        .from("master_transporters")
+        .select("name,active")
+        .order("name",{ascending:true});
+
+    const allNames=error
+        ? fallback
+        : (data||[]).map(row=>String(row.name||"").trim()).filter(Boolean);
+    const activeNames=error
+        ? fallback
+        : (data||[])
+            .filter(row=>row.active!==false)
+            .map(row=>String(row.name||"").trim())
+            .filter(Boolean);
+
+    receiptSelect.innerHTML='<option value="">Pilih transportir</option>'+
+        activeNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    editSelect.innerHTML='<option value="">Pilih transportir</option>'+
+        allNames.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join("");
+
+    if(selected && activeNames.includes(selected))receiptSelect.value=selected;
+    if(editSelected && allNames.includes(editSelected))editSelect.value=editSelected;
+
+    if(error){
+        console.warn("Master Transportir belum tersedia:",error.message);
+        document.getElementById("receiptStatus").textContent=
+            "[PERINGATAN] Master Transportir belum tersedia; sementara memakai vendor bawaan.";
+    }
+}
+
+function receiptHistoryQuantities(row){
+    const transporterQty=
+        row.transporter_measured_qty!==null && row.transporter_measured_qty!==undefined
+            ? n(row.transporter_measured_qty)
+            : r1(n(row.meter_end_liter)-n(row.meter_start_liter));
+    const tankQty=
+        row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+            ? n(row.destination_measured_qty)
+            : n(row.qty);
+    const loss=
+        row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
+            ? n(row.measurement_loss_qty)
+            : r1(transporterQty-tankQty);
+    return {transporterQty,tankQty,loss};
+}
+
+async function loadReceiptHistory(){
+    const body=document.getElementById("receiptHistoryBody");
+    const status=document.getElementById("receiptHistoryStatus");
+    if(!body||!status)return [];
+    const dateFromEl=document.getElementById("receiptHistoryDateFrom");
+    const dateToEl=document.getElementById("receiptHistoryDateTo");
+    const transporterEl=document.getElementById("receiptHistoryTransporter");
+    const referenceEl=document.getElementById("receiptHistoryReference");
+    const referenceStatusEl=document.getElementById("receiptHistoryReferenceStatus");
+    const periodFilterEl=document.getElementById("receiptHistoryPeriod");
+    if(!dateFromEl||!dateToEl||!transporterEl||!referenceEl||!referenceStatusEl||!periodFilterEl){
+        body.innerHTML='<tr><td colspan="10">History Penerimaan belum tersedia di layar ini.</td></tr>';
+        status.textContent="Panel History Penerimaan belum dimuat.";
+        return [];
+    }
+    const dateFrom=dateFromEl.value;
+    const dateTo=dateToEl.value;
+    const transporter=transporterEl.value;
+    const reference=referenceEl.value.trim();
+    const referenceStatus=referenceStatusEl.value;
+    const periodFilter=periodFilterEl.value;
+
+    body.innerHTML='<tr><td colspan="10">Memuat history penerimaan...</td></tr>';
+    status.textContent="";
+    CURRENT_RECEIPT_HISTORY=[];
+
+    let query=db.from("stock_movements")
+        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .eq("jenis","RECEIPT")
+        .order("tanggal",{ascending:false})
+        .order("jam",{ascending:false})
+        .limit(500);
+
+    if(dateFrom)query=query.gte("tanggal",dateFrom);
+    if(dateTo)query=query.lte("tanggal",dateTo);
+    if(transporter)query=query.eq("transporter",transporter);
+    if(reference)query=query.ilike("document_reference","%"+reference+"%");
+
+    const {data,error}=await query;
+
+    if(error){
+        body.innerHTML=`<tr><td colspan="10">[GAGAL] ${esc(error.message)}</td></tr>`;
+        status.textContent="Jalankan SQL audit PO/LO sebelum memakai History Penerimaan.";
+        return null;
+    }
+
+    const rows=(data||[]).filter(row=>{
+        const hasReference=!!String(row.document_reference||"").trim();
+        if(referenceStatus==="pending" && hasReference)return false;
+        if(referenceStatus==="complete" && !hasReference)return false;
+        if(periodFilter!=="all" && receiptPeriodFromDate(row.tanggal)!==Number(periodFilter))return false;
+        return true;
+    });
+
+    CURRENT_RECEIPT_HISTORY=rows.map(row=>({...row}));
+
+    if(!rows.length){
+        body.innerHTML='<tr><td colspan="10">Belum ada penerimaan pada filter ini.</td></tr>';
+        status.textContent="0 kedatangan ditemukan.";
+        return [];
+    }
+
+    body.innerHTML=rows.map(row=>{
+        const {transporterQty,tankQty,loss}=receiptHistoryQuantities(row);
+        const arrival=row.arrival_at
+            ? new Date(row.arrival_at).toLocaleString("id-ID",{
+                timeZone:"Asia/Jakarta",
+                day:"2-digit",month:"2-digit",year:"numeric",
+                hour:"2-digit",minute:"2-digit"
+            })
+            : `${row.tanggal||"-"} ${String(row.jam||"").slice(0,5)}`;
+        const hasReference=!!String(row.document_reference||"").trim();
+        const referenceAudit=row.reference_updated_at
+            ? `Diperbarui ${new Date(row.reference_updated_at).toLocaleString("id-ID",{
+                timeZone:"Asia/Jakarta",day:"2-digit",month:"2-digit",year:"numeric",
+                hour:"2-digit",minute:"2-digit"
+            })} oleh ${row.reference_updated_by_name||"Admin/GL/Atasan"}`
+            : "";
+        const period=receiptPeriodFromDate(row.tanggal);
+
+        return `<tr>
+            <td>${esc(arrival)}</td>
+            <td><span class="period-badge ${period===1?"period-one":"period-two"}">${esc(receiptPeriodLabel(row.tanggal))}</span></td>
+            <td>${
+                hasReference
+                    ? `<b>${esc(row.document_reference)}</b>${referenceAudit?`<span class="ref-audit">${esc(referenceAudit)}</span>`:""}`
+                    : '<span class="pending-ref">BELUM DIISI</span>'
+            }</td>
+            <td>${esc(row.transporter||"-")}</td>
+            <td>${esc(row.destination_storage||"-")}</td>
+            <td>${fmt(transporterQty)}</td>
+            <td>
+                <b>${fmt(tankQty)}</b>
+                ${row.destination_height_before_cm!==null && row.destination_height_after_cm!==null
+                    ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} -> ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
+                    : ""}
+            </td>
+            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${receiptAuditLabel(loss)}</td>
+            <td>${esc(row.operator||"-")}</td>
+            <td>${
+                isStockEditor()
+                    ? `<button class="edit-btn small-btn" type="button" onclick="updateReceiptReference(${Number(row.id)})">${hasReference?"EDIT":"ISI"} PO/LO</button>`
+                    : "-"
+            }</td>
+        </tr>`;
+    }).join("");
+
+    const pendingCount=rows.filter(row=>!String(row.document_reference||"").trim()).length;
+    const periodOneCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===1).length;
+    const periodTwoCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===2).length;
+    status.textContent=
+        `${rows.length} kedatangan (maks. 500)  |  Periode 1: ${periodOneCount}  |  `+
+        `Periode 2: ${periodTwoCount}  |  ${pendingCount} PO/LO belum diisi.`;
+    return rows;
+}
+
+function loadExcelJs(){
+    if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+    if(EXCELJS_LOAD_PROMISE)return EXCELJS_LOAD_PROMISE;
+
+    EXCELJS_LOAD_PROMISE=new Promise((resolve,reject)=>{
+        const script=document.createElement("script");
+        script.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+        script.async=true;
+        script.onload=()=>window.ExcelJS
+            ? resolve(window.ExcelJS)
+            : reject(new Error("ExcelJS tidak tersedia"));
+        script.onerror=()=>reject(new Error("Library Excel gagal dimuat. Periksa koneksi internet."));
+        document.head.appendChild(script);
+    }).catch(error=>{
+        EXCELJS_LOAD_PROMISE=null;
+        throw error;
+    });
+
+    return EXCELJS_LOAD_PROMISE;
+}
+
+function excelReceiptDate(row){
+    const dateParts=String(row.tanggal||"").split("-").map(Number);
+    const timeParts=String(row.jam||"00:00:00").split(":").map(Number);
+    if(dateParts.length!==3 || dateParts.some(value=>!Number.isFinite(value)))return "";
+    return new Date(Date.UTC(
+        dateParts[0],dateParts[1]-1,dateParts[2],
+        timeParts[0]||0,timeParts[1]||0,timeParts[2]||0
+    ));
+}
+
+function receiptHistoryFilterText(){
+    const fromInput=document.getElementById("receiptHistoryDateFrom");
+    const toInput=document.getElementById("receiptHistoryDateTo");
+    const periodInput=document.getElementById("receiptHistoryPeriod");
+    const transporterInput=document.getElementById("receiptHistoryTransporter");
+    const referenceStatus=document.getElementById("receiptHistoryReferenceStatus");
+    const referenceInput=document.getElementById("receiptHistoryReference");
+    if(!fromInput||!toInput||!periodInput||!transporterInput||!referenceStatus||!referenceInput)return "HISTORY PENERIMAAN BELUM DISEDIAKAN DI LAYAR INI";
+    const from=fromInput.value||"AWAL";
+    const to=toInput.value||"AKHIR";
+    const period=periodInput.value;
+    const transporter=transporterInput.value||"SEMUA TRANSPORTIR";
+    const reference=referenceInput.value.trim()||"SEMUA PO/LO";
+    const periodText=period==="1"
+        ? "PERIODE 1 (1-14)"
+        : period==="2"
+            ? "PERIODE 2 (15-AKHIR BULAN)"
+            : "SEMUA PERIODE";
+    return `${from} s.d. ${to} | ${periodText} | ${transporter} | `+
+        `${referenceStatus.options[referenceStatus.selectedIndex].text} | ${reference}`;
+}
+
+async function downloadReceiptHistoryExcel(){
+    const button=document.getElementById("receiptHistoryDownloadBtn");
+    if(!button){showCopyToast("History Penerimaan belum tersedia di layar ini.",true);return;}
+    const originalText=button.textContent;
+    button.disabled=true;
+    button.textContent=" MEMBUAT EXCEL...";
+
+    try{
+        const rows=await loadReceiptHistory();
+        if(rows===null)return;
+        if(!rows.length){
+            showCopyToast("Tidak ada data History untuk didownload.",true);
+            return;
+        }
+
+        const Excel=await loadExcelJs();
+
+        const workbook=new Excel.Workbook();
+        workbook.creator="KPP Fuel Management System";
+        workbook.company="PT. KALIMANTAN PRIMA PERSADA";
+        workbook.subject="History Penerimaan Transportir";
+        workbook.created=new Date();
+
+        const ws=workbook.addWorksheet("PENERIMAAN TRANSPORTIR",{
+            views:[{state:"frozen",ySplit:8}]
+        });
+        ws.properties.defaultRowHeight=20;
+        ws.views=[{state:"frozen",ySplit:8,showGridLines:false}];
+
+        const headers=[
+            "NO","KEDATANGAN","PERIODE","PO / LO","STATUS PO / LO",
+            "TRANSPORTIR","TUJUAN","FLOWMETER AWAL (L)","FLOWMETER AKHIR (L)",
+            "QTY TRANSPORTER (L)","SONDING SEBELUM (CM)","VOLUME SEBELUM (L)",
+            "SONDING SESUDAH (CM)","VOLUME SESUDAH (L)","MASUK TANGKI (L)",
+            "SELISIH / LOSS (L)","OPERATOR","PO/LO DIPERBARUI OLEH","PO/LO DIPERBARUI PADA"
+        ];
+        const widths=[6,20,15,20,16,22,12,19,19,21,20,19,20,19,19,20,18,23,21];
+        widths.forEach((width,index)=>{ws.getColumn(index+1).width=width});
+
+        ws.mergeCells("A1:S1");
+        ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
+        ws.getCell("A1").font={name:"Calibri",size:18,bold:true,color:{argb:"FF0F766E"}};
+        ws.getCell("A1").alignment={vertical:"middle",horizontal:"center"};
+        ws.getRow(1).height=28;
+
+        ws.mergeCells("A2:S2");
+        ws.getCell("A2").value="INTEGRATED MINING SERVICES";
+        ws.getCell("A2").font={name:"Calibri",size:11,bold:true,color:{argb:"FF475569"}};
+        ws.getCell("A2").alignment={vertical:"middle",horizontal:"center"};
+
+        ws.mergeCells("A4:S4");
+        ws.getCell("A4").value="HISTORY PENERIMAAN TRANSPORTIR";
+        ws.getCell("A4").font={name:"Calibri",size:16,bold:true,color:{argb:"FFFFFFFF"}};
+        ws.getCell("A4").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0F172A"}};
+        ws.getCell("A4").alignment={vertical:"middle",horizontal:"center"};
+        ws.getRow(4).height=26;
+
+        ws.mergeCells("A5:S5");
+        ws.getCell("A5").value="FILTER: "+receiptHistoryFilterText();
+        ws.getCell("A5").font={name:"Calibri",size:10,italic:true,color:{argb:"FF334155"}};
+        ws.getCell("A5").fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF1F5F9"}};
+        ws.getCell("A5").alignment={vertical:"middle",horizontal:"left"};
+
+        const periodOneCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===1).length;
+        const periodTwoCount=rows.filter(row=>receiptPeriodFromDate(row.tanggal)===2).length;
+        const pendingCount=rows.filter(row=>!String(row.document_reference||"").trim()).length;
+        const totals=rows.reduce((summary,row)=>{
+            const qty=receiptHistoryQuantities(row);
+            summary.transporter+=qty.transporterQty;
+            summary.tank+=qty.tankQty;
+            summary.loss+=qty.loss;
+            return summary;
+        },{transporter:0,tank:0,loss:0});
+
+        const summaryValues=[
+            ["TOTAL KEDATANGAN",rows.length],
+            ["PERIODE 1",periodOneCount],
+            ["PERIODE 2",periodTwoCount],
+            ["QTY TRANSPORTER",r1(totals.transporter)],
+            ["MASUK TANGKI",r1(totals.tank)],
+            ["TOTAL LOSS",r1(totals.loss)],
+            ["PO/LO BELUM DIISI",pendingCount]
+        ];
+        const summaryStarts=[1,3,5,7,10,13,16];
+        const summaryEnds=[2,4,6,9,12,15,19];
+        summaryValues.forEach((item,index)=>{
+            const start=summaryStarts[index];
+            const end=summaryEnds[index];
+            ws.mergeCells(6,start,6,end);
+            const cell=ws.getCell(6,start);
+            cell.value=`${item[0]}: ${index>=3 && index<=5
+                ? Number(item[1]).toLocaleString("id-ID",{maximumFractionDigits:1})+" L"
+                : item[1]}`;
+            cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FF0F172A"}};
+            cell.fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:index===1?"FFDBEAFE":index===2?"FFEDE9FE":index===6?"FFFEF3C7":"FFECFDF5"}
+            };
+            cell.alignment={vertical:"middle",horizontal:"center"};
+            cell.border={bottom:{style:"thin",color:{argb:"FFCBD5E1"}}};
+        });
+        ws.getRow(6).height=24;
+
+        const headerRow=ws.getRow(8);
+        headers.forEach((header,index)=>{
+            const cell=headerRow.getCell(index+1);
+            cell.value=header;
+            cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FFFFFFFF"}};
+            cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF1E3A5F"}};
+            cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};
+            cell.border={
+                top:{style:"thin",color:{argb:"FF94A3B8"}},
+                bottom:{style:"thin",color:{argb:"FF94A3B8"}},
+                left:{style:"thin",color:{argb:"FF94A3B8"}},
+                right:{style:"thin",color:{argb:"FF94A3B8"}}
+            };
+        });
+        headerRow.height=32;
+
+        rows.forEach((item,index)=>{
+            const qty=receiptHistoryQuantities(item);
+            const hasReference=!!String(item.document_reference||"").trim();
+            const row=ws.addRow([
+                index+1,
+                excelReceiptDate(item),
+                receiptPeriodLabel(item.tanggal),
+                hasReference?String(item.document_reference).trim().toUpperCase():"BELUM DIISI",
+                hasReference?"SUDAH DIISI":"BELUM DIISI",
+                item.transporter||"-",
+                item.destination_storage||"-",
+                n(item.meter_start_liter),
+                n(item.meter_end_liter),
+                qty.transporterQty,
+                item.destination_height_before_cm??"",
+                item.destination_liter_before??"",
+                item.destination_height_after_cm??"",
+                item.destination_liter_after??"",
+                qty.tankQty,
+                qty.loss,
+                item.operator||"-",
+                item.reference_updated_by_name||"-",
+                item.reference_updated_at?new Date(item.reference_updated_at):"-"
+            ]);
+            row.height=21;
+            row.eachCell({includeEmpty:true},cell=>{
+                cell.font={name:"Calibri",size:10,color:{argb:"FF0F172A"}};
+                cell.alignment={vertical:"middle",horizontal:"center",wrapText:false};
+                cell.border={bottom:{style:"hair",color:{argb:"FFD7DEE8"}}};
+            });
+            row.getCell(2).numFmt="dd/mm/yyyy hh:mm";
+            [8,9,10,11,12,13,14,15,16].forEach(column=>{row.getCell(column).numFmt="#,##0.0"});
+            if(item.reference_updated_at)row.getCell(19).numFmt="dd/mm/yyyy hh:mm";
+            row.getCell(3).fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:receiptPeriodFromDate(item.tanggal)===1?"FFDBEAFE":"FFEDE9FE"}
+            };
+            row.getCell(3).font={
+                name:"Calibri",size:10,bold:true,
+                color:{argb:receiptPeriodFromDate(item.tanggal)===1?"FF1D4ED8":"FF6D28D9"}
+            };
+            row.getCell(5).fill={
+                type:"pattern",pattern:"solid",
+                fgColor:{argb:hasReference?"FFDCFCE7":"FFFEF3C7"}
+            };
+            row.getCell(5).font={
+                name:"Calibri",size:10,bold:true,
+                color:{argb:hasReference?"FF166534":"FF92400E"}
+            };
+            if(qty.loss!==0){
+                row.getCell(16).font={
+                    name:"Calibri",size:10,bold:true,
+                    color:{argb:qty.loss>0?"FFB91C1C":"FF15803D"}
+                };
+            }
+        });
+
+        ws.autoFilter={from:{row:8,column:1},to:{row:8,column:19}};
+        ws.pageSetup={
+            orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9,
+            margins:{left:.25,right:.25,top:.5,bottom:.5,header:.2,footer:.2}
+        };
+        ws.pageSetup.printTitlesRow="1:8";
+
+        const dateFrom=document.getElementById("receiptHistoryDateFrom").value||"AWAL";
+        const dateTo=document.getElementById("receiptHistoryDateTo").value||"AKHIR";
+        const selectedPeriod=document.getElementById("receiptHistoryPeriod").value;
+        const periodSuffix=selectedPeriod==="all"?"SEMUA_PERIODE":"PERIODE_"+selectedPeriod;
+        const filename=`KPP_History_Penerimaan_${dateFrom}_sd_${dateTo}_${periodSuffix}.xlsx`;
+
+        const buffer=await workbook.xlsx.writeBuffer();
+        const blob=new Blob([buffer],{
+            type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+        const url=URL.createObjectURL(blob);
+        const link=document.createElement("a");
+        link.href=url;
+        link.download=filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        showCopyToast(`[OK] Excel History berhasil didownload (${rows.length} data).`);
+    }catch(error){
+        console.error(error);
+        showCopyToast("[GAGAL] Gagal membuat Excel: "+(error?.message||error),true);
+    }finally{
+        button.disabled=false;
+        button.textContent=originalText;
+    }
+}
+
+async function updateReceiptReference(id){
+    if(!isStockEditor()){
+        alert("Pengisian atau perubahan PO/LO khusus Admin/GL/Atasan.");
+        return;
+    }
+
+    const row=CURRENT_RECEIPT_HISTORY.find(item=>String(item.id)===String(id));
+    if(!row){
+        alert("Data penerimaan tidak ditemukan. Tampilkan ulang History Penerimaan lalu coba lagi.");
+        return;
+    }
+
+    const current=String(row.document_reference||"").trim().toUpperCase();
+    const input=prompt(
+        current
+            ? "Perbarui Nomor PO / LO untuk penerimaan ini:"
+            : "Masukkan Nomor PO / LO untuk penerimaan yang masih kosong:",
+        current
+    );
+
+    if(input===null)return;
+
+    const next=String(input).trim().toUpperCase();
+    if(!next){
+        alert("Nomor PO / LO tidak boleh kosong. Jika dokumen belum tersedia, biarkan berstatus BELUM DIISI.");
+        return;
+    }
+
+    if(next===current)return;
+
+    const action=current?"mengubah":"mengisi";
+    if(!confirm(
+        `Yakin ${action} PO/LO menjadi ${next}?\n\n`+
+        "Angka flowmeter, sounding, qty, dan loss tidak akan berubah."
+    ))return;
+
+    if(!beginStockSave("Menyimpan referensi PO/LO tanpa mengubah angka penerimaan..."))return;
+
+    const updatedBy=CURRENT_PROFILE?.display_name||"Admin/GL/Atasan";
+    const {error}=await db.from("stock_movements")
+        .update({
+            document_reference:next,
+            reference_updated_at:new Date().toISOString(),
+            reference_updated_by_name:updatedBy
+        })
+        .eq("id",id)
+        .eq("jenis","RECEIPT");
+
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    await loadStock();
+    await finishStockSave(true,`PO/LO ${next} berhasil disimpan. Data volume penerimaan tetap terkunci.`);
+}
+
+function clearTransferMeasurements(){
+    document.getElementById("transferQty").value="";
+    document.getElementById("transferSourceSoundingQty").value="";
+    document.getElementById("transferSourceSoundingMeasured").textContent="- L";
+    document.getElementById("transferDestinationMeasured").textContent="- L";
+    document.getElementById("transferLoss").textContent="- L";
+    document.getElementById("transferLossBox").classList.remove("loss-positive","loss-negative");
+}
+
+function updateTransferCalculation(){
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination").value;
+    const qtyInput=document.getElementById("transferQty");
+    const sourceSoundingQtyInput=document.getElementById("transferSourceSoundingQty");
+    const status=document.getElementById("transferStatus");
+    const lossBox=document.getElementById("transferLossBox");
+
+    document.getElementById("transferSourceBeforeLabel").textContent=
+        `Sonding ${source} Sebelum Transfer (CM)`;
+    document.getElementById("transferSourceAfterLabel").textContent=
+        `Sonding ${source} Sesudah Transfer (CM)`;
+    document.getElementById("transferSourceSoundingQtyLabel").textContent=
+        `Qty Turun ${source} Menurut Tera (Liter)`;
+    document.getElementById("transferDestinationBeforeLabel").textContent=
+        `Sonding ${destination} Sebelum Menerima (CM)`;
+    document.getElementById("transferDestinationAfterLabel").textContent=
+        `Sonding ${destination} Sesudah Menerima (CM)`;
+    document.getElementById("transferQtyLabel").textContent=
+        `Qty Masuk ${destination} Menurut Tera (Liter)`;
+    document.getElementById("transferSourceAuditTitle").textContent=
+        `Audit ${source} ke ${destination} - sounding/tera sebagai patokan`;
+    document.getElementById("transferDestinationSummaryLabel").textContent=
+        `MASUK MENURUT ${destination}`;
+    document.getElementById("transferSourceSoundingSummaryLabel").textContent=
+        `KELUAR MENURUT TERA ${source}`;
+    document.getElementById("transferSourceHeightBefore").placeholder=
+        `Sebelum ${source} transfer`;
+    document.getElementById("transferSourceHeightAfter").placeholder=
+        `Sesudah ${source} transfer`;
+    document.getElementById("transferDestinationHeightBefore").placeholder=
+        `Sebelum ${destination} menerima`;
+    document.getElementById("transferDestinationHeightAfter").placeholder=
+        `Sesudah ${destination} menerima`;
+    try{
+        const parts=[];
+        const sourceBefore=teraFromInput(source,"transferSourceHeightBefore");
+        const sourceAfter=teraFromInput(source,"transferSourceHeightAfter");
+        let sourceSoundingQty=null;
+
+        if(sourceBefore && sourceAfter){
+            sourceSoundingQty=r1(sourceBefore.liters-sourceAfter.liters);
+            sourceSoundingQtyInput.value=sourceSoundingQty>0?sourceSoundingQty:"";
+            document.getElementById("transferSourceSoundingMeasured").textContent=fmtSigned(sourceSoundingQty);
+            parts.push(
+                sourceSoundingQty>0
+                    ? `Sonding ${source} turun ${fmt(sourceSoundingQty)}`
+                    : `Sonding ${source} sesudah harus lebih rendah dari sebelum`
+            );
+        }else{
+            sourceSoundingQtyInput.value="";
+            document.getElementById("transferSourceSoundingMeasured").textContent="- L";
+        }
+
+        const destinationBefore=teraFromInput(destination,"transferDestinationHeightBefore");
+        const destinationAfter=teraFromInput(destination,"transferDestinationHeightAfter");
+        let destinationQty=null;
+
+        if(destinationBefore && destinationAfter){
+            destinationQty=r1(destinationAfter.liters-destinationBefore.liters);
+            qtyInput.value=destinationQty>0?destinationQty:"";
+            document.getElementById("transferDestinationMeasured").textContent=fmtSigned(destinationQty);
+            parts.push(
+                destinationQty>0
+                    ? `${destination} masuk ${fmt(destinationQty)}`
+                    : `Sonding ${destination} sesudah harus lebih tinggi dari sebelum`
+            );
+        }else{
+            qtyInput.value="";
+            document.getElementById("transferDestinationMeasured").textContent="- L";
+        }
+
+        const audit=window.KPPTransferAudit.calculate({
+            sourceSoundingQty,
+            destinationQty
+        });
+        const {sourceQty,loss}=audit;
+
+        lossBox.classList.remove("loss-positive","loss-negative");
+        if(loss!==null){
+            document.getElementById("transferLoss").textContent=fmtSigned(loss);
+            if(loss>0)lossBox.classList.add("loss-positive");
+            if(loss<0)lossBox.classList.add("loss-negative");
+            parts.push(`Selisih/loss ${fmtSigned(loss)}`);
+        }else{
+            document.getElementById("transferLoss").textContent="- L";
+        }
+
+        status.textContent=parts.length?" "+parts.join("  |  "):"";
+
+        const result={
+            sourceBefore,sourceAfter,sourceSoundingQty,
+            destinationBefore,destinationAfter,destinationQty,
+            sourceQty,loss
+        };
+        renderTransferCopyPreview(result);
+        return result;
+    }catch(error){
+        clearTransferMeasurements();
+        status.textContent="[GAGAL] "+error.message;
+        renderTransferCopyPreview(null);
+        return null;
+    }
+}
+
+function getPeriod(){
+    return {
+        tanggal:document.getElementById("tanggal").value,
+        shift:Number(document.getElementById("shift").value)
+    };
+}
+
+function getNextPeriod(tanggal,shift){
+    if(Number(shift)===1){
+        return {tanggal,shift:2};
+    }
+
+    const d=new Date(tanggal+"T00:00:00");
+    d.setDate(d.getDate()+1);
+
+    return {
+        tanggal:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,
+        shift:1
+    };
+}
+
+
+function sessionShiftNumber(value){
+    if(String(value)==="Shift 1") return 1;
+    if(String(value)==="Shift 2") return 2;
+    return Number(value)||0;
+}
+
+function setFieldLocked(id,locked){
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.disabled=!!locked;
+    el.classList.toggle("locked-field",!!locked);
+}
+
+function applyAccountSoundingIdentity(){
+    if(!CURRENT_PROFILE)return;
+    const name=soundingOfficerName();
+    if(!name)return;
+
+    ["openingOperator","receiptOperator","transferOperator","closingOperator"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){
+            el.value=name;
+            el.readOnly=true;
+            el.classList.add("locked-field");
+        }
+    });
+
+    renderOpeningCopyPreview(safeTeraFromInput(
+        document.getElementById("openingStorage").value,
+        "openingHeight"
+    ));
+    updateReceiptCalculation();
+    updateTransferCalculation();
+}
+
+function applyFuelmanIdentity(){
+    applyAccountSoundingIdentity();
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman" || !ACTIVE_FUELMAN_SESSION)return;
+    const name=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||"";
+    const duty=ACTIVE_FUELMAN_SESSION.duty_type||"FUELMAN",picTransfer=duty==="PIC_TRANSFER";
+    document.body.classList.toggle("pic-transfer-mode",picTransfer);
+    document.querySelectorAll('a[href="pengisian.html"]').forEach(link=>link.classList.toggle("hidden",picTransfer));
+    fillStorageSelect("editSource",true);fillStorageSelect("editDestination",false);
+    const openingStorage=document.getElementById("openingStorage");
+    if(openingStorage&&!picTransfer){openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck||"";openingStorage.disabled=true;openingStorage.classList.add("locked-field");updateOpeningConversion();}
+    document.getElementById("sessionFuelman").textContent=name||"-";
+    document.getElementById("sessionShift").textContent=ACTIVE_FUELMAN_SESSION.shift||"-";
+    document.getElementById("sessionDuty").textContent=picTransfer?"PIC TRANSFER":"FUELMAN";
+    document.getElementById("sessionTruck").textContent=ACTIVE_FUELMAN_SESSION.fuel_truck||"-";
+    document.getElementById("sessionTruckLine").classList.toggle("hidden",picTransfer);
+    document.getElementById("sessionResponsibility").textContent=picTransfer?"PIC TRANSFER / BONGKAR: catat penerimaan transporter, transfer antar storage, pantau pergerakan fuel, dan wajib Closing semua MT aktif sebelum End Shift.":"FUELMAN: Closing hanya untuk FT yang sedang dibawa sebelum End Shift.";
+    document.getElementById("fuelmanSessionInfo").classList.remove("hidden");
+}
+
+async function loadFuelmanSession(){
+    if(!CURRENT_PROFILE || CURRENT_PROFILE.role!=="fuelman"){
+        return true;
+    }
+
+    const session=window.KPP_SESSION;
+
+    if(!session){
+        window.location.replace("index.html");
+        return false;
+    }
+
+    const {data,error}=await KPP.db
+        .from("fuelman_sessions")
+        .select("*")
+        .eq("user_id",session.user.id)
+        .eq("status","ACTIVE")
+        .order("created_at",{ascending:false})
+        .limit(1);
+
+    if(error){
+        alert("[GAGAL] Gagal membaca shift Fuelman.\\n\\n"+error.message);
+        window.location.replace("fuelman.html");
+        return false;
+    }
+
+    if(!data || !data.length){
+        alert("[PERINGATAN] Belum ada shift aktif. Tekan START SHIFT terlebih dahulu.");
+        window.location.replace("fuelman.html");
+        return false;
+    }
+
+    ACTIVE_FUELMAN_SESSION={...data[0],duty_type:data[0].duty_type||"FUELMAN"};
+
+    document.getElementById("tanggal").value=ACTIVE_FUELMAN_SESSION.tanggal;
+    document.getElementById("shift").value=String(
+        sessionShiftNumber(ACTIVE_FUELMAN_SESSION.shift)
+    );
+
+    setFieldLocked("tanggal",true);
+    setFieldLocked("shift",true);
+
+    applyFuelmanIdentity();
+    return true;
+}
+
+function sourceFromFuel(row){
+    const ft=String(row.fuel_truck||"").trim().toUpperCase();
+    const direct=STORAGE_ROWS.find(item=>item.storage_type==="FT" && item.code===ft);
+    if(direct)return direct.code;
+    const wh=window.KPPStorage.normalizeWarehouse(row.wh);
+    const match=STORAGE_ROWS.find(item=>item.storage_type==="FT" && window.KPPStorage.whCode(item)===wh);
+    return match?.code||"";
+}
+
+async function loadStock(){
+    const {tanggal,shift}=getPeriod();
+    if(!tanggal)return;
+
+    const [o,m,f,c]=await Promise.all([
+        db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
+        db.from("stock_movements").select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
+        db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null),
+        db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
+    ]);
+
+    const anyError=o.error||m.error||f.error||c.error;
+
+    if(anyError){
+        alert("Gagal mengambil stock: "+anyError.message);
+        return;
+    }
+
+    const stock=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
+
+    (o.data||[]).forEach(row=>{
+        stock[row.storage]=n(row.qty);
+    });
+
+    (m.data||[]).forEach(row=>{
+        if(row.jenis==="RECEIPT" && row.destination_storage in stock){
+            const receivedQty=
+                row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+                    ? n(row.destination_measured_qty)
+                    : n(row.qty);
+            stock[row.destination_storage]+=receivedQty;
+        }
+
+        if(row.jenis==="TRANSFER"){
+            const sourceQty=
+                row.source_measured_qty!==null && row.source_measured_qty!==undefined
+                    ? n(row.source_measured_qty)
+                    : n(row.qty);
+            const destinationQty=
+                row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
+                    ? n(row.destination_measured_qty)
+                    : n(row.qty);
+            if(row.source_storage in stock) stock[row.source_storage]-=sourceQty;
+            if(row.destination_storage in stock) stock[row.destination_storage]+=destinationQty;
+        }
+    });
+
+    (f.data||[]).forEach(row=>{
+        const source=sourceFromFuel(row);
+        if(source) stock[source]-=n(row.fuel);
+    });
+
+    const bookStock={...stock};
+    const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+    const closingComplete=STORAGES.every(storage=>
+        closingRows.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+    );
+    const displayStock={...bookStock};
+    if(closingComplete){
+        closingRows.forEach(row=>{
+            if(row.storage in displayStock)displayStock[row.storage]=n(row.actual_qty);
+        });
+    }
+
+    // Stock sistem tetap dipakai untuk validasi transaksi. Kartu historis memakai
+    // closing fisik jika closing seluruh storage sudah lengkap.
+    CURRENT_SYSTEM_STOCK={...bookStock};
+
+    updateStockRefreshMeta(tanggal,shift);
+    startStockAutoRefresh();
+    renderStockReconciliation({
+        tanggal,
+        shift,
+        openingRows:o.data||[],
+        movementRows:m.data||[],
+        fuelRows:f.data||[],
+        closingRows:c.data||[],
+        calculatedStock:bookStock
+    });
+    renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
+    renderClosing(bookStock,c.data||[]);
+    renderMovement(m.data||[],f.data||[]);
+    showCapacityAlertOnce(displayStock);
+}
+
+const STOCK_AUTO_REFRESH_MS=60000;
+let STOCK_AUTO_REFRESH_TIMER=null;
+let STOCK_AUTO_REFRESH_BUSY=false;
+
+function stockHasActiveInput(){
+    const active=document.activeElement;
+    if(!active)return false;
+    return ["INPUT","SELECT","TEXTAREA"].includes(active.tagName);
+}
+
+function stockAutoRefresh(){
+    if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK)return;
+    if(document.getElementById("stockEditOverlay")?.classList.contains("hidden")===false)return;
+    if(stockHasActiveInput())return;
+    STOCK_AUTO_REFRESH_BUSY=true;
+    Promise.resolve(loadStock())
+        .catch(error=>console.warn("Auto refresh stock gagal:",error))
+        .finally(()=>{STOCK_AUTO_REFRESH_BUSY=false;});
+}
+
+function startStockAutoRefresh(){
+    clearInterval(STOCK_AUTO_REFRESH_TIMER);
+    STOCK_AUTO_REFRESH_TIMER=setInterval(stockAutoRefresh,STOCK_AUTO_REFRESH_MS);
+}
+
+function updateStockRefreshMeta(tanggal,shift){
+    const periodInfo=document.getElementById("stockRefreshInfo");
+    const updatedInfo=document.getElementById("stockLastUpdated");
+    const badge=document.getElementById("stockRefreshBadge");
+    const label=tanggal?formatStockDate(tanggal)+" • Shift "+shift:"Periode belum dipilih";
+    if(periodInfo)periodInfo.textContent="Data aktif: "+label;
+    if(updatedInfo)updatedInfo.textContent="Diperbarui "+localTime();
+    if(badge){badge.textContent="LIVE";badge.classList.add("is-live");}
+}
+
+function formatStockDate(value){
+    const parts=String(value||"").split("-");
+    if(parts.length!==3)return value||"-";
+    const months=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"];
+    return parts[2]+" "+(months[Number(parts[1])-1]||parts[1])+" "+parts[0];
+}
+
+function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelRows,closingRows,calculatedStock}){
+    const host=document.getElementById("stockReconciliation");
+    if(!host)return;
+
+    const openingTotal=(openingRows||[]).reduce((sum,row)=>sum+n(row.qty),0);
+    const receiptTotal=(movementRows||[])
+        .filter(row=>row.jenis==="RECEIPT")
+        .reduce((sum,row)=>sum+(row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+            ?n(row.destination_measured_qty):n(row.qty)),0);
+    const transferOut=(movementRows||[])
+        .filter(row=>row.jenis==="TRANSFER")
+        .reduce((sum,row)=>sum+(row.source_measured_qty!==null&&row.source_measured_qty!==undefined
+            ?n(row.source_measured_qty):n(row.qty)),0);
+    const transferIn=(movementRows||[])
+        .filter(row=>row.jenis==="TRANSFER")
+        .reduce((sum,row)=>sum+(row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+            ?n(row.destination_measured_qty):n(row.qty)),0);
+    const fuelTotal=(fuelRows||[]).reduce((sum,row)=>sum+n(row.fuel),0);
+    const calculatedTotal=Object.values(calculatedStock||{}).reduce((sum,value)=>sum+n(value),0);
+    const closingRowsValid=(closingRows||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+    const closingTotal=closingRowsValid.reduce((sum,row)=>sum+n(row.actual_qty),0);
+    const closingComplete=STORAGES.every(storage=>
+        closingRowsValid.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+    );
+    const delta=closingComplete?closingTotal-calculatedTotal:null;
+
+    const status=delta===null
+        ?"OPEN"
+        :Math.abs(delta)<=0.1
+            ?"MATCH"
+            :"SELISIH";
+
+    host.innerHTML=`
+      <div class="stock-recon-head">
+        <div>
+          <strong>REKONSILIASI STOCK</strong>
+          <span>${formatStockDate(tanggal)} • Shift ${shift}</span>
+        </div>
+        <b class="stock-recon-status ${status.toLowerCase()}">${status}</b>
+      </div>
+      <div class="stock-recon-grid">
+        <div><small>OPENING</small><strong>${fmt(openingTotal)} L</strong></div>
+        <div><small>PENERIMAAN</small><strong>+${fmt(receiptTotal)} L</strong></div>
+        <div><small>TRANSFER NET</small><strong>${fmt(transferIn-transferOut)} L</strong></div>
+        <div><small>PEMAKAIAN</small><strong>-${fmt(fuelTotal)} L</strong></div>
+        <div><small>HASIL SISTEM</small><strong>${fmt(calculatedTotal)} L</strong></div>
+        <div><small>STOCK CLOSING</small><strong>${closingComplete?fmt(closingTotal)+" L":"Belum lengkap"}</strong></div>
+      </div>
+      <div class="stock-recon-foot">
+        <span>${closingComplete
+            ? "Selisih closing vs hasil sistem: "+fmtSigned(delta)+" L"
+            : "Closing belum lengkap, jadi selisih fisik belum dinilai."}</span>
+        <span>Rumus: Opening + Penerimaan + Transfer Net - Pemakaian</span>
+      </div>`;
+}
+
+function renderStockCards(stock,sourceLabel="SISTEM"){
+    const total=Object.values(stock).reduce((sum,value)=>sum+n(value),0);
+    const cards=document.getElementById("stockCards");
+    cards.innerHTML="";
+
+    STORAGES.forEach(storage=>{
+        const row=storageRow(storage);
+        const context=row?.warehouse ? row.warehouse : (row?.display_name && row.display_name!==storage ? row.display_name : "");
+        const cap=capacity(storage);
+        const p=capacityPercent(storage,stock[storage]);
+        const state=capacityState(storage,stock[storage]);
+        const ringPct=Math.max(0,Math.min(p,100));
+        const estimatedHeight=teraHeightForLiters(
+            storage,
+            Math.max(0,n(stock[storage]))
+        );
+
+        const cardClass=state==="critical"?"capacity-critical":state==="low"?"capacity-low":state==="high"?"capacity-high":"capacity-safe";
+        const statusText=state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
+        const soundingText=estimatedHeight===null || estimatedHeight===undefined
+            ? "-"
+            : "~ "+fmtCm(estimatedHeight);
+
+        cards.innerHTML+=`
+        <div class="card stock-gauge-card ${cardClass}">
+            <div class="stock-gauge-context">${esc(context||"STORAGE FUEL")}</div>
+            <div class="stock-radial ${state}" style="--ring-pct:${ringPct}">
+                <div class="stock-radial-inner">
+                    <span class="stock-radial-code">${esc(storage)}</span>
+                    <span class="stock-radial-percent">${pct(p)}%</span>
+                    <span class="stock-radial-status">${statusText}</span>
+                </div>
+            </div>
+            <div class="stock-gauge-metrics">
+                <div class="stock-gauge-metric">
+                    <strong>${fmt(stock[storage])}</strong>
+                    <small>STOCK</small>
+                </div>
+                <div class="stock-gauge-metric">
+                    <strong>${fmt(cap)}</strong>
+                    <small>KAPASITAS</small>
+                </div>
+            </div>
+            <div class="stock-sounding-estimate">
+                <span>Sonding estimasi</span>
+                <b>${soundingText}</b>
+            </div>
+        </div>`;
+    });
+
+    const totalPct=TOTAL_CAPACITY>0 ? (total/TOTAL_CAPACITY)*100 : 0;
+    const totalState=totalPct<STOCK_CRITICAL_PCT?"critical":totalPct<STOCK_WARNING_PCT?"low":totalPct>=CAPACITY_WARNING_PCT?"high":"safe";
+    const totalCardClass=totalState==="critical"?"capacity-critical":totalState==="low"?"capacity-low":totalState==="high"?"capacity-high":"capacity-safe";
+    const totalStatus=totalState==="critical"?"KRITIS":totalState==="low"?"RENDAH":totalState==="high"?"TINGGI":"AMAN";
+
+    document.getElementById("stockTotalWide").innerHTML=`
+    <div class="stock-total-card ${totalCardClass}">
+        <div class="stock-total-main">
+            <small>TOTAL STOCK ALL WHS • ${esc(sourceLabel)}</small>
+            <strong>${fmt(total)}</strong>
+        </div>
+        <div class="stock-total-side">
+            <div class="stock-total-compact">
+                <span>KAPASITAS TOTAL ${fmt(TOTAL_CAPACITY)}</span>
+                <strong class="capacity-${totalState}-text">${pct(totalPct)}% | ${totalStatus}</strong>
+            </div>
+        </div>
+    </div>`;
+}
+
+function closingRevisionState(savedClosing=CURRENT_SAVED_CLOSING){
+    const rows=Array.isArray(savedClosing)?savedClosing:[];
+    const savedMap=Object.fromEntries(rows.map(row=>[row.storage,row]));
+    const closingStorages=closingStoragesForAccount();
+    const hasSaved=closingStorages.some(storage=>!!savedMap[storage]);
+    const isFinal=closingStorages.length>0 && closingStorages.every(storage=>!!savedMap[storage]);
+    return {rows,savedMap,closingStorages,hasSaved,isFinal};
+}
+
+function applyClosingRevisionUi(savedClosing){
+    CURRENT_SAVED_CLOSING=(savedClosing||[]).map(row=>({...row}));
+    const state=closingRevisionState(CURRENT_SAVED_CLOSING);
+    const canRevise=canReviseClosing();
+    const status=document.getElementById("closingStatus");
+    const saveButton=document.getElementById("closingSaveButton");
+    const note=document.getElementById("closingNote");
+    const carry=document.getElementById("carryForward");
+    const revisionBox=document.getElementById("closingRevisionBox");
+    const revisionReason=document.getElementById("closingRevisionReason");
+    const operatorLabel=document.getElementById("closingOperatorLabel");
+
+    state.closingStorages.forEach(storage=>{
+        const height=document.getElementById(`height-${storage}`);
+        if(!height)return;
+        height.disabled=state.isFinal ? !canRevise : !!state.savedMap[storage];
+    });
+
+    if(state.isFinal){
+        note.disabled=!canRevise;
+        carry.disabled=true;
+        saveButton.disabled=!canRevise;
+        saveButton.textContent=canRevise?"SIMPAN REVISI STOCK AKHIR":"STOCK AKHIR TERKUNCI";
+        revisionBox.classList.toggle("hidden",!canRevise);
+        operatorLabel.textContent=canRevise?"Akun Revisi (GL/Admin)":"Petugas Sonding Closing";
+        status.textContent=canRevise
+            ? "[OK] Stock akhir sudah tersimpan. Mode revisi aktif khusus GL/Admin."
+            : "[TERKUNCI] Stock akhir sudah tersimpan. Revisi hanya GL/Admin.";
+        return state;
+    }
+
+    note.disabled=false;
+    carry.disabled=false;
+    saveButton.disabled=false;
+    saveButton.textContent=state.hasSaved?"SIMPAN SISA STOCK CLOSING":"SIMPAN STOCK CLOSING";
+    revisionBox.classList.add("hidden");
+    if(revisionReason)revisionReason.value="";
+    operatorLabel.textContent="Petugas Sonding Closing (Akun Login)";
+    status.textContent=state.hasSaved
+        ? "[INFO] Closing periode ini belum lengkap. Baris yang sudah tersimpan dikunci; lengkapi storage yang belum."
+        : "";
+    return state;
+}
+
+function renderClosing(stock,savedClosing){
+    const savedMap={};
+
+    savedClosing.forEach(row=>{
+        savedMap[row.storage]=row;
+    });
+
+    const body=document.getElementById("closingBody");
+    body.innerHTML="";
+
+    const closingStorages=closingStoragesForAccount();
+
+    closingStorages.forEach(storage=>{
+        const saved=savedMap[storage];
+        const actualValue=saved?saved.actual_qty:"";
+        const heightValue=saved&&saved.sonding_height_cm!==null&&saved.sonding_height_cm!==undefined
+            ? saved.sonding_height_cm
+            : "";
+        const estimatedSystemHeight=teraHeightForLiters(
+            storage,
+            Math.max(0,n(stock[storage]))
+        );
+
+        body.innerHTML+=`
+        <tr>
+            <td><b>${storage}</b></td>
+            <td>
+                <div class="closing-system-reading">
+                    <strong>${fmt(stock[storage])}</strong>
+                    <small> Estimasi sonding: <b>~ ${fmtCm(estimatedSystemHeight)}</b></small>
+                </div>
+            </td>
+            <td>
+                <input
+                    type="number"
+                    id="height-${storage}"
+                    class="sonding-height"
+                    min="0"
+                    step="0.1"
+                    inputmode="decimal"
+                    value="${heightValue}"
+                    placeholder="Tinggi CM"
+                    oninput="updateClosingFromHeight('${storage}')"
+                >
+                <span class="tera-inline" id="tera-info-${storage}">${heightValue!==""?"Tera tersimpan":"Masukkan tinggi sonding"}</span>
+            </td>
+            <td><input type="number" id="actual-${storage}" class="auto-liter" value="${actualValue}" readonly placeholder="Otomatis"></td>
+            <td id="diff-${storage}" class="diff-zero">-</td>
+        </tr>`;
+    });
+
+    const firstSaved=savedClosing.length?savedClosing[0]:null;
+
+    if(firstSaved){
+        if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman")){
+            document.getElementById("closingOperator").value=firstSaved.operator||"";
+        }
+        document.getElementById("closingNote").value=firstSaved.note||"";
+        document.getElementById("closingStatus").textContent=
+            "[OK] Stock closing periode ini sudah pernah disimpan. Bisa diperbarui bila perlu.";
+    }else{
+        if(!(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman")){
+            document.getElementById("closingOperator").value="";
+        }
+        document.getElementById("closingNote").value="";
+        document.getElementById("closingStatus").textContent="";
+    }
+
+    applyFuelmanIdentity();
+    closingStorages.forEach(storage=>{
+        const height=document.getElementById(`height-${storage}`);
+        if(height && height.value!=="")updateClosingFromHeight(storage,false);
+    });
+    updateClosingDifference();
+    renderClosingCopyPreview();
+    applyClosingRevisionUi(savedClosing);
+}
+
+function updateClosingFromHeight(storage,refreshDifference=true){
+    const heightInput=document.getElementById(`height-${storage}`);
+    const actualInput=document.getElementById(`actual-${storage}`);
+    const info=document.getElementById(`tera-info-${storage}`);
+
+    if(!heightInput || !actualInput)return;
+
+    if(heightInput.value===""){
+        actualInput.value="";
+        if(info)info.textContent="Masukkan tinggi sonding";
+        if(refreshDifference)updateClosingDifference();
+        renderClosingCopyPreview();
+        return;
+    }
+
+    try{
+        const tera=teraLookup(storage,heightInput.value);
+        actualInput.value=tera.liters;
+        if(info)info.textContent=`${fmtCm(tera.matchedHeightCm)} = ${fmt(tera.liters)}`;
+    }catch(error){
+        actualInput.value="";
+        if(info)info.textContent="[GAGAL] "+error.message;
+    }
+
+    if(refreshDifference)updateClosingDifference();
+    renderClosingCopyPreview();
+}
+
+function updateClosingDifference(){
+    let systemTotal=0;
+    let actualTotal=0;
+    let hasAllActual=true;
+
+    const closingStorages=closingStoragesForAccount();
+
+    closingStorages.forEach(storage=>{
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        systemTotal+=systemQty;
+
+        const input=document.getElementById(`actual-${storage}`);
+        const diffCell=document.getElementById(`diff-${storage}`);
+
+        if(!input || input.value===""){
+            hasAllActual=false;
+            if(diffCell){
+                diffCell.textContent="-";
+                diffCell.className="diff-zero";
+            }
+            return;
+        }
+
+        const actualQty=n(input.value);
+        actualTotal+=actualQty;
+
+        const difference=actualQty-systemQty;
+
+        if(diffCell){
+            diffCell.textContent=fmtSigned(difference);
+            diffCell.className=
+                difference>0?"diff-positive":
+                difference<0?"diff-negative":
+                "diff-zero";
+        }
+    });
+
+    document.getElementById("closingSystemTotal").textContent=fmt(systemTotal);
+    document.getElementById("closingActualTotal").textContent=hasAllActual?fmt(actualTotal):"-";
+
+    const totalDifference=actualTotal-systemTotal;
+    const el=document.getElementById("closingDifferenceTotal");
+
+    if(hasAllActual){
+        el.textContent=fmtSigned(totalDifference);
+        el.className=
+            totalDifference>0?"diff-positive":
+            totalDifference<0?"diff-negative":
+            "diff-zero";
+    }else{
+        el.textContent="-";
+        el.className="";
+    }
+}
+
+function renderMovement(movementData,fuelData){
+    const body=document.getElementById("movementBody");
+    body.innerHTML="";
+
+    CURRENT_MOVEMENTS=(movementData||[]).map(row=>({...row}));
+
+    const canEdit=isStockEditor();
+    const rows=[];
+
+    movementData.forEach(row=>{
+        rows.push({
+            source_type:"stock",
+            id:row.id,
+            jam:row.jam||"-",
+            jenis:row.jenis,
+            dari:row.source_storage||"-",
+            ke:row.destination_storage||"-",
+            qty:n(row.qty),
+            operator:row.operator||"-",
+            note:row.document_reference
+                ? `${row.document_reference}  |  ${row.transporter||"-"}`
+                : row.transporter||row.note||"-"
+        });
+    });
+
+    fuelData.forEach(row=>{
+        rows.push({
+            source_type:"fuel",
+            id:row.id,
+            jam:row.jam||"-",
+            jenis:"PENGISIAN",
+            dari:sourceFromFuel(row)||"-",
+            ke:row.unit||"-",
+            qty:n(row.fuel),
+            operator:row.operator||"-",
+            note:"Fuel keluar ke unit"
+        });
+    });
+
+    rows.sort((a,b)=>String(a.jam).localeCompare(String(b.jam)));
+
+    rows.forEach(row=>{
+        const isMovement=row.source_type==="stock";
+
+        body.innerHTML+=`
+        <tr>
+            <td class="${canEdit?"":"hidden"} checkbox-cell">
+                ${
+                    canEdit && isMovement
+                        ? `<input type="checkbox" class="stock-move-check" value="${row.id}">`
+                        : "-"
+                }
+            </td>
+            <td>${esc(row.jam)}</td>
+            <td>${esc(row.jenis)}</td>
+            <td>${esc(row.dari)}</td>
+            <td>${esc(row.ke)}</td>
+            <td>${fmt(row.qty)}</td>
+            <td>${esc(row.operator)}</td>
+            <td>${esc(row.note)}</td>
+            <td class="${canEdit?"":"hidden"}">
+                ${
+                    canEdit && isMovement
+                        ? `
+                            <button class="edit-btn small-btn" type="button" onclick="openMovementEditor(${row.id})">EDIT</button>
+                            <button class="danger small-btn" type="button" onclick="deleteMovement(${row.id})">HAPUS</button>
+                          `
+                        : "-"
+                }
+            </td>
+        </tr>`;
+    });
+
+    if(!rows.length){
+        body.innerHTML=
+            `<tr><td colspan="${canEdit?9:7}">Belum ada pergerakan fuel pada shift ini.</td></tr>`;
+    }
+
+    setAdminMovementTools();
+}
+
+async function saveOpening(){
+    const {tanggal,shift}=getPeriod();
+    let storage=document.getElementById("openingStorage").value;
+    let operator=soundingOfficerName()||document.getElementById("openingOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){alert("PIC TRANSFER hanya melihat stock dan melakukan Closing semua MT aktif.");return;}
+        storage=ACTIVE_FUELMAN_SESSION.fuel_truck;
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
+
+    let openingTera;
+    try{
+        openingTera=teraFromInput(storage,"openingHeight");
+    }catch(error){
+        alert("Konversi Stock Opening gagal.\n\n"+error.message);
+        return;
+    }
+
+    if(!tanggal||!storage||!openingTera){
+        alert("Isi tinggi sonding Stock Opening terlebih dahulu.");
+        return;
+    }
+
+    const qty=openingTera.liters;
+
+    if(!validateCapacityHard(storage,qty,"Stock Opening"))return;
+    if(!confirmNearCapacity(storage,qty,"Stock Opening"))return;
+
+    const openingReport=buildOpeningCopyReport(openingTera,localTime());
+
+    if(!beginStockSave("Menyimpan Stock Opening..."))return;
+
+    const {data:openingResult,error}=await db.rpc("save_stock_opening_safe",{
+        p_tanggal:tanggal,
+        p_shift:shift,
+        p_storage:storage,
+        p_qty:qty,
+        p_operator:operator,
+        p_sonding_height_cm:openingTera.matchedHeightCm,
+        p_tera_version:TERA.version,
+        p_session_id:ACTIVE_FUELMAN_SESSION?.id||null
+    });
+
+    document.getElementById("openingStatus").textContent=
+        error?"[GAGAL] "+error.message:"[OK] Stock opening tersimpan.";
+
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    LAST_COPY_REPORTS.opening=openingReport;
+    setCopyPreview("openingCopyPreview",openingReport);
+    await loadStock();
+    await finishStockSave(true,"Stock Opening sudah tersimpan.");
+}
+
+async function saveReceipt(){
+    const {tanggal,shift}=getPeriod();
+    const destination_storage=document.getElementById("receiptDestination").value;
+    const measurement=updateReceiptCalculation();
+    const transporter=document.getElementById("receiptTransporter").value.trim();
+    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase()||null;
+    const arrivalTime=document.getElementById("receiptArrivalTime").value;
+    let operator=soundingOfficerName()||document.getElementById("receiptOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
+
+    if(!arrivalTime){
+        alert("Masukkan jam kedatangan transporter.");
+        return;
+    }
+
+    if(!measurement || measurement.meterStart===null || measurement.meterEnd===null){
+        alert("Isi Flowmeter Awal dan Flowmeter Akhir transporter.");
+        return;
+    }
+
+    if(!measurement.transporterQty || measurement.transporterQty<=0){
+        alert("Flowmeter Akhir harus lebih besar dari Flowmeter Awal.");
+        return;
+    }
+
+    if(!measurement.tankBefore || !measurement.tankAfter){
+        alert(`Isi sonding ${destination_storage} sebelum dan sesudah bongkar.`);
+        return;
+    }
+
+    if(!measurement.tankQty || measurement.tankQty<=0){
+        alert(`Sonding ${destination_storage} sesudah harus lebih tinggi dari sebelum bongkar.`);
+        return;
+    }
+
+    if(!transporter){
+        alert("Pilih perusahaan transportir.");
+        return;
+    }
+
+    const projectedDestination=measurement.tankAfter.liters;
+
+    if(!validateCapacityHard(
+        destination_storage,
+        projectedDestination,
+        "Penerimaan Solar"
+    ))return;
+
+    if(!confirmNearCapacity(
+        destination_storage,
+        projectedDestination,
+        "Penerimaan Solar"
+    ))return;
+
+    const lossLimit=Math.max(
+        LOSS_WARNING_LITERS,
+        measurement.transporterQty*(LOSS_WARNING_PERCENT/100)
+    );
+
+    if(Math.abs(measurement.loss)>lossLimit){
+        const lanjut=confirm(
+            "[PERINGATAN] SELISIH BONGKARAN PERLU DICEK\n\n"+
+            "PO/LO: "+(document_reference||"BELUM DIISI")+"\n"+
+            "Transporter: "+fmt(measurement.transporterQty)+"\n"+
+            "Aktual diterima tangki: "+fmt(measurement.tankQty)+"\n"+
+            "Hasil audit: "+receiptAuditLabel(measurement.loss)+"\n\n"+
+            "Tetap simpan untuk audit?"
+        );
+        if(!lanjut)return;
+    }
+
+    const receiptReport=buildReceiptCopyReport(
+        measurement,
+        operator,
+        reportDateTime(arrivalTime)
+    );
+
+    // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
+    if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
+
+    const {error,previousOnly}=await sendStockMovementSafe({
+        tanggal,
+        jam:arrivalTime,
+        arrival_at:new Date(`${tanggal}T${arrivalTime}+07:00`).toISOString(),
+        shift,
+        jenis:"RECEIPT",
+        source_storage:null,
+        destination_storage,
+        qty:measurement.tankQty,
+        operator,
+        transporter,
+        document_reference,
+        note:`PO/LO ${document_reference||"BELUM DIISI"} | Flowmeter ${measurement.meterStart} -> ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} -> ${measurement.tankAfter.matchedHeightCm} cm`,
+        calculation_method:"RECEIPT_FLOWMETER_VS_DESTINATION_TERA",
+        meter_start_liter:measurement.meterStart,
+        meter_end_liter:measurement.meterEnd,
+        transporter_measured_qty:measurement.transporterQty,
+        destination_height_before_cm:measurement.tankBefore.matchedHeightCm,
+        destination_liter_before:measurement.tankBefore.liters,
+        destination_height_after_cm:measurement.tankAfter.matchedHeightCm,
+        destination_liter_after:measurement.tankAfter.liters,
+        destination_measured_qty:measurement.tankQty,
+        measurement_loss_qty:measurement.loss,
+        tera_version:TERA.version
+    });
+
+    if(previousOnly && !error){
+        document.getElementById("receiptStatus").textContent=
+            "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian penerimaan saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
+        await loadStock();
+        await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian penerimaan saat ini belum dikirim.");
+        return;
+    }
+
+    document.getElementById("receiptStatus").textContent=
+        error?"[GAGAL] "+error.message:
+            document_reference
+                ? `[OK] Penerimaan ${document_reference} tersimpan dan masuk ke history.`
+                : "[OK] Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL/Atasan.";
+
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    LAST_COPY_REPORTS.receipt=receiptReport;
+    setCopyPreview("receiptCopyPreview",receiptReport);
+    [
+        "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
+        "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
+    ].forEach(id=>{document.getElementById(id).value="";});
+    document.getElementById("receiptArrivalTime").value=localTime();
+    await loadStock();
+    await finishStockSave(
+        true,
+        document_reference
+            ? "Penerimaan Solar "+document_reference+" sudah tersimpan."
+            : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL/Atasan dari History Penerimaan."
+    );
+}
+
+
+function syncTransferDestination(){
+    const source=document.getElementById("transferSource").value;
+    const destination=document.getElementById("transferDestination");
+
+    Array.from(destination.options).forEach(option=>{
+        option.disabled=(option.value===source);
+    });
+
+    if(destination.value===source){
+        const firstAvailable=Array.from(destination.options).find(option=>!option.disabled);
+        if(firstAvailable) destination.value=firstAvailable.value;
+    }
+
+    updateTransferCalculation();
+}
+
+async function saveTransfer(){
+    const {tanggal,shift}=getPeriod();
+    const source_storage=document.getElementById("transferSource").value;
+    const destination_storage=document.getElementById("transferDestination").value;
+    const measurement=updateTransferCalculation();
+    const qty=measurement?n(measurement.destinationQty):0;
+    let operator=soundingOfficerName()||document.getElementById("transferOperator").value.trim();
+
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        if(!ACTIVE_FUELMAN_SESSION){
+            window.location.replace("fuelman.html");
+            return;
+        }
+        operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
+    }
+
+    if(!measurement || !measurement.destinationBefore || !measurement.destinationAfter){
+        alert(`Isi sounding ${destination_storage} sebelum dan sesudah menerima transfer.`);
+        return;
+    }
+
+    if(!measurement.sourceBefore || !measurement.sourceAfter){
+        alert(`Isi sounding ${source_storage} sebelum dan sesudah transfer.`);
+        return;
+    }
+
+    if(n(measurement.sourceSoundingQty)<=0){
+        alert(`Sonding ${source_storage} sesudah harus lebih rendah dari sebelum transfer.`);
+        return;
+    }
+
+    if(qty<=0){
+        alert(`Sonding ${destination_storage} sesudah harus lebih tinggi dari sebelum menerima.`);
+        return;
+    }
+
+    if(source_storage===destination_storage){
+        alert("Storage sumber dan tujuan tidak boleh sama.");
+        return;
+    }
+
+    if(n(measurement.sourceQty)>n(CURRENT_SYSTEM_STOCK[source_storage])){
+        const lanjut=confirm(
+            "[PERINGATAN] Qty keluar menurut sounding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
+        );
+        if(!lanjut)return;
+    }
+
+    const projectedDestination=measurement.destinationAfter.liters;
+
+    if(!validateCapacityHard(
+        destination_storage,
+        projectedDestination,
+        "Sonding setelah Transfer "+source_storage+" -> "+destination_storage
+    ))return;
+
+    if(!confirmNearCapacity(
+        destination_storage,
+        projectedDestination,
+        "Sonding setelah Transfer "+source_storage+" -> "+destination_storage
+    ))return;
+
+    const lossQty=measurement.loss;
+
+    const lossLimit=Math.max(
+        LOSS_WARNING_LITERS,
+        n(measurement.sourceQty)*(LOSS_WARNING_PERCENT/100)
+    );
+
+    if(Math.abs(lossQty)>lossLimit){
+        const lanjut=confirm(
+            "[PERINGATAN] SELISIH TRANSFER PERLU DICEK\n\n"+
+            "Keluar menurut sounding "+source_storage+": "+fmt(measurement.sourceQty)+"\n"+
+            "Masuk "+destination_storage+": "+fmt(qty)+"\n"+
+            "Selisih sumber vs tujuan/loss: "+fmtSigned(lossQty)+"\n\n"+
+            "Tetap simpan untuk audit?"
+        );
+        if(!lanjut)return;
+    }
+
+    const transferTime=localTime();
+    const transferReport=buildTransferCopyReport(
+        measurement,
+        operator,
+        reportDateTime(transferTime)
+    );
+
+    // LOCK setelah seluruh validasi/konfirmasi selesai dan sebelum request dikirim.
+    if(!beginStockSave(
+        "Menyimpan Transfer "+source_storage+" -> "+destination_storage+"..."
+    ))return;
+
+    const noteParts=[
+        `Sumber ${source_storage}: ${measurement.sourceBefore.matchedHeightCm} cm (${measurement.sourceBefore.liters} L) -> ${measurement.sourceAfter.matchedHeightCm} cm (${measurement.sourceAfter.liters} L); turun menurut sounding ${measurement.sourceSoundingQty} L`,
+        `Tujuan ${destination_storage}: ${measurement.destinationBefore.matchedHeightCm} cm (${measurement.destinationBefore.liters} L) -> ${measurement.destinationAfter.matchedHeightCm} cm (${measurement.destinationAfter.liters} L)`
+    ];
+
+    noteParts.push(`Loss sounding sumber vs tujuan ${lossQty} L`);
+
+    const {error,previousOnly}=await sendStockMovementSafe({
+        tanggal,
+        jam:transferTime,
+        shift,
+        jenis:"TRANSFER",
+        source_storage,
+        destination_storage,
+        qty,
+        operator,
+        note:noteParts.join(" | "),
+        calculation_method:"TRANSFER_SOURCE_AND_DESTINATION_TERA",
+        meter_start_liter:null,
+        meter_end_liter:null,
+        source_height_before_cm:measurement.sourceBefore.matchedHeightCm,
+        source_liter_before:measurement.sourceBefore.liters,
+        source_height_after_cm:measurement.sourceAfter.matchedHeightCm,
+        source_liter_after:measurement.sourceAfter.liters,
+        destination_height_before_cm:measurement.destinationBefore.matchedHeightCm,
+        destination_liter_before:measurement.destinationBefore.liters,
+        destination_height_after_cm:measurement.destinationAfter.matchedHeightCm,
+        destination_liter_after:measurement.destinationAfter.liters,
+        source_measured_qty:measurement.sourceQty,
+        destination_measured_qty:qty,
+        measurement_loss_qty:lossQty,
+        tera_version:TERA.version
+    });
+
+    if(previousOnly && !error){
+        document.getElementById("transferStatus").textContent=
+            "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian transfer saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
+        await loadStock();
+        await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian transfer saat ini belum dikirim.");
+        return;
+    }
+
+    document.getElementById("transferStatus").textContent=
+        error
+            ?"[GAGAL] "+error.message
+            :"[OK] Transfer "+source_storage+" -> "+destination_storage+" tersimpan. Loss "+fmtSigned(lossQty)+" tercatat.";
+
+    if(error){
+        await finishStockSave(false,error.message);
+        return;
+    }
+
+    LAST_COPY_REPORTS.transfer=transferReport;
+    setCopyPreview("transferCopyPreview",transferReport);
+    [
+        "transferSourceHeightBefore",
+        "transferSourceHeightAfter",
+        "transferSourceSoundingQty",
+        "transferDestinationHeightBefore",
+        "transferDestinationHeightAfter",
+        "transferQty"
+    ].forEach(id=>{document.getElementById(id).value="";});
+    clearTransferMeasurements();
+    await loadStock();
+    await finishStockSave(
+        true,
+        "Transfer "+source_storage+" -> "+destination_storage+" sudah tersimpan."
+    );
+}
+
+async function saveClosing(){
+    const {tanggal,shift}=getPeriod();
+    let operator=soundingOfficerName()||document.getElementById("closingOperator").value.trim();
+    const note=document.getElementById("closingNote").value.trim();
+
+    const isFuelman=
+        CURRENT_PROFILE &&
+        CURRENT_PROFILE.role==="fuelman";
+
+    if(isFuelman){
+        if(!ACTIVE_FUELMAN_SESSION){
+            alert("Shift Fuelman belum aktif.");
+            window.location.replace("fuelman.html");
+            return;
+        }
+
+        operator=
+            ACTIVE_FUELMAN_SESSION.fuelman_name ||
+            CURRENT_PROFILE.display_name ||
+            operator;
+    }
+
+    if(!operator){
+        alert("Masukkan nama Fuelman / Operator Closing.");
+        return;
+    }
+
+    const closingStorages=closingStoragesForAccount();
+    const revisionState=closingRevisionState();
+    const isRevision=revisionState.isFinal;
+
+    if(isRevision && !canReviseClosing()){
+        alert("Revisi Stock Akhir hanya GL/Admin.");
+        return;
+    }
+
+    const closingRows=[];
+
+    for(const storage of closingStorages){
+        if(!isRevision && revisionState.savedMap[storage])continue;
+
+        const heightInput=document.getElementById(`height-${storage}`);
+        const input=document.getElementById(`actual-${storage}`);
+
+        if(!heightInput || heightInput.value==="" || !input || input.value===""){
+            alert(
+                isFuelman
+                    ? "Isi tinggi sonding "+storage+" terlebih dahulu."
+                    : "Isi tinggi sonding untuk semua storage yang belum tersimpan terlebih dahulu."
+            );
+            return;
+        }
+
+        let closingTera;
+        try{
+            closingTera=teraLookup(storage,heightInput.value);
+        }catch(error){
+            alert("Konversi Closing "+storage+" gagal.\n\n"+error.message);
+            return;
+        }
+
+        const actualQty=closingTera.liters;
+
+        if(actualQty<0){
+            alert("Stock fisik tidak boleh negatif.");
+            return;
+        }
+
+        if(!validateCapacityHard(
+            storage,
+            actualQty,
+            "Stock Closing"
+        ))return;
+
+        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+
+        closingRows.push({
+            tanggal,
+            shift,
+            storage,
+            system_qty:systemQty,
+            actual_qty:actualQty,
+            difference_qty:actualQty-systemQty,
+            operator,
+            note,
+            sonding_height_cm:closingTera.matchedHeightCm,
+            tera_version:TERA.version,
+
+            session_id:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.id
+                    : null,
+
+            fuelman_user_id:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.user_id
+                    : null,
+
+            fuelman_name:
+                isFuelman
+                    ? ACTIVE_FUELMAN_SESSION.fuelman_name
+                    : null
+        });
+    }
+
+    if(!closingRows.length){
+        alert(isRevision?"Tidak ada data Stock Akhir untuk direvisi.":"Semua Stock Closing periode ini sudah tersimpan.");
+        return;
+    }
+
+    if(isRevision){
+        const reasonInput=document.getElementById("closingRevisionReason");
+        const reason=String(reasonInput?.value||"").trim();
+        if(reason.length<5){
+            alert("Alasan revisi wajib diisi minimal 5 karakter.");
+            reasonInput?.focus();
+            return;
+        }
+
+        const changedRows=closingRows.filter(row=>{
+            const old=revisionState.savedMap[row.storage];
+            if(!old)return false;
+            return (
+                n(old.actual_qty)!==n(row.actual_qty) ||
+                n(old.sonding_height_cm)!==n(row.sonding_height_cm) ||
+                String(old.note||"").trim()!==String(row.note||"").trim() ||
+                String(old.tera_version||"")!==String(row.tera_version||"")
+            );
+        });
+
+        if(!changedRows.length){
+            alert("Tidak ada perubahan Stock Akhir yang perlu disimpan.");
+            return;
+        }
+
+        const nearFullRevision=changedRows.filter(
+            row=>capacityPercent(row.storage,row.actual_qty)>=CAPACITY_WARNING_PCT
+        );
+        if(nearFullRevision.length){
+            const lanjut=confirm(
+                "[PERINGATAN] REVISI MENDEKATI KAPASITAS\n\n"+
+                nearFullRevision.map(row=>capacityMessage(row.storage,row.actual_qty)).join("\n")+
+                "\n\nLanjutkan revisi?"
+            );
+            if(!lanjut)return;
+        }
+
+        const lanjut=confirm(
+            "REVISI STOCK AKHIR\n\n"+
+            "Storage berubah: "+changedRows.map(row=>row.storage).join(", ")+"\n"+
+            "Alasan: "+reason+"\n\n"+
+            "Nilai lama dan baru akan disimpan di audit. Lanjut?"
+        );
+        if(!lanjut)return;
+
+        if(!beginStockSave("Menyimpan revisi Stock Akhir..."))return;
+
+        const {data:revisionResult,error:revisionError}=await db.rpc(
+            "revise_stock_closing",
+            {
+                p_rows:changedRows.map(row=>({
+                    tanggal:row.tanggal,
+                    shift:row.shift,
+                    storage:row.storage,
+                    actual_qty:row.actual_qty,
+                    note:row.note,
+                    sonding_height_cm:row.sonding_height_cm,
+                    tera_version:row.tera_version
+                })),
+                p_reason:reason
+            }
+        );
+
+        if(revisionError){
+            document.getElementById("closingStatus").textContent=
+                "[GAGAL] Revisi dibatalkan: "+revisionError.message;
+            await finishStockSave(false,"Revisi dibatalkan: "+revisionError.message);
+            return;
+        }
+
+        LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+        reasonInput.value="";
+        await loadStock();
+        await finishStockSave(
+            true,
+            "Revisi Stock Akhir tersimpan. "+n(revisionResult?.changed_rows)+" storage diperbarui."
+        );
+        return;
+    }
+
+    const nearFullClosing=closingRows.filter(
+        row=>capacityPercent(row.storage,row.actual_qty)>=CAPACITY_WARNING_PCT
+    );
+
+    if(nearFullClosing.length){
+        const lanjut=confirm(
+            "[PERINGATAN] CLOSING MENDEKATI KAPASITAS\n\n"+
+            nearFullClosing
+                .map(row=>capacityMessage(row.storage,row.actual_qty))
+                .join("\n")+
+            "\n\nLanjut simpan Closing?"
+        );
+
+        if(!lanjut)return;
+    }
+
+    if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
+
+    const carryForward=document.getElementById("carryForward").checked;
+    const {data:closingResult,error:closingError}=await db.rpc(
+        "save_stock_closing_atomic",
+        {
+            p_rows:closingRows,
+            p_carry_forward:carryForward
+        }
+    );
+
+    if(closingError){
+        document.getElementById("closingStatus").textContent=
+            "[GAGAL] Closing dibatalkan: "+closingError.message;
+        await finishStockSave(false,"Closing dibatalkan: "+closingError.message);
+        return;
+    }
+
+    LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+
+    if(carryForward){
+        const nextPeriod={
+            tanggal:closingResult.next_opening_date,
+            shift:closingResult.next_opening_shift
+        };
+        document.getElementById("closingStatus").textContent=
+            isFuelman
+                ? "[OK] Closing "+(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"?"semua MT aktif":ACTIVE_FUELMAN_SESSION.fuel_truck)+
+                  " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
+                : "[OK] Stock closing tersimpan. Stock fisik otomatis jadi Opening Shift "+
+                  nextPeriod.shift+" tanggal "+nextPeriod.tanggal+".";
+    }else{
+        document.getElementById("closingStatus").textContent=
+            isFuelman
+                ? "[OK] Closing "+(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"?"semua MT aktif":ACTIVE_FUELMAN_SESSION.fuel_truck)+
+                  " tersimpan dan sudah terhubung ke session. Sekarang END SHIFT sudah boleh dilakukan."
+                : "[OK] Stock closing tersimpan.";
+    }
+
+    await loadStock();
+    await finishStockSave(true,"Stock Closing sudah tersimpan.");
+}
+
+function refreshStorageInputs(){
+    ["converterStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
+    fillStorageSelect("editSource",true);
+    fillStorageSelect("editDestination",false);
+    syncTransferDestination();
+    updateQuickConverter();
+    updateOpeningConversion();
+    updateReceiptCalculation();
+}
+
+async function loadStorageMaster(){
+    STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+    STORAGES=STORAGE_ROWS.map(row=>row.code);
+    STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
+    STORAGE_HARD_CAPACITY=window.KPPStorage.hardCapacityMap(TERA,STORAGE_ROWS);
+    TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+n(b),0);
+    CURRENT_SYSTEM_STOCK=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
+    refreshStorageInputs();
+}
+
+const TODAY=localDate();
+document.getElementById("tanggal").value=TODAY;
+document.getElementById("receiptArrivalTime").value=localTime();
+document.getElementById("receiptReference").addEventListener("input",event=>{
+    event.target.value=event.target.value.toUpperCase();
+    updateReceiptCalculation();
+});
+document.getElementById("tanggal").addEventListener("change",loadStock);
+document.getElementById("tanggal").addEventListener("change",()=>{
+    updateOpeningConversion();
+    updateReceiptCalculation();
+    updateTransferCalculation();
+});
+document.getElementById("shift").addEventListener("change",loadStock);
+document.getElementById("shift").addEventListener("change",()=>{
+    updateOpeningConversion();
+    updateReceiptCalculation();
+    updateTransferCalculation();
+});
+document.getElementById("openingStorage").addEventListener("change",updateOpeningConversion);
+document.getElementById("transferDestination").addEventListener("change",updateTransferCalculation);
+document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
+document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
+document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
+document.getElementById("closingNote").addEventListener("input",renderClosingCopyPreview);
 
 restoreStockPanelVisibility();
 syncTransferDestination();
@@ -1654,41 +4737,21 @@ updateQuickConverter();
 updateOpeningConversion();
 updateReceiptCalculation();
 
-let STOCK_AUTH_BOOTED=false;
+document.addEventListener("kpp-auth-ready",async(event)=>{
+    CURRENT_PROFILE=event.detail.profile;
 
-async function bootStockPage(access){
-    if(STOCK_AUTH_BOOTED)return;
-    STOCK_AUTH_BOOTED=true;
-    CURRENT_PROFILE=access?.profile||window.KPP_PROFILE||null;
-    try{
-        await loadStorageMaster();
-        await loadTransporterOptions();
+    await loadStorageMaster();
+    await loadTransporterOptions();
 
-        if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
-            const ok=await loadFuelmanSession();
-            if(!ok)return;
-        }
-
-        applyFuelmanIdentity();
-        setAdminMovementTools();
-        await loadStock();
-    }catch(error){
-        console.error("KPP STOCK BOOT ERROR",error);
-        const status=document.getElementById("stockStatus");
-        if(status)status.textContent="[GAGAL] Stock belum berhasil dimuat: "+(error?.message||error);
-        const last=document.getElementById("stockLastUpdated");
-        if(last)last.textContent="Gagal dimuat";
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+        const ok=await loadFuelmanSession();
+        if(!ok)return;
     }
-}
 
-document.addEventListener("kpp-auth-ready",event=>bootStockPage(event.detail));
-
-if(window.KPP_PROFILE){
-    setTimeout(()=>bootStockPage({
-        profile:window.KPP_PROFILE,
-        session:window.KPP_SESSION||null
-    }),0);
-}
+    applyFuelmanIdentity();
+    setAdminMovementTools();
+    await loadStock();
+});
 
 </script>
 
