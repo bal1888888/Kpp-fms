@@ -4763,21 +4763,41 @@ updateQuickConverter();
 updateOpeningConversion();
 updateReceiptCalculation();
 
-document.addEventListener("kpp-auth-ready",async(event)=>{
-    CURRENT_PROFILE=event.detail.profile;
+let STOCK_AUTH_BOOTED=false;
 
-    await loadStorageMaster();
-    await loadTransporterOptions();
+async function bootStockPage(access){
+    if(STOCK_AUTH_BOOTED)return;
+    STOCK_AUTH_BOOTED=true;
+    CURRENT_PROFILE=access?.profile||window.KPP_PROFILE||null;
+    try{
+        await loadStorageMaster();
+        await loadTransporterOptions();
 
-    if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
-        const ok=await loadFuelmanSession();
-        if(!ok)return;
+        if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
+            const ok=await loadFuelmanSession();
+            if(!ok)return;
+        }
+
+        applyFuelmanIdentity();
+        setAdminMovementTools();
+        await loadStock();
+    }catch(error){
+        console.error("KPP STOCK BOOT ERROR",error);
+        const status=document.getElementById("stockStatus");
+        if(status)status.textContent="[GAGAL] Stock belum berhasil dimuat: "+(error?.message||error);
+        const last=document.getElementById("stockLastUpdated");
+        if(last)last.textContent="Gagal dimuat";
     }
+}
 
-    applyFuelmanIdentity();
-    setAdminMovementTools();
-    await loadStock();
-});
+document.addEventListener("kpp-auth-ready",event=>bootStockPage(event.detail));
+
+if(window.KPP_PROFILE){
+    setTimeout(()=>bootStockPage({
+        profile:window.KPP_PROFILE,
+        session:window.KPP_SESSION||null
+    }),0);
+}
 
 </script>
 
