@@ -2307,7 +2307,11 @@ function receiptPeriodDetail(value){
 }
 
 function syncReceiptHistoryPeriodDates(){
-    const period=document.getElementById("receiptHistoryPeriod").value;
+    const periodEl=document.getElementById("receiptHistoryPeriod");
+    const fromInput=document.getElementById("receiptHistoryDateFrom");
+    const toInput=document.getElementById("receiptHistoryDateTo");
+    if(!periodEl||!fromInput||!toInput)return;
+    const period=periodEl.value;
     if(period==="all")return;
 
     const toInput=document.getElementById("receiptHistoryDateTo");
@@ -2818,6 +2822,7 @@ function receiptHistoryQuantities(row){
 async function loadReceiptHistory(){
     const body=document.getElementById("receiptHistoryBody");
     const status=document.getElementById("receiptHistoryStatus");
+    if(!body||!status)return [];
     const dateFrom=document.getElementById("receiptHistoryDateFrom").value;
     const dateTo=document.getElementById("receiptHistoryDateTo").value;
     const transporter=document.getElementById("receiptHistoryTransporter").value;
@@ -2951,12 +2956,18 @@ function excelReceiptDate(row){
 }
 
 function receiptHistoryFilterText(){
-    const from=document.getElementById("receiptHistoryDateFrom").value||"AWAL";
-    const to=document.getElementById("receiptHistoryDateTo").value||"AKHIR";
-    const period=document.getElementById("receiptHistoryPeriod").value;
-    const transporter=document.getElementById("receiptHistoryTransporter").value||"SEMUA TRANSPORTIR";
+    const fromInput=document.getElementById("receiptHistoryDateFrom");
+    const toInput=document.getElementById("receiptHistoryDateTo");
+    const periodInput=document.getElementById("receiptHistoryPeriod");
+    const transporterInput=document.getElementById("receiptHistoryTransporter");
     const referenceStatus=document.getElementById("receiptHistoryReferenceStatus");
-    const reference=document.getElementById("receiptHistoryReference").value.trim()||"SEMUA PO/LO";
+    const referenceInput=document.getElementById("receiptHistoryReference");
+    if(!fromInput||!toInput||!periodInput||!transporterInput||!referenceStatus||!referenceInput)return "HISTORY PENERIMAAN BELUM DISEDIAKAN DI LAYAR INI";
+    const from=fromInput.value||"AWAL";
+    const to=toInput.value||"AKHIR";
+    const period=periodInput.value;
+    const transporter=transporterInput.value||"SEMUA TRANSPORTIR";
+    const reference=referenceInput.value.trim()||"SEMUA PO/LO";
     const periodText=period==="1"
         ? "PERIODE 1 (1-14)"
         : period==="2"
@@ -2968,6 +2979,7 @@ function receiptHistoryFilterText(){
 
 async function downloadReceiptHistoryExcel(){
     const button=document.getElementById("receiptHistoryDownloadBtn");
+    if(!button){showCopyToast("History Penerimaan belum tersedia di layar ini.",true);return;}
     const originalText=button.textContent;
     button.disabled=true;
     button.textContent=" MEMBUAT EXCEL...";
