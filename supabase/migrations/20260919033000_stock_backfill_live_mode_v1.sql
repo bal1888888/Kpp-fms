@@ -112,6 +112,9 @@ begin
     v_destination_qty:=round(v_destination_liter_after-v_destination_liter_before,1);
     v_loss:=round(v_transporter_qty-v_destination_qty,1);
     if v_transporter_qty<=0 or v_destination_qty<=0 then raise exception 'Qty penerimaan hasil pengukuran harus lebih besar dari 0.'; end if;
+    if v_mode='LIVE' and v_destination_qty > coalesce((select s.hard_capacity from public.storage_master s where s.code=v_destination),999999999) then
+      raise exception 'Stock tujuan % melebihi kapasitas pada mode LIVE.',v_destination;
+    end if;
 
     insert into public.stock_movements(
       tanggal,jam,arrival_at,shift,jenis,source_storage,destination_storage,qty,operator,transporter,document_reference,note,calculation_method,
