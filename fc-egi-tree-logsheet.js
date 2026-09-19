@@ -15,7 +15,7 @@
       }
       const egiByUnit=new Map(master.map(x=>[x.unit,x.egi]));
       pickers.forEach(picker=>{
-        if(picker.dataset.egiTreeReady==="1")return;
+        if(picker.dataset.egiTreeReady==="1" || picker.closest(".kpp-fc-widget"))return;
         const list=picker.querySelector(".kpp-fc-list"),options=list?[...list.querySelectorAll(".kpp-fc-option")]:[];
         if(!list||!options.length)return;
         const rows=options.map(o=>{const input=o.querySelector("input");const span=o.querySelector("span");const unit=String(input?.value||span?.textContent||"").trim().split(/\s+/)[0].toUpperCase();return{input,unit,egi:egiByUnit.get(unit)||String(span?.querySelector("small")?.textContent||"").trim()||"TANPA EGI"}}).filter(x=>x.input&&x.unit);
