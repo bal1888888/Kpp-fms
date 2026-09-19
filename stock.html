@@ -2314,8 +2314,6 @@ function syncReceiptHistoryPeriodDates(){
     const period=periodEl.value;
     if(period==="all")return;
 
-    const toInput=document.getElementById("receiptHistoryDateTo");
-    const fromInput=document.getElementById("receiptHistoryDateFrom");
     const base=toInput.value||localDate();
     const [year,month]=base.split("-").map(Number);
     if(!year || !month)return;
