@@ -2821,12 +2821,23 @@ async function loadReceiptHistory(){
     const body=document.getElementById("receiptHistoryBody");
     const status=document.getElementById("receiptHistoryStatus");
     if(!body||!status)return [];
-    const dateFrom=document.getElementById("receiptHistoryDateFrom").value;
-    const dateTo=document.getElementById("receiptHistoryDateTo").value;
-    const transporter=document.getElementById("receiptHistoryTransporter").value;
-    const reference=document.getElementById("receiptHistoryReference").value.trim();
-    const referenceStatus=document.getElementById("receiptHistoryReferenceStatus").value;
-    const periodFilter=document.getElementById("receiptHistoryPeriod").value;
+    const dateFromEl=document.getElementById("receiptHistoryDateFrom");
+    const dateToEl=document.getElementById("receiptHistoryDateTo");
+    const transporterEl=document.getElementById("receiptHistoryTransporter");
+    const referenceEl=document.getElementById("receiptHistoryReference");
+    const referenceStatusEl=document.getElementById("receiptHistoryReferenceStatus");
+    const periodFilterEl=document.getElementById("receiptHistoryPeriod");
+    if(!dateFromEl||!dateToEl||!transporterEl||!referenceEl||!referenceStatusEl||!periodFilterEl){
+        body.innerHTML='<tr><td colspan="10">History Penerimaan belum tersedia di layar ini.</td></tr>';
+        status.textContent="Panel History Penerimaan belum dimuat.";
+        return [];
+    }
+    const dateFrom=dateFromEl.value;
+    const dateTo=dateToEl.value;
+    const transporter=transporterEl.value;
+    const reference=referenceEl.value.trim();
+    const referenceStatus=referenceStatusEl.value;
+    const periodFilter=periodFilterEl.value;
 
     body.innerHTML='<tr><td colspan="10">Memuat history penerimaan...</td></tr>';
     status.textContent="";
