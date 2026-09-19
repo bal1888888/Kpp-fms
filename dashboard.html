@@ -834,9 +834,15 @@ async function calculateStock(tanggal,shift){
     }
   });
   (f.data||[]).forEach(row=>{const source=sourceFromFuel(row);if(source)stock[source]-=n(row.fuel)});
-  (c.data||[]).forEach(row=>{
-    if(row.storage in stock&&row.actual_qty!==null&&row.actual_qty!==undefined)stock[row.storage]=n(row.actual_qty);
-  });
+  const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+  const closingComplete=STORAGES.every(storage=>
+    closingRows.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+  );
+  if(closingComplete){
+    closingRows.forEach(row=>{
+      if(row.storage in stock)stock[row.storage]=n(row.actual_qty);
+    });
+  }
   return Object.values(stock).reduce((sum,v)=>sum+n(v),0);
 }
 
