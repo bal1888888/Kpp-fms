@@ -1625,7 +1625,7 @@ function toggleStockPanel(panelKey){
     setStockPanelCollapsed(panelKey,!content.classList.contains("hidden"),true);
 }
 
-function restoreStockPanelVisibility(){
+const stockModeSelect=document.getElementById("stockOperationMode");\nconst stockModeBanner=document.getElementById("stockModeBanner");\nfunction refreshStockModeUI(){const live=getStockOperationMode()==="LIVE";stockModeBanner?.classList.toggle("live",live);const t=stockModeBanner?.querySelector("strong"),n=stockModeBanner?.querySelector("span");if(t)t.textContent=live?"MODE LIVE • OPERASIONAL":"MODE BACKFILL • REKONSILIASI";if(n)n.textContent=live?"Stock source dan kapasitas wajib valid sebelum transaksi disimpan.":"Input historis boleh sementara belum balance. Validasi ketat aktif saat MODE LIVE.";}\nstockModeSelect?.addEventListener("change",()=>{refreshStockModeUI();loadStock();});\nrefreshStockModeUI();\n\nfunction restoreStockPanelVisibility(){
     Object.entries(STOCK_PANEL_CONFIG).forEach(([panelKey,config])=>{
         let collapsed=false;
         try{
