@@ -12,8 +12,10 @@
     Object.freeze({code:"MT02",storage_type:"MT",display_name:"MT02",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:20}),
     Object.freeze({code:"MT03",storage_type:"MT",display_name:"MT03",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:30}),
     Object.freeze({code:"MT04",storage_type:"MT",display_name:"MT04",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:40}),
-    Object.freeze({code:"FT0073",storage_type:"FT",display_name:"FT0073",warehouse:"WH FT02",nominal_capacity_liter:20000,tera_profile:"FT",active:true,sort_order:50}),
-    Object.freeze({code:"FT0075",storage_type:"FT",display_name:"FT0075",warehouse:"WH FT01",nominal_capacity_liter:20000,tera_profile:"FT",active:true,sort_order:60})
+    Object.freeze({code:"MT05",storage_type:"MT",display_name:"MT05",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:50}),
+    Object.freeze({code:"MT06",storage_type:"MT",display_name:"MT06",warehouse:null,nominal_capacity_liter:40000,tera_profile:"MT",active:true,sort_order:60}),
+    Object.freeze({code:"FT0073",storage_type:"FT",display_name:"FT0073",warehouse:"WH FT02",nominal_capacity_liter:20000,tera_profile:"FT",active:true,sort_order:70}),
+    Object.freeze({code:"FT0075",storage_type:"FT",display_name:"FT0075",warehouse:"WH FT01",nominal_capacity_liter:20000,tera_profile:"FT",active:true,sort_order:80})
   ]);
 
   function normalizeCode(value){
