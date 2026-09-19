@@ -912,6 +912,17 @@ th{background:#f8fafc;color:#475569}
 </style>
 <link rel="stylesheet" href="stock-daily-ui.css">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
+<style>
+.stock-refresh-info,.stock-section-sub{margin-top:4px;color:#64748b;font-size:11px;font-weight:700}
+.stock-refresh-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:9px;font-weight:900;letter-spacing:.08em}
+.stock-refresh-badge.is-live{background:#dcfce7;color:#15803d}
+.stock-last-updated{font-size:10px;color:#64748b;font-weight:800;white-space:nowrap}
+.stock-total-wide{margin-top:12px}
+.stock-total-card{min-height:94px}
+.stock-total-main small{letter-spacing:.08em}
+.stock-total-side{min-width:210px}
+@media(max-width:700px){.panel-title-row{align-items:flex-start;gap:10px}.stock-last-updated{font-size:9px}.stock-total-side{min-width:0}}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -1036,7 +1047,13 @@ th{background:#f8fafc;color:#475569}
 </div>
 
 <div class="panel period-panel">
-    <h3>Periode Stock</h3>
+    <div class="panel-title-row">
+        <div>
+            <h3>Periode Stock</h3>
+            <div id="stockRefreshInfo" class="stock-refresh-info">Memuat periode stock...</div>
+        </div>
+        <span id="stockRefreshBadge" class="stock-refresh-badge">LIVE</span>
+    </div>
     <div class="grid">
         <div>
             <label>Tanggal</label>
@@ -1050,13 +1067,19 @@ th{background:#f8fafc;color:#475569}
             </select>
         </div>
         <div style="align-self:end">
-            <button class="primary" onclick="loadStock()">REFRESH STOCK</button>
+            <button class="primary" type="button" onclick="loadStock()">MUAT ULANG STOCK</button>
         </div>
     </div>
 </div>
 
 <div class="panel stock-position-panel">
-    <h3>Stock Saat Ini</h3>
+    <div class="panel-title-row">
+        <div>
+            <h3>Posisi Stock</h3>
+            <div class="stock-section-sub">Total stock seluruh storage pada tanggal dan shift yang dipilih.</div>
+        </div>
+        <span id="stockLastUpdated" class="stock-last-updated">Belum dimuat</span>
+    </div>
     <div id="stockLevelAlert" class="stock-level-alert"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
     <div class="cards" id="stockCards"></div>
@@ -3469,10 +3492,28 @@ async function loadStock(){
 
     CURRENT_SYSTEM_STOCK={...stock};
 
+    updateStockRefreshMeta(tanggal,shift);
     renderStockCards(stock);
     renderClosing(stock,c.data||[]);
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(stock);
+}
+
+function updateStockRefreshMeta(tanggal,shift){
+    const periodInfo=document.getElementById("stockRefreshInfo");
+    const updatedInfo=document.getElementById("stockLastUpdated");
+    const badge=document.getElementById("stockRefreshBadge");
+    const label=tanggal?formatStockDate(tanggal)+" • Shift "+shift:"Periode belum dipilih";
+    if(periodInfo)periodInfo.textContent="Data aktif: "+label;
+    if(updatedInfo)updatedInfo.textContent="Diperbarui "+localTime();
+    if(badge){badge.textContent="LIVE";badge.classList.add("is-live");}
+}
+
+function formatStockDate(value){
+    const parts=String(value||"").split("-");
+    if(parts.length!==3)return value||"-";
+    const months=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"];
+    return parts[2]+" "+(months[Number(parts[1])-1]||parts[1])+" "+parts[0];
 }
 
 function renderStockCards(stock){
@@ -3538,7 +3579,7 @@ function renderStockCards(stock){
         </div>
         <div class="stock-total-side">
             <div class="stock-total-compact">
-                <span>MAX ${fmt(TOTAL_CAPACITY)}</span>
+                <span>KAPASITAS TOTAL ${fmt(TOTAL_CAPACITY)}</span>
                 <strong class="capacity-${totalState}-text">${pct(totalPct)}% | ${totalStatus}</strong>
             </div>
         </div>
