@@ -621,9 +621,10 @@ async function fetchPagedFuel(startDate,endDate){
   while(true){
     const {data,error}=await db
       .from("fuel_history")
-      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
+      .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded,duplicate_of_id")
       .gte("tanggal",startDate)
       .lte("tanggal",endDate)
+      .is("duplicate_of_id",null)
       .order("tanggal",{ascending:true})
       .order("id",{ascending:true})
       .range(from,from+size-1);
@@ -793,7 +794,8 @@ function renderMTDCompare(current,previous,window){
 async function fetchLatest(){
   const {data,error}=await db
     .from("fuel_history")
-    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded")
+    .select("id,tanggal,jam,unit,operator,hm_awal,hm_akhir,hm_jalan,fuel,shift,fuel_truck,wh,session_id,fuelman_name,fuelman_username,hm_ref_excluded,duplicate_of_id")
+    .is("duplicate_of_id",null)
     .order("tanggal",{ascending:false})
     .order("id",{ascending:false})
     .limit(200);
@@ -805,7 +807,7 @@ async function calculateStock(tanggal,shift){
   const [o,m,f,c]=await Promise.all([
     db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
     db.from("stock_movements").select("jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",tanggal).eq("shift",shift),
-    db.from("fuel_history").select("fuel,fuel_truck,wh").eq("tanggal",tanggal).eq("shift",shift),
+    db.from("fuel_history").select("fuel,fuel_truck,wh,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null),
     db.from("stock_closing").select("storage,actual_qty").eq("tanggal",tanggal).eq("shift",shift)
   ]);
   const err=o.error||m.error||f.error||c.error;
