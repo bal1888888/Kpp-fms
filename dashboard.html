@@ -1068,7 +1068,7 @@ document.addEventListener("kpp-auth-ready",async()=>{
 
 <script>
 (function mountDashboardFc(){
-  const run=()=>window.KPPFC?.mount({hostId:"dashboardFcChart",title:"Grafik FC per Unit",autoLoad:true,collapsible:false});
+  const run=()=>window.KPPFC?.mount({hostId:"dashboardFcChart",title:"Analisa FC per EGI / Unit",autoLoad:true,collapsible:false});
   if(window.KPP_PROFILE)run();else document.addEventListener("kpp-auth-ready",run,{once:true});
 })();
 </script>
