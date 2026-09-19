@@ -501,6 +501,34 @@ th{background:#f8fafc;color:#475569}
   .stock-auto-refresh-info{font-size:8px}
 }
 
+.stock-reconciliation{
+  margin:10px 0 14px;
+  padding:12px;
+  border:1px solid #dbe3ee;
+  border-radius:12px;
+  background:#f8fafc;
+}
+.stock-recon-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.stock-recon-head strong{display:block;font-size:11px;color:#0f172a;letter-spacing:.04em}
+.stock-recon-head span{display:block;margin-top:2px;font-size:9px;color:#64748b}
+.stock-recon-status{padding:4px 8px;border-radius:999px;font-size:9px;letter-spacing:.04em}
+.stock-recon-status.match{background:#dcfce7;color:#166534}
+.stock-recon-status.selisih{background:#fee2e2;color:#b91c1c}
+.stock-recon-status.open{background:#e2e8f0;color:#475569}
+.stock-recon-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+.stock-recon-grid>div{background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:8px;min-width:0}
+.stock-recon-grid small{display:block;font-size:8px;color:#64748b;font-weight:800}
+.stock-recon-grid strong{display:block;margin-top:3px;font-size:11px;color:#0f172a;white-space:nowrap}
+.stock-recon-foot{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:8px;color:#64748b}
+@media(max-width:800px){
+  .stock-recon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:500px){
+  .stock-recon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stock-recon-foot{display:block}
+  .stock-recon-foot span{display:block;margin-top:3px}
+}
+
 /* ===== KPP-FMS STOCK RADIAL GAUGES v1 ===== */
 .stock-position-panel .cards{
   grid-template-columns:repeat(auto-fit,minmax(205px,1fr));
@@ -1093,6 +1121,7 @@ th{background:#f8fafc;color:#475569}
     </div>
     <div id="stockLevelAlert" class="stock-level-alert"></div>
     <div id="stockTotalWide" class="stock-total-wide"></div>
+    <div id="stockReconciliation" class="stock-reconciliation"></div>
     <div class="cards" id="stockCards"></div>
 </div>
 
@@ -3505,6 +3534,15 @@ async function loadStock(){
 
     updateStockRefreshMeta(tanggal,shift);
     startStockAutoRefresh();
+    renderStockReconciliation({
+        tanggal,
+        shift,
+        openingRows:o.data||[],
+        movementRows:m.data||[],
+        fuelRows:f.data||[],
+        closingRows:c.data||[],
+        calculatedStock:stock
+    });
     renderStockCards(stock);
     renderClosing(stock,c.data||[]);
     renderMovement(m.data||[],f.data||[]);
@@ -3551,6 +3589,62 @@ function formatStockDate(value){
     if(parts.length!==3)return value||"-";
     const months=["JAN","FEB","MAR","APR","MEI","JUN","JUL","AGU","SEP","OKT","NOV","DES"];
     return parts[2]+" "+(months[Number(parts[1])-1]||parts[1])+" "+parts[0];
+}
+
+function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelRows,closingRows,calculatedStock}){
+    const host=document.getElementById("stockReconciliation");
+    if(!host)return;
+
+    const openingTotal=(openingRows||[]).reduce((sum,row)=>sum+n(row.qty),0);
+    const receiptTotal=(movementRows||[])
+        .filter(row=>row.jenis==="RECEIPT")
+        .reduce((sum,row)=>sum+(row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+            ?n(row.destination_measured_qty):n(row.qty)),0);
+    const transferOut=(movementRows||[])
+        .filter(row=>row.jenis==="TRANSFER")
+        .reduce((sum,row)=>sum+(row.source_measured_qty!==null&&row.source_measured_qty!==undefined
+            ?n(row.source_measured_qty):n(row.qty)),0);
+    const transferIn=(movementRows||[])
+        .filter(row=>row.jenis==="TRANSFER")
+        .reduce((sum,row)=>sum+(row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
+            ?n(row.destination_measured_qty):n(row.qty)),0);
+    const fuelTotal=(fuelRows||[]).reduce((sum,row)=>sum+n(row.fuel),0);
+    const calculatedTotal=Object.values(calculatedStock||{}).reduce((sum,value)=>sum+n(value),0);
+    const closingRowsValid=(closingRows||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+    const closingTotal=closingRowsValid.reduce((sum,row)=>sum+n(row.actual_qty),0);
+    const closingComplete=STORAGES.every(storage=>
+        closingRowsValid.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+    );
+    const delta=closingComplete?closingTotal-calculatedTotal:null;
+
+    const status=delta===null
+        ?"OPEN"
+        :Math.abs(delta)<=0.1
+            ?"MATCH"
+            :"SELISIH";
+
+    host.innerHTML=`
+      <div class="stock-recon-head">
+        <div>
+          <strong>REKONSILIASI STOCK</strong>
+          <span>${formatStockDate(tanggal)} • Shift ${shift}</span>
+        </div>
+        <b class="stock-recon-status ${status.toLowerCase()}">${status}</b>
+      </div>
+      <div class="stock-recon-grid">
+        <div><small>OPENING</small><strong>${fmt(openingTotal)} L</strong></div>
+        <div><small>PENERIMAAN</small><strong>+${fmt(receiptTotal)} L</strong></div>
+        <div><small>TRANSFER NET</small><strong>${fmt(transferIn-transferOut)} L</strong></div>
+        <div><small>PEMAKAIAN</small><strong>-${fmt(fuelTotal)} L</strong></div>
+        <div><small>HASIL SISTEM</small><strong>${fmt(calculatedTotal)} L</strong></div>
+        <div><small>STOCK CLOSING</small><strong>${closingComplete?fmt(closingTotal)+" L":"Belum lengkap"}</strong></div>
+      </div>
+      <div class="stock-recon-foot">
+        <span>${closingComplete
+            ? "Selisih closing vs hasil sistem: "+fmtSigned(delta)+" L"
+            : "Closing belum lengkap, jadi selisih fisik belum dinilai."}</span>
+        <span>Rumus: Opening + Penerimaan + Transfer Net - Pemakaian</span>
+      </div>`;
 }
 
 function renderStockCards(stock){
