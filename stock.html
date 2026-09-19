@@ -4735,7 +4735,11 @@ document.getElementById("receiptArrivalTime").addEventListener("input",updateRec
 document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
 document.getElementById("closingNote").addEventListener("input",renderClosingCopyPreview);
 
-\nconst stockModeSelect=document.getElementById("stockOperationMode");\nconst stockModeBanner=document.getElementById("stockModeBanner");\nfunction refreshStockModeUI(){\n    const live=getStockOperationMode()==="LIVE";\n    if(stockModeBanner) stockModeBanner.classList.toggle("live",live);\n    const title=stockModeBanner?.querySelector("strong");\n    const note=stockModeBanner?.querySelector("span");\n    if(title)title.textContent=live?"MODE LIVE • OPERASIONAL":"MODE BACKFILL • REKONSILIASI";\n    if(note)note.textContent=live?"Stock source dan kapasitas wajib valid sebelum transaksi disimpan.":"Input historis boleh sementara belum balance. Validasi ketat aktif saat MODE LIVE.";\n}\nstockModeSelect?.addEventListener("change",()=>{refreshStockModeUI();loadStock();});\nrefreshStockModeUI();\n\nrestoreStockPanelVisibility();
+const stockModeSelect=document.getElementById("stockOperationMode");
+const stockModeBanner=document.getElementById("stockModeBanner");\nfunction refreshStockModeUI(){\n    const live=getStockOperationMode()==="LIVE";\n    if(stockModeBanner) stockModeBanner.classList.toggle("live",live);\n    const title=stockModeBanner?.querySelector("strong");\n    const note=stockModeBanner?.querySelector("span");\n    if(title)title.textContent=live?"MODE LIVE • OPERASIONAL":"MODE BACKFILL • REKONSILIASI";\n    if(note)note.textContent=live?"Stock source dan kapasitas wajib valid sebelum transaksi disimpan.":"Input historis boleh sementara belum balance. Validasi ketat aktif saat MODE LIVE.";\n}\nstockModeSelect?.addEventListener("change",()=>{refreshStockModeUI();loadStock();});
+refreshStockModeUI();
+
+restoreStockPanelVisibility();
 syncTransferDestination();
 updateQuickConverter();
 updateOpeningConversion();
