@@ -1562,6 +1562,7 @@ async function dispatchStockMovementRequest(request){
 }
 
 async function sendStockMovementSafe(payload){
+    payload={...payload,operation_mode:getStockOperationMode()};
     const run=async()=>{
         try{
             let pending=readPendingStockMovement();
@@ -1684,6 +1685,7 @@ function capacityMessage(storage,qty){
 }
 
 function validateCapacityHard(storage,projectedQty,context=""){
+    if(getStockOperationMode()!=="LIVE") return true;
     const cap=n(STORAGE_HARD_CAPACITY[storage]);
 
     if(!cap)return true;
