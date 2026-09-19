@@ -3540,7 +3540,21 @@ async function loadStock(){
         if(source) stock[source]-=n(row.fuel);
     });
 
-    CURRENT_SYSTEM_STOCK={...stock};
+    const bookStock={...stock};
+    const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+    const closingComplete=STORAGES.every(storage=>
+        closingRows.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+    );
+    const displayStock={...bookStock};
+    if(closingComplete){
+        closingRows.forEach(row=>{
+            if(row.storage in displayStock)displayStock[row.storage]=n(row.actual_qty);
+        });
+    }
+
+    // Stock sistem tetap dipakai untuk validasi transaksi. Kartu historis memakai
+    // closing fisik jika closing seluruh storage sudah lengkap.
+    CURRENT_SYSTEM_STOCK={...bookStock};
 
     updateStockRefreshMeta(tanggal,shift);
     startStockAutoRefresh();
@@ -3551,12 +3565,12 @@ async function loadStock(){
         movementRows:m.data||[],
         fuelRows:f.data||[],
         closingRows:c.data||[],
-        calculatedStock:stock
+        calculatedStock:bookStock
     });
-    renderStockCards(stock);
-    renderClosing(stock,c.data||[]);
+    renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
+    renderClosing(bookStock,c.data||[]);
     renderMovement(m.data||[],f.data||[]);
-    showCapacityAlertOnce(stock);
+    showCapacityAlertOnce(displayStock);
 }
 
 const STOCK_AUTO_REFRESH_MS=60000;
@@ -3657,7 +3671,7 @@ function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelR
       </div>`;
 }
 
-function renderStockCards(stock){
+function renderStockCards(stock,sourceLabel="SISTEM"){
     const total=Object.values(stock).reduce((sum,value)=>sum+n(value),0);
     const cards=document.getElementById("stockCards");
     cards.innerHTML="";
@@ -3715,7 +3729,7 @@ function renderStockCards(stock){
     document.getElementById("stockTotalWide").innerHTML=`
     <div class="stock-total-card ${totalCardClass}">
         <div class="stock-total-main">
-            <small>TOTAL STOCK ALL WHS</small>
+            <small>TOTAL STOCK ALL WHS • ${esc(sourceLabel)}</small>
             <strong>${fmt(total)}</strong>
         </div>
         <div class="stock-total-side">
