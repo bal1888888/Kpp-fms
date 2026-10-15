@@ -27,12 +27,32 @@
     FT0075: 20000,
   });
 
+  const CUSTOM_CURVES = Object.create(null);
   function curveName(storage) {
     const key = String(storage || "").toUpperCase();
     const name = STORAGE_CURVE[key];
-    if (!name) throw new Error("Storage belum memiliki tabel tera: " + key);
-    return name;
+    if (!name && !CUSTOM_CURVES[key]) throw new Error("Storage belum memiliki tabel tera: " + key);
+    return CUSTOM_CURVES[key] ? key : name;
   }
+  function curveFor(storage) {
+    const key=String(storage||"").toUpperCase();
+    return CUSTOM_CURVES[key] || CURVES[curveName(key)];
+  }
+  function setCustomCurve(storage, points) {
+    const key=String(storage||"").trim().toUpperCase();
+    if(!/^(MT|FT)[A-Z0-9_-]{1,18}$/.test(key))throw new Error("Kode storage tidak valid.");
+    if(!Array.isArray(points)||points.length<2)throw new Error("Tabel tera minimal dua titik.");
+    const normalized=points.map(p=>({height_cm:Number(p.height_cm),liters:Number(p.liters)})).sort((a,b)=>a.height_cm-b.height_cm);
+    for(let i=0;i<normalized.length;i++){
+      const p=normalized[i];
+      if(!Number.isFinite(p.height_cm)||!Number.isFinite(p.liters)||p.height_cm<0||p.liters<0)throw new Error("Data tera tidak valid.");
+      if(i&&(p.height_cm<=normalized[i-1].height_cm||p.liters<normalized[i-1].liters))throw new Error("Tinggi harus unik dan volume tidak boleh menurun.");
+    }
+    CUSTOM_CURVES[key]=normalized;
+    return true;
+  }
+  function clearCustomCurve(storage){delete CUSTOM_CURVES[String(storage||"").toUpperCase()];}
+  function customCurve(storage){return CUSTOM_CURVES[String(storage||"").toUpperCase()]||null;}
 
   function lookup(storage, heightCm) {
     const key = String(storage || "").toUpperCase();
@@ -42,32 +62,52 @@
     }
 
     const name = curveName(key);
+    const custom = CUSTOM_CURVES[key];
+    if(custom){
+      const max=custom[custom.length-1];
+      if(enteredHeight>max.height_cm)throw new Error("Tinggi "+key+" maksimal "+max.height_cm.toLocaleString("id-ID")+" cm.");
+      let lo=0,hi=custom.length-1;
+      while(lo<hi){const mid=Math.floor((lo+hi)/2);if(custom[mid].height_cm<enteredHeight)lo=mid+1;else hi=mid;}
+      let matched=custom[lo];
+      if(lo>0&&Math.abs(custom[lo-1].height_cm-enteredHeight)<Math.abs(matched.height_cm-enteredHeight))matched=custom[lo-1];
+      let liters=matched.liters;
+      if(enteredHeight!==matched.height_cm){
+        const a=custom[Math.max(0,lo-1)],b=custom[lo];
+        const ratio=(enteredHeight-a.height_cm)/(b.height_cm-a.height_cm);
+        liters=a.liters+ratio*(b.liters-a.liters);
+        matched={height_cm:enteredHeight,liters};
+      }
+      return Object.freeze({storage:key,curve:"CUSTOM",enteredHeightCm:enteredHeight,matchedHeightCm:matched.height_cm,liters,roundedLiters:Math.round(liters),maxHeightCm:max.height_cm,maxLiters:max.liters,nominalCapacity:Number(NOMINAL_CAPACITY[key]||0)});
+    }
     const curve = CURVES[name];
     const index = Math.floor((enteredHeight * 10) + 0.000001);
     if (index < 0 || index >= curve.length) {
       const maxHeight = (curve.length - 1) / 10;
       throw new Error("Tinggi " + key + " maksimal " + maxHeight.toLocaleString("id-ID") + " cm.");
     }
-
     const matchedHeightCm = index / 10;
     const liters = Number(curve[index]);
-    return Object.freeze({
-      storage: key,
-      curve: name,
-      enteredHeightCm: enteredHeight,
-      matchedHeightCm,
-      liters,
-      roundedLiters: Math.round(liters),
-      maxHeightCm: (curve.length - 1) / 10,
-      maxLiters: Number(curve[curve.length - 1]),
-      nominalCapacity: Number(NOMINAL_CAPACITY[key] || 0),
-    });
+    return Object.freeze({storage:key,curve:name,enteredHeightCm:enteredHeight,matchedHeightCm,liters,roundedLiters:Math.round(liters),maxHeightCm:(curve.length-1)/10,maxLiters:Number(curve[curve.length-1]),nominalCapacity:Number(NOMINAL_CAPACITY[key]||0)});
   }
 
   function heightForLiters(storage, liters) {
     const key = String(storage || "").toUpperCase();
     const target = Number(liters);
     if (!Number.isFinite(target) || target < 0) return null;
+    const custom=CUSTOM_CURVES[key];
+    if(custom){
+      if(target>custom[custom.length-1].liters)return custom[custom.length-1].height_cm;
+      let best=custom[0];
+      for(let i=1;i<custom.length;i++){
+        const a=custom[i-1],b=custom[i];
+        if(Math.abs(b.liters-target)<Math.abs(best.liters-target))best=b;
+        if(target>=a.liters&&target<=b.liters){
+          const ratio=b.liters===a.liters?0:(target-a.liters)/(b.liters-a.liters);
+          return a.height_cm+ratio*(b.height_cm-a.height_cm);
+        }
+      }
+      return best.height_cm;
+    }
     const curve = CURVES[curveName(key)];
     let low = 0;
     let high = curve.length - 1;
@@ -87,6 +127,10 @@
     source: "8. Agustus 2026 Daily Report(1).xlsx / TERA FT + TERA MT01",
     curves: CURVES,
     storageCurve: STORAGE_CURVE,
+    setCustomCurve,
+    clearCustomCurve,
+    customCurve,
+    curveFor,
     nominalCapacity: NOMINAL_CAPACITY,
     lookup,
     liters(storage, heightCm) { return lookup(storage, heightCm).liters; },
