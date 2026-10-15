@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Master MT / FT - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="master-storage";
@@ -64,7 +65,7 @@ details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#
         <div><label>Jenis</label><select id="storageType"><option value="MT">MT</option><option value="FT">FT</option></select></div>
         <div><label>Nama Tampilan</label><input id="displayName" placeholder="Otomatis mengikuti code"></div>
         <div><label>Kapasitas Nominal (Liter)</label><input type="number" id="capacity" min="1" step="0.1" inputmode="decimal"></div>
-        <div><label>Profil Sonding / Tera</label><select id="teraProfile"><option value="">Belum ada / fisik berbeda</option><option value="MT">Pakai sondingan tipe MT yang sama</option><option value="FT">Pakai sondingan tipe FT yang sama</option></select></div>
+        <div><label>Profil Sonding / Tera</label><select id="teraProfile"><option value="">Belum ada / fisik berbeda</option><option value="MT">Pakai sondingan tipe MT yang sama</option><option value="FT">Pakai sondingan tipe FT yang sama</option><option value="CUSTOM">Tabel tera khusus (diimpor)</option></select></div>
         <div><label>Urutan Tampil</label><input type="number" id="sortOrder" min="0" step="1" value="100"></div>
         <div><label>Status</label><select id="active"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
         <div style="grid-column:1/-1"><label>Catatan</label><textarea id="notes" placeholder="Opsional"></textarea></div>
@@ -73,6 +74,20 @@ details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#
 
     <div class="actions"><button class="primary" type="button" onclick="saveStorage()">SIMPAN MASTER</button><button class="gray" type="button" onclick="resetForm()">RESET</button></div>
     <div id="formStatus" class="status"></div>
+  </div>
+
+  <div class="panel" id="teraImportPanel">
+    <h3 style="margin-top:0">Import Tabel Sonding / Tera</h3>
+    <p class="note">Unggah Excel (.xlsx/.xls) atau CSV. Kolom tinggi bisa cm atau mm, volume harus liter. Sistem menampilkan pratinjau sebelum menyimpan ke tangki yang dipilih.</p>
+    <div class="grid">
+      <div><label>Tangki Tujuan</label><select id="teraImportStorage"><option value="">Pilih MT / FT</option></select></div>
+      <div><label>File Tabel Tera</label><input id="teraImportFile" type="file" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div>
+      <div><label>Satuan tinggi di file</label><select id="teraImportUnit"><option value="auto">Deteksi otomatis dari nama kolom</option><option value="cm">Sentimeter (cm)</option><option value="mm">Milimeter (mm, dikonversi ke cm)</option></select></div>
+      <div><label>Pratinjau</label><div id="teraImportSummary" class="quick-note" style="margin:0">Pilih file untuk membaca tabel.</div></div>
+    </div>
+    <div class="table-wrap" style="margin-top:12px;max-height:280px;overflow:auto"><table style="min-width:500px"><thead><tr><th>Tinggi (cm)</th><th>Volume (liter)</th></tr></thead><tbody id="teraImportPreview"><tr><td colspan="2">Belum ada file.</td></tr></tbody></table></div>
+    <div class="actions"><button class="primary" type="button" onclick="previewTeraFile()">BACA / PRATINJAU FILE</button><button class="green" type="button" id="saveTeraImportBtn" onclick="saveTeraImport()" disabled>SIMPAN TABEL SONDING</button><button class="gray" type="button" onclick="resetTeraImport()">RESET</button></div>
+    <div id="teraImportStatus" class="status" role="status"></div>
   </div>
 
   <div class="panel">
@@ -113,7 +128,7 @@ function applyCodeDefaults(force=false){
 }
 async function init(){
   const auth=await window.KPP.requireRoles(["gl","admin","atasan"]);if(!auth)return;
-  PROFILE=auth.profile;window.KPP.renderNav(PROFILE,"master-storage");window.KPP.renderUserBar(PROFILE);await loadStorages();resetForm();
+  PROFILE=auth.profile;window.KPP.renderNav(PROFILE,"master-storage");window.KPP.renderUserBar(PROFILE);await loadStorages();resetForm();fillTeraImportStorages();
 }
 async function loadStorages(){
   const body=document.getElementById("storageBody");body.innerHTML='<tr><td colspan="9">Memuat...</td></tr>';
@@ -135,13 +150,108 @@ async function saveStorage(){
   const storage_type=document.getElementById("storageType").value;const display_name=document.getElementById("displayName").value.trim()||code;const warehouse=document.getElementById("warehouse").value.trim()||null;const nominal_capacity_liter=Number(document.getElementById("capacity").value||0);const tera_profile=document.getElementById("teraProfile").value||null;const sort_order=Number(document.getElementById("sortOrder").value||100);const active=document.getElementById("active").value==="true";const notes=document.getElementById("notes").value.trim()||null;
   if(!/^[A-Z0-9_-]{3,20}$/.test(code)){status.textContent="Code storage harus 3-20 karakter: huruf, angka, _ atau -.";return}
   if(!code.startsWith("MT")&&!code.startsWith("FT")){status.textContent="Gunakan prefix MT atau FT supaya sistem bisa mengenali jenis storage otomatis.";return}
-  if(tera_profile && tera_profile!==storage_type){status.textContent="Profil sonding harus sama dengan jenis storage. Jika fisik berbeda pilih Belum ada / fisik berbeda.";return}
+  if(tera_profile && tera_profile!=="CUSTOM" && tera_profile!==storage_type){status.textContent="Profil sonding harus sama dengan jenis storage, atau pilih tabel tera khusus.";return}
   if(nominal_capacity_liter<=0){status.textContent="Kapasitas nominal wajib lebih dari 0 liter.";return}
   status.textContent="Menyimpan...";const payload={code,storage_type,display_name,warehouse,nominal_capacity_liter,tera_profile,active,sort_order,notes};let result=id?await db.from("storage_master").update(payload).eq("id",id):await db.from("storage_master").insert(payload);
   if(result.error){status.textContent="Gagal: "+result.error.message;return}
   await loadStorages();resetForm();status.textContent="Master "+code+" berhasil disimpan.";
 }
 async function toggleStorage(id,next){const r=ROWS.find(x=>Number(x.id)===Number(id));if(!r)return;if(!confirm((next?"Aktifkan ":"Nonaktifkan ")+r.code+"?"))return;const {error}=await db.from("storage_master").update({active:!!next}).eq("id",id);if(error){alert("Gagal: "+error.message);return}await loadStorages()}
+
+let IMPORTED_TERA_POINTS=[];
+function fillTeraImportStorages(){
+  const select=document.getElementById("teraImportStorage");
+  const previous=select.value;
+  select.innerHTML='<option value="">Pilih MT / FT</option>'+ROWS.map(r=>'<option value="'+esc(r.code)+'">'+esc(r.code)+' · '+esc(r.storage_type)+'</option>').join("");
+  if(ROWS.some(r=>r.code===previous))select.value=previous;
+}
+function parseNum(v){
+  if(typeof v==="number")return Number.isFinite(v)?v:null;
+  let s=String(v??"").trim().replace(/\s/g,"");
+  if(!s)return null;
+  if(s.includes(",")&&s.includes(".")){s=s.lastIndexOf(",")>s.lastIndexOf(".")?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"");}
+  else if(s.includes(","))s=s.replace(",",".");
+  const n=Number(s);return Number.isFinite(n)?n:null;
+}
+function headerKind(v){
+  const s=String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if(/liter|litre|volume|kapasitas|qty|jumlah|isi|\bltr\b|\bl\b/.test(s))return "liter";
+  if(/tinggi|sounding|sonding|sounding|mm|cm|\bheight\b|\bukur\b/.test(s))return "height";
+  return "";
+}
+async function previewTeraFile(){
+  const status=document.getElementById("teraImportStatus"),file=document.getElementById("teraImportFile").files[0];
+  IMPORTED_TERA_POINTS=[];document.getElementById("saveTeraImportBtn").disabled=true;
+  if(!document.getElementById("teraImportStorage").value){status.textContent="Pilih tangki tujuan terlebih dahulu.";return}
+  if(!file){status.textContent="Pilih file Excel atau CSV terlebih dahulu.";return}
+  try{
+    let rows;
+    if(file.name.toLowerCase().endsWith(".csv")){
+      const text=await file.text();
+      const first=(text.split(/\r?\n/).find(Boolean)||"");
+      const delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?";":",";
+      rows=text.split(/\r?\n/).filter(line=>line.trim()).map(line=>line.split(delimiter).map(v=>v.trim().replace(/^"|"$/g,"")));
+    }else{
+      if(!window.XLSX)throw new Error("Pembaca Excel gagal dimuat. Muat ulang halaman.");
+      const workbook=XLSX.read(await file.arrayBuffer(),{type:"array"});
+      const sheet=workbook.Sheets[workbook.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:"",raw:true});
+    }
+    if(!rows||rows.length<2)throw new Error("File kosong atau hanya memiliki header.");
+    const headers=rows[0].map(headerKind);
+    let hi=headers.indexOf("height"),li=headers.indexOf("liter");
+    let unit=document.getElementById("teraImportUnit").value;
+    if(hi<0||li<0){
+      // Fallback: find first two columns that contain numeric data, with height assumed first and liters second.
+      const sample=rows.slice(1,Math.min(rows.length,8));
+      const numericCols=[];
+      for(let c=0;c<Math.max(...rows.map(r=>r.length));c++)if(sample.some(r=>parseNum(r[c])!==null))numericCols.push(c);
+      if(numericCols.length<2)throw new Error("Kolom tinggi dan liter tidak terdeteksi. Pastikan file memiliki header sounding/tinggi dan volume/liter.");
+      if(hi<0)hi=numericCols[0];if(li<0)li=numericCols.find(c=>c!==hi);
+    }
+    const headerText=String(rows[0][hi]||"").toLowerCase();
+    if(unit==="auto")unit=/mm|milimeter/.test(headerText)?"mm":"cm";
+    const points=[];
+    for(let i=1;i<rows.length;i++){
+      const rawH=parseNum(rows[i][hi]),lit=parseNum(rows[i][li]);
+      if(rawH===null&&lit===null)continue;
+      if(rawH===null||lit===null)throw new Error("Baris "+(i+1)+" tidak lengkap: tinggi dan volume wajib berpasangan.");
+      const cm=unit==="mm"?rawH/10:rawH;
+      if(cm<0||lit<0)throw new Error("Baris "+(i+1)+" memiliki angka negatif.");
+      points.push({height_cm:Math.round(cm*1000)/1000,liters:lit});
+    }
+    points.sort((a,b)=>a.height_cm-b.height_cm);
+    if(points.length<2)throw new Error("Minimal harus ada dua titik data tera.");
+    for(let i=1;i<points.length;i++){
+      if(points[i].height_cm===points[i-1].height_cm)throw new Error("Tinggi duplikat ditemukan: "+points[i].height_cm+" cm.");
+      if(points[i].liters<points[i-1].liters)throw new Error("Volume harus tidak menurun saat tinggi bertambah. Periksa baris sekitar "+(i+1)+".");
+    }
+    IMPORTED_TERA_POINTS=points;
+    document.getElementById("teraImportPreview").innerHTML=points.slice(0,100).map(p=>'<tr><td>'+p.height_cm.toLocaleString("id-ID")+'</td><td>'+p.liters.toLocaleString("id-ID")+'</td></tr>').join("")+(points.length>100?'<tr><td colspan="2">… '+(points.length-100)+' baris lainnya tidak ditampilkan</td></tr>':"");
+    document.getElementById("teraImportSummary").textContent=points.length+" titik terbaca · tinggi "+points[0].height_cm+"–"+points[points.length-1].height_cm+" cm · volume "+points[0].liters+"–"+points[points.length-1].liters+" L";
+    document.getElementById("saveTeraImportBtn").disabled=false;
+    status.textContent="Pratinjau berhasil. Periksa data sebelum disimpan.";
+  }catch(error){status.textContent="Gagal membaca file: "+error.message}
+}
+async function saveTeraImport(){
+  const code=document.getElementById("teraImportStorage").value,status=document.getElementById("teraImportStatus");
+  if(!code||IMPORTED_TERA_POINTS.length<2){status.textContent="Pilih tangki dan pratinjau file yang valid dahulu.";return}
+  if(!confirm("Simpan "+IMPORTED_TERA_POINTS.length+" titik tera untuk "+code+"? Tabel tera khusus sebelumnya akan diganti."))return;
+  status.textContent="Menyimpan tabel tera…";
+  const {error}=await db.from("storage_tera_curves").upsert({storage_code:code,points:IMPORTED_TERA_POINTS,updated_at:new Date().toISOString(),updated_by:PROFILE?.id||null},{onConflict:"storage_code"});
+  if(error){status.textContent="Gagal menyimpan: "+error.message+" · Pastikan migrasi SQL storage_tera_curves sudah dijalankan.";return}
+  const row=ROWS.find(r=>r.code===code);
+  if(row){
+    const update=await db.from("storage_master").update({tera_profile:"CUSTOM"}).eq("id",row.id);
+    if(update.error){status.textContent="Tabel tersimpan, tetapi profil Master gagal diperbarui: "+update.error.message;return}
+  }
+  await loadStorages();fillTeraImportStorages();
+  status.textContent="Berhasil! "+code+" sekarang memakai tabel tera khusus ("+IMPORTED_TERA_POINTS.length+" titik).";
+}
+function resetTeraImport(){
+  IMPORTED_TERA_POINTS=[];document.getElementById("teraImportFile").value="";document.getElementById("teraImportSummary").textContent="Pilih file untuk membaca tabel.";document.getElementById("teraImportPreview").innerHTML='<tr><td colspan="2">Belum ada file.</td></tr>';document.getElementById("saveTeraImportBtn").disabled=true;document.getElementById("teraImportStatus").textContent="";
+}
+
 document.getElementById("code").addEventListener("input",()=>applyCodeDefaults(false));document.getElementById("storageType").addEventListener("change",event=>{if(!document.getElementById("editId").value){const profile=document.getElementById("teraProfile");if(profile.value)profile.value=event.target.value}});document.addEventListener("DOMContentLoaded",init);
 </script>
 </body>
