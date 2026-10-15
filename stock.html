@@ -4697,6 +4697,11 @@ function refreshStorageInputs(){
 
 async function loadStorageMaster(){
     STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+    try{
+      const {data,error}=await db.from("storage_tera_curves").select("storage_code,points");
+      if(error)throw error;
+      (data||[]).forEach(row=>{try{TERA.setCustomCurve(row.storage_code,row.points)}catch(e){console.warn("Tabel tera khusus diabaikan:",row.storage_code,e.message)}});
+    }catch(error){console.warn("Tabel tera khusus belum dapat dimuat. Jalankan migration storage_tera_curves:",error.message)}
     STORAGES=STORAGE_ROWS.map(row=>row.code);
     STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
     STORAGE_HARD_CAPACITY=window.KPPStorage.hardCapacityMap(TERA,STORAGE_ROWS);
