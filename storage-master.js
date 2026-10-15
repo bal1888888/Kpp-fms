@@ -177,10 +177,12 @@
     const row=byCode(rows,storage);
     if(!row)throw new Error(`Storage ${normalizeCode(storage)} tidak ada di Master MT/FT.`);
     const profile=row.tera_profile;
-    const donor=teraDonorStorage(profile);
-    if(!donor){
-      throw new Error(`${row.code} belum memiliki profil sonding/tera. Atur dari Master MT/FT terlebih dahulu.`);
+    if(profile==="CUSTOM" && tera.customCurve?.(row.code)){
+      const result=tera.lookup(row.code,height);
+      return {...result,storage:row.code,curve:"CUSTOM",tera_profile:"CUSTOM",tera_source:row.code};
     }
+    const donor=teraDonorStorage(profile);
+    if(!donor)throw new Error(`${row.code} belum memiliki profil sonding/tera. Atur dari Master MT/FT terlebih dahulu.`);
     const result=tera.lookup(donor,height);
     return {...result,storage:row.code,curve:profile,tera_profile:profile,tera_source:donor};
   }
@@ -188,6 +190,7 @@
   function heightForLiters(tera,rows,storage,liters){
     const row=byCode(rows,storage);
     if(!row||!row.tera_profile)return null;
+    if(row.tera_profile==="CUSTOM" && tera.customCurve?.(row.code))return tera.heightForLiters(row.code,liters);
     const donor=teraDonorStorage(row.tera_profile);
     if(!donor)return null;
     return tera.heightForLiters(donor,liters);
@@ -196,8 +199,9 @@
   function hardCapacityMap(tera,rows){
     return Object.fromEntries((rows||[]).map(row=>{
       const profile=row.tera_profile;
+      const custom=profile==="CUSTOM"?tera?.customCurve?.(row.code):null;
       const curve=profile&&tera?.curves?.[profile];
-      const curveMax=Array.isArray(curve)&&curve.length?Number(curve[curve.length-1]):0;
+      const curveMax=custom?.length?Number(custom[custom.length-1].liters):(Array.isArray(curve)&&curve.length?Number(curve[curve.length-1]):0);
       const nominal=Number(row.nominal_capacity_liter||0);
       const hard=curveMax>0&&nominal>0?Math.min(curveMax,nominal):(curveMax||nominal||0);
       return [normalizeCode(row.code),hard];
