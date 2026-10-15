@@ -6,6 +6,7 @@
 <title>Master MT / FT - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script>
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="master-storage";
@@ -81,7 +82,7 @@ details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#
     <p class="note">Unggah Excel (.xlsx/.xls) atau CSV. Kolom tinggi bisa cm atau mm, volume harus liter. Sistem menampilkan pratinjau sebelum menyimpan ke tangki yang dipilih.</p>
     <div class="grid">
       <div><label>Tangki Tujuan</label><select id="teraImportStorage"><option value="">Pilih MT / FT</option></select></div>
-      <div><label>File Tabel Tera</label><input id="teraImportFile" type="file" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div>
+      <div><label>File Tabel Tera</label><input id="teraImportFile" type="file" accept=".xlsx,.xls,.csv,.docx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
       <div><label>Satuan tinggi di file</label><select id="teraImportUnit"><option value="auto">Deteksi otomatis dari nama kolom</option><option value="cm">Sentimeter (cm)</option><option value="mm">Milimeter (mm, dikonversi ke cm)</option></select></div>
       <div><label>Pratinjau</label><div id="teraImportSummary" class="quick-note" style="margin:0">Pilih file untuk membaca tabel.</div></div>
     </div>
@@ -191,6 +192,13 @@ async function previewTeraFile(){
       const first=(text.split(/\r?\n/).find(Boolean)||"");
       const delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?";":",";
       rows=text.split(/\r?\n/).filter(line=>line.trim()).map(line=>line.split(delimiter).map(v=>v.trim().replace(/^"|"$/g,"")));
+    }else if(file.name.toLowerCase().endsWith(".docx")){
+      if(!window.mammoth)throw new Error("Pembaca Word gagal dimuat. Muat ulang halaman.");
+      const converted=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
+      const doc=new DOMParser().parseFromString(converted.value,"text/html");
+      const table=doc.querySelector("table");
+      if(!table)throw new Error("Tabel tidak ditemukan di dokumen Word. Pastikan tabel tera berbentuk tabel, bukan gambar.");
+      rows=Array.from(table.querySelectorAll("tr")).map(tr=>Array.from(tr.querySelectorAll("th,td")).map(cell=>cell.textContent.trim()));
     }else{
       if(!window.XLSX)throw new Error("Pembaca Excel gagal dimuat. Muat ulang halaman.");
       const workbook=XLSX.read(await file.arrayBuffer(),{type:"array"});
