@@ -966,7 +966,7 @@ th{background:#f8fafc;color:#475569}
 #soundingCheckPanel h3:before{content:"✓";display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#2563eb;color:#fff;font-size:17px}
 #soundingCheckPanel .note{display:none}
 #soundingCheckPanel .grid{gap:14px}
-#soundingCheckPanel .tera-result{background:#dbeafe;border-color:#93c5fd;border-left:4px solid #2563eb}
+#soundingCheckPanel .tera-result{background:#dbeafe;border-color:#93c5fd;border-left:4px solid #2563eb}#soundingCheckPanel .tera-result strong{display:block;font-size:32px;line-height:1.15;color:#1d4ed8;margin:5px 0}#soundingCheckPanel .tera-result span{display:block;font-size:12px;color:#475569;font-weight:700}
 #soundingCheckPanel .copy-report-card{border:1px solid #bfdbfe;border-radius:10px;background:#fff;margin-top:14px}
 #soundingCheckPanel .copy-report-card summary{padding:12px;color:#1d4ed8;font-weight:800}
 #soundingCheckPanel .status{margin-top:8px}
@@ -2688,7 +2688,7 @@ function updateSoundingCheck(){
     const preview=document.getElementById("soundingCheckCopyPreview");
     if(!storage||frontText===""||rearText===""){
         result.classList.remove("error");
-        result.innerHTML="<small>SONDING FINAL / HASIL TERA</small><strong>- L</strong>";
+        result.innerHTML="<small>HASIL CEK SONDING</small><strong>- cm</strong><span>Hasil tera: - L</span>";
         status.textContent="";
         preview.textContent="Lengkapi storage dan kedua hasil sonding untuk membuat laporan.";
         return null;
@@ -2720,20 +2720,20 @@ function updateSoundingCheck(){
             "Shift: "+period.shift,
             "FT: "+checkTruck,
             "Storage: "+storage,
-            "Sonding depan: "+fmtCm(front)+" cm",
-            "Sonding belakang: "+fmtCm(rear)+" cm",
+            "Sonding depan: "+fmtCm(front),
+            "Sonding belakang: "+fmtCm(rear),
             "Rata-rata: "+average.toLocaleString("id-ID",{maximumFractionDigits:3})+" cm",
-            "Tinggi dipakai: "+fmtCm(finalHeight)+" cm",
+            "Sonding final: "+fmtCm(finalHeight),
             "Hasil tera: "+reportLiters(tera.liters)
         ].join("\n");
         result.classList.remove("error");
-        result.innerHTML="<small>"+esc(tera.curve)+" | SONDING FINAL "+esc(fmtCm(finalHeight))+" CM</small><strong>"+esc(fmt(tera.liters))+" L</strong>";
+        result.innerHTML="<small>SONDING FINAL</small><strong>"+esc(fmtCm(finalHeight))+"</strong><span>Hasil tera: "+esc(fmt(tera.liters))+"</span>";
         status.textContent="[OK] Hasil cek siap disalin. Tidak ada stock yang disimpan.";
         preview.textContent=report;
         return {storage,front,rear,average,finalHeight,liters:tera.liters,report};
     }catch(error){
         result.classList.add("error");
-        result.innerHTML="<small>KONVERSI GAGAL</small><strong>-</strong><span>"+esc(error.message)+"</span>";
+        result.innerHTML="<small>KONVERSI GAGAL</small><strong>- cm</strong><span>"+esc(error.message)+"</span>";
         status.textContent="[GAGAL] "+error.message;
         preview.textContent="Konversi gagal: "+error.message;
         return null;
