@@ -2278,7 +2278,7 @@ function receiptAuditReport(value){
 }
 
 function fmtCm(value){
-    const raw=String(value??"").trim().replace(/(?:\\s*cm)+$/i,"").trim();
+    const raw=String(value??"").trim().replace(/(?:\s*cm)+$/i,"").trim();
     const number=Number(raw);
     if(!Number.isFinite(number))return "- cm";
     return number.toLocaleString("id-ID",{maximumFractionDigits:1})+" cm";
@@ -2723,8 +2723,8 @@ function updateSoundingCheck(){
             "Shift: "+period.shift,
             "FT: "+checkTruck,
             "Storage: "+storage,
-            "Sonding depan: "+fmtCm(front).replace(/(?:\\s*cm)+$/i,"")+" cm",
-            "Sonding belakang: "+fmtCm(rear).replace(/(?:\\s*cm)+$/i,"")+" cm",
+            "Sonding depan: "+fmtCm(front).replace(/(?:\s*cm)+$/i,"")+" cm",
+            "Sonding belakang: "+fmtCm(rear).replace(/(?:\s*cm)+$/i,"")+" cm",
             "Rata-rata: "+average.toLocaleString("id-ID",{maximumFractionDigits:3})+" cm",
             "Sonding final: "+fmtCm(finalHeight),
             "Hasil tera: "+reportLiters(tera.liters)
