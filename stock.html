@@ -1147,6 +1147,38 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
+<div class="panel converter-panel" id="soundingCheckPanel">
+    <h3>Cek Sonding MT / FT</h3>
+    <div class="note" style="margin-bottom:12px">Khusus pengecekan. Tidak menyimpan atau mengubah stock. Isi sonding depan dan belakang, lalu salin hasil konversi liter.</div>
+    <div class="grid">
+        <div>
+            <label for="soundingCheckStorage">Storage MT / FT</label>
+            <select id="soundingCheckStorage" onchange="updateSoundingCheck()"><option value="">Memuat Master MT / FT...</option></select>
+        </div>
+        <div>
+            <label for="soundingCheckFront">Sonding Depan (CM)</label>
+            <input type="number" id="soundingCheckFront" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.6" oninput="updateSoundingCheck()">
+        </div>
+        <div>
+            <label for="soundingCheckRear">Sonding Belakang (CM)</label>
+            <input type="number" id="soundingCheckRear" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" oninput="updateSoundingCheck()">
+        </div>
+        <div class="tera-result" id="soundingCheckResult">
+            <small>SONDING FINAL / HASIL TERA</small>
+            <strong>- L</strong>
+            <span>Isi storage, sonding depan, dan sonding belakang.</span>
+        </div>
+    </div>
+    <div class="status" id="soundingCheckStatus"></div>
+    <details class="copy-report-card">
+        <summary>Hasil Cek Sonding Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="soundingCheckCopyPreview" class="copy-report-preview">Belum ada hasil pengecekan.</pre>
+            <button class="copy-report-btn" type="button" onclick="copySoundingCheck()">SALIN HASIL CEK SONDING</button>
+        </div>
+    </details>
+</div>
+
 <div class="panel workflow-panel opening-panel" data-step="01">
     <h3>1. Stock Opening Awal Shift</h3>
     <div class="grid">
@@ -2638,6 +2670,56 @@ function teraFromInput(storage,inputId){
     return teraLookup(storage,input.value);
 }
 
+
+function updateSoundingCheck(){
+    const storage=document.getElementById("soundingCheckStorage").value;
+    const frontText=document.getElementById("soundingCheckFront").value;
+    const rearText=document.getElementById("soundingCheckRear").value;
+    const result=document.getElementById("soundingCheckResult");
+    const status=document.getElementById("soundingCheckStatus");
+    const preview=document.getElementById("soundingCheckCopyPreview");
+    if(!storage||frontText===""||rearText===""){
+        result.classList.remove("error");
+        result.innerHTML="<small>SONDING FINAL / HASIL TERA</small><strong>- L</strong><span>Isi storage, sonding depan, dan sonding belakang.</span>";
+        status.textContent="";
+        preview.textContent="Lengkapi storage dan kedua hasil sonding untuk membuat laporan.";
+        return null;
+    }
+    try{
+        const front=Number(frontText),rear=Number(rearText);
+        if(!Number.isFinite(front)||!Number.isFinite(rear)||front<0||rear<0)throw new Error("Sonding harus angka nol atau lebih.");
+        const average=(front+rear)/2;
+        const finalHeight=Math.floor((average+1e-8)*10)/10;
+        const tera=teraLookup(storage,finalHeight);
+        const report=[
+            "HASIL CEK SONDING MT / FT",
+            "Storage: "+storage,
+            "Sonding depan: "+fmtCm(front)+" cm",
+            "Sonding belakang: "+fmtCm(rear)+" cm",
+            "Rata-rata: "+average.toLocaleString("id-ID",{maximumFractionDigits:3})+" cm",
+            "Sonding final (dibulatkan turun 0,1 cm): "+fmtCm(finalHeight)+" cm",
+            "Hasil konversi tera: "+reportLiters(tera.liters),
+            "Catatan: pengecekan saja, tidak menyimpan atau mengubah stock."
+        ].join("\n");
+        result.classList.remove("error");
+        result.innerHTML="<small>"+esc(tera.curve)+" | SONDING FINAL "+esc(fmtCm(finalHeight))+" CM</small><strong>"+esc(fmt(tera.liters))+" L</strong><span>Rata-rata "+esc(average.toLocaleString("id-ID",{maximumFractionDigits:3}))+" cm, dibulatkan turun menjadi "+esc(fmtCm(finalHeight))+" cm. Maksimum tabel: "+esc(fmtCm(tera.maxHeightCm))+" cm.</span>";
+        status.textContent="[OK] Hasil cek siap disalin. Tidak ada stock yang disimpan.";
+        preview.textContent=report;
+        return {storage,front,rear,average,finalHeight,liters:tera.liters,report};
+    }catch(error){
+        result.classList.add("error");
+        result.innerHTML="<small>KONVERSI GAGAL</small><strong>-</strong><span>"+esc(error.message)+"</span>";
+        status.textContent="[GAGAL] "+error.message;
+        preview.textContent="Konversi gagal: "+error.message;
+        return null;
+    }
+}
+function copySoundingCheck(){
+    const result=updateSoundingCheck();
+    if(!result){showCopyToast("Lengkapi data sonding dan pastikan konversi valid.",true);return;}
+    copyReportText(result.report,"Hasil cek sonding");
+}
+
 function updateQuickConverter(){
     const storage=document.getElementById("converterStorage").value;
     const result=document.getElementById("converterResult");
@@ -3435,7 +3517,19 @@ function applyFuelmanIdentity(){
     document.querySelectorAll('a[href="pengisian.html"]').forEach(link=>link.classList.toggle("hidden",picTransfer));
     fillStorageSelect("editSource",true);fillStorageSelect("editDestination",false);
     const openingStorage=document.getElementById("openingStorage");
-    if(openingStorage&&!picTransfer){openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck||"";openingStorage.disabled=true;openingStorage.classList.add("locked-field");updateOpeningConversion();}
+    if(openingStorage){
+        if(picTransfer){
+            openingStorage.disabled=false;
+            openingStorage.classList.remove("locked-field");
+            const firstMt=STORAGE_ROWS.find(row=>row.active!==false&&row.storage_type==="MT");
+            if(!STORAGE_ROWS.some(row=>row.code===openingStorage.value&&row.storage_type==="MT"))openingStorage.value=firstMt?.code||"";
+        }else{
+            openingStorage.value=ACTIVE_FUELMAN_SESSION.fuel_truck||"";
+            openingStorage.disabled=true;
+            openingStorage.classList.add("locked-field");
+        }
+        updateOpeningConversion();
+    }
     document.getElementById("sessionFuelman").textContent=name||"-";
     document.getElementById("sessionShift").textContent=ACTIVE_FUELMAN_SESSION.shift||"-";
     document.getElementById("sessionDuty").textContent=picTransfer?"PIC TRANSFER":"FUELMAN";
@@ -4058,8 +4152,14 @@ async function saveOpening(){
             window.location.replace("fuelman.html");
             return;
         }
-        if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){alert("PIC TRANSFER hanya melihat stock dan melakukan Closing semua MT aktif.");return;}
-        storage=ACTIVE_FUELMAN_SESSION.fuel_truck;
+        if(ACTIVE_FUELMAN_SESSION.duty_type==="PIC_TRANSFER"){
+            const selected=document.getElementById("openingStorage").value;
+            const row=STORAGE_ROWS.find(item=>item.code===selected);
+            if(!row||row.storage_type!=="MT"){alert("PIC MT hanya boleh menyimpan Opening untuk tangki MT aktif.");return;}
+            storage=selected;
+        }else{
+            storage=ACTIVE_FUELMAN_SESSION.fuel_truck;
+        }
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
 
@@ -4687,7 +4787,7 @@ async function saveClosing(){
 }
 
 function refreshStorageInputs(){
-    ["converterStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
+    ["converterStorage","soundingCheckStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
     fillStorageSelect("editSource",true);
     fillStorageSelect("editDestination",false);
     syncTransferDestination();
