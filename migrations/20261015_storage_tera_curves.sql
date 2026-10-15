@@ -18,14 +18,14 @@ create table if not exists public.storage_tera_curves (
   updated_by text null
 );
 alter table public.storage_tera_curves enable row level security;
-grant select, insert, update, delete on public.storage_tera_curves to anon, authenticated;
+grant select, insert, update, delete on public.storage_tera_curves to authenticated;
 drop policy if exists "storage_tera_curves_read_staff" on public.storage_tera_curves;
 create policy "storage_tera_curves_read_staff" on public.storage_tera_curves
-  for select to anon, authenticated
+  for select to authenticated
   using (public.current_staff_role() is not null);
 drop policy if exists "storage_tera_curves_write_managers" on public.storage_tera_curves;
 create policy "storage_tera_curves_write_managers" on public.storage_tera_curves
-  for all to anon, authenticated
+  for all to authenticated
   using (public.current_staff_role() in ('gl','admin','atasan'))
   with check (public.current_staff_role() in ('gl','admin','atasan'));
 alter table public.storage_tera_curves
