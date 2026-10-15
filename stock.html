@@ -960,7 +960,17 @@ th{background:#f8fafc;color:#475569}
 .stock-total-card{min-height:94px}
 .stock-total-main small{letter-spacing:.08em}
 .stock-total-side{min-width:210px}
-@media(max-width:700px){.panel-title-row{align-items:flex-start;gap:10px}.stock-last-updated{font-size:9px}.stock-total-side{min-width:0}}
+/* Panel cek sonding dibuat menonjol dan mudah ditemukan */
+#soundingCheckPanel{display:block!important;border:2px solid #2563eb;border-left:7px solid #2563eb;background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%);box-shadow:0 8px 24px rgba(37,99,235,.16);position:relative}
+#soundingCheckPanel h3{display:flex;align-items:center;gap:8px;color:#1d4ed8;font-size:19px;margin:0 0 14px}
+#soundingCheckPanel h3:before{content:"✓";display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#2563eb;color:#fff;font-size:17px}
+#soundingCheckPanel .note{display:none}
+#soundingCheckPanel .grid{gap:14px}
+#soundingCheckPanel .tera-result{background:#dbeafe;border-color:#93c5fd;border-left:4px solid #2563eb}
+#soundingCheckPanel .copy-report-card{border:1px solid #bfdbfe;border-radius:10px;background:#fff;margin-top:14px}
+#soundingCheckPanel .copy-report-card summary{padding:12px;color:#1d4ed8;font-weight:800}
+#soundingCheckPanel .status{margin-top:8px}
+@media(max-width:700px){.panel-title-row{align-items:flex-start;gap:10px}.stock-last-updated{font-size:9px}.stock-total-side{min-width:0}#soundingCheckPanel{padding:14px}#soundingCheckPanel h3{font-size:17px}}
 </style>
 </head>
 
@@ -1149,7 +1159,6 @@ th{background:#f8fafc;color:#475569}
 
 <div class="panel converter-panel" id="soundingCheckPanel">
     <h3>Cek Sonding MT / FT</h3>
-    <div class="note" style="margin-bottom:12px">Khusus pengecekan. Tidak menyimpan atau mengubah stock. Isi sonding depan dan belakang, lalu salin hasil konversi liter.</div>
     <div class="grid">
         <div>
             <label for="soundingCheckStorage">Storage MT / FT</label>
@@ -1166,7 +1175,6 @@ th{background:#f8fafc;color:#475569}
         <div class="tera-result" id="soundingCheckResult">
             <small>SONDING FINAL / HASIL TERA</small>
             <strong>- L</strong>
-            <span>Isi storage, sonding depan, dan sonding belakang.</span>
         </div>
     </div>
     <div class="status" id="soundingCheckStatus"></div>
@@ -2680,7 +2688,7 @@ function updateSoundingCheck(){
     const preview=document.getElementById("soundingCheckCopyPreview");
     if(!storage||frontText===""||rearText===""){
         result.classList.remove("error");
-        result.innerHTML="<small>SONDING FINAL / HASIL TERA</small><strong>- L</strong><span>Isi storage, sonding depan, dan sonding belakang.</span>";
+        result.innerHTML="<small>SONDING FINAL / HASIL TERA</small><strong>- L</strong>";
         status.textContent="";
         preview.textContent="Lengkapi storage dan kedua hasil sonding untuk membuat laporan.";
         return null;
@@ -2702,7 +2710,7 @@ function updateSoundingCheck(){
             "Catatan: pengecekan saja, tidak menyimpan atau mengubah stock."
         ].join("\n");
         result.classList.remove("error");
-        result.innerHTML="<small>"+esc(tera.curve)+" | SONDING FINAL "+esc(fmtCm(finalHeight))+" CM</small><strong>"+esc(fmt(tera.liters))+" L</strong><span>Rata-rata "+esc(average.toLocaleString("id-ID",{maximumFractionDigits:3}))+" cm, dibulatkan turun menjadi "+esc(fmtCm(finalHeight))+" cm. Maksimum tabel: "+esc(fmtCm(tera.maxHeightCm))+" cm.</span>";
+        result.innerHTML="<small>"+esc(tera.curve)+" | SONDING FINAL "+esc(fmtCm(finalHeight))+" CM</small><strong>"+esc(fmt(tera.liters))+" L</strong>";
         status.textContent="[OK] Hasil cek siap disalin. Tidak ada stock yang disimpan.";
         preview.textContent=report;
         return {storage,front,rear,average,finalHeight,liters:tera.liters,report};
