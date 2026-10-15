@@ -1136,27 +1136,6 @@ th{background:#f8fafc;color:#475569}
     <div class="cards" id="stockCards"></div>
 </div>
 
-<div class="panel converter-panel">
-    <h3> Konverter Tera MT & FT</h3>
-    <div class="note" style="margin-bottom:12px">Pilih storage, lalu masukkan tinggi sonding (CM).</div>
-    <div class="grid">
-        <div>
-            <label>Storage</label>
-            <select id="converterStorage" onchange="updateQuickConverter()"><option value="">Memuat Master MT / FT...</option></select>
-        </div>
-        <div>
-            <label>Tinggi Sonding (CM)</label>
-            <input type="number" id="converterHeight" min="0" step="0.1" inputmode="decimal" oninput="updateQuickConverter()" placeholder="Contoh: 150.2">
-            <span class="field-hint">Interval input 0,1 cm.</span>
-        </div>
-        <div id="converterResult" class="tera-result">
-            <small>HASIL KONVERSI</small>
-            <strong>- L</strong>
-            <span>Masukkan tinggi sonding.</span>
-        </div>
-    </div>
-</div>
-
 <div class="panel converter-panel" id="soundingCheckPanel">
     <h3>Cek Sonding MT / FT</h3>
     <div class="grid">
@@ -2746,29 +2725,6 @@ function copySoundingCheck(){
     const result=updateSoundingCheck();
     if(!result){showCopyToast("Lengkapi data sonding dan pastikan konversi valid.",true);return;}
     copyReportText(result.report,"Hasil cek sonding");
-}
-
-function updateQuickConverter(){
-    const storage=document.getElementById("converterStorage").value;
-    const result=document.getElementById("converterResult");
-
-    try{
-        const tera=teraFromInput(storage,"converterHeight");
-        result.classList.remove("error");
-        if(!tera){
-            result.innerHTML="<small>HASIL KONVERSI</small><strong>- L</strong><span>Masukkan tinggi sonding.</span>";
-            return;
-        }
-
-        result.innerHTML=`
-            <small>${tera.curve}  |  TINGGI TERPAKAI ${fmtCm(tera.matchedHeightCm)}</small>
-            <strong>${fmt(tera.liters)}</strong>
-            <span>Maksimum tabel: ${fmtCm(tera.maxHeightCm)} = ${fmt(tera.maxLiters)}</span>
-        `;
-    }catch(error){
-        result.classList.add("error");
-        result.innerHTML=`<small>KONVERSI GAGAL</small><strong>-</strong><span>${esc(error.message)}</span>`;
-    }
 }
 
 function updateOpeningConversion(){
@@ -4815,11 +4771,10 @@ async function saveClosing(){
 }
 
 function refreshStorageInputs(){
-    ["converterStorage","soundingCheckStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
+    ["soundingCheckStorage","openingStorage","receiptDestination","transferSource","transferDestination"].forEach(id=>fillStorageSelect(id,false));
     fillStorageSelect("editSource",true);
     fillStorageSelect("editDestination",false);
     syncTransferDestination();
-    updateQuickConverter();
     updateOpeningConversion();
     updateReceiptCalculation();
 }
@@ -4867,7 +4822,6 @@ document.getElementById("closingNote").addEventListener("input",renderClosingCop
 
 restoreStockPanelVisibility();
 syncTransferDestination();
-updateQuickConverter();
 updateOpeningConversion();
 updateReceiptCalculation();
 
