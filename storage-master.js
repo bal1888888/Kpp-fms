@@ -40,7 +40,7 @@
       display_name:String(row?.display_name||code).trim()||code,
       warehouse:String(row?.warehouse||"").trim()||null,
       nominal_capacity_liter:Number(row?.nominal_capacity_liter||0),
-      tera_profile:["MT","FT"].includes(String(row?.tera_profile||"").toUpperCase())
+      tera_profile:["MT","FT","CUSTOM"].includes(String(row?.tera_profile||"").toUpperCase())
         ? String(row.tera_profile).toUpperCase()
         : null,
       active:row?.active!==false,
