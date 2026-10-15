@@ -196,7 +196,7 @@ async function previewTeraFile(){
       if(!window.mammoth)throw new Error("Pembaca Word gagal dimuat. Muat ulang halaman.");
       const converted=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
       const doc=new DOMParser().parseFromString(converted.value,"text/html");
-      const table=doc.querySelector("table");
+      const table=Array.from(doc.querySelectorAll("table")).sort((a,b)=>b.querySelectorAll("tr").length-a.querySelectorAll("tr").length)[0];
       if(!table)throw new Error("Tabel tidak ditemukan di dokumen Word. Pastikan tabel tera berbentuk tabel, bukan gambar.");
       rows=Array.from(table.querySelectorAll("tr")).map(tr=>Array.from(tr.querySelectorAll("th,td")).map(cell=>cell.textContent.trim()));
     }else{
