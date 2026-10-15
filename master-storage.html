@@ -83,7 +83,7 @@ details{margin-top:12px;border:1px solid #e2e8f0;border-radius:11px;background:#
     <div class="grid">
       <div><label>Tangki Tujuan</label><select id="teraImportStorage"><option value="">Pilih MT / FT</option></select></div>
       <div><label>File Tabel Tera</label><input id="teraImportFile" type="file" accept=".xlsx,.xls,.csv,.docx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
-      <div><label>Satuan tinggi di file</label><select id="teraImportUnit"><option value="auto">Deteksi otomatis dari nama kolom</option><option value="cm">Sentimeter (cm)</option><option value="mm">Milimeter (mm, dikonversi ke cm)</option></select></div>
+      <div><label>Satuan tinggi di file</label><select id="teraImportUnit"><option value="mm" selected>File saya masih mm → otomatis konversi ke cm (÷ 10)</option><option value="cm">File sudah dalam cm</option><option value="auto">Deteksi otomatis dari nama kolom</option></select><small style="display:block;color:var(--muted);margin-top:5px">Untuk file tera yang tinggi masih mm, biarkan pilihan pertama. Contoh 1.250 mm menjadi 125 cm.</small></div>
       <div><label>Pratinjau</label><div id="teraImportSummary" class="quick-note" style="margin:0">Pilih file untuk membaca tabel.</div></div>
     </div>
     <div class="table-wrap" style="margin-top:12px;max-height:280px;overflow:auto"><table style="min-width:500px"><thead><tr><th>Tinggi (cm)</th><th>Volume (liter)</th></tr></thead><tbody id="teraImportPreview"><tr><td colspan="2">Belum ada file.</td></tr></tbody></table></div>
@@ -168,10 +168,19 @@ function fillTeraImportStorages(){
 }
 function parseNum(v){
   if(typeof v==="number")return Number.isFinite(v)?v:null;
-  let s=String(v??"").trim().replace(/\s/g,"");
+  let s=String(v??"").trim().replace(/\u00a0/g," ").replace(/\s+/g,"").replace(/[lL]iter|litres?|mm|cm/gi,"").replace(/[^0-9,.'+\-]/g,"");
   if(!s)return null;
-  if(s.includes(",")&&s.includes(".")){s=s.lastIndexOf(",")>s.lastIndexOf(".")?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"");}
-  else if(s.includes(","))s=s.replace(",",".");
+  // Tera sering memakai titik sebagai pemisah ribuan: 1.250 = 1250.
+  if(s.includes(",")&&s.includes(".")){
+    s=s.lastIndexOf(",")>s.lastIndexOf(".")?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"");
+  }else if(s.includes(",")){
+    const parts=s.split(",");
+    s=parts.length===2&&parts[1].length!==3?s.replace(",","."):s.replace(/,/g,"");
+  }else if(s.includes(".")){
+    const parts=s.split(".");
+    if(parts.length===2&&parts[1].length===3)s=s.replace(".","");
+    else if(parts.length>2)s=s.replace(/\./g,"");
+  }
   const n=Number(s);return Number.isFinite(n)?n:null;
 }
 function headerKind(v){
@@ -239,13 +248,13 @@ async function previewTeraFile(){
       unit=/\bmm\b|milimeter/.test(headerText+" "+nearbyHeader)?"mm":"cm";
     }
     const points=[],badRows=[];
-    const firstDataRow=headerRow+1;
+    const firstDataRow=headerRow>=0?headerRow+1:0;
     for(let i=firstDataRow;i<rows.length;i++){
       const rawH=parseNum(rows[i][hi]),lit=parseNum(rows[i][li]);
       if(rawH===null&&lit===null)continue;
       // Abaikan baris judul/catatan non-data, tetapi laporkan pasangan angka yang tidak lengkap.
       if(rawH===null||lit===null){badRows.push(i+1);continue}
-      const cm=unit==="mm"?rawH/10:rawH;
+      const cm=(unit==="mm"||unit==="auto")?rawH/10:rawH;
       if(cm<0||lit<0){badRows.push(i+1);continue}
       points.push({height_cm:Math.round(cm*1000)/1000,liters:Math.round(lit*1000)/1000,source_row:i+1});
     }
