@@ -203,12 +203,23 @@ async function previewTeraFile(){
       const converted=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
       const doc=new DOMParser().parseFromString(converted.value,"text/html");
       const tables=Array.from(doc.querySelectorAll("table"));
-      if(!tables.length)throw new Error("Tabel tidak ditemukan. Pastikan data tera berupa tabel Word, bukan gambar.");
-      // Gabungkan seluruh tabel, bukan hanya tabel pertama atau yang paling besar.
+      // Gabungkan seluruh tabel Word.
       for(const table of tables){
         const tableRows=Array.from(table.querySelectorAll("tr")).map(tr=>Array.from(tr.querySelectorAll("th,td")).map(cell=>cell.textContent.replace(/\s+/g," ").trim()));
         if(tableRows.length)rows.push(...tableRows,[""]);
       }
+      // Sebagian file Word menyimpan tabel sebagai teks berjarak/tab, bukan elemen tabel.
+      if(!tables.length||!rows.some(row=>row.filter(cell=>parseNum(cell)!==null).length>=2)){
+        const raw=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
+        const textLines=raw.value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+        const textRows=textLines.map(line=>{
+          let cells=line.split(/\t+|\s{2,}|\|/).map(x=>x.trim()).filter(Boolean);
+          if(cells.length<2)cells=line.match(/\d+(?:[.,]\d+)?/g)||[];
+          return cells;
+        });
+        if(textRows.some(row=>row.length>=2))rows.push(...textRows,[""]);
+      }
+      if(!rows.length)throw new Error("Isi Word tidak terbaca sebagai tabel/teks. Jika tabel berupa gambar hasil scan, ubah dulu menjadi teks atau Excel.");
     }else{
       if(!window.XLSX)throw new Error("Pembaca Excel gagal dimuat. Muat ulang halaman.");
       const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:false});
