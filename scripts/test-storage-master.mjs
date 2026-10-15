@@ -49,6 +49,26 @@ test("same-type FT can reuse the validated FT sounding profile",()=>{
   assert.equal(S.heightForLiters(tera,rows,"FT0099",7654),55.5);
 });
 
+test("CUSTOM tera profile uses the exact tank curve and respects its capacity",()=>{
+  const points=[{height_cm:0,liters:0},{height_cm:10,liters:1200},{height_cm:20,liters:3000}];
+  const rows=[{code:"FT0077",storage_type:"FT",nominal_capacity_liter:3000,tera_profile:"CUSTOM",active:true}];
+  const tera={
+    customCurve(storage){return storage==="FT0077"?points:null;},
+    lookup(storage,height){
+      assert.equal(storage,"FT0077");
+      return {storage,enteredHeightCm:height,liters:height*150,curve:"CUSTOM"};
+    },
+    heightForLiters(storage,liters){return storage==="FT0077"&&liters===1500?12.5:null;},
+    curves:{MT:[0,41000],FT:[0,20500]}
+  };
+  const result=S.lookup(tera,rows,"FT0077",10);
+  assert.equal(result.tera_profile,"CUSTOM");
+  assert.equal(result.tera_source,"FT0077");
+  assert.equal(result.liters,1500);
+  assert.equal(S.heightForLiters(tera,rows,"FT0077",1500),12.5);
+  assert.equal(S.hardCapacityMap(tera,rows).FT0077,3000);
+});
+
 test("storage without a validated profile blocks sounding conversion",()=>{
   const rows=[{code:"MT99",storage_type:"MT",nominal_capacity_liter:35000,tera_profile:null,active:true}];
   const tera={lookup(){throw new Error("must not be called");},heightForLiters(){return 1;},curves:{MT:[0,41000],FT:[0,20500]}};
