@@ -183,63 +183,89 @@ function headerKind(v){
 async function previewTeraFile(){
   const status=document.getElementById("teraImportStatus"),file=document.getElementById("teraImportFile").files[0];
   IMPORTED_TERA_POINTS=[];document.getElementById("saveTeraImportBtn").disabled=true;
+  document.getElementById("teraImportPreview").innerHTML='<tr><td colspan="2">Sedang membaca file…</td></tr>';
   if(!document.getElementById("teraImportStorage").value){status.textContent="Pilih tangki tujuan terlebih dahulu.";return}
-  if(!file){status.textContent="Pilih file Excel atau CSV terlebih dahulu.";return}
+  if(!file){status.textContent="Pilih file Excel, CSV, atau DOCX terlebih dahulu.";return}
   try{
-    let rows;
-    if(file.name.toLowerCase().endsWith(".csv")){
-      const text=await file.text();
-      const first=(text.split(/\r?\n/).find(Boolean)||"");
-      const delimiter=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?";":",";
-      rows=text.split(/\r?\n/).filter(line=>line.trim()).map(line=>line.split(delimiter).map(v=>v.trim().replace(/^"|"$/g,"")));
-    }else if(file.name.toLowerCase().endsWith(".docx")){
+    let rows=[];
+    const name=file.name.toLowerCase();
+    if(name.endsWith(".docx")){
       if(!window.mammoth)throw new Error("Pembaca Word gagal dimuat. Muat ulang halaman.");
       const converted=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
       const doc=new DOMParser().parseFromString(converted.value,"text/html");
-      const table=Array.from(doc.querySelectorAll("table")).sort((a,b)=>b.querySelectorAll("tr").length-a.querySelectorAll("tr").length)[0];
-      if(!table)throw new Error("Tabel tidak ditemukan di dokumen Word. Pastikan tabel tera berbentuk tabel, bukan gambar.");
-      rows=Array.from(table.querySelectorAll("tr")).map(tr=>Array.from(tr.querySelectorAll("th,td")).map(cell=>cell.textContent.trim()));
+      const tables=Array.from(doc.querySelectorAll("table"));
+      if(!tables.length)throw new Error("Tabel tidak ditemukan. Pastikan data tera berupa tabel Word, bukan gambar.");
+      // Gabungkan seluruh tabel, bukan hanya tabel pertama atau yang paling besar.
+      for(const table of tables){
+        const tableRows=Array.from(table.querySelectorAll("tr")).map(tr=>Array.from(tr.querySelectorAll("th,td")).map(cell=>cell.textContent.replace(/\s+/g," ").trim()));
+        if(tableRows.length)rows.push(...tableRows,[""]);
+      }
     }else{
       if(!window.XLSX)throw new Error("Pembaca Excel gagal dimuat. Muat ulang halaman.");
-      const workbook=XLSX.read(await file.arrayBuffer(),{type:"array"});
-      const sheet=workbook.Sheets[workbook.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:"",raw:true});
+      const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:false});
+      // Baca semua sheet, bukan hanya sheet pertama.
+      for(const sheetName of workbook.SheetNames){
+        const sheet=workbook.Sheets[sheetName];
+        const sheetRows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:"",raw:true,blankrows:false});
+        if(sheetRows.length)rows.push(...sheetRows,[""]);
+      }
     }
-    if(!rows||rows.length<2)throw new Error("File kosong atau hanya memiliki header.");
-    const headers=rows[0].map(headerKind);
-    let hi=headers.indexOf("height"),li=headers.indexOf("liter");
+    rows=rows.filter(row=>Array.isArray(row)&&row.some(cell=>String(cell??"").trim()!==""));
+    if(rows.length<2)throw new Error("Tidak ada cukup baris data yang bisa dibaca.");
+    // Cari baris header di seluruh bagian awal file agar judul/metadata di atas tabel tidak mengganggu.
+    let hi=-1,li=-1,headerRow=-1;
+    for(let r=0;r<Math.min(rows.length,80);r++){
+      const kinds=rows[r].map(headerKind);
+      const h=kinds.indexOf("height"),l=kinds.indexOf("liter");
+      if(h>=0&&l>=0&&h!==l){headerRow=r;hi=h;li=l;break}
+    }
     let unit=document.getElementById("teraImportUnit").value;
-    if(hi<0||li<0){
-      // Fallback: find first two columns that contain numeric data, with height assumed first and liters second.
-      const sample=rows.slice(1,Math.min(rows.length,8));
-      const numericCols=[];
-      for(let c=0;c<Math.max(...rows.map(r=>r.length));c++)if(sample.some(r=>parseNum(r[c])!==null))numericCols.push(c);
-      if(numericCols.length<2)throw new Error("Kolom tinggi dan liter tidak terdeteksi. Pastikan file memiliki header sounding/tinggi dan volume/liter.");
-      if(hi<0)hi=numericCols[0];if(li<0)li=numericCols.find(c=>c!==hi);
+    if(headerRow<0){
+      // Fallback mencari kolom angka berdasarkan SELURUH isi file, bukan hanya 6 baris pertama.
+      const maxCols=Math.max(...rows.map(r=>r.length));
+      const candidates=[];
+      for(let c=0;c<maxCols;c++){
+        const values=rows.map(r=>parseNum(r[c])).filter(v=>v!==null);
+        if(values.length>=2)candidates.push({col:c,values});
+      }
+      if(candidates.length<2)throw new Error("Kolom tinggi dan liter tidak terdeteksi. Periksa apakah data berupa teks/tabel, bukan gambar atau hasil scan.");
+      // Pilih dua kolom numerik paling konsisten; kolom pertama tinggi, berikutnya liter.
+      hi=candidates[0].col;li=candidates.find(c=>c.col!==hi).col;
+      headerRow=-1;
     }
-    const headerText=String(rows[0][hi]||"").toLowerCase();
-    if(unit==="auto")unit=/mm|milimeter/.test(headerText)?"mm":"cm";
-    const points=[];
-    for(let i=1;i<rows.length;i++){
+    const headerText=headerRow>=0?String(rows[headerRow][hi]||"").toLowerCase():"";
+    if(unit==="auto"){
+      const nearbyHeader=rows.slice(Math.max(0,headerRow-3),Math.max(0,headerRow)+1).flat().join(" ").toLowerCase();
+      unit=/\bmm\b|milimeter/.test(headerText+" "+nearbyHeader)?"mm":"cm";
+    }
+    const points=[],badRows=[];
+    const firstDataRow=headerRow+1;
+    for(let i=firstDataRow;i<rows.length;i++){
       const rawH=parseNum(rows[i][hi]),lit=parseNum(rows[i][li]);
       if(rawH===null&&lit===null)continue;
-      if(rawH===null||lit===null)throw new Error("Baris "+(i+1)+" tidak lengkap: tinggi dan volume wajib berpasangan.");
+      // Abaikan baris judul/catatan non-data, tetapi laporkan pasangan angka yang tidak lengkap.
+      if(rawH===null||lit===null){badRows.push(i+1);continue}
       const cm=unit==="mm"?rawH/10:rawH;
-      if(cm<0||lit<0)throw new Error("Baris "+(i+1)+" memiliki angka negatif.");
-      points.push({height_cm:Math.round(cm*1000)/1000,liters:lit});
+      if(cm<0||lit<0){badRows.push(i+1);continue}
+      points.push({height_cm:Math.round(cm*1000)/1000,liters:Math.round(lit*1000)/1000,source_row:i+1});
     }
+    if(points.length<2)throw new Error("Hanya "+points.length+" titik data valid ditemukan. Pastikan kolom tinggi dan liter benar, dan pilih satuan tinggi yang sesuai.");
     points.sort((a,b)=>a.height_cm-b.height_cm);
-    if(points.length<2)throw new Error("Minimal harus ada dua titik data tera.");
     for(let i=1;i<points.length;i++){
-      if(points[i].height_cm===points[i-1].height_cm)throw new Error("Tinggi duplikat ditemukan: "+points[i].height_cm+" cm.");
-      if(points[i].liters<points[i-1].liters)throw new Error("Volume harus tidak menurun saat tinggi bertambah. Periksa baris sekitar "+(i+1)+".");
+      if(points[i].height_cm===points[i-1].height_cm)throw new Error("Tinggi duplikat ditemukan: "+points[i].height_cm+" cm. Periksa data sumber.");
+      if(points[i].liters<points[i-1].liters)throw new Error("Volume menurun pada sekitar tinggi "+points[i].height_cm+" cm. Periksa tabel tera.");
     }
-    IMPORTED_TERA_POINTS=points;
-    document.getElementById("teraImportPreview").innerHTML=points.slice(0,100).map(p=>'<tr><td>'+p.height_cm.toLocaleString("id-ID")+'</td><td>'+p.liters.toLocaleString("id-ID")+'</td></tr>').join("")+(points.length>100?'<tr><td colspan="2">… '+(points.length-100)+' baris lainnya tidak ditampilkan</td></tr>':"");
-    document.getElementById("teraImportSummary").textContent=points.length+" titik terbaca · tinggi "+points[0].height_cm+"–"+points[points.length-1].height_cm+" cm · volume "+points[0].liters+"–"+points[points.length-1].liters+" L";
+    IMPORTED_TERA_POINTS=points.map(({height_cm,liters})=>({height_cm,liters}));
+    // Tampilkan seluruh titik data; tidak lagi memotong pratinjau pada 100 baris.
+    document.getElementById("teraImportPreview").innerHTML=points.map(p=>'<tr><td>'+p.height_cm.toLocaleString("id-ID")+'</td><td>'+p.liters.toLocaleString("id-ID")+'</td></tr>').join("");
+    document.getElementById("teraImportSummary").textContent=points.length+" titik valid terbaca dari "+rows.length+" baris · tinggi "+points[0].height_cm+"–"+points[points.length-1].height_cm+" cm · volume "+points[0].liters+"–"+points[points.length-1].liters+" L"+(badRows.length?" · "+badRows.length+" baris non-data dilewati":"");
     document.getElementById("saveTeraImportBtn").disabled=false;
-    status.textContent="Pratinjau berhasil. Periksa data sebelum disimpan.";
-  }catch(error){status.textContent="Gagal membaca file: "+error.message}
+    status.textContent="Pratinjau lengkap berhasil. Semua titik valid ditampilkan sebelum disimpan.";
+  }catch(error){
+    document.getElementById("teraImportPreview").innerHTML='<tr><td colspan="2">File belum berhasil dibaca. Periksa format dan kolomnya.</td></tr>';
+    document.getElementById("teraImportSummary").textContent="Belum ada data valid.";
+    status.textContent="Gagal membaca file: "+error.message;
+  }
 }
 async function saveTeraImport(){
   const code=document.getElementById("teraImportStorage").value,status=document.getElementById("teraImportStatus");
