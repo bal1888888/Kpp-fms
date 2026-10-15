@@ -2699,15 +2699,32 @@ function updateSoundingCheck(){
         const average=(front+rear)/2;
         const finalHeight=Math.floor((average+1e-8)*10)/10;
         const tera=teraLookup(storage,finalHeight);
+        const period=getPeriod();
+        const fuelmanName=String(
+            ACTIVE_FUELMAN_SESSION?.fuelman_name ||
+            CURRENT_PROFILE?.display_name ||
+            CURRENT_PROFILE?.name ||
+            CURRENT_PROFILE?.username ||
+            window.KPP_SESSION?.user?.email?.split("@")[0] ||
+            "-"
+        ).trim();
+        const checkTime=localTime();
+        const checkTruck=/^FT/i.test(storage)
+            ? storage
+            : (ACTIVE_FUELMAN_SESSION?.fuel_truck || "-");
         const report=[
-            "HASIL CEK SONDING MT / FT",
+            "HASIL CEK SONDING",
+            "Fuelman: "+fuelmanName,
+            "Tanggal shift: "+period.tanggal,
+            "Jam pengecekan: "+checkTime,
+            "Shift: "+period.shift,
+            "FT: "+checkTruck,
             "Storage: "+storage,
             "Sonding depan: "+fmtCm(front)+" cm",
             "Sonding belakang: "+fmtCm(rear)+" cm",
             "Rata-rata: "+average.toLocaleString("id-ID",{maximumFractionDigits:3})+" cm",
-            "Sonding final (dibulatkan turun 0,1 cm): "+fmtCm(finalHeight)+" cm",
-            "Hasil konversi tera: "+reportLiters(tera.liters),
-            "Catatan: pengecekan saja, tidak menyimpan atau mengubah stock."
+            "Tinggi dipakai: "+fmtCm(finalHeight)+" cm",
+            "Hasil tera: "+reportLiters(tera.liters)
         ].join("\n");
         result.classList.remove("error");
         result.innerHTML="<small>"+esc(tera.curve)+" | SONDING FINAL "+esc(fmtCm(finalHeight))+" CM</small><strong>"+esc(fmt(tera.liters))+" L</strong>";
