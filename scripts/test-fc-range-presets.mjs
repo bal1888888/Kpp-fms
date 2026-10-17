@@ -10,6 +10,6 @@ test('FC offers MTD, 30 day, 90 day and all-history presets',()=>{
   assert.match(src,/SEMUA DATA/);
 });
 test('FC supports long date ranges and bounded date generation',()=>{
-  assert.match(src,/g<3660/);
+  assert.match(src,/g\\+\\+<3660/);
   assert.match(src,/m\.dates\.length\*18/);
 });
