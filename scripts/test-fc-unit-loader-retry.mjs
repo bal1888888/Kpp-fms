@@ -10,5 +10,5 @@ test("FC loader reads EGI from Master Unit",()=>{
 test("FC picker supports grouped and unit modes",()=>{
   assert.match(src,/PER EGI/);
   assert.match(src,/PER UNIT/);
-  assert.match(src,/Maksimal \$\{MAX_GROUPS\}/);
+  assert.match(src,/Maksimal '\+MAX_GROUPS\+'/);
 });
