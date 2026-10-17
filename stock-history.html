@@ -46,6 +46,27 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
 @media(max-width:420px){.grid{grid-template-columns:1fr}.actions{grid-column:auto}}
 </style>
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
+
+<style id="kpp-mobile-operational-fix">
+@media (max-width: 640px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  .container, main.container, .panel, .header, .stock-position-panel { min-width: 0; max-width: 100%; }
+  .container, main.container { width: 100%; margin-left: auto; margin-right: auto; padding-left: 9px; padding-right: 9px; }
+  .panel { padding: 12px !important; border-radius: 12px; }
+  .controls, .grid, .filters, .stock-controls { min-width: 0; max-width: 100%; }
+  input, select, textarea { max-width: 100%; min-width: 0; font-size: 16px; }
+  button { max-width: 100%; }
+  .table-wrap, .table-responsive, .kpp-table-wrap, .history-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table, .table-responsive table { width: max-content; min-width: 100%; }
+  .app-nav-inner, .tabs { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .stock-total-card, .stock-total-side, .stock-total-main { min-width: 0; max-width: 100%; }
+  .stock-total-main strong, .metric .value { overflow-wrap: anywhere; }
+}
+@media (max-width: 380px) {
+  .container, main.container { padding-left: 6px; padding-right: 6px; }
+  .panel { padding: 10px !important; }
+}
+</style>
 </head>
 <body>
 <div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>History Stock</div></div>
