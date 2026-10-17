@@ -15,7 +15,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="storage-master.js"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
-<script src="sonding-average.js?v=20261017-finalonly"></script>
+<script src="sonding-average.js?v=20261017-receipt-clear"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -4353,6 +4353,11 @@ async function saveReceipt(){
         "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
         "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
     ].forEach(id=>{document.getElementById(id).value="";});
+    // Clear the visible front/rear fields only after a confirmed receipt save.
+    // Validation errors, cancellation and pending previous submissions keep user input.
+    ["receiptTankHeightBefore","receiptTankHeightAfter"].forEach(id=>{
+        document.getElementById(id).dispatchEvent(new Event("kpp-clear-paired-sounding"));
+    });
     document.getElementById("receiptArrivalTime").value=localTime();
     await loadStock();
     await finishStockSave(
