@@ -440,6 +440,17 @@ let STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
 let TOTAL_CAPACITY=Object.values(STORAGE_CAPACITY).reduce((a,b)=>a+b,0);
 async function loadStorageMaster(){
   STORAGE_ROWS=await window.KPPStorage.load(db,{activeOnly:true});
+  // Samakan kurva tera custom dengan halaman Stock, termasuk FT0077.
+  try{
+    const {data,error}=await db.from("storage_tera_curves").select("storage_code,points");
+    if(error)throw error;
+    (data||[]).forEach(row=>{
+      try{TERA?.setCustomCurve(row.storage_code,row.points);}
+      catch(curveError){console.warn("Kurva tera khusus diabaikan:",row.storage_code,curveError.message);}
+    });
+  }catch(error){
+    console.warn("Kurva tera khusus tidak berhasil dimuat:",error.message);
+  }
   STORAGES=STORAGE_ROWS.map(row=>row.code);
   FT_MAP=window.KPPStorage.ftMap(STORAGE_ROWS);
   STORAGE_CAPACITY=window.KPPStorage.capacityMap(STORAGE_ROWS);
