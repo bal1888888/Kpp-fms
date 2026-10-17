@@ -21,9 +21,9 @@ test('Daily Report uses measured receipt and transfer quantities like Stock and 
   }
 
   const dailyCompact=compact(daily);
-  assert.ok(dailyCompact.includes('stock[ensureStorage(row.source_storage,"transfer sumber")]-=sourceQty;'),
+  assert.ok(dailyCompact.includes(compact('stock[ensureStorage(row.source_storage,"transfer sumber")]-=sourceQty;')),
     'Daily Report must subtract the measured source quantity');
-  assert.ok(dailyCompact.includes('stock[ensureStorage(row.destination_storage,"transfer tujuan")]+=destinationQty;'),
+  assert.ok(dailyCompact.includes(compact('stock[ensureStorage(row.destination_storage,"transfer tujuan")]+=destinationQty;')),
     'Daily Report must add the measured destination quantity');
   assert.ok(!dailyCompact.includes('if(row.source_storage)stock[row.source_storage]-=n(row.qty);'),
     'Daily Report must not use one qty for both transfer sides');
