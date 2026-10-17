@@ -72,6 +72,11 @@
       input.dispatchEvent(new Event("change", {bubbles:true}));
       if (label) label.textContent = "Sonding final rata-rata otomatis (CM)";
     }
+    input.addEventListener("kpp-clear-paired-sounding", () => {
+      front.field.value = "";
+      rear.field.value = "";
+      update();
+    });
     front.field.addEventListener("input", update);
     rear.field.addEventListener("input", update);
     // Preserve existing saved closing values by seeding both sides to the old final height.
