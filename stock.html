@@ -972,6 +972,27 @@ th{background:#f8fafc;color:#475569}
 #soundingCheckPanel .status{margin-top:8px}
 @media(max-width:700px){.panel-title-row{align-items:flex-start;gap:10px}.stock-last-updated{font-size:9px}.stock-total-side{min-width:0}#soundingCheckPanel{padding:14px}#soundingCheckPanel h3{font-size:17px}}
 </style>
+
+<style id="kpp-mobile-operational-fix">
+@media (max-width: 640px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  .container, main.container, .panel, .header, .stock-position-panel { min-width: 0; max-width: 100%; }
+  .container, main.container { width: 100%; margin-left: auto; margin-right: auto; padding-left: 9px; padding-right: 9px; }
+  .panel { padding: 12px !important; border-radius: 12px; }
+  .controls, .grid, .filters, .stock-controls { min-width: 0; max-width: 100%; }
+  input, select, textarea { max-width: 100%; min-width: 0; font-size: 16px; }
+  button { max-width: 100%; }
+  .table-wrap, .table-responsive, .kpp-table-wrap, .history-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table, .table-responsive table { width: max-content; min-width: 100%; }
+  .app-nav-inner, .tabs { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .stock-total-card, .stock-total-side, .stock-total-main { min-width: 0; max-width: 100%; }
+  .stock-total-main strong, .metric .value { overflow-wrap: anywhere; }
+}
+@media (max-width: 380px) {
+  .container, main.container { padding-left: 6px; padding-right: 6px; }
+  .panel { padding: 10px !important; }
+}
+</style>
 </head>
 
 <body class="stock-workspace">
