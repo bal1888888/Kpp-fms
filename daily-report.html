@@ -597,9 +597,16 @@ async function calculateStock(tanggal,shift){
   if(err)throw err;
 
   const stock=Object.fromEntries(STORAGES.map(s=>[s,0]));
+  // Jangan biarkan referensi storage yang tidak dikenal menjadi NaN dalam total laporan.
+  const ensureStorage=(code,source)=>{
+    if(!code || !Object.prototype.hasOwnProperty.call(stock,code)){
+      throw new Error(`Storage ${code || "(kosong)"} pada ${source} tidak ada di Master MT/FT aktif. Periksa data master dan transaksi sebelum membuat laporan.`);
+    }
+    return code;
+  };
 
   (o.data||[]).forEach(row=>{
-    stock[row.storage]=n(row.qty);
+    stock[ensureStorage(row.storage,"stock opening")]=n(row.qty);
   });
 
   (m.data||[]).forEach(row=>{
@@ -608,7 +615,7 @@ async function calculateStock(tanggal,shift){
         row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
           ? n(row.destination_measured_qty)
           : n(row.qty);
-      stock[row.destination_storage]+=receivedQty;
+      stock[ensureStorage(row.destination_storage,"penerimaan")]+=receivedQty;
     }
 
     if(row.jenis==="TRANSFER"){
@@ -620,20 +627,20 @@ async function calculateStock(tanggal,shift){
         row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
           ? n(row.destination_measured_qty)
           : n(row.qty);
-      if(row.source_storage)stock[row.source_storage]-=sourceQty;
-      if(row.destination_storage)stock[row.destination_storage]+=destinationQty;
+      if(row.source_storage)stock[ensureStorage(row.source_storage,"transfer sumber")]-=sourceQty;
+      if(row.destination_storage)stock[ensureStorage(row.destination_storage,"transfer tujuan")]+=destinationQty;
     }
   });
 
   (f.data||[]).forEach(row=>{
     const source=sourceFromFuel(row);
-    if(source)stock[source]-=n(row.fuel);
+    if(source)stock[ensureStorage(source,"pengisian")]-=n(row.fuel);
   });
 
   // Jika ada actual closing, pakai actual sebagai angka report untuk storage itu.
   (c.data||[]).forEach(row=>{
     if(row.storage && row.actual_qty!==null && row.actual_qty!==undefined){
-      stock[row.storage]=n(row.actual_qty);
+      stock[ensureStorage(row.storage,"stock closing")]=n(row.actual_qty);
     }
   });
 
