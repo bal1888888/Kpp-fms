@@ -10,10 +10,10 @@ test("FC widget supports EGI grouping and drill-down",()=>{
   assert.match(widget,/PER UNIT/);
   assert.match(widget,/Ringkasan FC per EGI/);
   assert.match(widget,/Detail Unit/);
-  assert.match(widget,/allUnits\.filter\(x=>selected\.includes\(x\.egi\)\)/);
+  assert.match(widget,/allUnits\.filter\(x=>x\.egi===egi\)\.map\(x=>x\.unit\)/);
 });
 test("FC aggregate uses weighted total fuel divided by total HM",()=>{
-  assert.match(widget,/validFuel\/totalHm/);
+  assert.match(widget,/totalFuel\/totalHm/);
   assert.match(widget,/x\.validFuel\+=/);
   assert.match(widget,/x\.hm\+=/);
 });

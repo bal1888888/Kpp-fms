@@ -17,7 +17,7 @@ test('FC analysis supports EGI grouping and multi-unit expansion',()=>{
   assert.match(js,/PER EGI/);
   assert.match(js,/PER UNIT/);
   assert.match(js,/MAX_GROUPS=10/);
-  assert.match(js,/allUnits\.filter\(x=>selected\.includes\(x\.egi\)\)/);
+  assert.match(js,/allUnits\.filter\(x=>x\.egi===egi\)\.map\(x=>x\.unit\)/);
   assert.match(js,/Ringkasan FC per EGI/);
   assert.match(js,/Detail Unit/);
 });
