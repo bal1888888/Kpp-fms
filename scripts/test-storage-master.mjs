@@ -11,7 +11,7 @@ const S=context.window.KPPStorage;
 
 test("fallback master keeps existing MT and FT",()=>{
   const rows=S.fallbackRows();
-  assert.equal(rows.length,6);
+  assert.equal(rows.length,8);
   assert.equal(S.byCode(rows,"mt01").tera_profile,"MT");
   assert.equal(S.byCode(rows,"ft0073").warehouse,"WH FT02");
 });
@@ -133,7 +133,7 @@ test("Master MT/FT failure falls back safely and exposes diagnostics",async()=>{
   S.clearCache();
   const db={from(){throw new Error("network down");}};
   const rows=await S.load(db,{activeOnly:true,forceRefresh:true});
-  assert.equal(rows.length,6);
+  assert.equal(rows.length,8);
   assert.equal(S.diagnostics().source,"fallback");
   assert.match(S.diagnostics().error,/network down/i);
 });
