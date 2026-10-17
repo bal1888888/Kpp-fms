@@ -48,7 +48,7 @@
     const summary = document.createElement("div");
     summary.className = "front-rear-summary";
     summary.style.cssText = "grid-column:1/-1;border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:9px 11px;font-size:12px;color:#334155";
-    summary.innerHTML = '<strong>SONDING FINAL: <span class="front-rear-final">-</span> cm</strong><div class="front-rear-formula" style="margin-top:3px">Isi sonding depan dan belakang untuk menghitung rata-rata.</div>';
+    summary.innerHTML = '<strong>SONDING FINAL: <span class="front-rear-final">-</span> cm</strong>';
     wrap.append(front.box, rear.box, summary);
     input.parentNode.insertBefore(wrap, input);
     input.style.display = "none";
@@ -59,17 +59,14 @@
       const a = numberOf(front.field.value);
       const b = numberOf(rear.field.value);
       const finalEl = summary.querySelector(".front-rear-final");
-      const formulaEl = summary.querySelector(".front-rear-formula");
       if (a === null || b === null) {
         input.value = "";
         finalEl.textContent = "-";
-        formulaEl.textContent = "Isi sonding depan dan belakang untuk menghitung rata-rata.";
       } else {
         const average = (a + b) / 2;
         const finalHeight = floorTenth(average);
         input.value = finalHeight.toFixed(1);
         finalEl.textContent = finalHeight.toFixed(1);
-        formulaEl.textContent = "(" + a.toLocaleString("id-ID") + " + " + b.toLocaleString("id-ID") + ") ÷ 2 = " + average.toLocaleString("id-ID", {maximumFractionDigits: 3}) + " cm; dibulatkan turun ke 0,1 cm.";
       }
       input.dispatchEvent(new Event("input", {bubbles:true}));
       input.dispatchEvent(new Event("change", {bubbles:true}));
