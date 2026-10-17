@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const source=await readFile(new URL("../stock.html",import.meta.url),"utf8");
-const start=source.indexOf("function renderStockCards(stock){");
-const end=source.indexOf("\nfunction renderClosing",start);
-const renderBlock=source.slice(start,end);
+const start=source.indexOf("function renderStockCards(");
+const end=source.indexOf("\nfunction ",start+1);
+assert.ok(start>=0,"renderStockCards must exist");
+const renderBlock=source.slice(start,end<0?undefined:end);
 
 test("stock position uses compact radial gauges",()=>{
   assert.match(source,/KPP-FMS STOCK RADIAL GAUGES v1/);
