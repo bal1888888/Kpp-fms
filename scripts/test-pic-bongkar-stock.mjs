@@ -7,7 +7,7 @@ const m=fs.readFileSync(new URL('../supabase/migrations/20260912203000_pic_bongk
 
 test('PIC bongkar sees only the stock workflow it needs',()=>{
   assert.match(s,/KPP-FMS FUELMAN DUTY VISIBILITY v2/);
-  assert.match(s,/\.pic-transfer-mode \.converter-panel,\s*\.pic-transfer-mode \.opening-panel\{display:none!important\}/);
+  assert.match(s,/\.pic-transfer-mode \.converter-panel\{display:block!important\}[\s\S]*?\.pic-transfer-mode \.opening-panel\{display:block!important\}/);
   assert.doesNotMatch(s,/\.pic-transfer-mode \.receipt-panel/);
   assert.doesNotMatch(s,/\.pic-transfer-mode \.transfer-panel/);
   assert.doesNotMatch(s,/\.pic-transfer-mode \.movement-panel/);
