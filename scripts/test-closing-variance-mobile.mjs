@@ -17,3 +17,12 @@ test("operator and fuelman mobile fields use accessible touch targets",()=>{
   assert.match(s,/font-size:16px!important/);
  }
 });
+
+test("sounding result card shows only final height, keeping detailed copy report",()=>{
+ const html=read("stock.html");
+ const result=html.slice(html.indexOf("function updateSoundingCheck()"),html.indexOf("function copySoundingCheck()"));
+ assert.match(result,/SONDING FINAL/);
+ assert.match(result,/result\.innerHTML="<small>SONDING FINAL<\/small><strong>"\+esc\(fmtCm\(finalHeight\)\)\+"<\/strong>"/);
+ assert.doesNotMatch(result,/result\.innerHTML="[^"]*Hasil tera:/);
+ assert.match(result,/preview\.textContent=report/);
+});
