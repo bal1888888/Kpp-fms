@@ -22,6 +22,17 @@ label{display:block;margin:13px 0 6px;color:#334155;font-size:12px;font-weight:9
 <link rel="stylesheet" href="operations-ui.css?v=20260909-2">
 <script src="reliable-submit.js"></script>
 <link rel="stylesheet" href="reliable-submit.css">
+<style id="kpp-mobile-field-controls">
+@media(max-width:640px){
+html,body{max-width:100%;overflow-x:clip}
+.card,.panel,.container,main{min-width:0;max-width:100%}
+input,select,textarea{max-width:100%;min-width:0;font-size:16px!important}
+button,.btn,.actions a{min-height:44px}
+.actions,.field-group,.mode-tabs,.session-box{max-width:100%;min-width:0}
+.actions{flex-wrap:wrap}
+}
+@media(max-width:380px){.card,.panel{padding:12px!important}.brand{min-width:0}.brand h1{overflow-wrap:anywhere}}
+</style>
 </head>
 <body class="operator-workspace">
 <main class="card terminal-card">

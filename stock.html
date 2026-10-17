@@ -1173,8 +1173,8 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="soundingCheckRear" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" oninput="updateSoundingCheck()">
         </div>
         <div class="tera-result" id="soundingCheckResult">
-            <small>SONDING FINAL / HASIL TERA</small>
-            <strong>- L</strong>
+            <small>SONDING FINAL</small>
+            <strong>- cm</strong>
         </div>
     </div>
     <div class="status" id="soundingCheckStatus"></div>
@@ -2691,7 +2691,7 @@ function updateSoundingCheck(){
     const preview=document.getElementById("soundingCheckCopyPreview");
     if(!storage||frontText===""||rearText===""){
         result.classList.remove("error");
-        result.innerHTML="<small>HASIL CEK SONDING</small><strong>- cm</strong><span>Hasil tera: - L</span>";
+        result.innerHTML="<small>SONDING FINAL</small><strong>- cm</strong>";
         status.textContent="";
         preview.textContent="Lengkapi storage dan kedua hasil sonding untuk membuat laporan.";
         return null;
@@ -2730,8 +2730,8 @@ function updateSoundingCheck(){
             "Hasil tera: "+reportLiters(tera.liters)
         ].join("\n");
         result.classList.remove("error");
-        result.innerHTML="<small>SONDING FINAL</small><strong>"+esc(fmtCm(finalHeight))+"</strong><span>Hasil tera: "+esc(fmt(tera.liters))+"</span>";
-        status.textContent="[OK] Hasil cek siap disalin. Tidak ada stock yang disimpan.";
+        result.innerHTML="<small>SONDING FINAL</small><strong>"+esc(fmtCm(finalHeight))+"</strong>";
+        status.textContent="";
         preview.textContent=report;
         return {storage,front,rear,average,finalHeight,liters:tera.liters,report};
     }catch(error){
