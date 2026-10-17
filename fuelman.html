@@ -57,6 +57,17 @@ button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor
 }
 </style>
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
+<style id="kpp-mobile-field-controls">
+@media(max-width:640px){
+html,body{max-width:100%;overflow-x:clip}
+.card,.panel,.container,main{min-width:0;max-width:100%}
+input,select,textarea{max-width:100%;min-width:0;font-size:16px!important}
+button,.btn,.actions a{min-height:44px}
+.actions,.field-group,.mode-tabs,.session-box{max-width:100%;min-width:0}
+.actions{flex-wrap:wrap}
+}
+@media(max-width:380px){.card,.panel{padding:12px!important}.brand{min-width:0}.brand h1{overflow-wrap:anywhere}}
+</style>
 </head>
 
 <body>
