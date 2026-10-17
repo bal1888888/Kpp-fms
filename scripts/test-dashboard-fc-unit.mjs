@@ -9,7 +9,7 @@ test("dashboard uses the unified sequential-HM FC widget",()=>{
   assert.doesNotMatch(dashboard,/id="fcSection"/);
   assert.doesNotMatch(dashboard,/renderFuelConsumption\(mtdRows\)/);
   assert.match(dashboard,/hostId:"dashboardFcChart"/);
-  assert.match(widget,/validFuel\/totalHm/);
+  assert.match(widget,/totalFuel\/totalHm/);
   assert.match(widget,/HM JALAN VALID/);
   assert.match(widget,/Ringkasan FC per Unit/);
 });
@@ -20,5 +20,5 @@ test("aggregate FC is ratio of valid fuel totals to valid HM totals",()=>{
   const average=rows.reduce((s,r)=>s+r.fuel/r.hm,0)/rows.length;
   assert.equal(weighted,400/30);
   assert.notEqual(weighted,average);
-  assert.match(widget,/validFuel\/totalHm/);
+  assert.match(widget,/totalFuel\/totalHm/);
 });
