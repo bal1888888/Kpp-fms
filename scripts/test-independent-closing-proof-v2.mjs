@@ -60,6 +60,9 @@ test("form: proof is transmitted, existing inputs lock together, historical reco
   "querySelectorAll(\".front-rear-value\").forEach"
  ])assert.ok(stock.includes(marker),marker);
  assert.match(stock,/Ukur sonding dahulu/);
+ assert.match(stock,/historical\.sonding_front_cm==null && historical\.sonding_rear_cm==null/);
+ assert.match(stock,/oldPair\[0\]\.value==="" && oldPair\[1\]\.value===""\)continue/);
+ assert.match(stock,/old\.sonding_front_cm==null \|\|/);
  assert.match(history,/DATA LAMA · BUKTI DEPAN\/BELAKANG TIDAK TERSEDIA/);
 });
 
