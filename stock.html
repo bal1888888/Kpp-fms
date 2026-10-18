@@ -3702,6 +3702,50 @@ function stockCanSubmit(){
     alert("Stock "+tanggal+" Shift "+shift+" belum berhasil dimuat dari server. Draft isian tetap tersimpan di perangkat. Perbarui Stock sebelum menekan Simpan.");
     return false;
 }
+
+// The four-table dashboard view is useful for monitoring, but it is not
+// required to check a measured transporter receipt. Instead, verify just
+// the destination's opening/closing state against the CURRENT server period.
+// This NEVER bypasses the idempotent save_stock_movement_safe RPC.
+function stockWithDeadline(request,ms,label){
+    let timer;
+    return Promise.race([
+        Promise.resolve(request),
+        new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(new Error(label+" melebihi "+Math.ceil(ms/1000)+" detik. Cek koneksi, draft tetap tersimpan.")),ms);
+        })
+    ]).finally(()=>clearTimeout(timer));
+}
+async function stockCanSubmitReceipt(){
+    const {tanggal,shift}=getPeriod();
+    const storage=document.getElementById("receiptDestination")?.value;
+    const validPeriod=/^\\d{4}-\\d{2}-\\d{2}$/.test(tanggal) && (shift===1 || shift===2);
+    if(!CURRENT_PROFILE || !validPeriod || !STORAGE_ROWS.some(row=>row.code===storage)){
+        alert("Akun, periode, atau Master storage belum siap. Draft masih aman. Muat ulang halaman.");
+        return false;
+    }
+    const status=document.getElementById("receiptStatus");
+    if(status)status.textContent="Memeriksa Opening/Closing "+storage+" ke server (tanpa menunggu dashboard)...";
+    try{
+        const [opening,closing]=await stockWithDeadline(Promise.all([
+            db.from("stock_opening").select("storage").eq("tanggal",tanggal).eq("shift",shift).eq("storage",storage).limit(1),
+            db.from("stock_closing").select("id").eq("tanggal",tanggal).eq("shift",shift).eq("storage",storage).limit(1)
+        ]),8000,"Pengecekan penerimaan");
+        if(getPeriod().tanggal!==tanggal || getPeriod().shift!==shift ||
+           document.getElementById("receiptDestination")?.value!==storage){
+            throw new Error("Tanggal, shift, atau tangki berubah saat pengecekan. Periksa isian sebelum simpan.");
+        }
+        if(opening.error||closing.error)throw new Error(opening.error?.message||closing.error?.message);
+        if(!opening.data?.length)throw new Error("Opening "+storage+" untuk periode ini belum tercatat. Isi Opening terlebih dahulu.");
+        if(closing.data?.length)throw new Error(storage+" sudah Closing pada periode ini. Penerimaan setelah Closing harus diaudit GL/Admin.");
+        if(status)status.textContent="Opening terverifikasi. Penerimaan siap diperiksa dan dikirim dengan anti-double server.";
+        return true;
+    }catch(error){
+        if(status)status.textContent="[BELUM DIKIRIM] "+error.message;
+        alert("Penerimaan belum dikirim. "+error.message+" Jangan hapus draft.");
+        return false;
+    }
+}
 async function loadStock(){
     const requestSequence=++STOCK_LOAD_REQUEST_SEQUENCE;
     STOCK_DATA_READY=false;
@@ -4362,7 +4406,9 @@ async function saveOpening(){
 }
 
 async function saveReceipt(){
-    if(!stockCanSubmit())return;
+    // Receipt only needs a short server check of its own destination.
+    // Transfer / Closing still require the full period ledger.
+    if(!await stockCanSubmitReceipt())return;
     const {tanggal,shift}=getPeriod();
     const destination_storage=document.getElementById("receiptDestination").value;
     const measurement=updateReceiptCalculation();
@@ -4455,6 +4501,7 @@ async function saveReceipt(){
         arrival_at:new Date(`${tanggal}T${arrivalTime}+07:00`).toISOString(),
         shift,
         jenis:"RECEIPT",
+        operation_mode:"LIVE",
         source_storage:null,
         destination_storage,
         qty:measurement.tankQty,
