@@ -134,7 +134,7 @@ test("stale device drafts expire, while manual clearing is scoped to current use
  assert.equal(backend.size,0);
 });
 test("integration: Stock only saves drafts after user events and clears on confirmed successes",()=>{
- assert.match(html,/stock-drafts\.js\?v=20261018-recovery-v4/);
+ assert.match(html,/stock-drafts\.js\?v=20261018-preload-v5/);
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
@@ -345,4 +345,46 @@ test("Stock page visibly exposes safe draft and read-only recovery in the receip
  assert.match(html,/id="receiptDraftIndicator"/);
  assert.match(html,/id="stockDraftRecoveryText" readonly/);
  assert.match(html,/window\.KPPStockDrafts\?\.showDraft\(\)/);
+});
+
+test("a pending draft can be viewed by the same account when Fuelman shift has moved",()=>{
+ const backend=new Map();
+ const previous=createHarness(backend,"fuelman-a",{tanggal:"2026-10-18",shift:1});
+ previous.fire("receipt","receiptDestination","MT03");
+ previous.fire("receipt","receiptMeterStart","2525");
+ const newShift=createHarness(backend,"fuelman-a",{tanggal:"2026-10-18",shift:2},true);
+ newShift.drafts.onRendered();
+ assert.equal(newShift.elements.receiptMeterStart.value,"");
+ newShift.drafts.showDraft();
+ assert.match(newShift.elements.stockDraftRecoveryText.value,/Tanggal: 2026-10-18/);
+ assert.match(newShift.elements.stockDraftRecoveryText.value,/Shift: 1/);
+ assert.match(newShift.elements.stockDraftRecoveryText.value,/receiptDestination: MT03/);
+ assert.match(newShift.elements.stockDraftRecoveryText.value,/receiptMeterStart: 2525/);
+});
+test("auth bootstrap restores unsaved fields BEFORE the network Stock request begins",async()=>{
+ const start=html.indexOf('document.addEventListener("kpp-auth-ready",async(event)=>{');
+ const startup=html.slice(start,html.indexOf("\n</script>",start));
+ assert.ok(start>=0);
+ const actions=[];let handler;
+ const ctx={window:{KPP_SESSION:{user:{id:"signed-in-id"}},KPPStockDrafts:{
+     start:id=>actions.push("start:"+id),
+     onRendered:({stockReady})=>actions.push("recover:"+stockReady)
+   }},
+   document:{addEventListener:(name,fn)=>{if(name==="kpp-auth-ready")handler=fn;},
+     getElementById:()=>({textContent:""})},
+   loadStorageMaster:async()=>{actions.push("master");},
+   loadTransporterOptions:async()=>{actions.push("transporters");},
+   applyFuelmanIdentity:()=>actions.push("identity"),
+   setAdminMovementTools:()=>actions.push("role"),
+   loadStock:async()=>{actions.push("fetch");throw new Error("temporary network failure");},
+   console:{error:()=>actions.push("error")}
+ };
+ vm.createContext(ctx);
+ vm.runInContext(startup,ctx,{filename:"stock-boot.js"});
+ assert.ok(handler);
+ await handler({detail:{profile:{role:"admin",user_id:"signed-in-id"}}});
+ assert.deepEqual(actions.slice(0,7),["master","transporters","identity","role",
+    "start:signed-in-id","recover:false","fetch"]);
+ assert.ok(actions.includes("error"));
+ assert.equal(actions.filter(x=>x==="recover:false").length,2);
 });
