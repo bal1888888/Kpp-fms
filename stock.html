@@ -3719,7 +3719,7 @@ function stockWithDeadline(request,ms,label){
 async function stockCanSubmitReceipt(){
     const {tanggal,shift}=getPeriod();
     const storage=document.getElementById("receiptDestination")?.value;
-    const validPeriod=/^\\d{4}-\\d{2}-\\d{2}$/.test(tanggal) && (shift===1 || shift===2);
+    const validPeriod=/^\d{4}-\d{2}-\d{2}$/.test(tanggal) && (shift===1 || shift===2);
     if(!CURRENT_PROFILE || !validPeriod || !STORAGE_ROWS.some(row=>row.code===storage)){
         alert("Akun, periode, atau Master storage belum siap. Draft masih aman. Muat ulang halaman.");
         return false;
@@ -3751,13 +3751,15 @@ async function loadStock(){
     STOCK_DATA_READY=false;
     const {tanggal,shift}=getPeriod();
     if(!tanggal)return;
-
-    const [o,m,f,c]=await Promise.all([
+    const stockStatus=document.getElementById("stockRefreshInfo");
+    if(stockStatus)stockStatus.textContent="Memeriksa Stock "+tanggal+" Shift "+shift+" (maksimum 12 detik)...";
+    try{
+    const [o,m,f,c]=await stockWithDeadline(Promise.all([
         db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
         db.from("stock_movements").select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
         db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null),
         db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,sonding_front_cm,sonding_rear_cm,sonding_final_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
-    ]);
+    ]),12000,"Memuat Stock");
 
     // Slow/offline networks can return an older shift's response after a
     // newer period was selected. Do not render it or restore any draft with
@@ -3768,13 +3770,7 @@ async function loadStock(){
 
     const anyError=o.error||m.error||f.error||c.error;
 
-    if(anyError){
-        // Draft can be read even when the current Stock query fails.
-        // Closing proof is restored only after book stock loads correctly.
-        window.KPPStockDrafts?.onRendered({stockReady:false});
-        alert("Gagal mengambil stock: "+anyError.message);
-        return;
-    }
+    if(anyError)throw new Error(anyError.message||String(anyError));
 
     const stock=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
 
@@ -3829,7 +3825,6 @@ async function loadStock(){
     // closing fisik jika closing seluruh storage sudah lengkap.
     CURRENT_SYSTEM_STOCK={...bookStock};
 
-    updateStockRefreshMeta(tanggal,shift);
     startStockAutoRefresh();
     renderStockReconciliation({
         tanggal,
@@ -3848,6 +3843,23 @@ async function loadStock(){
     window.KPPStockDrafts?.onRendered();
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
+    // Mark ready only when all render components completed successfully.
+    STOCK_DATA_READY=true;
+    updateStockRefreshMeta(tanggal,shift);
+    return true;
+    }catch(error){
+        if(requestSequence!==STOCK_LOAD_REQUEST_SEQUENCE ||
+           getPeriod().tanggal!==tanggal || Number(getPeriod().shift)!==shift)return false;
+        STOCK_DATA_READY=false;
+        const reason=String(error?.message||error);
+        const info=document.getElementById("stockRefreshInfo");
+        const badge=document.getElementById("stockRefreshBadge");
+        if(info)info.textContent="STOCK BELUM TERBARU: "+reason+" | Penerimaan: jalur pengecekan cepat tersedia.";
+        if(badge){badge.textContent="GAGAL MUAT";badge.classList.remove("is-live");}
+        window.KPPStockDrafts?.onRendered({stockReady:false});
+        console.warn("Stock load failed:",reason);
+        return false;
+    }
 }
 
 let STOCK_CLOSING_INPUT_DIRTY=false;
