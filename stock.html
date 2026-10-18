@@ -4486,16 +4486,27 @@ async function saveOpening(){
 
     if(!beginStockSave("Menyimpan Stock Opening..."))return;
 
-    const {data:openingResult,error}=await db.rpc("save_stock_opening_safe",{
-        p_tanggal:tanggal,
-        p_shift:shift,
-        p_storage:storage,
-        p_qty:qty,
-        p_operator:operator,
-        p_sonding_height_cm:openingTera.matchedHeightCm,
-        p_tera_version:TERA.version,
-        p_session_id:ACTIVE_FUELMAN_SESSION?.id||null
-    });
+    let openingResult,error;
+    try{
+        ({data:openingResult,error}=await stockWithDeadline(db.rpc("save_stock_opening_safe",{
+            p_tanggal:tanggal,
+            p_shift:shift,
+            p_storage:storage,
+            p_qty:qty,
+            p_operator:operator,
+            p_sonding_height_cm:openingTera.matchedHeightCm,
+            p_tera_version:TERA.version,
+            p_session_id:ACTIVE_FUELMAN_SESSION?.id||null
+        }),20000,"Simpan Opening"));
+    }catch(rpcError){
+        // An HTTP timeout is ambiguous. The transaction MAY already exist.
+        // This is server-idempotent for the same exact Opening payload.
+        const message="Status Opening belum terkonfirmasi: "+rpcError.message+
+            " Jangan hapus draft atau membuat Opening berbeda. Periksa Stock/History sebelum mencoba lagi.";
+        document.getElementById("openingStatus").textContent="[BELUM PASTI] "+message;
+        await finishStockSave(false,message);
+        return;
+    }
 
     document.getElementById("openingStatus").textContent=
         error?"[GAGAL] "+error.message:"[OK] Stock opening tersimpan.";
@@ -4827,8 +4838,8 @@ async function saveTransfer(){
     if(previousOnly && !error){
         document.getElementById("transferStatus").textContent=
             "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian transfer saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
-        await loadStock();
         await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian transfer saat ini belum dikirim.");
+        void loadStock().catch(error=>console.warn("Refresh Transfer sebelumnya:",error));
         return;
     }
 
@@ -4854,11 +4865,11 @@ async function saveTransfer(){
         "transferQty"
     ].forEach(id=>{document.getElementById(id).value="";});
     clearTransferMeasurements();
-    await loadStock();
     await finishStockSave(
         true,
         "Transfer "+source_storage+" -> "+destination_storage+" sudah tersimpan."
     );
+    void loadStock().catch(error=>console.warn("Refresh Stock setelah Transfer:",error));
 }
 
 async function saveClosing(){
@@ -5135,13 +5146,21 @@ async function saveClosing(){
     if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
 
     const carryForward=document.getElementById("carryForward").checked;
-    const {data:closingResult,error:closingError}=await db.rpc(
-        "save_stock_closing_with_evidence",
-        {
-            p_rows:closingRows,
-            p_carry_forward:carryForward
-        }
-    );
+    let closingResult,closingError;
+    try{
+        ({data:closingResult,error:closingError}=await stockWithDeadline(db.rpc(
+            "save_stock_closing_with_evidence",
+            {p_rows:closingRows,p_carry_forward:carryForward}
+        ),20000,"Simpan Closing"));
+    }catch(rpcError){
+        const message="Status Closing belum terkonfirmasi: "+rpcError.message+
+          " Closing mungkin sudah masuk server. JANGAN kirim ulang sebelum cek status Closing dan Opening shift berikutnya.";
+        document.getElementById("closingStatus").textContent="[BELUM PASTI] "+message;
+        await finishStockSave(false,message);
+        // Server may commit after timeout: read-only check only.
+        void loadClosingFast().catch(error=>console.warn("Cek Closing setelah timeout:",error));
+        return;
+    }
 
     if(closingError){
         document.getElementById("closingStatus").textContent=
