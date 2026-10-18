@@ -96,7 +96,10 @@ begin
       set sonding_front_cm=v_front,sonding_rear_cm=v_rear,sonding_final_cm=v_final,
           sonding_recorded_at=now(),sonding_recorded_by=auth.uid()
       where id=v_existing.id;
-    if v_item <@ v_to_legacy then
+    if exists (select 1 from jsonb_array_elements(v_to_legacy) lx
+               where lx->>'storage'=v_storage
+                 and (lx->>'tanggal')::date=v_date
+                 and (lx->>'shift')::int=v_shift) then
       -- The original routine inserted a quantity revision for this closing;
       -- include the actual front/rear proof in its new_data snapshot.
       update private.stock_closing_revisions a
