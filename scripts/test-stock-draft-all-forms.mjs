@@ -252,8 +252,10 @@ test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not p
 test("unsafe operational saves blocked until actual period stock loads",()=>{
  assert.ok(html.includes("function stockCanSubmit()"));
  assert.ok(html.includes('STOCK_DATA_PERIOD===tanggal+":"+shift'));
- for(const group of ["Opening","Transfer","Closing"])
-   assert.ok(html.includes("async function save"+group+"(){\n    if(!stockCanSubmit())return;"),group);
+ assert.ok(html.includes("async function saveTransfer(){\n    if(!stockCanSubmit())return;"));
+ assert.ok(html.includes("async function saveOpening(){"));
+ assert.ok(html.includes("async function saveClosing(){"));
+ assert.ok(html.includes("if(!await stockCanSubmitClosing())return;"));
  assert.ok(html.includes("async function saveReceipt(){"));
  assert.ok(html.includes("if(!await stockCanSubmitReceipt())return;"));
  assert.ok(html.includes("KPPStockDrafts?.onRendered({stockReady:false})"));
@@ -379,6 +381,7 @@ test("auth bootstrap restores unsaved fields BEFORE the network Stock request be
    applyFuelmanIdentity:()=>actions.push("identity"),
    setAdminMovementTools:()=>actions.push("role"),
    loadStock:async()=>{actions.push("fetch");throw new Error("temporary network failure");},
+   loadClosingFast:()=>{actions.push("closing-fast");},
    console:{error:()=>actions.push("error")}
  };
  vm.createContext(ctx);
@@ -386,7 +389,7 @@ test("auth bootstrap restores unsaved fields BEFORE the network Stock request be
  assert.ok(handler);
  await handler({detail:{profile:{role:"admin",user_id:"signed-in-id"}}});
  assert.deepEqual(actions.slice(0,7),["master","transporters","identity","role",
-    "start:signed-in-id","recover:false","fetch"]);
+    "start:signed-in-id","recover:false","closing-fast"]);
  assert.ok(actions.includes("error"));
  assert.equal(actions.filter(x=>x==="recover:false").length,2);
 });
