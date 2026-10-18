@@ -44,7 +44,7 @@ test("old shift response cannot overwrite newly selected shift or restore draft 
  finish(h.tasks,4,"Current shift connection failed");
  await newer;
  assert.deepEqual(h.alerts,[]);
- assert.match(h.ctx.STOCK_DATA_READY===false?"Stock belum siap":"",/Stock belum siap/);
+ assert.equal(vm.runInContext("STOCK_DATA_READY",h.ctx),false);
 });
 test("overlapping loads within one shift accept only the most recently requested result",async()=>{
  const h=makeHarness();
@@ -56,7 +56,7 @@ test("overlapping loads within one shift accept only the most recently requested
  finish(h.tasks,4,"Latest request");
  await second;
  assert.deepEqual(h.alerts,[]);
- assert.equal(h.ctx.STOCK_DATA_READY,false);
+ assert.equal(vm.runInContext("STOCK_DATA_READY",h.ctx),false);
 });
 test("current-period guard runs before stock objects or any draft restore",()=>{
  const guard=code.indexOf("requestSequence!==STOCK_LOAD_REQUEST_SEQUENCE");
