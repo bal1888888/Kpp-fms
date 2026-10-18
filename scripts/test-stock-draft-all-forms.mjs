@@ -253,3 +253,20 @@ test("unsafe operational saves blocked until actual period stock loads",()=>{
    assert.ok(html.includes("async function save"+group+"(){\n    if(!stockCanSubmit())return;"),group);
  assert.ok(html.includes("KPPStockDrafts?.onRendered({stockReady:false})"));
 });
+
+test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists",()=>{
+ const backend=new Map();
+ const first=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ first.fire("receipt","receiptMeterStart","100");
+ // Force a deterministic difference in timestamps; user may have drafts
+ // from both shifts, but should recover the last worked shift.
+ const olderKey=Array.from(backend.keys())[0];
+ const older=JSON.parse(backend.get(olderKey));
+ backend.set(olderKey,JSON.stringify({...older,savedAt:Date.now()-120000}));
+ const next=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:2});
+ next.fire("receipt","receiptMeterStart","200");
+ const reloaded=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ assert.equal(reloaded.elements.shift.value,"2");
+ reloaded.drafts.onRendered();
+ assert.equal(reloaded.elements.receiptMeterStart.value,"200");
+});
