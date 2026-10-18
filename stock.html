@@ -3746,6 +3746,90 @@ async function stockCanSubmitReceipt(){
         return false;
     }
 }
+let FAST_CLOSING_PERIOD="";
+let FAST_CLOSING_READY=false;
+let FAST_CLOSING_REQUEST_SEQ=0;
+let CLOSING_SAVE_ATTEMPT_BUSY=false;
+function stockBookQtyKnown(storage){
+    return CURRENT_SYSTEM_STOCK[storage]!==null &&
+      CURRENT_SYSTEM_STOCK[storage]!==undefined &&
+      (STOCK_DATA_READY && STOCK_DATA_PERIOD===getPeriod().tanggal+":"+getPeriod().shift ||
+       FAST_CLOSING_READY && FAST_CLOSING_PERIOD===getPeriod().tanggal+":"+getPeriod().shift);
+}
+async function fastClosingSnapshot(){
+    const period=getPeriod();
+    const codes=closingStoragesForAccount();
+    if(!period.tanggal || ![1,2].includes(period.shift) || !codes.length)
+        throw new Error("Tanggal, shift atau storage Closing belum tersedia.");
+    const {data,error}=await stockWithDeadline(db.rpc("get_stock_closing_fast_snapshot",{
+        p_tanggal:period.tanggal,
+        p_shift:period.shift,
+        p_storages:codes
+    }),8000,"Pengecekan Closing");
+    if(error || !data?.ok || !Array.isArray(data.rows))
+        throw new Error(error?.message||"Snapshot Closing server tidak lengkap.");
+    if(getPeriod().tanggal!==period.tanggal || getPeriod().shift!==period.shift ||
+       closingStoragesForAccount().join("|")!==codes.join("|"))
+        throw new Error("Tanggal, shift atau daftar storage berubah saat pengecekan.");
+    if(data.rows.length!==codes.length || codes.some(code=>
+        !data.rows.some(row=>row.storage===code)))
+        throw new Error("Daftar storage Closing dari server tidak cocok. Coba muat ulang.");
+    return {period,rows:data.rows};
+}
+async function loadClosingFast(){
+    const token=++FAST_CLOSING_REQUEST_SEQ;
+    const status=document.getElementById("closingStatus");
+    try{
+        const snap=await fastClosingSnapshot();
+        if(token!==FAST_CLOSING_REQUEST_SEQ)return false;
+        const key=snap.period.tanggal+":"+snap.period.shift;
+        if(STOCK_DATA_READY && STOCK_DATA_PERIOD===key)return true;
+        FAST_CLOSING_PERIOD=key;
+        FAST_CLOSING_READY=true;
+        CURRENT_SYSTEM_STOCK=Object.fromEntries(snap.rows.map(row=>[row.storage,
+            row.opening_exists&&row.system_qty!=null?Number(row.system_qty):null]));
+        const saved=snap.rows.filter(row=>row.closing).map(row=>row.closing);
+        // The editor can already be typing Closing; never destroy their
+        // raw paired sounding fields in order to refresh the display.
+        if(!STOCK_CLOSING_INPUT_DIRTY){
+            renderClosing(CURRENT_SYSTEM_STOCK,saved);
+            window.KPPStockDrafts?.onRendered({stockReady:true});
+        }else updateClosingDifference();
+        if(status && !STOCK_CLOSING_INPUT_DIRTY)
+            status.textContent="CLOSING CEPAT SIAP • saldo MT/FT diverifikasi langsung ke server. Dashboard lengkap boleh menyusul.";
+        return true;
+    }catch(error){
+        if(token===FAST_CLOSING_REQUEST_SEQ && status)
+            status.textContent="[INFO] Closing cepat belum siap: "+(error?.message||error)+". Isian tetap aman.";
+        return false;
+    }
+}
+async function stockCanSubmitClosing(){
+    const status=document.getElementById("closingStatus");
+    if(status)status.textContent="Memeriksa saldo, Opening, dan Closing dari server...";
+    try{
+        const snap=await fastClosingSnapshot();
+        const visible=closingRevisionState();
+        for(const row of snap.rows){
+            if(!row.opening_exists || row.system_qty==null)
+                throw new Error("Opening "+row.storage+" untuk shift ini belum ada. Isi Opening terlebih dahulu.");
+            if(Boolean(row.closing)!==Boolean(visible.savedMap[row.storage]))
+                throw new Error("Status Closing "+row.storage+" berubah di server. Muat ulang Closing dan periksa draft.");
+        }
+        CURRENT_SYSTEM_STOCK={...CURRENT_SYSTEM_STOCK,...Object.fromEntries(
+            snap.rows.map(row=>[row.storage,Number(row.system_qty)]))};
+        FAST_CLOSING_PERIOD=snap.period.tanggal+":"+snap.period.shift;
+        FAST_CLOSING_READY=true;
+        updateClosingDifference();
+        if(status)status.textContent="Saldo server terbaru terverifikasi. Memvalidasi pengukuran fisik...";
+        return true;
+    }catch(error){
+        if(status)status.textContent="[BELUM DIKIRIM] "+(error?.message||error);
+        alert("Closing belum dikirim. "+(error?.message||error)+" Draft sonding tidak dihapus.");
+        return false;
+    }
+}
+
 async function loadStock(){
     const requestSequence=++STOCK_LOAD_REQUEST_SEQUENCE;
     STOCK_DATA_READY=false;
@@ -3836,14 +3920,20 @@ async function loadStock(){
         calculatedStock:bookStock
     });
     renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
-    renderClosing(bookStock,c.data||[]);
-    STOCK_CLOSING_INPUT_DIRTY=false;
+    if(!STOCK_CLOSING_INPUT_DIRTY){
+        renderClosing(bookStock,c.data||[]);
+        STOCK_CLOSING_INPUT_DIRTY=false;
+    }else{
+        updateClosingDifference();
+    }
     STOCK_DATA_PERIOD=tanggal+":"+shift;
     window.KPPStockDrafts?.onRendered();
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
     // Mark ready only when all render components completed successfully.
     STOCK_DATA_READY=true;
+    FAST_CLOSING_PERIOD=tanggal+":"+shift;
+    FAST_CLOSING_READY=true;
     updateStockRefreshMeta(tanggal,shift);
     return true;
     }catch(error){
@@ -3853,7 +3943,7 @@ async function loadStock(){
         const reason=String(error?.message||error);
         const info=document.getElementById("stockRefreshInfo");
         const badge=document.getElementById("stockRefreshBadge");
-        if(info)info.textContent="STOCK BELUM TERBARU: "+reason+" | Penerimaan: jalur pengecekan cepat tersedia.";
+        if(info)info.textContent="STOCK BELUM TERBARU: "+reason+" | Penerimaan dan Closing punya pemeriksaan server terpisah.";
         if(badge){badge.textContent="GAGAL MUAT";badge.classList.remove("is-live");}
         window.KPPStockDrafts?.onRendered({stockReady:false});
         console.warn("Stock load failed:",reason);
@@ -4126,7 +4216,7 @@ function renderClosing(stock,savedClosing){
             <td><b>${storage}</b></td>
             <td>
                 <div class="closing-system-reading">
-                    <strong class="closing-system-number">${saved?fmt(stock[storage]):"Ukur sonding dahulu"}</strong>
+                    <strong class="closing-system-number">${saved?(stock[storage]==null?"Dihitung server":fmt(stock[storage])):"Ukur sonding dahulu"}</strong>
                     <small>Stock Sistem (pembanding, bukan hasil sonding)</small>
                 </div>
             </td>
@@ -4187,7 +4277,9 @@ function updateClosingFromHeight(storage,refreshDifference=true){
 
     if(!heightInput || !actualInput)return;
     const comparison=heightInput.closest("tr")?.querySelector(".closing-system-number");
-    if(comparison)comparison.textContent=heightInput.value!==""?fmt(CURRENT_SYSTEM_STOCK[storage]):"Ukur sonding dahulu";
+    if(comparison)comparison.textContent=heightInput.value!==""
+        ?(stockBookQtyKnown(storage)?fmt(CURRENT_SYSTEM_STOCK[storage]):"Saldo dihitung server")
+        :"Ukur sonding dahulu";
 
     if(heightInput.value===""){
         actualInput.value="";
@@ -4214,11 +4306,14 @@ function updateClosingDifference(){
     let systemTotal=0;
     let actualTotal=0;
     let hasAllActual=true;
+    let allBookQtyKnown=true;
 
     const closingStorages=closingStoragesForAccount();
 
     closingStorages.forEach(storage=>{
-        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        const known=stockBookQtyKnown(storage);
+        if(!known)allBookQtyKnown=false;
+        const systemQty=known?n(CURRENT_SYSTEM_STOCK[storage]):0;
         systemTotal+=systemQty;
 
         const input=document.getElementById(`actual-${storage}`);
@@ -4239,21 +4334,21 @@ function updateClosingDifference(){
         const difference=actualQty-systemQty;
 
         if(diffCell){
-            diffCell.textContent=fmtSigned(difference);
-            diffCell.className=
+            diffCell.textContent=known?fmtSigned(difference):"Menunggu saldo server";
+            diffCell.className=!known?"diff-zero":
                 difference>0?"diff-positive":
                 difference<0?"diff-negative":
                 "diff-zero";
         }
     });
 
-    document.getElementById("closingSystemTotal").textContent=hasAllActual?fmt(systemTotal):"Isi sonding dahulu";
+    document.getElementById("closingSystemTotal").textContent=hasAllActual?(allBookQtyKnown?fmt(systemTotal):"Menunggu saldo server"):"Isi sonding dahulu";
     document.getElementById("closingActualTotal").textContent=hasAllActual?fmt(actualTotal):"-";
 
     const totalDifference=actualTotal-systemTotal;
     const el=document.getElementById("closingDifferenceTotal");
 
-    if(hasAllActual){
+    if(hasAllActual && allBookQtyKnown){
         el.textContent=fmtSigned(totalDifference);
         el.className=
             totalDifference>0?"diff-positive":
@@ -4347,7 +4442,8 @@ function renderMovement(movementData,fuelData){
 }
 
 async function saveOpening(){
-    if(!stockCanSubmit())return;
+    // Atomic Opening RPC checks current shift, account, active storage
+    // and replay/duplicate values. No dashboard query is needed.
     const {tanggal,shift}=getPeriod();
     let storage=document.getElementById("openingStorage").value;
     let operator=soundingOfficerName()||document.getElementById("openingOperator").value.trim();
@@ -4412,8 +4508,9 @@ async function saveOpening(){
     LAST_COPY_REPORTS.opening=openingReport;
     window.KPPStockDrafts?.clear("opening");
     setCopyPreview("openingCopyPreview",openingReport);
-    await loadStock();
     await finishStockSave(true,"Stock Opening sudah tersimpan.");
+    void loadStock().catch(error=>console.warn("Refresh setelah Opening:",error));
+    void loadClosingFast().catch(error=>console.warn("Snapshot setelah Opening:",error));
 }
 
 let RECEIPT_SAVE_ATTEMPT_BUSY=false;
@@ -4644,10 +4741,8 @@ async function saveTransfer(){
     }
 
     if(n(measurement.sourceQty)>n(CURRENT_SYSTEM_STOCK[source_storage])){
-        const lanjut=confirm(
-            "[PERINGATAN] Qty keluar menurut sounding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
-        );
-        if(!lanjut)return;
+        alert("Transfer tidak boleh melebihi Stock Sistem "+source_storage+". Periksa Opening dan sonding terlebih dahulu.");
+        return;
     }
 
     const projectedDestination=measurement.destinationAfter.liters;
@@ -4706,6 +4801,7 @@ async function saveTransfer(){
         jam:transferTime,
         shift,
         jenis:"TRANSFER",
+        operation_mode:"LIVE",
         source_storage,
         destination_storage,
         qty,
@@ -4766,7 +4862,10 @@ async function saveTransfer(){
 }
 
 async function saveClosing(){
-    if(!stockCanSubmit())return;
+    if(CLOSING_SAVE_ATTEMPT_BUSY || STOCK_SAVE_LOCK)return;
+    CLOSING_SAVE_ATTEMPT_BUSY=true;
+    try{
+    if(!await stockCanSubmitClosing())return;
     const {tanggal,shift}=getPeriod();
     let operator=soundingOfficerName()||document.getElementById("closingOperator").value.trim();
     const note=document.getElementById("closingNote").value.trim();
@@ -5009,11 +5108,11 @@ async function saveClosing(){
         LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
         window.KPPStockDrafts?.clear("closing");
         reasonInput.value="";
-        await loadStock();
         await finishStockSave(
             true,
             "Revisi Stock Akhir tersimpan. "+changedRows.length+" storage diperbarui."
         );
+        void loadStock().catch(error=>console.warn("Refresh setelah revisi Closing:",error));
         return;
     }
 
@@ -5073,8 +5172,13 @@ async function saveClosing(){
                 : "[OK] Stock closing tersimpan.";
     }
 
-    await loadStock();
     await finishStockSave(true,"Stock Closing sudah tersimpan.");
+    // After server acknowledgement, the just-submitted fields are no longer
+    // an unsaved draft. Allow the fresh snapshot to lock saved rows correctly.
+    STOCK_CLOSING_INPUT_DIRTY=false;
+    void loadClosingFast().catch(error=>console.warn("Snapshot sesudah Closing:",error));
+    void loadStock().catch(error=>console.warn("Refresh sesudah Closing:",error));
+    }finally{CLOSING_SAVE_ATTEMPT_BUSY=false;}
 }
 
 function refreshStorageInputs(){
@@ -5150,6 +5254,9 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     // Never rely on Stock's four DB queries and the complete dashboard render
     // to succeed before a user can see a saved flowmeter or receipt sounding.
     window.KPPStockDrafts?.onRendered({stockReady:false});
+    // Closing's small read path loads independently of the heavy dashboard.
+    // It restores paired sounding drafts as soon as its own snapshot arrives.
+    void loadClosingFast();
     try{
         await loadStock();
     }catch(error){
