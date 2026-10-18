@@ -16,6 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
+<script src="stock-drafts.js?v=20261018-all-forms"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -1053,6 +1054,12 @@ th{background:#f8fafc;color:#475569}
 }
 </style>
 
+<style id="kpp-stock-autodraft-ui">
+.stock-draft-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;margin:12px 0;border:1px solid #bfd2e6;border-radius:11px;background:#eff6ff;color:#1e3a5f;font-size:12px;font-weight:700;line-height:1.5}
+.stock-draft-banner span{min-width:0;overflow-wrap:anywhere}
+.stock-draft-reset{flex:none;min-height:38px;padding:8px 11px;border:1px solid #94a3b8;border-radius:8px;background:#fff;color:#334155;font-weight:bold;font-size:11px}
+@media(max-width:700px){.stock-draft-banner{align-items:flex-start;flex-direction:column}.stock-draft-reset{width:100%;min-height:44px}}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -1217,6 +1224,10 @@ th{background:#f8fafc;color:#475569}
     <div class="cards" id="stockCards"></div>
 </div>
 
+<div class="stock-draft-banner" role="status" aria-live="polite">
+  <span id="stockDraftStatus">Draft Stock otomatis aktif setelah login.</span>
+  <button type="button" class="stock-draft-reset" onclick="window.KPPStockDrafts?.clearCurrent()">HAPUS DRAFT</button>
+</div>
 <div class="panel converter-panel" id="soundingCheckPanel">
     <h3>Cek Sonding MT / FT</h3>
     <div class="grid">
@@ -3750,6 +3761,7 @@ async function loadStock(){
     renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
     renderClosing(bookStock,c.data||[]);
     STOCK_CLOSING_INPUT_DIRTY=false;
+    window.KPPStockDrafts?.onRendered();
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
 }
@@ -3771,7 +3783,7 @@ function stockHasActiveInput(){
 }
 
 function stockAutoRefresh(){
-    if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK || STOCK_CLOSING_INPUT_DIRTY)return;
+    if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK || STOCK_CLOSING_INPUT_DIRTY || window.KPPStockDrafts?.hasDraft())return;
     if(document.getElementById("stockEditOverlay")?.classList.contains("hidden")===false)return;
     if(stockHasActiveInput())return;
     STOCK_AUTO_REFRESH_BUSY=true;
@@ -4289,6 +4301,7 @@ async function saveOpening(){
     }
 
     LAST_COPY_REPORTS.opening=openingReport;
+    window.KPPStockDrafts?.clear("opening");
     setCopyPreview("openingCopyPreview",openingReport);
     await loadStock();
     await finishStockSave(true,"Stock Opening sudah tersimpan.");
@@ -4427,6 +4440,7 @@ async function saveReceipt(){
     }
 
     LAST_COPY_REPORTS.receipt=receiptReport;
+    window.KPPStockDrafts?.clear("receipt");
     setCopyPreview("receiptCopyPreview",receiptReport);
     [
         "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
@@ -4609,6 +4623,7 @@ async function saveTransfer(){
     }
 
     LAST_COPY_REPORTS.transfer=transferReport;
+    window.KPPStockDrafts?.clear("transfer");
     setCopyPreview("transferCopyPreview",transferReport);
     [
         "transferSourceHeightBefore",
@@ -4867,6 +4882,7 @@ async function saveClosing(){
         }
 
         LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+        window.KPPStockDrafts?.clear("closing");
         reasonInput.value="";
         await loadStock();
         await finishStockSave(
@@ -4911,6 +4927,7 @@ async function saveClosing(){
     }
 
     LAST_COPY_REPORTS.closing=buildClosingCopyReport().text;
+    window.KPPStockDrafts?.clear("closing");
 
     if(carryForward){
         const nextPeriod={
@@ -4966,13 +4983,13 @@ document.getElementById("receiptReference").addEventListener("input",event=>{
     event.target.value=event.target.value.toUpperCase();
     updateReceiptCalculation();
 });
-document.getElementById("tanggal").addEventListener("change",loadStock);
+document.getElementById("tanggal").addEventListener("change",()=>{window.KPPStockDrafts?.beforePeriodChange();loadStock();});
 document.getElementById("tanggal").addEventListener("change",()=>{
     updateOpeningConversion();
     updateReceiptCalculation();
     updateTransferCalculation();
 });
-document.getElementById("shift").addEventListener("change",loadStock);
+document.getElementById("shift").addEventListener("change",()=>{window.KPPStockDrafts?.beforePeriodChange();loadStock();});
 document.getElementById("shift").addEventListener("change",()=>{
     updateOpeningConversion();
     updateReceiptCalculation();
@@ -5003,6 +5020,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
 
     applyFuelmanIdentity();
     setAdminMovementTools();
+    window.KPPStockDrafts?.start(window.KPP_SESSION?.user?.id||CURRENT_PROFILE?.user_id);
     await loadStock();
 });
 
