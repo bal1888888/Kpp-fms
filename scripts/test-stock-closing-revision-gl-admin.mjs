@@ -36,7 +36,7 @@ test('Stock UI exposes revision only to GL/Admin and keeps initial Closing path'
   assert.match(stock, /id="closingRevisionReason"/i);
   assert.match(stock, /id="closingRevisionBox"/i);
   assert.match(stock, /revise_stock_closing/i);
-  assert.match(stock, /save_stock_closing_atomic/i);
+  assert.match(stock, /save_stock_closing_with_evidence/i);
   assert.match(stock, /Revisi Stock Akhir hanya GL\/Admin/i);
 });
 
