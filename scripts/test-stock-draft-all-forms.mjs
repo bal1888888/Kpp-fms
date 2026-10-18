@@ -40,6 +40,9 @@ function createHarness(backend,newUser="user-a",period={tanggal:"2026-10-18",shi
  mk("shift","time").value=String(period.shift);
  if(lockPeriod){elements.tanggal.disabled=true;elements.shift.disabled=true;}
  const banner=mk("stockDraftStatus","other");banner.textContent="";
+ const receiptBanner=mk("receiptDraftIndicator","other");receiptBanner.textContent="";
+ const recovery=mk("stockDraftRecovery","other");recovery.hidden=true;
+ const backup=mk("stockDraftRecoveryText","other");backup.value="";
  const storage={getItem:k=>backend.get(k)??null,setItem:(k,v)=>backend.set(k,v),
   removeItem:k=>backend.delete(k),key:i=>Array.from(backend.keys())[i]??null,
   get length(){return backend.size;}};
@@ -131,7 +134,7 @@ test("stale device drafts expire, while manual clearing is scoped to current use
  assert.equal(backend.size,0);
 });
 test("integration: Stock only saves drafts after user events and clears on confirmed successes",()=>{
- assert.match(html,/stock-drafts\.js\?v=20261018-restore-v3/);
+ assert.match(html,/stock-drafts\.js\?v=20261018-recovery-v4/);
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
@@ -161,7 +164,7 @@ test("a missing or disabled tank/transport company cannot rebind sounding to a d
  assert.equal(b.elements.receiptMeterStart.value,"");
  assert.deepEqual(b.elements.receiptTankHeightBefore.fr.map(x=>x.value),["",""]);
  assert.deepEqual(b.elements.transferSourceHeightBefore.fr.map(x=>x.value),["",""]);
- assert.match(b.elements.stockDraftStatus.textContent,/storage\/transportir berbeda/);
+ assert.match(b.elements.stockDraftStatus.textContent,/DRAFT DITEMUKAN/);
  // Raw draft remains intact for Admin to inspect, not silently reassigned.
  assert.equal(backend.size,1);
 });
@@ -273,4 +276,73 @@ test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists"
  assert.equal(reloaded.elements.shift.value,"2");
  reloaded.drafts.onRendered();
  assert.equal(reloaded.elements.receiptMeterStart.value,"200");
+});
+
+test("actual screenshot repro: MT02 + PT. DKA flowmeters 20000/40000 and sonding 20->40 survive refresh",()=>{
+ const backend=new Map();
+ const a=createHarness(backend,"iqbal",{tanggal:"2026-10-18",shift:1});
+ a.elements.receiptTransporter.options.push({value:"PT. DKA"});
+ a.fire("receipt","receiptDestination","MT02");
+ a.fire("receipt","receiptTransporter","PT. DKA");
+ a.fire("receipt","receiptMeterStart","20000");
+ a.fire("receipt","receiptMeterEnd","40000");
+ a.fire("receipt","receiptTankHeightBefore",["20","20"]);
+ a.fire("receipt","receiptTankHeightAfter",["40","40"]);
+ assert.match(a.elements.receiptDraftIndicator.textContent,/DRAFT TERSIMPAN/);
+ const saved=[...backend.values()].map(x=>JSON.parse(x))[0];
+ assert.equal(saved.sections.receipt.fields.receiptDestination,"MT02");
+ assert.equal(saved.sections.receipt.fields.receiptTransporter,"PT. DKA");
+ const after=createHarness(backend,"iqbal",{tanggal:"2026-10-18",shift:1});
+ after.elements.receiptTransporter.options.push({value:"PT. DKA"});
+ after.elements.receiptDestination.value="MT01";
+ after.elements.receiptTransporter.value="";
+ after.drafts.onRendered();
+ assert.equal(after.elements.receiptDestination.value,"MT02");
+ assert.equal(after.elements.receiptTransporter.value,"PT. DKA");
+ assert.equal(after.elements.receiptMeterStart.value,"20000");
+ assert.equal(after.elements.receiptMeterEnd.value,"40000");
+ assert.deepEqual(after.elements.receiptTankHeightBefore.fr.map(x=>x.value),["20","20"]);
+ assert.deepEqual(after.elements.receiptTankHeightAfter.fr.map(x=>x.value),["40","40"]);
+ assert.match(after.elements.receiptDraftIndicator.textContent,/DIPULIHKAN/);
+});
+test("safe vendor alias PT DKA/PT. DKA recovers without remapping storage",()=>{
+ const backend=new Map();
+ const a=createHarness(backend,"iqbal");
+ a.elements.receiptTransporter.options.push({value:"PT. DKA"});
+ a.fire("receipt","receiptDestination","MT02");
+ a.fire("receipt","receiptTransporter","PT. DKA");
+ a.fire("receipt","receiptMeterStart","20000");
+ const b=createHarness(backend,"iqbal");
+ b.elements.receiptTransporter.options.push({value:"PT DKA"});
+ b.drafts.onRendered();
+ assert.equal(b.elements.receiptDestination.value,"MT02");
+ assert.equal(b.elements.receiptTransporter.value,"PT DKA");
+ assert.equal(b.elements.receiptMeterStart.value,"20000");
+});
+test("changed master never associates old sounding with a new tank; raw measurements remain recoverable",()=>{
+ const backend=new Map();
+ const a=createHarness(backend,"iqbal");
+ a.elements.receiptTransporter.options.push({value:"PT. DKA"});
+ a.fire("receipt","receiptDestination","MT02");
+ a.fire("receipt","receiptTransporter","PT. DKA");
+ a.fire("receipt","receiptMeterStart","20000");
+ a.fire("receipt","receiptTankHeightBefore",["20","20"]);
+ const b=createHarness(backend,"iqbal");
+ b.elements.receiptDestination.options=[{value:"MT01"}];
+ b.elements.receiptDestination.value="MT01";
+ b.elements.receiptTransporter.options.push({value:"PT. DKA"});
+ b.drafts.onRendered();
+ assert.equal(b.elements.receiptMeterStart.value,"");
+ assert.equal(b.elements.receiptDestination.value,"MT01");
+ assert.match(b.elements.receiptDraftIndicator.textContent,/DRAFT DITEMUKAN/);
+ b.drafts.showDraft();
+ assert.equal(b.elements.stockDraftRecovery.hidden,false);
+ assert.match(b.elements.stockDraftRecoveryText.value,/receiptDestination: MT02/);
+ assert.match(b.elements.stockDraftRecoveryText.value,/receiptMeterStart: 20000/);
+ assert.match(b.elements.stockDraftRecoveryText.value,/receiptTankHeightBefore depan: 20 cm; belakang: 20 cm/);
+});
+test("Stock page visibly exposes safe draft and read-only recovery in the receipt panel",()=>{
+ assert.match(html,/id="receiptDraftIndicator"/);
+ assert.match(html,/id="stockDraftRecoveryText" readonly/);
+ assert.match(html,/window\.KPPStockDrafts\?\.showDraft\(\)/);
 });

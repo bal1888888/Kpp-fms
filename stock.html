@@ -16,7 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
-<script src="stock-drafts.js?v=20261018-restore-v3"></script>
+<script src="stock-drafts.js?v=20261018-recovery-v4"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -1060,6 +1060,14 @@ th{background:#f8fafc;color:#475569}
 .stock-draft-reset{flex:none;min-height:38px;padding:8px 11px;border:1px solid #94a3b8;border-radius:8px;background:#fff;color:#334155;font-weight:bold;font-size:11px}
 @media(max-width:700px){.stock-draft-banner{align-items:flex-start;flex-direction:column}.stock-draft-reset{width:100%;min-height:44px}}
 </style>
+<style id="kpp-stock-draft-recovery-style">
+.stock-draft-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stock-draft-recovery[hidden]{display:none!important}
+.stock-draft-recovery textarea{width:100%;min-height:200px;font:12px/1.6 monospace;white-space:pre;resize:vertical}
+.receipt-draft-indicator{background:#eef6ff;color:#1d4e80;border:1px solid #c9dff5;
+  border-radius:8px;padding:9px 11px;margin:8px 0 12px;font-size:12px;line-height:1.5}
+@media(max-width:700px){.stock-draft-actions{width:100%}.stock-draft-actions button{flex:1;min-width:0}}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -1226,7 +1234,15 @@ th{background:#f8fafc;color:#475569}
 
 <div class="stock-draft-banner" role="status" aria-live="polite">
   <span id="stockDraftStatus">Draft Stock otomatis aktif setelah login.</span>
-  <button type="button" class="stock-draft-reset" onclick="window.KPPStockDrafts?.clearCurrent()">HAPUS DRAFT</button>
+  <div class="stock-draft-actions">
+    <button type="button" class="stock-draft-reset" onclick="window.KPPStockDrafts?.showDraft()">LIHAT DRAFT</button>
+    <button type="button" class="stock-draft-reset" onclick="window.KPPStockDrafts?.clearCurrent()">HAPUS DRAFT</button>
+  </div>
+</div>
+<div id="stockDraftRecovery" class="panel stock-draft-recovery" hidden>
+  <h3>Salinan Draft Belum Dikirim</h3>
+  <p>Ini hanya backup angka di browser, bukan transaksi tersimpan. Cek storage sebelum menginput ulang.</p>
+  <textarea id="stockDraftRecoveryText" readonly rows="12" aria-label="Backup draft Stock"></textarea>
 </div>
 <div class="panel converter-panel" id="soundingCheckPanel">
     <h3>Cek Sonding MT / FT</h3>
@@ -1293,6 +1309,7 @@ th{background:#f8fafc;color:#475569}
 
 <div class="panel workflow-panel receipt-panel" data-step="02">
     <h3>2. Penerimaan Solar dari Transportir</h3>
+    <div id="receiptDraftIndicator" class="receipt-draft-indicator" aria-live="polite">Auto-save siap. Isi form lalu cek tulisan DRAFT TERSIMPAN.</div>
     <div class="note" style="margin-bottom:12px">Flowmeter untuk audit transporter. Stock masuk mengikuti sounding tangki.</div>
     <div class="grid receipt-form-grid">
         <div>

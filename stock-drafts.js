@@ -22,7 +22,11 @@
     shift:Number(document.getElementById("shift")?.value||0)});
   const keyFor=period=>period?.tanggal&&[1,2].includes(Number(period.shift))&&userId
     ? PREFIX+userId+":"+period.tanggal+":"+Number(period.shift):null;
-  const setMessage=message=>{const el=status();if(el)el.textContent=message;};
+  const setMessage=message=>{
+    const el=status();if(el)el.textContent=message;
+    const receipt=document.getElementById("receiptDraftIndicator");
+    if(receipt)receipt.textContent=message;
+  };
   function read(key){
     if(!key)return null;
     try{
@@ -117,8 +121,15 @@
     "transferSource","transferDestination"
   ]);
   function matchingOption(el,value,ignoreDisabled=false){
-    return Array.from(el?.options||[]).find(option=>
-      String(option.value)===String(value) && (ignoreDisabled||!option.disabled));
+    const all=Array.from(el?.options||[]).filter(o=>ignoreDisabled||!o.disabled);
+    const exact=all.find(o=>String(o.value)===String(value));
+    if(exact)return exact;
+    // Vendor master sometimes differs only in punctuation/spaces.
+    // Never apply this aliasing to tank codes; codes must match exactly.
+    if(el?.id!=="receiptTransporter" || !value)return null;
+    const normalize=v=>String(v).toUpperCase().replace(/[^A-Z0-9]/g,"");
+    const matches=all.filter(o=>normalize(o.value)===normalize(value));
+    return matches.length===1?matches[0]:null;
   }
   function selectorsValid(group,fields){
     // If master data changed, do NOT apply measurements to a fallback tank.
@@ -135,8 +146,10 @@
     const el=document.getElementById(id);
     if(!el||el.readOnly||el.disabled)return;
     if(el.tagName==="SELECT"){
-      const option=Array.from(el.options).find(o=>o.value===value&&!o.disabled);
+      const option=matchingOption(el,value);
       if(!option)return;
+      el.value=option.value;
+      return;
     }
     if(id==="carryForward")el.checked=value===true;
     else if(value!=null)el.value=String(value);
@@ -181,6 +194,35 @@
     }
     return restored;
   }
+  function readableDraft(data){
+    if(!data)return "Belum ada draft tersimpan untuk akun/tanggal/shift ini.";
+    const result=["DRAFT STOCK BELUM DIKIRIM","Akun: aktif","Tanggal: "+getPeriod().tanggal,
+      "Shift: "+getPeriod().shift,""];
+    const labels={check:"CEK SONDING",opening:"OPENING",receipt:"PENERIMAAN",
+      transfer:"TRANSFER",closing:"CLOSING"};
+    const all={...GROUPS};
+    for(const [group,entry] of Object.entries(data.sections||{})){
+      if(!all[group])continue;
+      result.push("["+labels[group]+"]");
+      for(const [id,value] of Object.entries(entry.fields||{}))
+        if(value!=="" && value!==null && value!==undefined && id!=="carryForward")
+          result.push(id+": "+String(value));
+      for(const [id,pair] of Object.entries(entry.paired||{}))
+        result.push(id+" depan: "+String(pair.front??"")+" cm; belakang: "+String(pair.rear??"")+" cm");
+      result.push("");
+    }
+    result.push("CATATAN: Draft bukan bukti transaksi tersimpan di Supabase.");
+    return result.join("\n");
+  }
+  function showDraft(){
+    const data=read(activeKey);
+    const panel=document.getElementById("stockDraftRecovery");
+    const content=document.getElementById("stockDraftRecoveryText");
+    if(!panel||!content)return;
+    content.value=readableDraft(data);
+    panel.hidden=false;
+    panel.scrollIntoView?.({block:"nearest",behavior:"smooth"});
+  }
   function onRendered({stockReady=true}={}){
     if(!started)return;
     const newPeriod=getPeriod(),newKey=keyFor(newPeriod);
@@ -213,9 +255,17 @@
       window.updateClosingDifference?.();
       window.renderClosingCopyPreview?.();
     }finally{suspended=false;}
-    if(count)setMessage("DIPULIHKAN: "+count+" bagian formulir tanggal "+newPeriod.tanggal+" Shift "+newPeriod.shift+". "+(stockReady?"Cek isian sebelum menyimpan.":"Server Stock belum tersambung, jangan kirim transaksi."));
-    else if(!stockReady)setMessage("Draft belum dapat dipulihkan lengkap. Stock dari server belum tersedia. Jangan kirim transaksi.");
-    else setMessage("Draft tersedia, tetapi storage/transportir berbeda dengan Master aktif. Angka sengaja TIDAK dimasukkan ke tangki lain.");
+    const failedGroups=Object.keys(data.sections).filter(group=>
+      GROUPS[group] && (group==="closing" && !stockReady
+        ? true
+        : !selectorsValid(group,data.sections[group]?.fields||{})));
+    if(failedGroups.length){
+      setMessage("DRAFT DITEMUKAN, tapi belum dipulihkan lengkap ("+
+        failedGroups.join(", ")+"). Tekan LIHAT DRAFT agar angkanya tidak hilang. Jangan pakai storage pengganti. "+(!stockReady?"Stock server belum siap, jangan kirim transaksi.":""));
+    }else if(count){
+      setMessage("DIPULIHKAN: "+count+" bagian formulir tanggal "+newPeriod.tanggal+" Shift "+newPeriod.shift+". "+(stockReady?"Cek semua isian sebelum menyimpan.":"Server Stock belum tersambung, jangan kirim transaksi."));
+    }else if(!stockReady)setMessage("Draft belum dapat dipulihkan. Stock server belum tersedia. Tekan LIHAT DRAFT.");
+    else setMessage("Draft tersimpan tetapi belum dapat diterapkan. Tekan LIHAT DRAFT untuk melihat angka aslinya.");
   }
   function resetPeriodFields(){
     // Period change already updated the date/shift selectors. Reset all
@@ -343,6 +393,6 @@
   document.addEventListener("change",onInput,true);
   window.addEventListener("pagehide",persist);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persist();});
-  window.KPPStockDrafts=Object.freeze({start,onRendered,beforePeriodChange,clear,clearCurrent,
+  window.KPPStockDrafts=Object.freeze({start,onRendered,beforePeriodChange,clear,clearCurrent,showDraft,
     hasDraft:hasActiveTransactionDraft});
 })();
