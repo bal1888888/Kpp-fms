@@ -161,7 +161,7 @@ test("a missing or disabled tank/transport company cannot rebind sounding to a d
  assert.equal(b.elements.receiptMeterStart.value,"");
  assert.deepEqual(b.elements.receiptTankHeightBefore.fr.map(x=>x.value),["",""]);
  assert.deepEqual(b.elements.transferSourceHeightBefore.fr.map(x=>x.value),["",""]);
- assert.match(b.elements.stockDraftStatus.textContent,/pilihan akun\/storage berubah/);
+ assert.match(b.elements.stockDraftStatus.textContent,/storage\/transportir berbeda/);
  // Raw draft remains intact for Admin to inspect, not silently reassigned.
  assert.equal(backend.size,1);
 });
@@ -247,9 +247,9 @@ test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not p
  assert.deepEqual(restored.elements["height-MT01"].fr.map(x=>x.value),["20","30"]);
 });
 test("unsafe operational saves blocked until actual period stock loads",()=>{
- assert.match(html,/function stockCanSubmit\\(\\)/);
- assert.match(html,/STOCK_DATA_PERIOD===tanggal\+":"\+shift/);
+ assert.ok(html.includes("function stockCanSubmit()"));
+ assert.ok(html.includes('STOCK_DATA_PERIOD===tanggal+":"+shift'));
  for(const group of ["Opening","Receipt","Transfer","Closing"])
-  assert.match(html,new RegExp("async function save"+group+"\\(\\)\\{\\s*if\\(!stockCanSubmit\\(\\)\\)return"));
- assert.match(html,/KPPStockDrafts\\?\\.onRendered\\(\\{stockReady:false\\}\\)/);
+   assert.ok(html.includes("async function save"+group+"(){\n    if(!stockCanSubmit())return;"),group);
+ assert.ok(html.includes("KPPStockDrafts?.onRendered({stockReady:false})"));
 });
