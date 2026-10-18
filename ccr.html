@@ -1066,7 +1066,7 @@ function renderCcrMobileHistory(orphanIds){
       +'<header><strong>'+esc(r.unit||"-")+'</strong><small>'+esc(r.tanggal||"-")+' · '+esc(r.shift||"-")+'</small></header>'
       +'<div class="ccr-mobile-fields"><div>Status<b>'+esc(r.status||"-")+'</b></div>'
       +'<div>Jatah + Tol.<b>'+esc(fmt(Number(r.max_qty||0)+Number(r.tolerance_qty||0)))+' L</b></div>'
-      +'<div>HM CCR<b>'+esc(fmt(r.hm_ccr))+'</b></div><div>HM aktual<b>'+esc(fmt(r.used_actual_hm))+'</b></div></div>'
+      +'<div>HM CCR<b>'+esc(r.hm_ccr==null?'-':fmt(r.hm_ccr))+'</b></div><div>HM aktual<b>'+esc(r.used_actual_hm==null?'-':fmt(r.used_actual_hm))+'</b></div></div>'
       +(orphan?'<div class="ccr-mobile-alert">Perlu audit: referensi pengisian tidak ditemukan.</div>':'')+'</article>';
   }).join("");
   if(ROWS.length>30)root.insertAdjacentHTML("beforeend",'<p>Menampilkan 30 jatah terbaru; gunakan filter status untuk lainnya.</p>');
