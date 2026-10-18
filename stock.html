@@ -4626,6 +4626,12 @@ async function saveClosing(){
 
         const heightInput=document.getElementById(`height-${storage}`);
         const input=document.getElementById(`actual-${storage}`);
+        const historical=revisionState.savedMap[storage];
+        const oldPair=heightInput?.closest("td")?.querySelectorAll(".front-rear-value");
+        // Never manufacture front/rear readings for untouched old records.
+        if(isRevision && historical &&
+           historical.sonding_front_cm==null && historical.sonding_rear_cm==null &&
+           oldPair?.length===2 && oldPair[0].value==="" && oldPair[1].value==="")continue;
 
         if(!heightInput || heightInput.value==="" || !input || input.value===""){
             alert(
@@ -4757,8 +4763,8 @@ async function saveClosing(){
             return (
                 n(old.actual_qty)!==n(row.actual_qty) ||
                 n(old.sonding_height_cm)!==n(row.sonding_height_cm) ||
-                (old.sonding_front_cm!=null && n(old.sonding_front_cm)!==n(row.sonding_front_cm)) ||
-                (old.sonding_rear_cm!=null && n(old.sonding_rear_cm)!==n(row.sonding_rear_cm)) ||
+                (old.sonding_front_cm==null || n(old.sonding_front_cm)!==n(row.sonding_front_cm)) ||
+                (old.sonding_rear_cm==null || n(old.sonding_rear_cm)!==n(row.sonding_rear_cm)) ||
                 String(old.note||"").trim()!==String(row.note||"").trim() ||
                 String(old.tera_version||"")!==String(row.tera_version||"")
             );
@@ -4822,7 +4828,7 @@ async function saveClosing(){
         await loadStock();
         await finishStockSave(
             true,
-            "Revisi Stock Akhir tersimpan. "+n(revisionResult?.changed_rows)+" storage diperbarui."
+            "Revisi Stock Akhir tersimpan. "+changedRows.length+" storage diperbarui."
         );
         return;
     }
