@@ -47,7 +47,7 @@ test("history audit is read-only, on-demand and mobile-friendly",()=>{
  assert.match(html,/stock-reconciliation\.js\?v=20261018-a1/);
  assert.match(html,/async function inspectClosing\(index\)/);
  assert.match(html,/onclick="inspectClosing\(\$\{index\}\)"/);
- assert.match(html,/\\.is\("duplicate_of_id",null\)/);
+ assert.match(html,/\.is\("duplicate_of_id",null\)/);
  assert.match(html,/closing-reconcile-grid/);
  assert.match(html,/KPPStockReconcile\.calculate/);
  assert.match(html,/Lebih dari 1\.000 transaksi/);
