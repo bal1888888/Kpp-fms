@@ -1652,10 +1652,16 @@ async function sendStockMovementSafe(payload){
         }
     };
 
-    if(navigator.locks){
-        return navigator.locks.request(stockMovementRequestKey()+":lock",run);
+    // Without cross-tab Web Locks, two open Stock tabs can race and create two
+    // distinct request IDs. Never submit a movement without that protection.
+    if(!navigator.locks || typeof navigator.locks.request!=="function"){
+        return {
+            data:null,
+            error:{message:"Pengiriman dibatalkan demi mencegah transaksi ganda. Browser HP ini belum mendukung penguncian transaksi antartab. Gunakan Chrome/Edge versi terbaru; isian Anda belum dikirim."},
+            guardUnsupported:true
+        };
     }
-    return run();
+    return navigator.locks.request(stockMovementRequestKey()+":lock",run);
 }
 const STOCK_PANEL_CONFIG={
     movement:{
