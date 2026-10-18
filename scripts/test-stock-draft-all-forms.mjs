@@ -263,7 +263,11 @@ test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists"
  const olderKey=Array.from(backend.keys())[0];
  const older=JSON.parse(backend.get(olderKey));
  backend.set(olderKey,JSON.stringify({...older,savedAt:Date.now()-120000}));
- const next=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:2});
+ const next=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ // User intentionally switches to Shift 2 after auth, rather than reusing
+ // an older Shift 1 draft restored automatically by startup.
+ next.elements.shift.value="2";
+ next.drafts.beforePeriodChange();
  next.fire("receipt","receiptMeterStart","200");
  const reloaded=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
  assert.equal(reloaded.elements.shift.value,"2");
