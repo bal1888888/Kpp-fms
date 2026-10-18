@@ -60,6 +60,11 @@ test("form: proof is transmitted, existing inputs lock together, historical reco
   "querySelectorAll(\".front-rear-value\").forEach"
  ])assert.ok(stock.includes(marker),marker);
  assert.match(stock,/Ukur sonding dahulu/);
+ assert.match(stock,/id="kpp-independent-closing-mobile"/);
+ assert.match(stock,/\.closing-panel \.closing-table tr \{/);
+ assert.match(stock,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(stock,/STOCK_CLOSING_INPUT_DIRTY=true/);
+ assert.match(stock,/STOCK_AUTO_REFRESH_BUSY \|\| STOCK_SAVE_LOCK \|\| STOCK_CLOSING_INPUT_DIRTY/);
  assert.match(stock,/historical\.sonding_front_cm==null && historical\.sonding_rear_cm==null/);
  assert.match(stock,/oldPair\[0\]\.value==="" && oldPair\[1\]\.value===""\)continue/);
  assert.match(stock,/old\.sonding_front_cm==null \|\|/);
