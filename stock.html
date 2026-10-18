@@ -3874,10 +3874,23 @@ function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelR
     const fuelTotal=(fuelRows||[]).reduce((sum,row)=>sum+n(row.fuel),0);
     const calculatedTotal=Object.values(calculatedStock||{}).reduce((sum,value)=>sum+n(value),0);
     const closingRowsValid=(closingRows||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
-    const closingTotal=closingRowsValid.reduce((sum,row)=>sum+n(row.actual_qty),0);
-    const closingComplete=STORAGES.every(storage=>
-        closingRowsValid.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
+    // Use the same period-specific snapshot rule as loadStock() and Daily Report.
+    // New tanks in today's Master must not invalidate an older completed shift.
+    const openingStorages=(openingRows||[])
+        .map(row=>String(row.storage||"").trim().toUpperCase()).filter(Boolean);
+    const closingComplete=openingStorages.length>0 && openingStorages.every(storage=>
+        closingRowsValid.some(row=>String(row.storage||"").trim().toUpperCase()===storage)
     );
+    const physicalStock={...(calculatedStock||{})};
+    if(closingComplete){
+        closingRowsValid.forEach(row=>{
+            if(Object.prototype.hasOwnProperty.call(physicalStock,row.storage))
+                physicalStock[row.storage]=n(row.actual_qty);
+        });
+    }
+    const closingTotal=closingComplete
+        ? Object.values(physicalStock).reduce((sum,qty)=>sum+n(qty),0)
+        : 0;
     const delta=closingComplete?closingTotal-calculatedTotal:null;
 
     const status=delta===null
