@@ -327,8 +327,8 @@
       const currentDraft=read(todayKey);
       const dateField=document.getElementById("tanggal");
       const shiftField=document.getElementById("shift");
-      if(recent && !currentDraft && dateField && shiftField &&
-         !dateField.disabled && !shiftField.disabled){
+      if(recent && (!currentDraft || recent.at>currentDraft.savedAt) &&
+         dateField && shiftField && !dateField.disabled && !shiftField.disabled){
         dateField.value=recent.tanggal;
         shiftField.value=String(recent.shift);
         setMessage("Draft belum dikirim ditemukan untuk "+recent.tanggal+" Shift "+recent.shift+". Memulihkan periode kerja...");
