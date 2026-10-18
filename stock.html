@@ -16,7 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
-<script src="stock-drafts.js?v=20261018-draft-safe-v2"></script>
+<script src="stock-drafts.js?v=20261018-restore-v3"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -3677,8 +3677,17 @@ function sourceFromFuel(row){
 }
 
 let STOCK_LOAD_REQUEST_SEQUENCE=0;
+let STOCK_DATA_READY=false;
+let STOCK_DATA_PERIOD="";
+function stockCanSubmit(){
+    const {tanggal,shift}=getPeriod();
+    if(STOCK_DATA_READY && STOCK_DATA_PERIOD===tanggal+":"+shift)return true;
+    alert("Stock "+tanggal+" Shift "+shift+" belum berhasil dimuat dari server. Draft isian tetap tersimpan di perangkat. Perbarui Stock sebelum menekan Simpan.");
+    return false;
+}
 async function loadStock(){
     const requestSequence=++STOCK_LOAD_REQUEST_SEQUENCE;
+    STOCK_DATA_READY=false;
     const {tanggal,shift}=getPeriod();
     if(!tanggal)return;
 
@@ -3699,6 +3708,9 @@ async function loadStock(){
     const anyError=o.error||m.error||f.error||c.error;
 
     if(anyError){
+        // Draft can be read even when the current Stock query fails.
+        // Closing proof is restored only after book stock loads correctly.
+        window.KPPStockDrafts?.onRendered({stockReady:false});
         alert("Gagal mengambil stock: "+anyError.message);
         return;
     }
@@ -3770,6 +3782,8 @@ async function loadStock(){
     renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
     renderClosing(bookStock,c.data||[]);
     STOCK_CLOSING_INPUT_DIRTY=false;
+    STOCK_DATA_PERIOD=tanggal+":"+shift;
+    STOCK_DATA_READY=true;
     window.KPPStockDrafts?.onRendered();
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
@@ -4248,6 +4262,7 @@ function renderMovement(movementData,fuelData){
 }
 
 async function saveOpening(){
+    if(!stockCanSubmit())return;
     const {tanggal,shift}=getPeriod();
     let storage=document.getElementById("openingStorage").value;
     let operator=soundingOfficerName()||document.getElementById("openingOperator").value.trim();
@@ -4317,6 +4332,7 @@ async function saveOpening(){
 }
 
 async function saveReceipt(){
+    if(!stockCanSubmit())return;
     const {tanggal,shift}=getPeriod();
     const destination_storage=document.getElementById("receiptDestination").value;
     const measurement=updateReceiptCalculation();
@@ -4488,6 +4504,7 @@ function syncTransferDestination(){
 }
 
 async function saveTransfer(){
+    if(!stockCanSubmit())return;
     const {tanggal,shift}=getPeriod();
     const source_storage=document.getElementById("transferSource").value;
     const destination_storage=document.getElementById("transferDestination").value;
@@ -4651,6 +4668,7 @@ async function saveTransfer(){
 }
 
 async function saveClosing(){
+    if(!stockCanSubmit())return;
     const {tanggal,shift}=getPeriod();
     let operator=soundingOfficerName()||document.getElementById("closingOperator").value.trim();
     const note=document.getElementById("closingNote").value.trim();
