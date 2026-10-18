@@ -99,6 +99,9 @@ td.left{text-align:left}
 <link rel="stylesheet" href="operations-ui.css?v=20260909-2">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
 <style id="kpp-ccr-mobile-history-audit">
+.ccr-used-link-review{background:#fff7ed!important}
+.ccr-used-link-review td:first-child{border-left:3px solid #f97316}
+.ccr-link-flag{display:block;color:#b45309;font-size:10px;font-weight:800;margin-top:4px}
 .ccr-mobile-history{display:none}
 .ccr-mobile-card{background:#fff;border:1px solid #dbe5f0;border-radius:12px;padding:12px;min-width:0}
 .ccr-mobile-card.needs-review{border-left:4px solid #f97316}
@@ -1129,7 +1132,7 @@ async function loadRows(){
           r.status!=="USED";
 
         return `
-          <tr>
+          <tr class="${orphanIds.has(r.id)?"ccr-used-link-review":""}">
             <td>${dateID(r.tanggal)}</td>
             <td>${esc(r.shift)}</td>
             <td><b>${r.filling_no??"-"}</b></td>
@@ -1143,7 +1146,7 @@ async function loadRows(){
             <td>${fmt(r.max_qty)} L</td>
             <td>${fmt(r.tolerance_qty)} L</td>
             <td><b>${fmt(limit)} L</b></td>
-            <td>${tag(r.status)}</td>
+            <td>${tag(r.status)}${orphanIds.has(r.id)?'<span class="ccr-link-flag">LINK FUEL HILANG</span>':""}</td>
             <td class="left">${esc(r.request_reason||"-")}</td>
             <td>${esc(r.created_by_name||"-")}</td>
             <td>
