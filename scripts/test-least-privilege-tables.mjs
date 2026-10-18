@@ -18,7 +18,7 @@ test('Opening and Closing writes are forced through guarded RPCs', () => {
   assert.match(sql, /revoke insert, update, delete on table public\.stock_opening from authenticated/i);
   assert.match(sql, /revoke insert, update, delete on table public\.stock_closing from authenticated/i);
   assert.match(stock, /db\.rpc\("save_stock_opening_safe"/);
-  assert.match(stock, /"save_stock_closing_atomic"/);
+  assert.match(stock, /"save_stock_closing_with_evidence"/);
   assert.doesNotMatch(stock, /\.from\("stock_opening"\)\s*\.\s*(?:insert|upsert|update|delete)/s);
   assert.doesNotMatch(stock, /\.from\("stock_closing"\)\s*\.\s*(?:insert|upsert|update|delete)/s);
 });
