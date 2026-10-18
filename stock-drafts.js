@@ -110,6 +110,25 @@
       saveGroup(group);
     }
   }
+  const STORAGE_SELECTS=new Set([
+    "soundingCheckStorage","openingStorage","receiptDestination","receiptTransporter",
+    "transferSource","transferDestination"
+  ]);
+  function matchingOption(el,value,ignoreDisabled=false){
+    return Array.from(el?.options||[]).find(option=>
+      String(option.value)===String(value) && (ignoreDisabled||!option.disabled));
+  }
+  function selectorsValid(group,fields){
+    // If master data changed, do NOT apply measurements to a fallback tank.
+    // Keep the draft untouched for manual inspection instead.
+    for(const [id,value] of Object.entries(fields)){
+      if(!STORAGE_SELECTS.has(id))continue;
+      const el=document.getElementById(id);
+      if(!el||!matchingOption(el,value,id==="transferDestination"))return false;
+    }
+    if(group==="transfer" && fields.transferSource===fields.transferDestination)return false;
+    return true;
+  }
   function applyValue(id,value){
     const el=document.getElementById(id);
     if(!el||el.readOnly||el.disabled)return;
@@ -124,9 +143,11 @@
     if(!entry || !GROUPS[group])return false;
     let restored=false;
     const fields=entry.fields||{},pairs=entry.paired||{};
+    if(!selectorsValid(group,fields))return false;
     // Selector choices before sounding; source/destination constraints afterward.
     for(const [id,value] of Object.entries(fields)){
       if(!sectionsFor(group).includes(id))continue;
+      if(group==="transfer" && id==="transferDestination")continue;
       if(id.startsWith("height-")){
         const el=document.getElementById(id);
         if(el?.dataset.closingSaved==="1")continue;
@@ -134,8 +155,17 @@
       applyValue(id,value);
       restored=true;
     }
-    if(group==="transfer" && typeof window.syncTransferDestination==="function")
-      window.syncTransferDestination();
+    if(group==="transfer"){
+      window.syncTransferDestination?.();
+      const destination=fields.transferDestination;
+      const el=document.getElementById("transferDestination");
+      if(destination!=null){
+        // If the chosen destination is disabled by the restored source,
+        // stop without applying sounding values from a different tank.
+        if(!matchingOption(el,destination))return false;
+        applyValue("transferDestination",destination);
+      }
+    }
     for(const [id,both] of Object.entries(pairs)){
       if(!sectionsFor(group).includes(id))continue;
       const el=document.getElementById(id);
@@ -179,8 +209,44 @@
     if(count)setMessage("DIPULIHKAN: "+count+" bagian formulir belum disimpan. Cek isian lalu tekan Simpan bila sudah benar.");
     else setMessage("Draft tersimpan di perangkat, tetapi pilihan akun/storage berubah. Periksa isian sebelum melanjutkan.");
   }
+  function resetPeriodFields(){
+    // Period change already updated the date/shift selectors. Reset all
+    // *unsent* local form readings before loading the next period.
+    suspended=true;
+    try{
+      for(const group of Object.keys(GROUPS)){
+        for(const id of sectionsFor(group)){
+          const el=document.getElementById(id);
+          if(!el||el.readOnly||el.disabled)continue;
+          if(id==="carryForward"){el.checked=true;continue;}
+          if(el.tagName==="SELECT"){
+            const options=Array.from(el.options||[]);
+            const first=options.find(o=>!o.disabled&&o.value!=="")||options.find(o=>!o.disabled);
+            if(first)el.value=first.value;
+            continue;
+          }
+          el.value="";
+          if(PAIRED.has(id)||id.startsWith("height-")){
+            const paired=pairFor(el);
+            if(paired){
+              paired[0].value="";
+              paired[1].value="";
+              el.dispatchEvent(new Event("kpp-clear-paired-sounding"));
+            }
+          }
+        }
+      }
+      window.syncTransferDestination?.();
+      window.updateSoundingCheck?.();
+      window.updateOpeningConversion?.();
+      window.updateReceiptCalculation?.();
+      window.updateTransferCalculation?.();
+      window.updateClosingDifference?.();
+    }finally{suspended=false;}
+  }
   function beforePeriodChange(){
     persist();
+    resetPeriodFields();
     dirty.clear();
     activePeriod=getPeriod();
     activeKey=keyFor(activePeriod);
@@ -202,6 +268,22 @@
     dirty.clear();
     setMessage("Draft periode ini dihapus. Form akan direset saat halaman dimuat ulang.");
   }
+  function hasActiveTransactionDraft(){
+    const data=read(activeKey);
+    if(!data)return false;
+    // Cek Sonding is a calculator, not a stock-changing transaction.
+    // A selector or the default carry-forward checkbox alone is not enough
+    // to block stock refresh. Protect only actual unsent measurement inputs.
+    return Object.entries(data.sections||{}).some(([group,entry])=>{
+      if(!["opening","receipt","transfer","closing"].includes(group))return false;
+      const hasPair=Object.values(entry.paired||{}).some(p=>
+        String(p?.front??"").trim()!=="" || String(p?.rear??"").trim()!=="");
+      const meaningful=new Set(["receiptMeterStart","receiptMeterEnd","receiptReference",
+        "closingNote","closingRevisionReason"]);
+      return hasPair || Object.entries(entry.fields||{}).some(([id,value])=>
+        meaningful.has(id)&&String(value??"").trim()!=="");
+    });
+  }
   function start(uid){
     if(!uid)return;
     const nextUser=String(uid);
@@ -215,5 +297,5 @@
   window.addEventListener("pagehide",persist);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persist();});
   window.KPPStockDrafts=Object.freeze({start,onRendered,beforePeriodChange,clear,clearCurrent,
-    hasDraft:()=>!!read(activeKey)});
+    hasDraft:hasActiveTransactionDraft});
 })();
