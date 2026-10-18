@@ -102,8 +102,12 @@ test("LIVE Fuelman requires an active matching shift; earlier BACKFILL payload r
   const permitted=await send(req(21),receipt());
   assert.equal(permitted.ok,true,JSON.stringify(permitted));
   await db.exec("insert into public.stock_closing values ('2026-10-18',1,'MT01')");
-  // Historical controlled mode retains audit/backfill semantics.
-  const historical=await send(req(22),receipt("BACKFILL"));
+  const fuelmanBackfill=await send(req(22),receipt("BACKFILL"));
+  assert.equal(fuelmanBackfill.ok,false);
+  assert.match(fuelmanBackfill.message,/BACKFILL hanya/);
+  // Historic audit/backfill remains available to explicitly authorized staff.
+  await db.exec("set app.test_role='admin'");
+  const historical=await send(req(23),receipt("BACKFILL"));
   assert.equal(historical.ok,true,JSON.stringify(historical));
  }finally{await db.close();}
 });
