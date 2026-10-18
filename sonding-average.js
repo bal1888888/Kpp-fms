@@ -22,6 +22,11 @@
     input.dataset.frontRearEnhanced = "1";
     const isClosing = /^height-(MT|FT)/i.test(input.id);
     const initial = numberOf(input.value);
+    const savedClosing = isClosing && input.dataset.closingSaved === "1";
+    // A historic final height is not proof of two independent measurements.
+    const recordedFront = isClosing ? numberOf(input.dataset.soundingFront) : initial;
+    const recordedRear = isClosing ? numberOf(input.dataset.soundingRear) : initial;
+    const missingProof = savedClosing && (recordedFront === null || recordedRear === null);
     const wrap = document.createElement("div");
     wrap.className = "front-rear-sounding";
     wrap.style.cssText = "display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 8px";
@@ -43,12 +48,16 @@
       box.append(label, field);
       return {box,field};
     };
-    const front = makeField("depan", initial);
-    const rear = makeField("belakang", initial);
+    const front = makeField("depan", recordedFront);
+    const rear = makeField("belakang", recordedRear);
     const summary = document.createElement("div");
     summary.className = "front-rear-summary";
     summary.style.cssText = "grid-column:1/-1;border:1px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:9px 11px;font-size:12px;color:#334155";
     summary.innerHTML = '<strong>SONDING FINAL: <span class="front-rear-final">-</span> cm</strong>';
+    if(missingProof){
+      summary.insertAdjacentHTML("beforeend",
+        '<small class="front-rear-legacy" style="display:block;margin-top:6px;color:#92400e">Data lama: bukti sonding depan dan belakang belum tersimpan. Ukur ulang jika revisi.</small>');
+    }
     wrap.append(front.box, rear.box, summary);
     input.parentNode.insertBefore(wrap, input);
     input.style.display = "none";
@@ -68,6 +77,10 @@
         input.value = finalHeight.toFixed(1);
         finalEl.textContent = finalHeight.toFixed(1);
       }
+      if (isClosing) {
+        const legacyNote = summary.querySelector(".front-rear-legacy");
+        if (legacyNote && a !== null && b !== null) legacyNote.remove();
+      }
       input.dispatchEvent(new Event("input", {bubbles:true}));
       input.dispatchEvent(new Event("change", {bubbles:true}));
       if (label) label.textContent = "Sonding final rata-rata otomatis (CM)";
@@ -79,8 +92,11 @@
     });
     front.field.addEventListener("input", update);
     rear.field.addEventListener("input", update);
-    // Preserve existing saved closing values by seeding both sides to the old final height.
-    if (initial !== null) update();
+    // Never fabricate old front/rear readings from the saved final height.
+    // Keep the historical final untouched until a user enters fresh readings.
+    if (recordedFront !== null && recordedRear !== null) update();
+    else if (missingProof) summary.querySelector(".front-rear-final").textContent =
+      initial === null ? "-" : String(initial);
   }
 
   function scan(root) {
@@ -88,6 +104,7 @@
     if (root.matches && root.matches(SELECTOR)) enhance(root);
     root.querySelectorAll(SELECTOR).forEach(enhance);
   }
+  window.KPPSoundingAverage = Object.freeze({scan});
   function start() {
     scan(document);
     const observer = new MutationObserver(records => {
