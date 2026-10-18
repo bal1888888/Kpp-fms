@@ -17,7 +17,7 @@ function makeHarness(){
    tasks.push({resolve});
    return query;
  }};
- const context={db,getPeriod:()=>period,alert:m=>alerts.push(m),Promise};
+ const context={db,getPeriod:()=>period,alert:m=>alerts.push(m),Promise,window:{KPPStockDrafts:{onRendered(){}}}};
  vm.createContext(context);
  vm.runInContext(code,context);
  return {ctx:context,tasks,alerts,setPeriod:p=>period=p};
