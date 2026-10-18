@@ -10,5 +10,5 @@ test("paired sounding displays only the final height without formula instruction
  assert.match(script,/input\.value = finalHeight\.toFixed\(1\)/);
 });
 test("stock fetches changed sounding script instead of cached version",()=>{
- assert.match(stock,/sonding-average\.js\?v=20261017-receipt-clear/);
+ assert.match(stock,/sonding-average\.js\?v=20261018-physical-proof/);
 });
