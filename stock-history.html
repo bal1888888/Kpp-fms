@@ -246,13 +246,13 @@ async function inspectClosing(index) {
     const date=row.tanggal,shift=row.shift,storage=row.storage;
     const [o,m,f]=await Promise.all([
       db.from("stock_opening").select("storage,qty").eq("tanggal",date).eq("shift",shift).eq("storage",storage).limit(2),
-      db.from("stock_movements").select("id,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",date).eq("shift",shift).order("id",{ascending:true}).limit(1001),
-      db.from("fuel_history").select("id,fuel,fuel_truck,wh,duplicate_of_id").eq("tanggal",date).eq("shift",shift).is("duplicate_of_id",null).order("id",{ascending:true}).limit(1001)
+      db.from("stock_movements").select("id,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty",{count:"exact"}).eq("tanggal",date).eq("shift",shift).order("id",{ascending:true}).limit(1001),
+      db.from("fuel_history").select("id,fuel,fuel_truck,wh,duplicate_of_id",{count:"exact"}).eq("tanggal",date).eq("shift",shift).is("duplicate_of_id",null).order("id",{ascending:true}).limit(1001)
     ]);
     const err=o.error||m.error||f.error;
     if(err)throw err;
     if((o.data||[]).length>1)throw new Error("Opening ganda ditemukan. Admin perlu memeriksa data.");
-    if((m.data||[]).length>1000||(f.data||[]).length>1000)
+    if(m.count>1000||f.count>1000||(m.data||[]).length>1000||(f.data||[]).length>1000)
       throw new Error("Lebih dari 1.000 transaksi satu shift. Audit manual diperlukan agar data tidak terpotong.");
     const result=window.KPPStockReconcile.calculate({
       closing:row,opening:(o.data||[])[0],
