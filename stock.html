@@ -4701,12 +4701,12 @@ async function saveClosing(){
         });
         if(equalMovingMT.length){
             const lanjut=confirm(
-                "VERIFIKASI SONDING FISIK MT\\n\\n" +
+                "VERIFIKASI SONDING FISIK MT\n\n" +
                 "Stock Fisik persis sama dengan Stock Sistem untuk: " +
-                equalMovingMT.map(row=>row.storage).join(", ") + ".\\n" +
-                "Pada shift ini ada pergerakan solar pada storage tersebut.\\n\\n" +
+                equalMovingMT.map(row=>row.storage).join(", ") + ".\n" +
+                "Pada shift ini ada pergerakan solar pada storage tersebut.\n\n" +
                 "Pastikan angka depan/belakang diukur langsung pada tangki, " +
-                "bukan disalin dari estimasi atau Stock Sistem.\\n\\n" +
+                "bukan disalin dari estimasi atau Stock Sistem.\n\n" +
                 "Sudah diverifikasi secara fisik dan lanjut simpan?"
             );
             if(!lanjut)return;
