@@ -4442,7 +4442,8 @@ function renderMovement(movementData,fuelData){
 }
 
 async function saveOpening(){
-    if(!stockCanSubmit())return;
+    // Atomic Opening RPC checks current shift, account, active storage
+    // and replay/duplicate values. No dashboard query is needed.
     const {tanggal,shift}=getPeriod();
     let storage=document.getElementById("openingStorage").value;
     let operator=soundingOfficerName()||document.getElementById("openingOperator").value.trim();
@@ -4507,8 +4508,9 @@ async function saveOpening(){
     LAST_COPY_REPORTS.opening=openingReport;
     window.KPPStockDrafts?.clear("opening");
     setCopyPreview("openingCopyPreview",openingReport);
-    await loadStock();
     await finishStockSave(true,"Stock Opening sudah tersimpan.");
+    void loadStock().catch(error=>console.warn("Refresh setelah Opening:",error));
+    void loadClosingFast().catch(error=>console.warn("Snapshot setelah Opening:",error));
 }
 
 let RECEIPT_SAVE_ATTEMPT_BUSY=false;
@@ -4739,10 +4741,8 @@ async function saveTransfer(){
     }
 
     if(n(measurement.sourceQty)>n(CURRENT_SYSTEM_STOCK[source_storage])){
-        const lanjut=confirm(
-            "[PERINGATAN] Qty keluar menurut sounding lebih besar dari Stock Sistem "+source_storage+".\n\nTetap simpan?"
-        );
-        if(!lanjut)return;
+        alert("Transfer tidak boleh melebihi Stock Sistem "+source_storage+". Periksa Opening dan sonding terlebih dahulu.");
+        return;
     }
 
     const projectedDestination=measurement.destinationAfter.liters;
@@ -4801,6 +4801,7 @@ async function saveTransfer(){
         jam:transferTime,
         shift,
         jenis:"TRANSFER",
+        operation_mode:"LIVE",
         source_storage,
         destination_storage,
         qty,
