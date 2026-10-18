@@ -1017,6 +1017,42 @@ th{background:#f8fafc;color:#475569}
   .receipt-panel .copy-report-card { max-width:100%; min-width:0; }
 }
 </style>
+
+<style id="kpp-independent-closing-mobile">
+@media (max-width:700px) {
+  .closing-panel { padding:12px !important; }
+  .closing-panel .table-wrap { overflow:visible; width:100%; max-width:100%; border:0; }
+  .closing-panel .closing-table,
+  .closing-panel .closing-table tbody { display:block; width:100% !important; min-width:0 !important; max-width:100% !important; }
+  .closing-panel .closing-table thead { display:none; }
+  .closing-panel .closing-table tr {
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+    margin:0 0 12px;padding:13px;background:#fff;border:1px solid #d7e1f0;border-radius:12px;
+  }
+  .closing-panel .closing-table td {
+    display:block;min-width:0;width:100%;padding:0;border:0;
+    text-align:left;white-space:normal;
+  }
+  .closing-panel .closing-table td:nth-child(1) { grid-column:1/-1;order:0;font-size:16px;padding-bottom:6px;border-bottom:1px solid #e2e8f0; }
+  .closing-panel .closing-table td:nth-child(3) { grid-column:1/-1;order:1; }
+  .closing-panel .closing-table td:nth-child(2) { grid-column:1/-1;order:2; }
+  .closing-panel .closing-table td:nth-child(4) { grid-column:1;order:3; }
+  .closing-panel .closing-table td:nth-child(5) { grid-column:2;order:4; }
+  .closing-panel .closing-table td:nth-child(4)::before,
+  .closing-panel .closing-table td:nth-child(5)::before {
+    display:block;font-size:10px;font-weight:700;color:#64748b;margin:5px 0;
+  }
+  .closing-panel .closing-table td:nth-child(4)::before { content:"STOCK FISIK"; }
+  .closing-panel .closing-table td:nth-child(5)::before { content:"SELISIH"; }
+  .closing-panel .closing-table input { min-width:0 !important;width:100%;max-width:100%;font-size:16px!important;min-height:44px; }
+  .closing-panel .closing-table .front-rear-sounding { grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:9px !important; }
+  .closing-panel .closing-table .front-rear-sounding label { font-size:11px !important; }
+  .closing-panel .closing-system-reading { min-width:0; }
+  .closing-panel .closing-system-reading>small { white-space:normal;line-height:1.4; }
+  .closing-panel .closing-summary { grid-template-columns:minmax(0,1fr); }
+}
+</style>
+
 </head>
 
 <body class="stock-workspace">
