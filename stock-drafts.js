@@ -192,13 +192,18 @@
     }
     const data=read(activeKey);
     if(!data || !Object.keys(data.sections).length){
-      setMessage("Draft otomatis aktif di perangkat ini. Data baru dikirim hanya setelah tombol Simpan berhasil.");
+      setMessage(stockReady
+        ?"Draft otomatis siap di perangkat ini. Tunggu pesan DRAFT TERSIMPAN setelah mengetik."
+        :"Gagal memuat Stock dari server. Jangan kirim transaksi. Draft lokal yang sudah ada tetap disimpan.");
       return;
     }
     suspended=true;
     let count=0;
     try{
       for(const [group,entry] of Object.entries(data.sections)){
+        // Do not restore Closing against a potentially stale or missing book
+        // stock. Retain its raw draft until the backend reload succeeds.
+        if(!stockReady && group==="closing")continue;
         if(restoreGroup(group,entry)){dirty.add(group);count++;}
       }
       window.updateSoundingCheck?.();
@@ -209,6 +214,7 @@
       window.renderClosingCopyPreview?.();
     }finally{suspended=false;}
     if(count)setMessage("DIPULIHKAN: "+count+" bagian formulir tanggal "+newPeriod.tanggal+" Shift "+newPeriod.shift+". "+(stockReady?"Cek isian sebelum menyimpan.":"Server Stock belum tersambung, jangan kirim transaksi."));
+    else if(!stockReady)setMessage("Draft belum dapat dipulihkan lengkap. Stock dari server belum tersedia. Jangan kirim transaksi.");
     else setMessage("Draft tersedia, tetapi storage/transportir berbeda dengan Master aktif. Angka sengaja TIDAK dimasukkan ke tangki lain.");
   }
   function resetPeriodFields(){
