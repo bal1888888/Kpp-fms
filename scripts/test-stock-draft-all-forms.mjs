@@ -124,7 +124,7 @@ test("integration: Stock only saves drafts after user events and clears on confi
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
- for(const section of ["opening","receipt","transfer","closing"])assert.match(html,new RegExp('KPPStockDrafts\\\\?\\\\.clear\\\\("'+section+'"\\\\)'));
+ for(const section of ["opening","receipt","transfer","closing"])assert.ok(html.includes('window.KPPStockDrafts?.clear("'+section+'")'),section);
  assert.match(html,/if\(previousOnly && !error\)/);
  assert.match(html,/KPPStockDrafts\?\.hasDraft\(\)/);
  assert.match(html,/id="stockDraftStatus"/);
