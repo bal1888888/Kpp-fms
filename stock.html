@@ -5173,8 +5173,11 @@ async function saveClosing(){
     }
 
     await finishStockSave(true,"Stock Closing sudah tersimpan.");
-    void loadStock().catch(error=>console.warn("Refresh sesudah Closing:",error));
+    // After server acknowledgement, the just-submitted fields are no longer
+    // an unsaved draft. Allow the fresh snapshot to lock saved rows correctly.
+    STOCK_CLOSING_INPUT_DIRTY=false;
     void loadClosingFast().catch(error=>console.warn("Snapshot sesudah Closing:",error));
+    void loadStock().catch(error=>console.warn("Refresh sesudah Closing:",error));
     }finally{CLOSING_SAVE_ATTEMPT_BUSY=false;}
 }
 
