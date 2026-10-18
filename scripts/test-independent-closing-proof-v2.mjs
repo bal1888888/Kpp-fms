@@ -5,6 +5,7 @@ import vm from "node:vm";
 import {PGlite} from "@electric-sql/pglite";
 
 const sql=fs.readFileSync(new URL("../supabase/migrations/20261018_independent_closing_sounding_proof.sql",import.meta.url),"utf8");
+const extraSql=fs.readFileSync(new URL("../supabase/migrations/20261018_closing_sounding_proof_only_revisions.sql",import.meta.url),"utf8");
 const stock=fs.readFileSync(new URL("../stock.html",import.meta.url),"utf8");
 const sounding=fs.readFileSync(new URL("../sonding-average.js",import.meta.url),"utf8");
 const history=fs.readFileSync(new URL("../stock-history.html",import.meta.url),"utf8");
@@ -76,6 +77,7 @@ test("Postgres: atomic save, mismatch rollback, network retry, legacy protection
   ].join("\n");
   await db.exec(prep);
   await db.exec(sql);
+  await db.exec(extraSql);
   const base={tanggal:"2026-10-18",shift:1,storage:"MT01",actual_qty:125,system_qty:125,sonding_height_cm:36.6,
     sonding_front_cm:36.6,sonding_rear_cm:36.7,sonding_final_cm:36.6};
   const save=rows=>db.query("select public.save_stock_closing_with_evidence($1::jsonb,true)",[JSON.stringify(rows)]);
@@ -103,5 +105,15 @@ test("Postgres: atomic save, mismatch rollback, network retry, legacy protection
   assert.equal(Number(a.rows[1].old_front_cm),36.6);
   const audit=await db.query("select new_data->>'sonding_front_cm' v from private.stock_closing_revisions");
   assert.equal(Number(audit.rows[0].v),36);
+  // GL may correct the original front/rear evidence without changing
+  // the final 0.1 cm or any actual fuel volume.
+  await revise([{...base,actual_qty:126,sonding_front_cm:35.8,sonding_rear_cm:37.4,sonding_final_cm:36.6}]);
+  const proofOnly=await db.query("select actual_qty,sonding_front_cm,sonding_rear_cm from public.stock_closing where storage='MT01'");
+  assert.equal(Number(proofOnly.rows[0].actual_qty),126);
+  assert.equal(Number(proofOnly.rows[0].sonding_front_cm),35.8);
+  const proofTrail=await db.query("select action,old_front_cm,new_front_cm from private.stock_closing_sounding_audit order by id");
+  assert.equal(proofTrail.rows.length,3);
+  assert.equal(Number(proofTrail.rows[2].old_front_cm),36);
+  assert.equal(Number(proofTrail.rows[2].new_front_cm),35.8);
  } finally {await db.close();}
 });
