@@ -31,6 +31,7 @@ function createHarness(backend,newUser="user-a"){
              {value:"",disabled:false,dispatchEvent:()=>{attrs.value=fr[0].value&&fr[1].value?"25.0":"";}}];
    attrs.previousElementSibling={classList:{contains:k=>k==="front-rear-sounding"},querySelectorAll:()=>fr};
    attrs.fr=fr;
+   attrs.dispatchEvent=ev=>{if(ev.type==="kpp-clear-paired-sounding"){fr[0].value="";fr[1].value="";attrs.value="";}};
   }
   elements[id]=attrs;return attrs;
  };
@@ -72,6 +73,8 @@ test("all Stock input groups survive refresh with account and period isolation",
  a.fire("receipt","receiptMeterStart","12000.2");
  a.fire("receipt","receiptReference","PO-113");
  a.fire("receipt","receiptTankHeightBefore",["20","30"]);
+ a.fire("transfer","transferSource","MT01");
+ a.fire("transfer","transferDestination","MT02");
  a.fire("transfer","transferSourceHeightBefore",["18.2","19.1"]);
  a.fire("closing","height-MT01",["36.6","36.7"]);
  a.fire("closing","closingNote","Cek selisih");
@@ -91,10 +94,15 @@ test("all Stock input groups survive refresh with account and period isolation",
  assert.equal(other.elements.receiptReference.value,"");
  const shifted=createHarness(backend);shifted.elements.shift.value="2";shifted.drafts.beforePeriodChange();shifted.drafts.onRendered();
  assert.equal(shifted.elements.closingNote.value,"");
+ assert.deepEqual(shifted.elements.receiptTankHeightBefore.fr.map(x=>x.value),["",""]);
+ assert.equal(shifted.elements.receiptReference.value,"");
+ assert.equal(shifted.elements.receiptMeterStart.value,"");
 });
 test("successful save clears only corresponding draft, failed or previousOnly keeps it",()=>{
  const backend=new Map(),a=createHarness(backend);
  a.fire("receipt","receiptMeterStart","900");
+ a.fire("transfer","transferSource","MT01");
+ a.fire("transfer","transferDestination","MT02");
  a.fire("transfer","transferSourceHeightBefore",["20","25"]);
  // Failed save and previousOnly make no clear() call.
  let b=createHarness(backend);b.drafts.onRendered();
@@ -128,4 +136,68 @@ test("integration: Stock only saves drafts after user events and clears on confi
  assert.match(html,/if\(previousOnly && !error\)/);
  assert.match(html,/KPPStockDrafts\?\.hasDraft\(\)/);
  assert.match(html,/id="stockDraftStatus"/);
+});
+
+test("a missing or disabled tank/transport company cannot rebind sounding to a different default",()=>{
+ const backend=new Map();
+ const a=createHarness(backend);
+ a.fire("receipt","receiptDestination","MT02");
+ a.fire("receipt","receiptTransporter","PT TRANSPORT");
+ a.fire("receipt","receiptMeterStart","7740");
+ a.fire("receipt","receiptTankHeightBefore",["30","40"]);
+ a.fire("transfer","transferSource","MT02");
+ a.fire("transfer","transferDestination","MT01");
+ a.fire("transfer","transferSourceHeightBefore",["40","45"]);
+ const b=createHarness(backend);
+ // The active master removed MT02; browser select defaults to MT01.
+ b.elements.receiptDestination.options=[{value:"MT01"}];
+ b.elements.receiptDestination.value="MT01";
+ b.elements.transferSource.options=[{value:"MT01"}];
+ b.elements.transferSource.value="MT01";
+ b.drafts.onRendered();
+ assert.equal(b.elements.receiptMeterStart.value,"");
+ assert.deepEqual(b.elements.receiptTankHeightBefore.fr.map(x=>x.value),["",""]);
+ assert.deepEqual(b.elements.transferSourceHeightBefore.fr.map(x=>x.value),["",""]);
+ assert.match(b.elements.stockDraftStatus.textContent,/pilihan akun\/storage berubah/);
+ // Raw draft remains intact for Admin to inspect, not silently reassigned.
+ assert.equal(backend.size,1);
+});
+test("a Cek Sonding draft or selector alone does not freeze live Stock auto refresh",()=>{
+ const backend=new Map(),a=createHarness(backend);
+ a.fire("check","soundingCheckFront","51.2");
+ assert.equal(a.drafts.hasDraft(),false);
+ a.fire("receipt","receiptDestination","MT01");
+ assert.equal(a.drafts.hasDraft(),false);
+ a.fire("receipt","receiptMeterEnd","14220");
+ assert.equal(a.drafts.hasDraft(),true);
+ a.drafts.clear("receipt");
+ assert.equal(a.drafts.hasDraft(),false);
+});
+test("changing date or shift wipes visible old-period measurements and restores only destination-period draft",()=>{
+ const backend=new Map(),a=createHarness(backend);
+ a.fire("opening","openingHeight",["25","30"]);
+ a.fire("receipt","receiptDestination","MT01");
+ a.fire("receipt","receiptMeterStart","990");
+ a.fire("transfer","transferSource","MT01");
+ a.fire("transfer","transferDestination","MT02");
+ a.fire("transfer","transferDestinationHeightAfter",["40","50"]);
+ a.fire("closing","height-MT01",["36.6","36.7"]);
+ a.fire("closing","closingNote","Shift lama");
+ a.elements.shift.value="2";
+ a.drafts.beforePeriodChange();
+ // Unsaved fields are zeroed immediately, before the async next-shift data arrives.
+ assert.equal(a.elements.receiptMeterStart.value,"");
+ assert.equal(a.elements.closingNote.value,"");
+ assert.deepEqual(a.elements["height-MT01"].fr.map(x=>x.value),["",""]);
+ assert.deepEqual(a.elements.transferDestinationHeightAfter.fr.map(x=>x.value),["",""]);
+ a.fire("receipt","receiptDestination","MT01");
+ a.fire("receipt","receiptMeterEnd","1788");
+ a.drafts.onRendered();
+ assert.equal(a.elements.receiptMeterStart.value,"");
+ assert.equal(a.elements.receiptMeterEnd.value,"1788");
+ a.elements.shift.value="1";
+ a.drafts.beforePeriodChange();
+ a.drafts.onRendered();
+ assert.equal(a.elements.receiptMeterStart.value,"990");
+ assert.equal(a.elements.closingNote.value,"Shift lama");
 });
