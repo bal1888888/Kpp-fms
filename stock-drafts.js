@@ -194,10 +194,10 @@
     }
     return restored;
   }
-  function readableDraft(data){
+  function readableDraft(data,period=getPeriod()){
     if(!data)return "Belum ada draft tersimpan untuk akun/tanggal/shift ini.";
-    const result=["DRAFT STOCK BELUM DIKIRIM","Akun: aktif","Tanggal: "+getPeriod().tanggal,
-      "Shift: "+getPeriod().shift,""];
+    const result=["DRAFT STOCK BELUM DIKIRIM","Akun: aktif","Tanggal: "+period.tanggal,
+      "Shift: "+period.shift,""];
     const labels={check:"CEK SONDING",opening:"OPENING",receipt:"PENERIMAAN",
       transfer:"TRANSFER",closing:"CLOSING"};
     const all={...GROUPS};
@@ -215,11 +215,23 @@
     return result.join("\n");
   }
   function showDraft(){
-    const data=read(activeKey);
+    let period=getPeriod(),data=read(activeKey);
+    if(!data || !Object.keys(data.sections||{}).length){
+      // The current date/shift may differ from the last unfinished shift
+      // (or be locked to Fuelman's new active shift). Never expose another
+      // account's drafts: scan only entries prefixed by current auth user.
+      const recent=latestDraftPeriod();
+      if(recent){
+        const candidate=read(keyFor(recent));
+        if(candidate && Object.keys(candidate.sections||{}).length){
+          period=recent;data=candidate;
+        }
+      }
+    }
     const panel=document.getElementById("stockDraftRecovery");
     const content=document.getElementById("stockDraftRecoveryText");
     if(!panel||!content)return;
-    content.value=readableDraft(data);
+    content.value=readableDraft(data,period);
     panel.hidden=false;
     panel.scrollIntoView?.({block:"nearest",behavior:"smooth"});
   }
@@ -385,7 +397,12 @@
       }
       activePeriod=getPeriod();
       activeKey=keyFor(activePeriod);
-      if(!recent && !read(activeKey))
+      if(recent){
+        const candidate=read(keyFor(recent));
+        const groups=Object.keys(candidate?.sections||{}).join(", ");
+        setMessage("DRAFT TERDETEKSI • "+recent.tanggal+" Shift "+recent.shift+
+          " • bagian: "+(groups||"-")+". Tunggu pemulihan; LIHAT DRAFT untuk cadangan.");
+      }else if(!read(activeKey))
         setMessage("Auto-save siap. Isi form lalu pastikan muncul DRAFT TERSIMPAN sebelum refresh.");
     }
   }

@@ -16,7 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
-<script src="stock-drafts.js?v=20261018-recovery-v4"></script>
+<script src="stock-drafts.js?v=20261018-preload-v5"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -5065,7 +5065,18 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     applyFuelmanIdentity();
     setAdminMovementTools();
     window.KPPStockDrafts?.start(window.KPP_SESSION?.user?.id||CURRENT_PROFILE?.user_id);
-    await loadStock();
+    // Recover the raw non-Closing draft IMMEDIATELY after Master choices load.
+    // Never rely on Stock's four DB queries and the complete dashboard render
+    // to succeed before a user can see a saved flowmeter or receipt sounding.
+    window.KPPStockDrafts?.onRendered({stockReady:false});
+    try{
+        await loadStock();
+    }catch(error){
+        console.error("Stock load interrupted before complete render:",error);
+        window.KPPStockDrafts?.onRendered({stockReady:false});
+        const el=document.getElementById("stockDraftStatus");
+        if(el)el.textContent="Stock gagal dimuat. Isian draft lokal tetap tersedia di LIHAT DRAFT. Jangan menyimpan transaksi.";
+    }
 });
 
 </script>
