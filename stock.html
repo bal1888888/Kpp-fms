@@ -15,7 +15,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="storage-master.js"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
-<script src="sonding-average.js?v=20261017-receipt-clear"></script>
+<script src="sonding-average.js?v=20261018-physical-proof"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -3637,7 +3637,7 @@ async function loadStock(){
         db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
         db.from("stock_movements").select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
         db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null),
-        db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
+        db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,sonding_front_cm,sonding_rear_cm,sonding_final_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
     ]);
 
     const anyError=o.error||m.error||f.error||c.error;
@@ -3910,6 +3910,7 @@ function applyClosingRevisionUi(savedClosing){
         const height=document.getElementById(`height-${storage}`);
         if(!height)return;
         height.disabled=state.isFinal ? !canRevise : !!state.savedMap[storage];
+        height.closest("td")?.querySelectorAll(".front-rear-value").forEach(field=>{field.disabled=height.disabled;});
     });
 
     if(state.isFinal){
@@ -3962,7 +3963,7 @@ function renderClosing(stock,savedClosing){
             <td><b>${storage}</b></td>
             <td>
                 <div class="closing-system-reading">
-                    <strong>${fmt(stock[storage])}</strong>
+                    <strong class="closing-system-number">${saved?fmt(stock[storage]):"Ukur sonding dahulu"}</strong>
                     <small>Stock Sistem (pembanding, bukan hasil sonding)</small>
                 </div>
             </td>
@@ -3975,6 +3976,9 @@ function renderClosing(stock,savedClosing){
                     step="0.1"
                     inputmode="decimal"
                     value="${heightValue}"
+                    data-closing-saved="${saved?"1":"0"}"
+                    data-sounding-front="${saved?.sonding_front_cm??""}"
+                    data-sounding-rear="${saved?.sonding_rear_cm??""}"
                     placeholder="Tinggi CM"
                     oninput="updateClosingFromHeight('${storage}')"
                 >
@@ -3985,6 +3989,7 @@ function renderClosing(stock,savedClosing){
         </tr>`;
     });
 
+    window.KPPSoundingAverage?.scan(body);
     const firstSaved=savedClosing.length?savedClosing[0]:null;
 
     if(firstSaved){
@@ -4018,6 +4023,8 @@ function updateClosingFromHeight(storage,refreshDifference=true){
     const info=document.getElementById(`tera-info-${storage}`);
 
     if(!heightInput || !actualInput)return;
+    const comparison=heightInput.closest("tr")?.querySelector(".closing-system-number");
+    if(comparison)comparison.textContent=heightInput.value!==""?fmt(CURRENT_SYSTEM_STOCK[storage]):"Ukur sonding dahulu";
 
     if(heightInput.value===""){
         actualInput.value="";
@@ -4077,7 +4084,7 @@ function updateClosingDifference(){
         }
     });
 
-    document.getElementById("closingSystemTotal").textContent=fmt(systemTotal);
+    document.getElementById("closingSystemTotal").textContent=hasAllActual?fmt(systemTotal):"Isi sonding dahulu";
     document.getElementById("closingActualTotal").textContent=hasAllActual?fmt(actualTotal):"-";
 
     const totalDifference=actualTotal-systemTotal;
@@ -4629,6 +4636,25 @@ async function saveClosing(){
             return;
         }
 
+        const paired=heightInput.closest("td")?.querySelectorAll(".front-rear-value");
+        const frontText=paired?.[0]?.value??"";
+        const rearText=paired?.[1]?.value??"";
+        if(frontText===""||rearText===""){
+            alert("Isi hasil sonding depan dan belakang "+storage+" dari pengukuran fisik.");
+            return;
+        }
+        const sondingFront=Number(frontText),sondingRear=Number(rearText);
+        if(!Number.isFinite(sondingFront)||!Number.isFinite(sondingRear)||
+           sondingFront<0||sondingRear<0){
+            alert("Angka sonding depan/belakang "+storage+" tidak valid.");
+            return;
+        }
+        const sondingFinal=Math.floor(((sondingFront+sondingRear)/2+1e-8)*10)/10;
+        if(Math.abs(sondingFinal-Number(heightInput.value))>0.00001){
+            alert("Sonding Final "+storage+" belum sesuai rata-rata depan/belakang.");
+            return;
+        }
+
         let closingTera;
         try{
             closingTera=teraLookup(storage,heightInput.value);
@@ -4662,6 +4688,9 @@ async function saveClosing(){
             operator,
             note,
             sonding_height_cm:closingTera.matchedHeightCm,
+            sonding_front_cm:sondingFront,
+            sonding_rear_cm:sondingRear,
+            sonding_final_cm:sondingFinal,
             tera_version:TERA.version,
 
             session_id:
@@ -4728,6 +4757,8 @@ async function saveClosing(){
             return (
                 n(old.actual_qty)!==n(row.actual_qty) ||
                 n(old.sonding_height_cm)!==n(row.sonding_height_cm) ||
+                (old.sonding_front_cm!=null && n(old.sonding_front_cm)!==n(row.sonding_front_cm)) ||
+                (old.sonding_rear_cm!=null && n(old.sonding_rear_cm)!==n(row.sonding_rear_cm)) ||
                 String(old.note||"").trim()!==String(row.note||"").trim() ||
                 String(old.tera_version||"")!==String(row.tera_version||"")
             );
@@ -4761,7 +4792,7 @@ async function saveClosing(){
         if(!beginStockSave("Menyimpan revisi Stock Akhir..."))return;
 
         const {data:revisionResult,error:revisionError}=await db.rpc(
-            "revise_stock_closing",
+            "revise_stock_closing_with_evidence",
             {
                 p_rows:changedRows.map(row=>({
                     tanggal:row.tanggal,
@@ -4770,6 +4801,9 @@ async function saveClosing(){
                     actual_qty:row.actual_qty,
                     note:row.note,
                     sonding_height_cm:row.sonding_height_cm,
+                    sonding_front_cm:row.sonding_front_cm,
+                    sonding_rear_cm:row.sonding_rear_cm,
+                    sonding_final_cm:row.sonding_final_cm,
                     tera_version:row.tera_version
                 })),
                 p_reason:reason
@@ -4813,7 +4847,7 @@ async function saveClosing(){
 
     const carryForward=document.getElementById("carryForward").checked;
     const {data:closingResult,error:closingError}=await db.rpc(
-        "save_stock_closing_atomic",
+        "save_stock_closing_with_evidence",
         {
             p_rows:closingRows,
             p_carry_forward:carryForward
