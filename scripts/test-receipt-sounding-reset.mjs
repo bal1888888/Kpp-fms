@@ -21,5 +21,5 @@ test("receipt clears paired sounding only in success branch, not before save val
  assert.ok(errorCheck>=0 && clear>errorCheck);
  assert.match(section,/\["receiptTankHeightBefore","receiptTankHeightAfter"\]/);
  assert.match(section,/if\(previousOnly && !error\)/);
- assert.match(stock,/sonding-average\.js\?v=20261017-receipt-clear/);
+ assert.match(stock,/sonding-average\.js\?v=20261018-physical-proof/);
 });
