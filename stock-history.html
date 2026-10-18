@@ -13,7 +13,7 @@ window.KPP_ACTIVE_PAGE="stock-history";
 <script src="wib-time.js?v=20260915-lubricant2"></script>
 <script src="auth.js?v=20260915-lubricant2"></script>
 <script src="storage-master.js"></script>
-<script src="stock-reconciliation.js?v=20261018-a1"></script>
+<script src="stock-reconciliation.js?v=20261018-a2"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -246,8 +246,8 @@ async function inspectClosing(index) {
     const date=row.tanggal,shift=row.shift,storage=row.storage;
     const [o,m,f]=await Promise.all([
       db.from("stock_opening").select("storage,qty").eq("tanggal",date).eq("shift",shift).eq("storage",storage).limit(2),
-      db.from("stock_movements").select("id,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty",{count:"exact"}).eq("tanggal",date).eq("shift",shift).order("id",{ascending:true}).limit(1001),
-      db.from("fuel_history").select("id,fuel,fuel_truck,wh,duplicate_of_id",{count:"exact"}).eq("tanggal",date).eq("shift",shift).is("duplicate_of_id",null).order("id",{ascending:true}).limit(1001)
+      db.from("stock_movements").select("id,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,created_at",{count:"exact"}).eq("tanggal",date).eq("shift",shift).order("id",{ascending:true}).limit(1001),
+      db.from("fuel_history").select("id,fuel,fuel_truck,wh,duplicate_of_id,created_at",{count:"exact"}).eq("tanggal",date).eq("shift",shift).is("duplicate_of_id",null).order("id",{ascending:true}).limit(1001)
     ]);
     const err=o.error||m.error||f.error;
     if(err)throw err;
@@ -268,16 +268,28 @@ async function inspectClosing(index) {
       ["Pemakaian (-)",fmt(result.usage)],["Stock hitung ulang",fmt(result.calculated)],
       ["Stock Sistem tersimpan",fmt(result.stored)],["Stock Fisik",fmt(result.physical)],
       ["Sistem - hitung ulang",fmtSigned(result.storedDifference)],
-      ["Fisik - hitung ulang",fmtSigned(result.physicalDifference)]
+      ["Fisik - hitung ulang",fmtSigned(result.physicalDifference)],
+      ["Pemakaian dicatat setelah Closing",result.chronologyComplete?fmt(result.lateUsage):"Waktu tidak lengkap"],
+      ["Transfer keluar dicatat setelah Closing",result.chronologyComplete?fmt(result.lateTransferOut):"Waktu tidak lengkap"],
+      ["Transfer masuk dicatat setelah Closing",result.chronologyComplete?fmt(result.lateTransferIn):"Waktu tidak lengkap"],
+      ["Penerimaan dicatat setelah Closing",result.chronologyComplete?fmt(result.lateReceipt):"Waktu tidak lengkap"],
+      ["Pengaruh transaksi susulan",result.chronologyComplete?fmtSigned(result.lateImpact):"Belum bisa dihitung"],
+      ["Selisih belum terjelaskan",result.chronologyComplete?fmtSigned(result.unexplainedDifference):"Belum bisa dihitung"]
     ];
-    const state=result.complete
-      ? Math.abs(result.storedDifference)>1?"Selisih sistem perlu pemeriksaan":"Stock sistem sesuai perhitungan ulang (toleransi 1 L)"
-      : "Belum dapat dipastikan: ada pengisian yang sumber FT-nya tidak dikenali";
+    const state=!result.complete
+      ? "Audit belum lengkap: ada pengisian yang sumber FT-nya tidak dikenali."
+      : !result.chronologyComplete
+        ? "Waktu simpan transaksi tidak lengkap. Asal selisih belum bisa dipastikan."
+        : Math.abs(result.storedDifference)<=1
+          ? "Stock Sistem sesuai hitung ulang (toleransi 1 L)."
+          : Math.abs(result.unexplainedDifference)<=1
+            ? "Selisih cocok dengan transaksi yang baru tercatat di server setelah Closing."
+            : "Ada sisa selisih yang belum dijelaskan oleh transaksi susulan. Periksa koreksi historis atau bukti lapangan.";
     detail.innerHTML='<h4>Audit '+esc(storage)+' | '+esc(date)+' | Shift '+esc(shift)+'</h4>'
       +'<p class="closing-reconcile-note">'+esc(state)+'</p>'
       +'<div class="closing-reconcile-grid">'+fields.map(([label,value])=>'<div><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div>').join("")+'</div>'
       +(result.unmapped?'<p class="closing-reconcile-note">PERINGATAN: '+result.unmapped+' pengisian tidak punya mapping FT/WH yang valid. Jangan gunakan total ini untuk koreksi saldo.</p>':'')
-      +'<p class="closing-reconcile-note">Hasil hitung ulang saat ini bisa berbeda dari snapshot ketika closing dibuat, misalnya bila ada transaksi terlambat. Pemeriksaan ini hanya membaca data, bukan mengubah saldo.</p>';
+      +'<p class="closing-reconcile-note">Pembanding waktu menggunakan created_at saat server mencatat transaksi, bukan jam kejadian di lapangan. Edit data lama setelah Closing mungkin tidak terdeteksi dalam hitungan transaksi susulan. Hasil ini hanya untuk audit dan tidak mengubah saldo.</p>';
     detail.scrollIntoView({behavior:"smooth",block:"nearest"});
   }catch(error){
     detail.textContent="Audit belum dapat diselesaikan: "+(error?.message||String(error));
