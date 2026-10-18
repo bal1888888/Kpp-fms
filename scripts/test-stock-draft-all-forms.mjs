@@ -23,7 +23,7 @@ function createHarness(backend,newUser="user-a",period={tanggal:"2026-10-18",shi
   const attrs={id,value:"",tagName:id.endsWith("Storage")||["receiptDestination","receiptTransporter","transferSource","transferDestination","openingStorage","soundingCheckStorage"].includes(id)?"SELECT":"INPUT",
    readOnly:false,disabled:false,style:{},dataset:{},checked:id==="carryForward",
    classList:{contains:n=>n==="front-rear-value"?false:n===group+"-panel"},
-   options:[{value:""},{value:"MT01"},{value:"MT02"},{value:"PT TRANSPORT"},{value:"FT0075"}],
+   options:[{value:""},{value:"MT01"},{value:"MT02"},{value:"MT03"},{value:"PT TRANSPORT"},{value:"FT0075"}],
    closest:()=>({id:group==="check"?"soundingCheckPanel":"",classList:{contains:k=>k===group+"-panel"}})};
   if(pairs.includes(id)){
    attrs.style.display="none";
