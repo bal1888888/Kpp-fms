@@ -3956,10 +3956,6 @@ function renderClosing(stock,savedClosing){
         const heightValue=saved&&saved.sonding_height_cm!==null&&saved.sonding_height_cm!==undefined
             ? saved.sonding_height_cm
             : "";
-        const estimatedSystemHeight=teraHeightForLiters(
-            storage,
-            Math.max(0,n(stock[storage]))
-        );
 
         body.innerHTML+=`
         <tr>
@@ -3967,7 +3963,7 @@ function renderClosing(stock,savedClosing){
             <td>
                 <div class="closing-system-reading">
                     <strong>${fmt(stock[storage])}</strong>
-                    <small> Estimasi sonding: <b>~ ${fmtCm(estimatedSystemHeight)}</b></small>
+                    <small>Stock Sistem (pembanding, bukan hasil sonding)</small>
                 </div>
             </td>
             <td>
@@ -4688,6 +4684,33 @@ async function saveClosing(){
     if(!closingRows.length){
         alert(isRevision?"Tidak ada data Stock Akhir untuk direvisi.":"Semua Stock Closing periode ini sudah tersimpan.");
         return;
+    }
+
+    // Nilai tera bisa kebetulan sama dengan sistem. Jangan menganggapnya salah,
+    // tetapi minta verifikasi pengukuran fisik pada MT yang berubah pada shift ini.
+    if(!isRevision){
+        const equalMovingMT=closingRows.filter(row=>{
+            const master=STORAGE_ROWS.find(item=>item.code===row.storage);
+            if(master?.storage_type!=="MT" || row.system_qty<=0 ||
+               Math.abs(row.actual_qty-row.system_qty)>0.05)return false;
+            return CURRENT_MOVEMENTS.some(move=>
+                (move.jenis==="TRANSFER" &&
+                    (move.source_storage===row.storage || move.destination_storage===row.storage)) ||
+                (move.jenis==="RECEIPT" && move.destination_storage===row.storage)
+            );
+        });
+        if(equalMovingMT.length){
+            const lanjut=confirm(
+                "VERIFIKASI SONDING FISIK MT\\n\\n" +
+                "Stock Fisik persis sama dengan Stock Sistem untuk: " +
+                equalMovingMT.map(row=>row.storage).join(", ") + ".\\n" +
+                "Pada shift ini ada pergerakan solar pada storage tersebut.\\n\\n" +
+                "Pastikan angka depan/belakang diukur langsung pada tangki, " +
+                "bukan disalin dari estimasi atau Stock Sistem.\\n\\n" +
+                "Sudah diverifikasi secara fisik dan lanjut simpan?"
+            );
+            if(!lanjut)return;
+        }
     }
 
     if(isRevision){
