@@ -21,5 +21,5 @@ test("stock operational load avoids broad select star payloads",()=>{
   const src=read("stock.html");
   assert.match(src,/stock_opening"\)\.select\("storage,qty"\)/);
   assert.match(src,/stock_movements"\)\.select\("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note"\)/);
-  assert.match(src,/stock_closing"\)\.select\("storage,actual_qty,sonding_height_cm,operator,note"\)/);
+  assert.match(src,/stock_closing"\)\.select\("storage,actual_qty,sonding_height_cm,sonding_front_cm,sonding_rear_cm,sonding_final_cm,operator,note"\)/);
 });
