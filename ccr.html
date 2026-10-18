@@ -98,6 +98,22 @@ td.left{text-align:left}
 </style>
 <link rel="stylesheet" href="operations-ui.css?v=20260909-2">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20260911b3">
+<style id="kpp-ccr-mobile-history-audit">
+.ccr-used-link-review{background:#fff7ed!important}
+.ccr-used-link-review td:first-child{border-left:3px solid #f97316}
+.ccr-link-flag{display:block;color:#b45309;font-size:10px;font-weight:800;margin-top:4px}
+.ccr-mobile-history{display:none}
+.ccr-mobile-card{background:#fff;border:1px solid #dbe5f0;border-radius:12px;padding:12px;min-width:0}
+.ccr-mobile-card.needs-review{border-left:4px solid #f97316}
+.ccr-mobile-card header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.ccr-mobile-card header strong{font-size:14px}
+.ccr-mobile-card header small{font-size:11px;color:#64748b}
+.ccr-mobile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.ccr-mobile-fields>div{min-width:0;font-size:11px;color:#64748b}
+.ccr-mobile-fields b{display:block;color:#0f172a;font-size:13px;margin-top:4px;overflow-wrap:anywhere}
+.ccr-mobile-alert{font-size:11px;font-weight:bold;color:#b45309;margin-top:8px}
+@media(max-width:700px){.ccr-mobile-history{display:grid;gap:9px;margin:12px 0}.panel-history .table-wrap{margin-top:9px}.panel-history select{max-width:100%;font-size:16px}}
+</style>
 </head>
 <body class="ccr-workspace">
 
@@ -296,6 +312,7 @@ td.left{text-align:left}
       </div>
     </div>
 
+    <div id="ccrMobileHistory" class="ccr-mobile-history" aria-label="Riwayat CCR di HP"></div>
     <div class="table-wrap" style="margin-top:14px">
       <table>
         <thead>
@@ -1040,6 +1057,20 @@ async function cancelRow(id){
   await refreshFillingNo();
 }
 
+function renderCcrMobileHistory(orphanIds){
+  const root=document.getElementById("ccrMobileHistory");
+  if(!root)return;
+  root.innerHTML=ROWS.slice(0,30).map(r=>{
+    const orphan=orphanIds.has(r.id);
+    return '<article class="ccr-mobile-card'+(orphan?' needs-review':'')+'">'
+      +'<header><strong>'+esc(r.unit||"-")+'</strong><small>'+esc(r.tanggal||"-")+' · '+esc(r.shift||"-")+'</small></header>'
+      +'<div class="ccr-mobile-fields"><div>Status<b>'+esc(r.status||"-")+'</b></div>'
+      +'<div>Jatah + Tol.<b>'+esc(fmt(Number(r.max_qty||0)+Number(r.tolerance_qty||0)))+' L</b></div>'
+      +'<div>HM CCR<b>'+esc(fmt(r.hm_ccr))+'</b></div><div>HM aktual<b>'+esc(fmt(r.used_actual_hm))+'</b></div></div>'
+      +(orphan?'<div class="ccr-mobile-alert">Perlu audit: referensi pengisian tidak ditemukan.</div>':'')+'</article>';
+  }).join("");
+  if(ROWS.length>30)root.insertAdjacentHTML("beforeend",'<p>Menampilkan 30 jatah terbaru; gunakan filter status untuk lainnya.</p>');
+}
 async function loadRows(){
   const filter=document.getElementById("statusFilter").value;
 
@@ -1063,6 +1094,23 @@ async function loadRows(){
   }
 
   ROWS=data||[];
+  // Admin/GL only: inspect USED allocation links without modifying transactions.
+  const orphanIds=new Set();
+  let auditError="";
+  if(["gl","admin","atasan"].includes(PROFILE?.role)){
+    const used=ROWS.filter(r=>r.status==="USED");
+    const refs=[...new Set(used.map(r=>r.used_fuel_history_id).filter(v=>v!=null))];
+    let found=new Set();
+    if(refs.length){
+      const check=await db.from("fuel_history").select("id").in("id",refs);
+      if(check.error)auditError=check.error.message;
+      else found=new Set((check.data||[]).map(r=>String(r.id)));
+    }
+    if(!auditError)used.forEach(r=>{
+      if(r.used_fuel_history_id==null||!found.has(String(r.used_fuel_history_id)))orphanIds.add(r.id);
+    });
+  }
+  renderCcrMobileHistory(orphanIds);
 
   const body=document.getElementById("body");
 
@@ -1084,7 +1132,7 @@ async function loadRows(){
           r.status!=="USED";
 
         return `
-          <tr>
+          <tr class="${orphanIds.has(r.id)?"ccr-used-link-review":""}">
             <td>${dateID(r.tanggal)}</td>
             <td>${esc(r.shift)}</td>
             <td><b>${r.filling_no??"-"}</b></td>
@@ -1098,7 +1146,7 @@ async function loadRows(){
             <td>${fmt(r.max_qty)} L</td>
             <td>${fmt(r.tolerance_qty)} L</td>
             <td><b>${fmt(limit)} L</b></td>
-            <td>${tag(r.status)}</td>
+            <td>${tag(r.status)}${orphanIds.has(r.id)?'<span class="ccr-link-flag">LINK FUEL HILANG</span>':""}</td>
             <td class="left">${esc(r.request_reason||"-")}</td>
             <td>${esc(r.created_by_name||"-")}</td>
             <td>
@@ -1127,7 +1175,7 @@ async function loadRows(){
   });
 
   document.getElementById("tableStatus").textContent=
-    `✅ ${ROWS.length} data CCR terbaca.`;
+    `✅ ${ROWS.length} data CCR terbaca.`+(auditError?" | Audit link tidak tersedia: "+auditError:orphanIds.size?" | "+orphanIds.size+" jatah USED kehilangan referensi pengisian; review Admin/GL.":"");
 }
 
 document.getElementById("unit").addEventListener("input",()=>{
