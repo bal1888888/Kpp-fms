@@ -14,7 +14,7 @@ function harness(){
  const status={textContent:""};
  const ctx={
   CURRENT_SYSTEM_STOCK:{FT0077:0},STOCK_DATA_READY:false,STOCK_DATA_PERIOD:"",STOCK_CLOSING_INPUT_DIRTY:false,
-  getPeriod:()=>period,closingStoragesForAccount:()=>["FT0077"],
+  getPeriod:()=>({...period}),closingStoragesForAccount:()=>["FT0077"],
   db:{rpc:(name,args)=>{events.push({name,args});return new Promise(resolve=>release=resolve);}},
   stockWithDeadline:req=>req,
   renderClosing:(stock,closings)=>events.push({render:stock,closings}),
