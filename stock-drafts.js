@@ -41,7 +41,9 @@
     if(!key)return false;
     try{
       if(Object.keys(data.sections||{}).length){
-        localStorage.setItem(key,JSON.stringify({...data,version:1,savedAt:Date.now()}));
+        const serialized=JSON.stringify({...data,version:1,savedAt:Date.now()});
+        localStorage.setItem(key,serialized);
+        if(localStorage.getItem(key)!==serialized)throw new Error("Draft tidak terverifikasi sesudah ditulis.");
       }else localStorage.removeItem(key);
       return true;
     }catch(error){
@@ -82,7 +84,7 @@
     if(!started||!activeKey||suspended)return;
     const data=read(activeKey)||{version:1,savedAt:Date.now(),sections:{}};
     data.sections[group]=capture(group);
-    if(write(activeKey,data))setMessage("Draft belum disimpan aman di perangkat ini. Refresh/keluar web tidak menghapus isian.");
+    if(write(activeKey,data))setMessage("DRAFT TERSIMPAN DI PERANGKAT • "+getPeriod().tanggal+" • Shift "+getPeriod().shift+". Belum dikirim ke server.");
   }
   function persist(){
     if(suspended||!started)return;
@@ -179,7 +181,7 @@
     }
     return restored;
   }
-  function onRendered(){
+  function onRendered({stockReady=true}={}){
     if(!started)return;
     const newPeriod=getPeriod(),newKey=keyFor(newPeriod);
     if(newKey!==activeKey){
@@ -190,13 +192,18 @@
     }
     const data=read(activeKey);
     if(!data || !Object.keys(data.sections).length){
-      setMessage("Draft otomatis aktif di perangkat ini. Data baru dikirim hanya setelah tombol Simpan berhasil.");
+      setMessage(stockReady
+        ?"Draft otomatis siap di perangkat ini. Tunggu pesan DRAFT TERSIMPAN setelah mengetik."
+        :"Gagal memuat Stock dari server. Jangan kirim transaksi. Draft lokal yang sudah ada tetap disimpan.");
       return;
     }
     suspended=true;
     let count=0;
     try{
       for(const [group,entry] of Object.entries(data.sections)){
+        // Do not restore Closing against a potentially stale or missing book
+        // stock. Retain its raw draft until the backend reload succeeds.
+        if(!stockReady && group==="closing")continue;
         if(restoreGroup(group,entry)){dirty.add(group);count++;}
       }
       window.updateSoundingCheck?.();
@@ -206,8 +213,9 @@
       window.updateClosingDifference?.();
       window.renderClosingCopyPreview?.();
     }finally{suspended=false;}
-    if(count)setMessage("DIPULIHKAN: "+count+" bagian formulir belum disimpan. Cek isian lalu tekan Simpan bila sudah benar.");
-    else setMessage("Draft tersimpan di perangkat, tetapi pilihan akun/storage berubah. Periksa isian sebelum melanjutkan.");
+    if(count)setMessage("DIPULIHKAN: "+count+" bagian formulir tanggal "+newPeriod.tanggal+" Shift "+newPeriod.shift+". "+(stockReady?"Cek isian sebelum menyimpan.":"Server Stock belum tersambung, jangan kirim transaksi."));
+    else if(!stockReady)setMessage("Draft belum dapat dipulihkan lengkap. Stock dari server belum tersedia. Jangan kirim transaksi.");
+    else setMessage("Draft tersedia, tetapi storage/transportir berbeda dengan Master aktif. Angka sengaja TIDAK dimasukkan ke tangki lain.");
   }
   function resetPeriodFields(){
     // Period change already updated the date/shift selectors. Reset all
@@ -284,13 +292,52 @@
         meaningful.has(id)&&String(value??"").trim()!=="");
     });
   }
+  function latestDraftPeriod(){
+    // Preserve the period of *actually saved local drafts* across browser
+    // refresh. The page otherwise resets date=TODAY and shift=1 every load.
+    const prefix=PREFIX+userId+":";
+    let latest=null;
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(!key?.startsWith(prefix))continue;
+        const tail=key.slice(prefix.length).split(":");
+        if(tail.length!==2 || !/^\d{4}-\d{2}-\d{2}$/.test(tail[0]) || !/^[12]$/.test(tail[1]))continue;
+        const draft=read(key);
+        if(!draft || !Object.keys(draft.sections||{}).length)continue;
+        // Auto-switch only for a recently edited draft. Older drafts stay
+        // accessible when the user selects their date/shift manually.
+        if(Date.now()-draft.savedAt>48*60*60*1000)continue;
+        if(!latest || draft.savedAt>latest.at)
+          latest={tanggal:tail[0],shift:Number(tail[1]),at:draft.savedAt};
+      }
+    }catch(error){console.warn("Daftar draft Stock tidak bisa dibaca:",error);}
+    return latest;
+  }
   function start(uid){
     if(!uid)return;
     const nextUser=String(uid);
     if(started && userId!==nextUser){dirty.clear();activeKey=null;}
     userId=nextUser;
     started=true;
-    if(!activeKey){activePeriod=getPeriod();activeKey=keyFor(activePeriod);}
+    if(!activeKey){
+      const recent=latestDraftPeriod();
+      const current=getPeriod();
+      const todayKey=keyFor(current);
+      const currentDraft=read(todayKey);
+      const dateField=document.getElementById("tanggal");
+      const shiftField=document.getElementById("shift");
+      if(recent && (!currentDraft || recent.at>currentDraft.savedAt) &&
+         dateField && shiftField && !dateField.disabled && !shiftField.disabled){
+        dateField.value=recent.tanggal;
+        shiftField.value=String(recent.shift);
+        setMessage("Draft belum dikirim ditemukan untuk "+recent.tanggal+" Shift "+recent.shift+". Memulihkan periode kerja...");
+      }
+      activePeriod=getPeriod();
+      activeKey=keyFor(activePeriod);
+      if(!recent && !read(activeKey))
+        setMessage("Auto-save siap. Isi form lalu pastikan muncul DRAFT TERSIMPAN sebelum refresh.");
+    }
   }
   document.addEventListener("input",onInput,true);
   document.addEventListener("change",onInput,true);

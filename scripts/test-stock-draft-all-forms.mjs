@@ -17,7 +17,7 @@ transfer:["transferSource","transferDestination","transferSourceHeightBefore","t
  "transferDestinationHeightBefore","transferDestinationHeightAfter"],
 closing:["closingNote","closingRevisionReason","carryForward","height-MT01"]
 };
-function createHarness(backend,newUser="user-a"){
+function createHarness(backend,newUser="user-a",period={tanggal:"2026-10-18",shift:1},lockPeriod=false){
  const elements={},handlers={doc:{},win:{}};
  const mk=(id,group)=>{
   const attrs={id,value:"",tagName:id.endsWith("Storage")||["receiptDestination","receiptTransporter","transferSource","transferDestination","openingStorage","soundingCheckStorage"].includes(id)?"SELECT":"INPUT",
@@ -36,10 +36,13 @@ function createHarness(backend,newUser="user-a"){
   elements[id]=attrs;return attrs;
  };
  for(const [group,list] of Object.entries(ids))for(const id of list)mk(id,group);
- mk("tanggal","time").value="2026-10-18";
- mk("shift","time").value="1";
+ mk("tanggal","time").value=period.tanggal;
+ mk("shift","time").value=String(period.shift);
+ if(lockPeriod){elements.tanggal.disabled=true;elements.shift.disabled=true;}
  const banner=mk("stockDraftStatus","other");banner.textContent="";
- const storage={getItem:k=>backend.get(k)??null,setItem:(k,v)=>backend.set(k,v),removeItem:k=>backend.delete(k)};
+ const storage={getItem:k=>backend.get(k)??null,setItem:(k,v)=>backend.set(k,v),
+  removeItem:k=>backend.delete(k),key:i=>Array.from(backend.keys())[i]??null,
+  get length(){return backend.size;}};
  const doc={
   getElementById:id=>elements[id]||null,
   querySelectorAll:selector=>selector===".closing-panel input[id^='height-']"?[elements["height-MT01"]]:[],
@@ -128,7 +131,7 @@ test("stale device drafts expire, while manual clearing is scoped to current use
  assert.equal(backend.size,0);
 });
 test("integration: Stock only saves drafts after user events and clears on confirmed successes",()=>{
- assert.match(html,/stock-drafts\.js\?v=20261018-draft-safe-v2/);
+ assert.match(html,/stock-drafts\.js\?v=20261018-restore-v3/);
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
@@ -158,7 +161,7 @@ test("a missing or disabled tank/transport company cannot rebind sounding to a d
  assert.equal(b.elements.receiptMeterStart.value,"");
  assert.deepEqual(b.elements.receiptTankHeightBefore.fr.map(x=>x.value),["",""]);
  assert.deepEqual(b.elements.transferSourceHeightBefore.fr.map(x=>x.value),["",""]);
- assert.match(b.elements.stockDraftStatus.textContent,/pilihan akun\/storage berubah/);
+ assert.match(b.elements.stockDraftStatus.textContent,/storage\/transportir berbeda/);
  // Raw draft remains intact for Admin to inspect, not silently reassigned.
  assert.equal(backend.size,1);
 });
@@ -200,4 +203,74 @@ test("changing date or shift wipes visible old-period measurements and restores 
  a.drafts.onRendered();
  assert.equal(a.elements.receiptMeterStart.value,"990");
  assert.equal(a.elements.closingNote.value,"Shift lama");
+});
+
+test("refresh restores recent unsent draft period instead of hardcoded today's date and Shift 1",()=>{
+ const backend=new Map();
+ const original=createHarness(backend,"fuel-a",{tanggal:"2026-10-18",shift:2});
+ original.fire("receipt","receiptDestination","MT01");
+ original.fire("receipt","receiptMeterStart","4567.8");
+ original.fire("closing","height-MT01",["36.6","36.7"]);
+ const refreshed=createHarness(backend,"fuel-a",{tanggal:"2026-10-19",shift:1});
+ assert.equal(refreshed.elements.tanggal.value,"2026-10-18");
+ assert.equal(refreshed.elements.shift.value,"2");
+ refreshed.drafts.onRendered();
+ assert.equal(refreshed.elements.receiptMeterStart.value,"4567.8");
+ assert.deepEqual(refreshed.elements["height-MT01"].fr.map(x=>x.value),["36.6","36.7"]);
+ assert.match(refreshed.elements.stockDraftStatus.textContent,/DIPULIHKAN/);
+ const other=createHarness(backend,"fuel-b",{tanggal:"2026-10-19",shift:1});
+ other.drafts.onRendered();
+ assert.equal(other.elements.receiptMeterStart.value,"");
+});
+test("fuelman shift locked by active session cannot auto-switch to unrelated draft period",()=>{
+ const backend=new Map();
+ const earlier=createHarness(backend,"fuel-a",{tanggal:"2026-10-18",shift:2});
+ earlier.fire("receipt","receiptMeterStart","900");
+ const locked=createHarness(backend,"fuel-a",{tanggal:"2026-10-19",shift:1},true);
+ assert.equal(locked.elements.tanggal.value,"2026-10-19");
+ assert.equal(locked.elements.shift.value,"1");
+ locked.drafts.onRendered();
+ assert.equal(locked.elements.receiptMeterStart.value,"");
+});
+test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not physical Closing against stale Stock",()=>{
+ const backend=new Map();
+ const previous=createHarness(backend);
+ previous.fire("receipt","receiptDestination","MT01");
+ previous.fire("receipt","receiptMeterStart","8877");
+ previous.fire("closing","height-MT01",["20","30"]);
+ const restored=createHarness(backend);
+ restored.drafts.onRendered({stockReady:false});
+ assert.equal(restored.elements.receiptMeterStart.value,"8877");
+ assert.deepEqual(restored.elements["height-MT01"].fr.map(x=>x.value),["",""]);
+ assert.match(restored.elements.stockDraftStatus.textContent,/jangan kirim transaksi/);
+ restored.drafts.onRendered();
+ assert.deepEqual(restored.elements["height-MT01"].fr.map(x=>x.value),["20","30"]);
+});
+test("unsafe operational saves blocked until actual period stock loads",()=>{
+ assert.ok(html.includes("function stockCanSubmit()"));
+ assert.ok(html.includes('STOCK_DATA_PERIOD===tanggal+":"+shift'));
+ for(const group of ["Opening","Receipt","Transfer","Closing"])
+   assert.ok(html.includes("async function save"+group+"(){\n    if(!stockCanSubmit())return;"),group);
+ assert.ok(html.includes("KPPStockDrafts?.onRendered({stockReady:false})"));
+});
+
+test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists",()=>{
+ const backend=new Map();
+ const first=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ first.fire("receipt","receiptMeterStart","100");
+ // Force a deterministic difference in timestamps; user may have drafts
+ // from both shifts, but should recover the last worked shift.
+ const olderKey=Array.from(backend.keys())[0];
+ const older=JSON.parse(backend.get(olderKey));
+ backend.set(olderKey,JSON.stringify({...older,savedAt:Date.now()-120000}));
+ const next=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ // User intentionally switches to Shift 2 after auth, rather than reusing
+ // an older Shift 1 draft restored automatically by startup.
+ next.elements.shift.value="2";
+ next.drafts.beforePeriodChange();
+ next.fire("receipt","receiptMeterStart","200");
+ const reloaded=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ assert.equal(reloaded.elements.shift.value,"2");
+ reloaded.drafts.onRendered();
+ assert.equal(reloaded.elements.receiptMeterStart.value,"200");
 });
