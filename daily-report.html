@@ -659,12 +659,18 @@ async function calculateStock(tanggal,shift){
     if(source)stock[ensureStorage(source,"pengisian")]-=n(row.fuel);
   });
 
-  // Jika ada actual closing, pakai actual sebagai angka report untuk storage itu.
-  (c.data||[]).forEach(row=>{
-    if(row.storage && row.actual_qty!==null && row.actual_qty!==undefined){
-      stock[ensureStorage(row.storage,"stock closing")]=n(row.actual_qty);
-    }
-  });
+  // Align with Stock and Dashboard: don't mix partial physical closing with
+  // book stock. Only opening storage codes for this shift are required.
+  const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
+  const openingStorages=(o.data||[]).map(row=>String(row.storage||"").trim().toUpperCase()).filter(Boolean);
+  const closingComplete=openingStorages.length>0 && openingStorages.every(storage=>
+    closingRows.some(row=>String(row.storage).trim().toUpperCase()===storage)
+  );
+  if(closingComplete){
+    closingRows.forEach(row=>{
+      if(row.storage)stock[ensureStorage(row.storage,"stock closing")]=n(row.actual_qty);
+    });
+  }
 
   return stock;
 }
