@@ -60,6 +60,10 @@ begin
   if v_mode not in ('BACKFILL','LIVE') then
     raise exception 'Mode operasi stock tidak valid. Gunakan BACKFILL atau LIVE.';
   end if;
+  -- Backfill is a historical audit privilege, not a bypass for Fuelman.
+  if v_mode='BACKFILL' and v_role not in ('gl','admin','atasan') then
+    raise exception 'Mode BACKFILL hanya untuk GL/Admin/Atasan.' using errcode='42501';
+  end if;
 
   v_scope := 'stock:' || auth.uid()::text;
   v_hash := encode(
