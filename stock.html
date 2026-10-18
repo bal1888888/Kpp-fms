@@ -3749,10 +3749,17 @@ async function loadStock(){
     });
     renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
     renderClosing(bookStock,c.data||[]);
+    STOCK_CLOSING_INPUT_DIRTY=false;
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
 }
 
+let STOCK_CLOSING_INPUT_DIRTY=false;
+document.addEventListener("input",event=>{
+    if(event.target?.matches?.(".closing-panel .front-rear-value")){
+        STOCK_CLOSING_INPUT_DIRTY=true;
+    }
+},true);
 const STOCK_AUTO_REFRESH_MS=60000;
 let STOCK_AUTO_REFRESH_TIMER=null;
 let STOCK_AUTO_REFRESH_BUSY=false;
@@ -3764,7 +3771,7 @@ function stockHasActiveInput(){
 }
 
 function stockAutoRefresh(){
-    if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK)return;
+    if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK || STOCK_CLOSING_INPUT_DIRTY)return;
     if(document.getElementById("stockEditOverlay")?.classList.contains("hidden")===false)return;
     if(stockHasActiveInput())return;
     STOCK_AUTO_REFRESH_BUSY=true;
