@@ -17,7 +17,12 @@ function makeHarness(){
    tasks.push({resolve});
    return query;
  }};
- const context={db,getPeriod:()=>period,alert:m=>alerts.push(m),Promise,window:{KPPStockDrafts:{onRendered(){}}}};
+ const status={textContent:"",classList:{remove(){}}};
+ const context={db,getPeriod:()=>period,alert:m=>alerts.push(m),Promise,
+  stockWithDeadline:promise=>promise,
+  document:{getElementById:()=>status},
+  console:{warn(){}},
+  window:{KPPStockDrafts:{onRendered(){}}}};
  vm.createContext(context);
  vm.runInContext(code,context);
  return {ctx:context,tasks,alerts,setPeriod:p=>period=p};
@@ -38,7 +43,8 @@ test("old shift response cannot overwrite newly selected shift or restore draft 
  // A latest request's error is shown; older response is silently discarded.
  finish(h.tasks,4,"Current shift connection failed");
  await newer;
- assert.deepEqual(h.alerts,["Gagal mengambil stock: Current shift connection failed"]);
+ assert.deepEqual(h.alerts,[]);
+ assert.equal(vm.runInContext("STOCK_DATA_READY",h.ctx),false);
 });
 test("overlapping loads within one shift accept only the most recently requested result",async()=>{
  const h=makeHarness();
@@ -49,7 +55,8 @@ test("overlapping loads within one shift accept only the most recently requested
  assert.deepEqual(h.alerts,[]);
  finish(h.tasks,4,"Latest request");
  await second;
- assert.deepEqual(h.alerts,["Gagal mengambil stock: Latest request"]);
+ assert.deepEqual(h.alerts,[]);
+ assert.equal(vm.runInContext("STOCK_DATA_READY",h.ctx),false);
 });
 test("current-period guard runs before stock objects or any draft restore",()=>{
  const guard=code.indexOf("requestSequence!==STOCK_LOAD_REQUEST_SEQUENCE");

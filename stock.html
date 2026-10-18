@@ -3702,18 +3702,64 @@ function stockCanSubmit(){
     alert("Stock "+tanggal+" Shift "+shift+" belum berhasil dimuat dari server. Draft isian tetap tersimpan di perangkat. Perbarui Stock sebelum menekan Simpan.");
     return false;
 }
+
+// The four-table dashboard view is useful for monitoring, but it is not
+// required to check a measured transporter receipt. Instead, verify just
+// the destination's opening/closing state against the CURRENT server period.
+// This NEVER bypasses the idempotent save_stock_movement_safe RPC.
+function stockWithDeadline(request,ms,label){
+    let timer;
+    return Promise.race([
+        Promise.resolve(request),
+        new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(new Error(label+" melebihi "+Math.ceil(ms/1000)+" detik. Cek koneksi, draft tetap tersimpan.")),ms);
+        })
+    ]).finally(()=>clearTimeout(timer));
+}
+async function stockCanSubmitReceipt(){
+    const {tanggal,shift}=getPeriod();
+    const storage=document.getElementById("receiptDestination")?.value;
+    const validPeriod=/^\d{4}-\d{2}-\d{2}$/.test(tanggal) && (shift===1 || shift===2);
+    if(!CURRENT_PROFILE || !validPeriod || !STORAGE_ROWS.some(row=>row.code===storage)){
+        alert("Akun, periode, atau Master storage belum siap. Draft masih aman. Muat ulang halaman.");
+        return false;
+    }
+    const status=document.getElementById("receiptStatus");
+    if(status)status.textContent="Memeriksa Opening/Closing "+storage+" ke server (tanpa menunggu dashboard)...";
+    try{
+        const [opening,closing]=await stockWithDeadline(Promise.all([
+            db.from("stock_opening").select("storage").eq("tanggal",tanggal).eq("shift",shift).eq("storage",storage).limit(1),
+            db.from("stock_closing").select("id").eq("tanggal",tanggal).eq("shift",shift).eq("storage",storage).limit(1)
+        ]),8000,"Pengecekan penerimaan");
+        if(getPeriod().tanggal!==tanggal || getPeriod().shift!==shift ||
+           document.getElementById("receiptDestination")?.value!==storage){
+            throw new Error("Tanggal, shift, atau tangki berubah saat pengecekan. Periksa isian sebelum simpan.");
+        }
+        if(opening.error||closing.error)throw new Error(opening.error?.message||closing.error?.message);
+        if(!opening.data?.length)throw new Error("Opening "+storage+" untuk periode ini belum tercatat. Isi Opening terlebih dahulu.");
+        if(closing.data?.length)throw new Error(storage+" sudah Closing pada periode ini. Penerimaan setelah Closing harus diaudit GL/Admin.");
+        if(status)status.textContent="Opening terverifikasi. Penerimaan siap diperiksa dan dikirim dengan anti-double server.";
+        return true;
+    }catch(error){
+        if(status)status.textContent="[BELUM DIKIRIM] "+error.message;
+        alert("Penerimaan belum dikirim. "+error.message+" Jangan hapus draft.");
+        return false;
+    }
+}
 async function loadStock(){
     const requestSequence=++STOCK_LOAD_REQUEST_SEQUENCE;
     STOCK_DATA_READY=false;
     const {tanggal,shift}=getPeriod();
     if(!tanggal)return;
-
-    const [o,m,f,c]=await Promise.all([
+    const stockStatus=document.getElementById("stockRefreshInfo");
+    if(stockStatus)stockStatus.textContent="Memeriksa Stock "+tanggal+" Shift "+shift+" (maksimum 12 detik)...";
+    try{
+    const [o,m,f,c]=await stockWithDeadline(Promise.all([
         db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
         db.from("stock_movements").select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note").eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
         db.from("fuel_history").select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null),
         db.from("stock_closing").select("storage,actual_qty,sonding_height_cm,sonding_front_cm,sonding_rear_cm,sonding_final_cm,operator,note").eq("tanggal",tanggal).eq("shift",shift)
-    ]);
+    ]),12000,"Memuat Stock");
 
     // Slow/offline networks can return an older shift's response after a
     // newer period was selected. Do not render it or restore any draft with
@@ -3724,13 +3770,7 @@ async function loadStock(){
 
     const anyError=o.error||m.error||f.error||c.error;
 
-    if(anyError){
-        // Draft can be read even when the current Stock query fails.
-        // Closing proof is restored only after book stock loads correctly.
-        window.KPPStockDrafts?.onRendered({stockReady:false});
-        alert("Gagal mengambil stock: "+anyError.message);
-        return;
-    }
+    if(anyError)throw new Error(anyError.message||String(anyError));
 
     const stock=Object.fromEntries(STORAGES.map(storage=>[storage,0]));
 
@@ -3785,7 +3825,6 @@ async function loadStock(){
     // closing fisik jika closing seluruh storage sudah lengkap.
     CURRENT_SYSTEM_STOCK={...bookStock};
 
-    updateStockRefreshMeta(tanggal,shift);
     startStockAutoRefresh();
     renderStockReconciliation({
         tanggal,
@@ -3800,10 +3839,26 @@ async function loadStock(){
     renderClosing(bookStock,c.data||[]);
     STOCK_CLOSING_INPUT_DIRTY=false;
     STOCK_DATA_PERIOD=tanggal+":"+shift;
-    STOCK_DATA_READY=true;
     window.KPPStockDrafts?.onRendered();
     renderMovement(m.data||[],f.data||[]);
     showCapacityAlertOnce(displayStock);
+    // Mark ready only when all render components completed successfully.
+    STOCK_DATA_READY=true;
+    updateStockRefreshMeta(tanggal,shift);
+    return true;
+    }catch(error){
+        if(requestSequence!==STOCK_LOAD_REQUEST_SEQUENCE ||
+           getPeriod().tanggal!==tanggal || Number(getPeriod().shift)!==shift)return false;
+        STOCK_DATA_READY=false;
+        const reason=String(error?.message||error);
+        const info=document.getElementById("stockRefreshInfo");
+        const badge=document.getElementById("stockRefreshBadge");
+        if(info)info.textContent="STOCK BELUM TERBARU: "+reason+" | Penerimaan: jalur pengecekan cepat tersedia.";
+        if(badge){badge.textContent="GAGAL MUAT";badge.classList.remove("is-live");}
+        window.KPPStockDrafts?.onRendered({stockReady:false});
+        console.warn("Stock load failed:",reason);
+        return false;
+    }
 }
 
 let STOCK_CLOSING_INPUT_DIRTY=false;
@@ -4361,8 +4416,11 @@ async function saveOpening(){
     await finishStockSave(true,"Stock Opening sudah tersimpan.");
 }
 
+let RECEIPT_SAVE_ATTEMPT_BUSY=false;
 async function saveReceipt(){
-    if(!stockCanSubmit())return;
+    if(RECEIPT_SAVE_ATTEMPT_BUSY || STOCK_SAVE_LOCK)return;
+    RECEIPT_SAVE_ATTEMPT_BUSY=true;
+    try{
     const {tanggal,shift}=getPeriod();
     const destination_storage=document.getElementById("receiptDestination").value;
     const measurement=updateReceiptCalculation();
@@ -4446,6 +4504,10 @@ async function saveReceipt(){
         reportDateTime(arrivalTime)
     );
 
+    // Small destination-only, fresh server preflight. A slow Dashboard is
+    // not a reason to block a measured receipt, but missing Opening, existing
+    // Closing or unavailable server connection must still block submission.
+    if(!await stockCanSubmitReceipt())return;
     // LOCK dilakukan sebelum request dikirim supaya double click/spam tidak bisa membuat insert kedua.
     if(!beginStockSave("Menyimpan Penerimaan Solar..."))return;
 
@@ -4455,6 +4517,7 @@ async function saveReceipt(){
         arrival_at:new Date(`${tanggal}T${arrivalTime}+07:00`).toISOString(),
         shift,
         jenis:"RECEIPT",
+        operation_mode:"LIVE",
         source_storage:null,
         destination_storage,
         qty:measurement.tankQty,
@@ -4478,8 +4541,8 @@ async function saveReceipt(){
     if(previousOnly && !error){
         document.getElementById("receiptStatus").textContent=
             "[OK] Transaksi sebelumnya berhasil dikonfirmasi. Isian penerimaan saat ini belum dikirim; periksa lalu tekan SIMPAN lagi.";
-        await loadStock();
         await finishStockSave(true,"Transaksi sebelumnya sudah aman di server. Isian penerimaan saat ini belum dikirim.");
+        void loadStock().catch(e=>console.warn("Refresh sesudah konfirmasi penerimaan:",e));
         return;
     }
 
@@ -4507,13 +4570,18 @@ async function saveReceipt(){
         document.getElementById(id).dispatchEvent(new Event("kpp-clear-paired-sounding"));
     });
     document.getElementById("receiptArrivalTime").value=localTime();
-    await loadStock();
+    // A successful RPC is final; don't hold the operator in the save overlay
+    // while the multi-table dashboard refreshes over a slow mine-site link.
     await finishStockSave(
         true,
         document_reference
             ? "Penerimaan Solar "+document_reference+" sudah tersimpan."
             : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL/Atasan dari History Penerimaan."
     );
+    void loadStock().catch(e=>console.warn("Refresh Stock sesudah penerimaan:",e));
+    }finally{
+        RECEIPT_SAVE_ATTEMPT_BUSY=false;
+    }
 }
 
 

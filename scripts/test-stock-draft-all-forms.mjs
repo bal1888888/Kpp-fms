@@ -252,8 +252,10 @@ test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not p
 test("unsafe operational saves blocked until actual period stock loads",()=>{
  assert.ok(html.includes("function stockCanSubmit()"));
  assert.ok(html.includes('STOCK_DATA_PERIOD===tanggal+":"+shift'));
- for(const group of ["Opening","Receipt","Transfer","Closing"])
+ for(const group of ["Opening","Transfer","Closing"])
    assert.ok(html.includes("async function save"+group+"(){\n    if(!stockCanSubmit())return;"),group);
+ assert.ok(html.includes("async function saveReceipt(){"));
+ assert.ok(html.includes("if(!await stockCanSubmitReceipt())return;"));
  assert.ok(html.includes("KPPStockDrafts?.onRendered({stockReady:false})"));
 });
 
