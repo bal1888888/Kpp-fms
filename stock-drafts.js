@@ -261,7 +261,7 @@
         : !selectorsValid(group,data.sections[group]?.fields||{})));
     if(failedGroups.length){
       setMessage("DRAFT DITEMUKAN, tapi belum dipulihkan lengkap ("+
-        failedGroups.join(", ")+"). Tekan LIHAT DRAFT agar angkanya tidak hilang. Jangan pakai storage pengganti.");
+        failedGroups.join(", ")+"). Tekan LIHAT DRAFT agar angkanya tidak hilang. Jangan pakai storage pengganti. "+(!stockReady?"Stock server belum siap, jangan kirim transaksi.":""));
     }else if(count){
       setMessage("DIPULIHKAN: "+count+" bagian formulir tanggal "+newPeriod.tanggal+" Shift "+newPeriod.shift+". "+(stockReady?"Cek semua isian sebelum menyimpan.":"Server Stock belum tersambung, jangan kirim transaksi."));
     }else if(!stockReady)setMessage("Draft belum dapat dipulihkan. Stock server belum tersedia. Tekan LIHAT DRAFT.");
