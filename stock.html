@@ -1102,6 +1102,25 @@ th{background:#f8fafc;color:#475569}
   }
 }
 </style>
+<style id="kpp-stock-aux-collapse-v1">
+.stock-aux-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stock-aux-panel-head h3{margin:0!important;min-width:0}
+.stock-aux-toggle-btn{
+  flex:0 0 auto;min-height:38px;padding:8px 11px;
+  border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;
+  border-radius:9px;font-weight:800;font-size:10px;
+}
+.stock-aux-toggle-btn:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
+#soundingCheckPanel .stock-aux-panel-head{margin-bottom:14px}
+#soundingCheckPanel.is-collapsed .stock-aux-panel-head{margin-bottom:0}
+#soundingCheckPanelContent[hidden]{display:none!important}
+.stock-draft-recovery[hidden]{display:none!important}
+@media(max-width:700px){
+  .stock-aux-panel-head{gap:6px}
+  .stock-aux-panel-head h3{font-size:15px!important;line-height:1.25}
+  .stock-aux-toggle-btn{min-height:36px;padding:7px 9px;font-size:9px;white-space:nowrap}
+}
+</style>
 <style id="kpp-stock-draft-recovery-style">
 .stock-draft-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .stock-draft-recovery[hidden]{display:none!important}
@@ -1282,12 +1301,19 @@ th{background:#f8fafc;color:#475569}
   </div>
 </div>
 <div id="stockDraftRecovery" class="panel stock-draft-recovery" hidden>
-  <h3>Salinan Draft Belum Dikirim</h3>
+  <div class="panel-title-row stock-aux-panel-head">
+    <h3>Salinan Draft Belum Dikirim</h3>
+    <button id="hideStockDraftRecoveryBtn" class="stock-aux-toggle-btn" type="button" aria-label="Sembunyikan salinan draft">SEMBUNYIKAN</button>
+  </div>
   <p>Ini hanya backup angka di browser, bukan transaksi tersimpan. Cek storage sebelum menginput ulang.</p>
   <textarea id="stockDraftRecoveryText" readonly rows="12" aria-label="Backup draft Stock"></textarea>
 </div>
 <div class="panel converter-panel" id="soundingCheckPanel">
-    <h3>Cek Sonding MT / FT</h3>
+    <div class="panel-title-row stock-aux-panel-head">
+        <h3>Cek Sonding MT / FT</h3>
+        <button id="toggleSoundingCheckBtn" class="stock-aux-toggle-btn" type="button" aria-expanded="true" aria-controls="soundingCheckPanelContent">SEMBUNYIKAN</button>
+    </div>
+    <div id="soundingCheckPanelContent">
     <div class="grid">
         <div>
             <label for="soundingCheckStorage">Storage MT / FT</label>
@@ -1314,6 +1340,7 @@ th{background:#f8fafc;color:#475569}
             <button class="copy-report-btn" type="button" onclick="copySoundingCheck()">SALIN HASIL CEK SONDING</button>
         </div>
     </details>
+    </div>
 </div>
 
 <div class="panel workflow-panel opening-panel" data-step="01">
@@ -5475,6 +5502,41 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     if(!hasSaved&&!isMobile())list.forEach(panel=>setCollapsed(panel,false,{persist:false}));
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})();
+</script>
+
+<script>
+/* UI-only: hiding a panel never clears its input values or Stock draft. */
+(()=>{
+  const KEY="kpp-stock-sounding-panel-collapsed-v1";
+  function initialize(){
+    const panel=document.getElementById("soundingCheckPanel");
+    const content=document.getElementById("soundingCheckPanelContent");
+    const button=document.getElementById("toggleSoundingCheckBtn");
+    const draft=document.getElementById("stockDraftRecovery");
+    const draftButton=document.getElementById("hideStockDraftRecoveryBtn");
+    if(panel&&content&&button){
+      const setCollapsed=(collapsed,persist=false)=>{
+        content.hidden=collapsed;
+        panel.classList.toggle("is-collapsed",collapsed);
+        button.setAttribute("aria-expanded",String(!collapsed));
+        button.textContent=collapsed?"TAMPILKAN":"SEMBUNYIKAN";
+        if(persist){try{localStorage.setItem(KEY,collapsed?"1":"0")}catch(_error){}}
+      };
+      let pref=null;
+      try{pref=localStorage.getItem(KEY)}catch(_error){}
+      setCollapsed(pref==="1" || (pref===null && window.matchMedia?.("(max-width: 700px)").matches===true));
+      button.addEventListener("click",()=>setCollapsed(!content.hidden,true));
+    }
+    if(draft&&draftButton){
+      draftButton.addEventListener("click",()=>{
+        draft.hidden=true;
+        // The existing LIHAT DRAFT action shows the same backup again.
+      });
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialize,{once:true});
+  else initialize();
 })();
 </script>
 
