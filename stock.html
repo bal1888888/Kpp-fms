@@ -3974,6 +3974,8 @@ function stockHasActiveInput(){
 }
 
 function stockAutoRefresh(){
+    // Inactive browser tabs should not consume field bandwidth or Supabase reads.
+    if(document.visibilityState==="hidden")return;
     if(STOCK_AUTO_REFRESH_BUSY || STOCK_SAVE_LOCK || STOCK_CLOSING_INPUT_DIRTY || window.KPPStockDrafts?.hasDraft())return;
     if(document.getElementById("stockEditOverlay")?.classList.contains("hidden")===false)return;
     if(stockHasActiveInput())return;
