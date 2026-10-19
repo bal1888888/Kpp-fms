@@ -1570,8 +1570,8 @@ async function downloadHoFormTrial(){
       ws.getCell("A1").font={bold:true,size:14};
       ws.mergeCells("A2:H2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
       ws.getCell("A2").font={bold:true,size:14};
-      ws.mergeCells("A3:F3");ws.getCell("A3").value="Tanggal: "+date+"     Shift: "+shift;
-      ws.mergeCells("F3:H3");ws.getCell("G3").value="Fuel Truck: "+truck;
+      ws.mergeCells("A3:E3");ws.getCell("A3").value="Tanggal: "+date+"     Shift: "+shift;
+      ws.mergeCells("F3:H3");ws.getCell("F3").value="Fuel Truck: "+truck;
       ws.mergeCells("A4:H4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
       ws.getCell("A4").font={italic:true,color:{argb:"FF9A3412"},size:10};
       const heads=["NO","JAM","KODE UNIT","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FUELMAN","KETERANGAN"];
