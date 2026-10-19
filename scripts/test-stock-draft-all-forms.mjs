@@ -249,10 +249,10 @@ test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not p
  restored.drafts.onRendered();
  assert.deepEqual(restored.elements["height-MT01"].fr.map(x=>x.value),["20","30"]);
 });
-test("unsafe operational saves blocked until actual period stock loads",()=>{
+test("unsafe saves require authoritative period checks even without full dashboard",()=>{
  assert.ok(html.includes("function stockCanSubmit()"));
  assert.ok(html.includes('STOCK_DATA_PERIOD===tanggal+":"+shift'));
- assert.ok(html.includes("async function saveTransfer(){\n    if(!stockCanSubmit())return;"));
+ assert.ok(html.includes("if(!await stockCanSubmitTransfer(checkSource,checkDestination,checkPeriod))return;"));
  assert.ok(html.includes("async function saveOpening(){"));
  assert.ok(html.includes("async function saveClosing(){"));
  assert.ok(html.includes("if(!await stockCanSubmitClosing())return;"));
