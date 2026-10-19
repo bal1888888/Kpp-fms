@@ -1584,16 +1584,16 @@ async function downloadHoFormTrial(){
       const pageRecords=records.slice(pageIndex*30,(pageIndex+1)*30);
       const ws=wb.addWorksheet("HO "+(++noSheet),{
         pageSetup:{
-          paperSize:9,orientation:"landscape",fitToPage:true,
+          paperSize:9,orientation:"portrait",fitToPage:true,
           fitToWidth:1,fitToHeight:1,
           horizontalCentered:true,verticalCentered:false,
-          margins:{left:0.25,right:0.25,top:0.35,bottom:0.35,header:0.15,footer:0.15}
+          margins:{left:0.28,right:0.28,top:0.28,bottom:0.28,header:0.12,footer:0.12}
         },
         views:[{state:"frozen",ySplit:6}]
       });
       ws.properties.defaultRowHeight=20;
       ws.printOptions={horizontalCentered:true,verticalCentered:false,headings:false,gridLines:false};
-      const widths=[7,17,14,14,17,25,14,24];
+      const widths=[5,15,10,11,12,19,10,15];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
       ws.mergeCells("A1:E1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
       ws.getCell("A1").font={name:"Calibri",bold:true,size:15,color:{argb:"FF16804C"}};
@@ -1606,9 +1606,9 @@ async function downloadHoFormTrial(){
       const fuelmanNames=[...new Set(records.map(item=>getFuelman(item)).filter(v=>v&&v!=="-"))];
       ws.mergeCells("G3:H3");ws.getCell("G3").value="FUELMAN : "+(fuelmanNames.length===1?fuelmanNames[0]:fuelmanNames.length>1?fuelmanNames.join(", "):"");
       ws.mergeCells("G4:H4");ws.getCell("G4").value="SHIFT : "+shift;
-      ws.getRow(1).height=25;ws.getRow(2).height=23;ws.getRow(3).height=22;ws.getRow(4).height=22;
+      ws.getRow(1).height=23;ws.getRow(2).height=20;ws.getRow(3).height=19;ws.getRow(4).height=19;
       const heads=["NO","EQUIP NO","WAKTU","KM/HM","QTY ISSUE","NAMA OPERATOR","PARAF","REMARK"];
-      const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=32;
+      const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=25;
       const dataStart=7;
       for(let i=0;i<30;i++){
         const item=pageRecords[i];
@@ -1618,7 +1618,7 @@ async function downloadHoFormTrial(){
         const row=ws.getRow(dataStart+i);
         const values=[i+1,unit,jam==null?"":String(jam).slice(0,8),item?.hm_akhir??"",item?Number(item.fuel)||0:"",item?.operator||"","",""];
         values.forEach((v,j)=>{const cell=row.getCell(j+1);cell.value=v;cell.border=borders;cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};});
-        row.height=15;
+        row.height=20;
       }
       const totalAt=37;
       ws.mergeCells("A37:D37");ws.getCell("A37").value="TOTAL QTY ISSUE (LEMBAR "+(pageIndex+1)+")";
@@ -1649,9 +1649,9 @@ async function downloadHoFormTrial(){
       });
       const signRow=totalAt+8;
       ws.mergeCells("B"+signRow+":D"+signRow);ws.getCell("B"+signRow).value="Dibuat oleh, Fuelman";
-      ws.mergeCells("F"+signRow+":H"+signRow);ws.getCell("F"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";
-      ws.mergeCells("B"+(signRow+4)+":D"+(signRow+4));ws.getCell("B"+(signRow+4)).value="(............................................)";
-      ws.mergeCells("F"+(signRow+4)+":H"+(signRow+4));ws.getCell("F"+(signRow+4)).value="(............................................)";
+      ws.mergeCells("G"+signRow+":H"+signRow);ws.getCell("G"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";ws.getCell("G"+signRow).alignment={horizontal:"right",wrapText:true};
+      ws.mergeCells("B"+(signRow+4)+":D"+(signRow+4));ws.getCell("B"+(signRow+4)).value="_______________________";
+      ws.mergeCells("G"+(signRow+4)+":H"+(signRow+4));ws.getCell("G"+(signRow+4)).value="_______________________";ws.getCell("G"+(signRow+4)).alignment={horizontal:"right"};
       ws.pageSetup.printArea="A1:H"+(signRow+5);
       ws.headerFooter.oddFooter="Halaman &P dari &N";
       // Each worksheet is one independently printable 30-line physical form.
