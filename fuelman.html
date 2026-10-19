@@ -118,6 +118,7 @@ button,.btn,.actions a{min-height:44px}
       </div>
     </div>
 
+    <div id="meterStartGroup" class="hidden" style="margin-top:12px"><label>Flowmeter Awal FT (Liter) • wajib bagi FUELMAN</label><input id="meterStart" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Angka counter flowmeter saat mulai shift"></div>
     <div class="actions">
       <button id="startBtn" class="btn-green">START SHIFT</button>
     </div>
@@ -154,12 +155,20 @@ button,.btn,.actions a{min-height:44px}
         <b>Jam Mulai</b>
         <span id="sMulai">-</span>
       </div>
+      <div class="session-row" id="meterStartRow"><b>Flowmeter Awal</b><span id="sMeterStart">Belum dicatat</span></div>
+      <div class="session-row" id="meterEndRow"><b>Flowmeter Akhir</b><span id="sMeterEnd">Belum dicatat</span></div>
       <div class="session-row">
         <b>Status</b>
         <span><span class="tag tag-active">ACTIVE</span></span>
       </div>
     </div>
 
+    <div id="activeMeterBox" class="hidden" style="margin-top:14px">
+      <label id="activeMeterLabel">Flowmeter</label>
+      <input id="activeMeterValue" type="number" step="0.01" min="0" inputmode="decimal">
+      <div class="actions"><button id="saveMeterBtn" class="btn-blue" type="button">SIMPAN FLOWMETER</button></div>
+      <div class="status" id="meterStatus"></div>
+    </div>
     <div class="actions">
       <a id="fuelingLink" class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
       <a class="btn btn-gray" href="stock.html">🛢️ Stock</a>
@@ -186,6 +195,7 @@ function syncDutyForm(){
   group.classList.toggle("hidden",!needsTruck);
   truck.disabled=!needsTruck;
   if(!needsTruck)truck.value="";
+  document.getElementById("meterStartGroup")?.classList.toggle("hidden",!needsTruck);
 }
 async function loadFuelTruckMaster(){
   STORAGE_ROWS=await window.KPPStorage.load(KPP.db,{activeOnly:true});
@@ -273,7 +283,31 @@ async function loadActiveSession(){
     return;
   }
 
+  await refreshMeterData();
   renderActive();
+}
+let meterData=null;
+async function refreshMeterData(){
+ if(!currentSession || (currentSession.duty_type||"FUELMAN")!=="FUELMAN"){meterData=null;return;}
+ const {data,error}=await KPP.db.from("ft_shift_flowmeter").select("meter_start,meter_end").eq("session_id",currentSession.id).maybeSingle();
+ if(error){meterData=null;document.getElementById("meterStatus").textContent="Flowmeter belum dapat dimuat: "+error.message;return;}
+ meterData=data||null;
+}
+async function saveActiveMeter(){
+ if(!currentSession)return;
+ const field=document.getElementById("activeMeterValue");
+ const raw=field.value.trim();
+ const status=document.getElementById("meterStatus");
+ if(!raw || !Number.isFinite(Number(raw)) || Number(raw)<0){status.textContent="Isi angka flowmeter yang valid.";return;}
+ const stage=meterData?"END":"START";
+ const btn=document.getElementById("saveMeterBtn");btn.disabled=true;
+ try{
+  const {error}=await KPP.db.rpc("save_ft_shift_flowmeter",{p_session_id:currentSession.id,p_stage:stage,p_meter:Number(raw)});
+  if(error)throw error;
+  await refreshMeterData();renderActive();
+  status.textContent="✅ Flowmeter "+(stage==="START"?"awal":"akhir")+" tersimpan.";
+ }catch(error){status.textContent="❌ "+error.message;}
+ finally{btn.disabled=false;}
 }
 
 function renderActive(){
@@ -286,6 +320,14 @@ function renderActive(){
   document.getElementById("sTruck").textContent=currentSession.fuel_truck||"-";
   document.getElementById("sTruckRow").classList.toggle("hidden",duty==="PIC_TRANSFER");
   document.getElementById("sMulai").textContent=fmtTime(currentSession.jam_mulai);
+  const hasFt=duty==="FUELMAN";
+  document.getElementById("meterStartRow").classList.toggle("hidden",!hasFt);
+  document.getElementById("meterEndRow").classList.toggle("hidden",!hasFt);
+  document.getElementById("activeMeterBox").classList.toggle("hidden",!hasFt || meterData?.meter_end!=null);
+  document.getElementById("sMeterStart").textContent=meterData?.meter_start??"Belum dicatat";
+  document.getElementById("sMeterEnd").textContent=meterData?.meter_end??"Belum dicatat";
+  document.getElementById("activeMeterLabel").textContent=meterData?"Flowmeter Akhir (sebelum Closing FT)":"Flowmeter Awal (wajib)";
+  document.getElementById("activeMeterValue").placeholder=meterData?"Angka flowmeter akhir":"Angka flowmeter awal";
   hide("startPanel"); show("activePanel");
   refreshSessionPeriodGuard();
 }
@@ -299,6 +341,10 @@ async function startShift(){
   if(!shift){status.textContent="❌ Pilih Shift.";return;}
   if(!dutyType){status.textContent="❌ Pilih Tugas Shift.";return;}
   if(dutyType==="FUELMAN"&&!fuelTruck){status.textContent="❌ FUELMAN wajib memilih Fuel Truck.";return;}
+  const startMeterText=document.getElementById("meterStart").value.trim();
+  if(dutyType==="FUELMAN" && (!startMeterText || !Number.isFinite(Number(startMeterText)) || Number(startMeterText)<0)){
+    status.textContent="❌ Isi Flowmeter Awal FT sebelum Start Shift.";return;
+  }
   const responsibility=dutyType==="PIC_TRANSFER"?"Closing semua MT aktif sebelum End Shift":`Closing ${fuelTruck} sebelum End Shift`;
   if(!confirm(`Mulai shift?
 
@@ -313,12 +359,22 @@ Tanggung jawab: ${responsibility}`))return;
   if(error){status.textContent="❌ "+error.message;return;}
   currentSession=data?.data||null;
   if(!currentSession){status.textContent="❌ Sesi belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
+  meterData=null;
+  if(dutyType==="FUELMAN"){
+    const meterResult=await KPP.db.rpc("save_ft_shift_flowmeter",{p_session_id:currentSession.id,p_stage:"START",p_meter:Number(startMeterText)});
+    if(meterResult.error){
+      status.textContent="⚠️ Sesi sudah aktif tetapi flowmeter awal belum tersimpan: "+meterResult.error.message+". Lengkapi pada panel aktif sebelum pengisian.";
+    }else await refreshMeterData();
+  }
   renderActive();
 }
 
 async function endShift(){
   if(!currentSession)return;
   const duty=currentSession.duty_type||"FUELMAN";
+  if(duty==="FUELMAN" && (!meterData || meterData.meter_end==null)){
+    document.getElementById("endStatus").textContent="❌ Catat Flowmeter Awal dan Akhir sebelum End Shift.";return;
+  }
   const responsibility=duty==="PIC_TRANSFER"?"semua MT aktif":currentSession.fuel_truck;
   if(!confirm(`Akhiri shift?
 
@@ -340,6 +396,7 @@ Wajib sudah Closing: ${responsibility}.`))return;
 document.getElementById("dutyType").addEventListener("change",syncDutyForm);
 document.getElementById("startBtn").addEventListener("click",startShift);
 document.getElementById("endBtn").addEventListener("click",endShift);
+document.getElementById("saveMeterBtn").addEventListener("click",saveActiveMeter);
 setInterval(refreshSessionPeriodGuard,30000);
 
 document.addEventListener("kpp-auth-ready",async(e)=>{
