@@ -1564,35 +1564,32 @@ async function downloadHoFormTrial(){
     for(const [key,records] of grouped){
       const [date,shift,truck]=key.split("|");
       const ws=wb.addWorksheet("HO "+(++noSheet),{pageSetup:{paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:1},views:[{state:"frozen",ySplit:8}]});
-      const widths=[6,15,12,12,31,22,14,16,19,24];
+      const widths=[6,16,15,24,15,17,20,24];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
-      ws.mergeCells("A1:J1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA | KPP TRAM";
+      ws.mergeCells("A1:H1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA | KPP TRAM";
       ws.getCell("A1").font={bold:true,size:14};
-      ws.mergeCells("A2:J2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
+      ws.mergeCells("A2:H2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
       ws.getCell("A2").font={bold:true,size:14};
       ws.mergeCells("A3:F3");ws.getCell("A3").value="Tanggal: "+date+"     Shift: "+shift;
-      ws.mergeCells("G3:J3");ws.getCell("G3").value="Fuel Truck: "+truck;
-      ws.mergeCells("A4:J4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
+      ws.mergeCells("F3:H3");ws.getCell("G3").value="Fuel Truck: "+truck;
+      ws.mergeCells("A4:H4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
       ws.getCell("A4").font={italic:true,color:{argb:"FF9A3412"},size:10};
-      const heads=["NO","JAM MULAI","JAM SELESAI","KODE UNIT","EGI","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FUELMAN","KETERANGAN"];
+      const heads=["NO","JAM","KODE UNIT","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FUELMAN","KETERANGAN"];
       const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=32;
       records.sort((a,b)=>String(a.jam||"").localeCompare(String(b.jam||"")));
       records.forEach((item,i)=>{
         const unit=String(item.unit||"").trim().toUpperCase();
-        const m=MASTER_UNIT[unit]||{};
-        // One timestamp does NOT establish both start and finish times.
-        const start=item.jam_mulai??item.start_time??null;
-        const finish=item.jam_selesai??item.end_time??null;
-        if(start==null||finish==null)missingTime++;
+        const jam=item.jam_mulai??item.start_time??item.jam??null;
+        if(jam==null)missingTime++;
         const fmtTime=x=>x==null?"":String(x).slice(0,8);
-        const row=ws.addRow([i+1,fmtTime(start),fmtTime(finish),unit,m.egi||"",item.operator||"",item.hm_akhir??"",Number(item.fuel)||0,getFuelman(item)==="-"?"":getFuelman(item),""]);
+        const row=ws.addRow([i+1,fmtTime(jam),unit,item.operator||"",item.hm_akhir??"",Number(item.fuel)||0,getFuelman(item)==="-"?"":getFuelman(item),""]);
         row.height=21;
         row.eachCell({includeEmpty:true},c=>{c.border=borders;c.alignment={vertical:"middle",horizontal:"center",wrapText:true};});
       });
       const totalAt=7+records.length;
-      ws.mergeCells("A"+totalAt+":G"+totalAt);ws.getCell("A"+totalAt).value="TOTAL QTY ISSUE";
-      ws.getCell("H"+totalAt).value=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
-      ws.getCell("H"+totalAt).numFmt="#,##0.##";
+      ws.mergeCells("A"+totalAt+":E"+totalAt);ws.getCell("A"+totalAt).value="TOTAL QTY ISSUE";
+      ws.getCell("F"+totalAt).value=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
+      ws.getCell("F"+totalAt).numFmt="#,##0.##";
       ws.getRow(totalAt).font={bold:true};
       const meter=meterMap.get([date,shift,String(truck).toUpperCase()].join("|"));
       const start=meter?.meter_start==null?null:Number(meter.meter_start);
@@ -1607,20 +1604,20 @@ async function downloadHoFormTrial(){
       ];
       summary.forEach(([label,value],i)=>{
         const n=totalAt+i+1;
-        ws.mergeCells("A"+n+":G"+n);
+        ws.mergeCells("A"+n+":E"+n);
         ws.getCell("A"+n).value=label;
-        const cell=ws.getCell("H"+n);
+        const cell=ws.getCell("F"+n);
         cell.value=value;
         cell.numFmt="#,##0.##";
         ws.getRow(n).font={bold:true};
-        if(value==null)ws.getCell("I"+n).value="BELUM TERCATAT";
+        if(value==null)ws.getCell("G"+n).value="BELUM TERCATAT";
       });
       const signRow=totalAt+7;
-      ws.mergeCells("B"+signRow+":E"+signRow);ws.getCell("B"+signRow).value="Dibuat oleh, Fuelman";
-      ws.mergeCells("H"+signRow+":J"+signRow);ws.getCell("H"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";
-      ws.mergeCells("B"+(signRow+4)+":E"+(signRow+4));ws.getCell("B"+(signRow+4)).value="(............................................)";
-      ws.mergeCells("H"+(signRow+4)+":J"+(signRow+4));ws.getCell("H"+(signRow+4)).value="(............................................)";
-      ws.pageSetup.printArea="A1:J"+(signRow+5);
+      ws.mergeCells("B"+signRow+":D"+signRow);ws.getCell("B"+signRow).value="Dibuat oleh, Fuelman";
+      ws.mergeCells("F"+signRow+":H"+signRow);ws.getCell("F"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";
+      ws.mergeCells("B"+(signRow+4)+":D"+(signRow+4));ws.getCell("B"+(signRow+4)).value="(............................................)";
+      ws.mergeCells("F"+(signRow+4)+":H"+(signRow+4));ws.getCell("F"+(signRow+4)).value="(............................................)";
+      ws.pageSetup.printArea="A1:H"+(signRow+5);
       ws.headerFooter.oddFooter="Halaman &P dari &N";
     }
     const bytes=await wb.xlsx.writeBuffer();
@@ -1629,7 +1626,7 @@ async function downloadHoFormTrial(){
     link.href=url;link.download="KPP_Logsheet_Form_HO_Uji_Coba.xlsx";
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
-    if(missingTime)alert("Form HO dibuat. "+missingTime+" baris belum memiliki pasangan waktu mulai/selesai di data yang dimuat. Kolom waktu dan flowmeter yang belum tersedia dibiarkan kosong untuk audit, bukan diisi perkiraan.");
+    if(missingTime)alert("Form HO dibuat. "+missingTime+" baris belum memiliki jam pengisian di data yang dimuat. Kolom waktu dan flowmeter yang belum tersedia dibiarkan kosong untuk audit, bukan diisi perkiraan.");
   }catch(error){console.error(error);alert("Gagal membuat Form HO: "+(error?.message||error));}
   finally{btn.disabled=false;btn.textContent="🖨️ FORM HO (UJI COBA)";}
 }
