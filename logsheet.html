@@ -1564,17 +1564,21 @@ async function downloadHoFormTrial(){
     for(const [key,records] of grouped){
       const [date,shift,truck]=key.split("|");
       const ws=wb.addWorksheet("HO "+(++noSheet),{pageSetup:{paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:1},views:[{state:"frozen",ySplit:8}]});
-      const widths=[6,16,15,24,15,17,20,24];
+      const widths=[7,17,14,14,17,25,14,24];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
-      ws.mergeCells("A1:H1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA | KPP TRAM";
-      ws.getCell("A1").font={bold:true,size:14};
-      ws.mergeCells("A2:H2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
-      ws.getCell("A2").font={bold:true,size:14};
-      ws.mergeCells("A3:E3");ws.getCell("A3").value="Tanggal: "+date+"     Shift: "+shift;
-      ws.mergeCells("F3:H3");ws.getCell("F3").value="Fuel Truck: "+truck;
-      ws.mergeCells("A4:H4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
-      ws.getCell("A4").font={italic:true,color:{argb:"FF9A3412"},size:10};
-      const heads=["NO","JAM","KODE UNIT","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FUELMAN","KETERANGAN"];
+      ws.mergeCells("A1:E1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
+      ws.getCell("A1").font={name:"Calibri",bold:true,size:15,color:{argb:"FF16804C"}};
+      ws.mergeCells("A2:E2");ws.getCell("A2").value="Logsheet Fuel Job Site : TRAM";
+      ws.getCell("A2").font={bold:true,size:13};
+      ws.mergeCells("A3:E3");ws.getCell("A3").value="WH NUMBER (FT/MT) : "+truck;
+      ws.mergeCells("A4:E4");ws.getCell("A4").value="Date : "+date;
+      // Right header is intentionally reserved for physical driver handwriting.
+      ws.mergeCells("F2:H2");ws.getCell("F2").value="DRIVER : ____________________";
+      const fuelmanNames=[...new Set(records.map(item=>getFuelman(item)).filter(v=>v&&v!=="-"))];
+      ws.mergeCells("F3:H3");ws.getCell("F3").value="FUELMAN : "+(fuelmanNames.length===1?fuelmanNames[0]:fuelmanNames.length>1?fuelmanNames.join(", "):"");
+      ws.mergeCells("F4:H4");ws.getCell("F4").value="SHIFT : "+shift;
+      ws.getRow(1).height=25;ws.getRow(2).height=23;ws.getRow(3).height=22;ws.getRow(4).height=22;
+      const heads=["NO","EQUIP NO","WAKTU","KM/HM","QTY ISSUE","NAMA OPERATOR","PARAF","REMARK"];
       const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=32;
       records.sort((a,b)=>String(a.jam||"").localeCompare(String(b.jam||"")));
       records.forEach((item,i)=>{
@@ -1582,14 +1586,14 @@ async function downloadHoFormTrial(){
         const jam=item.jam_mulai??item.start_time??item.jam??null;
         if(jam==null)missingTime++;
         const fmtTime=x=>x==null?"":String(x).slice(0,8);
-        const row=ws.addRow([i+1,fmtTime(jam),unit,item.operator||"",item.hm_akhir??"",Number(item.fuel)||0,getFuelman(item)==="-"?"":getFuelman(item),""]);
+        const row=ws.addRow([i+1,unit,fmtTime(jam),item.hm_akhir??"",Number(item.fuel)||0,item.operator||"","",""]);
         row.height=21;
         row.eachCell({includeEmpty:true},c=>{c.border=borders;c.alignment={vertical:"middle",horizontal:"center",wrapText:true};});
       });
       const totalAt=7+records.length;
-      ws.mergeCells("A"+totalAt+":E"+totalAt);ws.getCell("A"+totalAt).value="TOTAL QTY ISSUE";
-      ws.getCell("F"+totalAt).value=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
-      ws.getCell("F"+totalAt).numFmt="#,##0.##";
+      ws.mergeCells("A"+totalAt+":D"+totalAt);ws.getCell("A"+totalAt).value="TOTAL QTY ISSUE";
+      ws.getCell("E"+totalAt).value=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
+      ws.getCell("E"+totalAt).numFmt="#,##0.##";
       ws.getRow(totalAt).font={bold:true};
       const meter=meterMap.get([date,shift,String(truck).toUpperCase()].join("|"));
       const start=meter?.meter_start==null?null:Number(meter.meter_start);
@@ -1604,9 +1608,9 @@ async function downloadHoFormTrial(){
       ];
       summary.forEach(([label,value],i)=>{
         const n=totalAt+i+1;
-        ws.mergeCells("A"+n+":E"+n);
+        ws.mergeCells("A"+n+":D"+n);
         ws.getCell("A"+n).value=label;
-        const cell=ws.getCell("F"+n);
+        const cell=ws.getCell("E"+n);
         cell.value=value;
         cell.numFmt="#,##0.##";
         ws.getRow(n).font={bold:true};
