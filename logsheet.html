@@ -1563,7 +1563,17 @@ async function downloadHoFormTrial(){
     let noSheet=0,missingTime=0;
     for(const [key,records] of grouped){
       const [date,shift,truck]=key.split("|");
-      const ws=wb.addWorksheet("HO "+(++noSheet),{pageSetup:{paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:1},views:[{state:"frozen",ySplit:8}]});
+      const ws=wb.addWorksheet("HO "+(++noSheet),{
+        pageSetup:{
+          paperSize:9,orientation:"landscape",fitToPage:true,
+          fitToWidth:1,fitToHeight:0,
+          horizontalCentered:true,verticalCentered:false,
+          margins:{left:0.25,right:0.25,top:0.35,bottom:0.35,header:0.15,footer:0.15}
+        },
+        views:[{state:"frozen",ySplit:6}]
+      });
+      ws.properties.defaultRowHeight=20;
+      ws.printOptions={horizontalCentered:true,verticalCentered:false,headings:false,gridLines:false};
       const widths=[7,17,14,14,17,25,14,24];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
       ws.mergeCells("A1:E1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
@@ -1623,6 +1633,7 @@ async function downloadHoFormTrial(){
       ws.mergeCells("F"+(signRow+4)+":H"+(signRow+4));ws.getCell("F"+(signRow+4)).value="(............................................)";
       ws.pageSetup.printArea="A1:H"+(signRow+5);
       ws.headerFooter.oddFooter="Halaman &P dari &N";
+      ws.pageSetup.printTitlesRow="1:6";
     }
     const bytes=await wb.xlsx.writeBuffer();
     const link=document.createElement("a");
