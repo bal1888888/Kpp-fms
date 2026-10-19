@@ -4709,8 +4709,60 @@ function syncTransferDestination(){
     updateTransferCalculation();
 }
 
+// Transfer needs a fresh authoritative snapshot, not the four-query dashboard.
+// Keep the backend LIVE movement RPC as the final transaction-time guard.
+let TRANSFER_PREFLIGHT_BUSY=false;
+async function stockCanSubmitTransfer(source,destination,period){
+    const status=document.getElementById("transferStatus");
+    if(!CURRENT_PROFILE || !source || !destination || source===destination ||
+       !/^\\d{4}-\\d{2}-\\d{2}$/.test(period.tanggal) || ![1,2].includes(period.shift)){
+        alert("Data akun, shift, atau storage Transfer belum lengkap.");
+        return false;
+    }
+    if(!STORAGE_ROWS.some(row=>row.code===source) ||
+       !STORAGE_ROWS.some(row=>row.code===destination)){
+        alert("Master storage Transfer belum siap. Draft tetap tersimpan.");
+        return false;
+    }
+    if(status)status.textContent="Memeriksa Opening, Closing, dan saldo MT sumber dari server...";
+    try{
+        const {data,error}=await stockWithDeadline(db.rpc("get_stock_closing_fast_snapshot",{
+            p_tanggal:period.tanggal,p_shift:period.shift,p_storages:[source,destination]
+        }),8000,"Pengecekan Transfer");
+        if(error || !data?.ok || !Array.isArray(data.rows))
+            throw new Error(error?.message||"Snapshot stock server tidak lengkap.");
+        const current=getPeriod();
+        if(current.tanggal!==period.tanggal || current.shift!==period.shift ||
+           document.getElementById("transferSource")?.value!==source ||
+           document.getElementById("transferDestination")?.value!==destination)
+            throw new Error("Periode atau pilihan storage berubah. Periksa kembali sebelum simpan.");
+        for(const code of [source,destination]){
+            const row=data.rows.find(item=>item.storage===code);
+            if(!row)throw new Error("Storage "+code+" tidak dikembalikan server.");
+            if(!row.opening_exists || row.system_qty==null)
+                throw new Error("Opening "+code+" belum tercatat untuk shift ini.");
+            if(row.closing)
+                throw new Error(code+" sudah Closing. Transfer LIVE tidak diperbolehkan.");
+            if(!Number.isFinite(Number(row.system_qty)) || Number(row.system_qty)<0)
+                throw new Error("Saldo server "+code+" tidak valid.");
+            CURRENT_SYSTEM_STOCK[code]=Number(row.system_qty);
+        }
+        if(status)status.textContent="Opening dan saldo kedua storage terverifikasi langsung dari server.";
+        return true;
+    }catch(error){
+        if(status)status.textContent="[BELUM DIKIRIM] "+error.message;
+        alert("Transfer belum dikirim. "+error.message+" Draft tetap tersimpan.");
+        return false;
+    }
+}
 async function saveTransfer(){
-    if(!stockCanSubmit())return;
+    if(TRANSFER_PREFLIGHT_BUSY || STOCK_SAVE_LOCK)return;
+    TRANSFER_PREFLIGHT_BUSY=true;
+    try{
+    const checkPeriod=getPeriod();
+    const checkSource=document.getElementById("transferSource").value;
+    const checkDestination=document.getElementById("transferDestination").value;
+    if(!await stockCanSubmitTransfer(checkSource,checkDestination,checkPeriod))return;
     const {tanggal,shift}=getPeriod();
     const source_storage=document.getElementById("transferSource").value;
     const destination_storage=document.getElementById("transferDestination").value;
@@ -4870,6 +4922,7 @@ async function saveTransfer(){
         "Transfer "+source_storage+" -> "+destination_storage+" sudah tersimpan."
     );
     void loadStock().catch(error=>console.warn("Refresh Stock setelah Transfer:",error));
+    }finally{TRANSFER_PREFLIGHT_BUSY=false;}
 }
 
 async function saveClosing(){
