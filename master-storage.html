@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Master MT / FT - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script>
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
 window.KPP_ACTIVE_PAGE="master-storage";
@@ -189,6 +187,27 @@ function headerKind(v){
   if(/tinggi|sounding|sonding|sounding|mm|cm|\bheight\b|\bukur\b/.test(s))return "height";
   return "";
 }
+// Import vendors are large; avoid downloading them for simple Master MT/FT viewing.
+const TERA_IMPORT_VENDOR_URLS={
+  excel:"https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+  word:"https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"
+};
+const TERA_IMPORT_VENDOR_LOADING=new Map();
+function ensureTeraImportVendor(kind){
+  const globalName=kind==="word"?"mammoth":"XLSX";
+  if(window[globalName])return Promise.resolve();
+  if(TERA_IMPORT_VENDOR_LOADING.has(kind))return TERA_IMPORT_VENDOR_LOADING.get(kind);
+  const promise=new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src=TERA_IMPORT_VENDOR_URLS[kind];
+    script.async=true;
+    script.onload=()=>window[globalName]?resolve():reject(new Error("Pembaca file tidak tersedia setelah dimuat."));
+    script.onerror=()=>reject(new Error("Gagal memuat pembaca file. Periksa jaringan dan ulangi Import Tera."));
+    document.head.appendChild(script);
+  }).catch(error=>{TERA_IMPORT_VENDOR_LOADING.delete(kind);throw error;});
+  TERA_IMPORT_VENDOR_LOADING.set(kind,promise);
+  return promise;
+}
 async function previewTeraFile(){
   const status=document.getElementById("teraImportStatus"),file=document.getElementById("teraImportFile").files[0];
   IMPORTED_TERA_POINTS=[];document.getElementById("saveTeraImportBtn").disabled=true;
@@ -199,7 +218,7 @@ async function previewTeraFile(){
     let rows=[];
     const name=file.name.toLowerCase();
     if(name.endsWith(".docx")){
-      if(!window.mammoth)throw new Error("Pembaca Word gagal dimuat. Muat ulang halaman.");
+      await ensureTeraImportVendor("word");
       const converted=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
       const doc=new DOMParser().parseFromString(converted.value,"text/html");
       const tables=Array.from(doc.querySelectorAll("table"));
@@ -221,7 +240,7 @@ async function previewTeraFile(){
       }
       if(!rows.length)throw new Error("Isi Word tidak terbaca sebagai tabel/teks. Jika tabel berupa gambar hasil scan, ubah dulu menjadi teks atau Excel.");
     }else{
-      if(!window.XLSX)throw new Error("Pembaca Excel gagal dimuat. Muat ulang halaman.");
+      await ensureTeraImportVendor("excel");
       const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:false});
       // Baca semua sheet, bukan hanya sheet pertama.
       for(const sheetName of workbook.SheetNames){
