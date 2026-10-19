@@ -1530,6 +1530,11 @@ async function downloadHoFormTrial(){
   const singleDate=document.getElementById("filterTanggal").value;
   const rangeStart=document.getElementById("filterTanggalAwal").value;
   const rangeEnd=document.getElementById("filterTanggalAkhir").value;
+  const chosenShift=document.getElementById("filterShift").value;
+  const chosenFT=document.getElementById("filterFuelTruck").value;
+  if(!["1","2"].includes(chosenShift) || !chosenFT){
+    alert("Form HO cetak harus pilih Shift 1/2 dan Fuel Truck tertentu (bukan Semua).");return;
+  }
   // HO is a physical daily form. Never silently export other dates.
   if(mode==="all"){alert("Pilih Tanggal Tertentu atau Rentang Tanggal sebelum download Form HO.");return;}
   if(mode==="single" && !/^\d{4}-\d{2}-\d{2}$/.test(singleDate)){
@@ -1540,7 +1545,8 @@ async function downloadHoFormTrial(){
   }
   const data=applyFilter(ALL_DATA).filter(item=>{
     const d=String(item.tanggal||"").slice(0,10);
-    return mode==="single" ? d===singleDate : d>=rangeStart && d<=rangeEnd;
+    const dateMatches=mode==="single" ? d===singleDate : d>=rangeStart && d<=rangeEnd;
+    return dateMatches && String(item.shift)===chosenShift && getFuelTruck(item)===chosenFT;
   });
   if(!data.length){alert("Tidak ada data pengisian sesuai tanggal dan filter yang dipilih.");return;}
   if(!window.ExcelJS){alert("Library Excel belum dimuat. Coba refresh.");return;}
@@ -1585,7 +1591,7 @@ async function downloadHoFormTrial(){
       const ws=wb.addWorksheet("HO "+(++noSheet),{
         pageSetup:{
           paperSize:9,orientation:"portrait",fitToPage:true,
-          fitToWidth:1,fitToHeight:1,
+          fitToWidth:1,fitToHeight:0,
           horizontalCentered:true,verticalCentered:false,
           margins:{left:0.28,right:0.28,top:0.28,bottom:0.28,header:0.12,footer:0.12}
         },
@@ -1593,7 +1599,7 @@ async function downloadHoFormTrial(){
       });
       ws.properties.defaultRowHeight=20;
       ws.printOptions={horizontalCentered:true,verticalCentered:false,headings:false,gridLines:false};
-      const widths=[5,15,10,11,12,19,10,15];
+      const widths=[6,19,13,14,16,24,13,20];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
       ws.mergeCells("A1:E1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA";
       ws.getCell("A1").font={name:"Calibri",bold:true,size:15,color:{argb:"FF16804C"}};
@@ -1608,7 +1614,7 @@ async function downloadHoFormTrial(){
       ws.mergeCells("G4:H4");ws.getCell("G4").value="SHIFT : "+shift;
       ws.getRow(1).height=23;ws.getRow(2).height=20;ws.getRow(3).height=19;ws.getRow(4).height=19;
       const heads=["NO","EQUIP NO","WAKTU","KM/HM","QTY ISSUE","NAMA OPERATOR","PARAF","REMARK"];
-      const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=25;
+      const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,size:11,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=25;
       const dataStart=7;
       for(let i=0;i<30;i++){
         const item=pageRecords[i];
@@ -1617,7 +1623,7 @@ async function downloadHoFormTrial(){
         if(item&&jam==null)missingTime++;
         const row=ws.getRow(dataStart+i);
         const values=[i+1,unit,jam==null?"":String(jam).slice(0,8),item?.hm_akhir??"",item?Number(item.fuel)||0:"",item?.operator||"","",""];
-        values.forEach((v,j)=>{const cell=row.getCell(j+1);cell.value=v;cell.border=borders;cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};});
+        values.forEach((v,j)=>{const cell=row.getCell(j+1);cell.value=v;cell.border=borders;cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};cell.font={name:"Calibri",size:11};});
         row.height=20;
       }
       const totalAt=37;
@@ -1661,7 +1667,7 @@ async function downloadHoFormTrial(){
     const bytes=await wb.xlsx.writeBuffer();
     const link=document.createElement("a");
     const url=URL.createObjectURL(new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
-    link.href=url;link.download="KPP_Form_HO_"+(mode==="single"?singleDate:rangeStart+"_sd_"+rangeEnd)+".xlsx";
+    link.href=url;link.download="KPP_Form_HO_"+(mode==="single"?singleDate:rangeStart+"_sd_"+rangeEnd)+"_Shift"+chosenShift+"_"+chosenFT+".xlsx";
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
     if(missingTime)alert("Form HO dibuat. "+missingTime+" baris belum memiliki jam pengisian di data yang dimuat. Kolom waktu dan flowmeter yang belum tersedia dibiarkan kosong untuk audit, bukan diisi perkiraan.");
