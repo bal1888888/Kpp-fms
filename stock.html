@@ -1060,6 +1060,48 @@ th{background:#f8fafc;color:#475569}
 .stock-draft-reset{flex:none;min-height:38px;padding:8px 11px;border:1px solid #94a3b8;border-radius:8px;background:#fff;color:#334155;font-weight:bold;font-size:11px}
 @media(max-width:700px){.stock-draft-banner{align-items:flex-start;flex-direction:column}.stock-draft-reset{width:100%;min-height:44px}}
 </style>
+<style id="kpp-stock-mobile-field-safety-v1">
+/* The generic 2-column mobile grid was overriding receipt's single-column
+   form. Keep paired front/rear sounding side by side but give each field space. */
+@media (max-width:700px){
+  .stock-workspace .receipt-panel .receipt-form-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .stock-workspace .workflow-panel input:not([type="checkbox"]),
+  .stock-workspace .workflow-panel select,
+  .stock-workspace .workflow-panel textarea{
+    font-size:16px!important;
+    min-width:0;
+    max-width:100%;
+  }
+  .stock-workspace .workflow-panel input[type="time"],
+  .stock-workspace .workflow-panel input[type="date"]{
+    min-width:0;
+  }
+  .stock-save-overlay,.stock-edit-overlay{
+    padding:10px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+  .stock-save-card,.stock-edit-card{
+    max-height:calc(100vh - 20px);
+    max-height:calc(100dvh - 20px);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+@media (max-width:420px){
+  .stock-workspace .workflow-panel .grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .stock-workspace .workflow-panel .front-rear-sounding{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  .stock-workspace .closing-panel .closing-table tr{
+    min-width:0;
+  }
+}
+</style>
 <style id="kpp-stock-draft-recovery-style">
 .stock-draft-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .stock-draft-recovery[hidden]{display:none!important}
@@ -4937,7 +4979,7 @@ document.addEventListener("kpp-auth-ready",()=>setTimeout(configureClosingFtMete
 function configureClosingFtMeter(){
  const panel=document.getElementById("closingFtMeterBox");
  if(!panel)return;
- panel.style.display=CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION?.duty_type!=="PIC_TRANSFER"?"block":"none";
+ panel.style.display=CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION && ACTIVE_FUELMAN_SESSION.duty_type!=="PIC_TRANSFER"?"block":"none";
 }
 async function saveClosing(){
     configureClosingFtMeter();
@@ -4946,7 +4988,10 @@ async function saveClosing(){
     try{
     // Store measured FT meter before stock closing; stock physical qty remains
     // determined exclusively by sonding/tera, never by this meter.
-    if(CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION?.duty_type!=="PIC_TRANSFER"){
+    if(CURRENT_PROFILE?.role==="fuelman" && !ACTIVE_FUELMAN_SESSION){
+      alert("Sesi Fuelman belum terbaca. Periksa Start Shift dan tunggu sesi selesai dimuat sebelum Closing.");return;
+    }
+    if(CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION.duty_type!=="PIC_TRANSFER"){
       const rawMeter=document.getElementById("closingFtMeterEnd")?.value.trim()||"";
       const activeSession=ACTIVE_FUELMAN_SESSION;
       if(!rawMeter || !Number.isFinite(Number(rawMeter)) || Number(rawMeter)<0){
