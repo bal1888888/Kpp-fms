@@ -64,6 +64,13 @@ $body$;
 revoke all on function public.save_ft_shift_flowmeter(uuid,text,numeric) from public,anon;
 grant execute on function public.save_ft_shift_flowmeter(uuid,text,numeric) to authenticated;
 
+-- Cutover point is the actual migration execution time, not a hard-coded day.
+create table if not exists private.ft_shift_meter_cutover (
+ id boolean primary key default true check (id),
+ enabled_at timestamptz not null default now()
+);
+insert into private.ft_shift_meter_cutover(id) values(true) on conflict (id) do nothing;
+
 -- New FT sessions must have both readings before posting Stock Closing.
 -- Legacy sessions created before this migration remain unaffected.
 create or replace function public.guard_ft_meter_before_stock_closing()
@@ -77,7 +84,7 @@ begin
  select * into sess from public.fuelman_sessions where id=new.session_id;
  if not found or sess.duty_type<>'FUELMAN' then return new; end if;
  if not exists(select 1 from public.ft_shift_flowmeter where session_id=sess.id)
-    and sess.created_at < timestamp with time zone '2026-10-19 00:00:00+00' then
+    and sess.created_at < (select enabled_at from private.ft_shift_meter_cutover where id=true) then
    return new;
  end if;
  select * into m from public.ft_shift_flowmeter where session_id=sess.id;
