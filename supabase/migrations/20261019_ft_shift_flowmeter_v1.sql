@@ -63,3 +63,34 @@ end;
 $body$;
 revoke all on function public.save_ft_shift_flowmeter(uuid,text,numeric) from public,anon;
 grant execute on function public.save_ft_shift_flowmeter(uuid,text,numeric) to authenticated;
+
+-- New FT sessions must have both readings before posting Stock Closing.
+-- Legacy sessions created before this migration remain unaffected.
+create or replace function public.guard_ft_meter_before_stock_closing()
+returns trigger language plpgsql security definer set search_path to ''
+as $body$
+declare
+ sess public.fuelman_sessions%rowtype;
+ m public.ft_shift_flowmeter%rowtype;
+begin
+ if new.session_id is null then return new; end if;
+ select * into sess from public.fuelman_sessions where id=new.session_id;
+ if not found or sess.duty_type<>'FUELMAN' then return new; end if;
+ if not exists(select 1 from public.ft_shift_flowmeter where session_id=sess.id)
+    and sess.created_at < timestamp with time zone '2026-10-19 00:00:00+00' then
+   return new;
+ end if;
+ select * into m from public.ft_shift_flowmeter where session_id=sess.id;
+ if m.session_id is null or m.meter_end is null then
+  raise exception 'Flowmeter Awal dan Akhir FT wajib dicatat sebelum Closing. Buka menu Fuelman / Flowmeter.';
+ end if;
+ if m.fuel_truck<>new.storage or m.tanggal<>new.tanggal or m.shift<>new.shift then
+  raise exception 'Data flowmeter FT tidak cocok dengan Closing tanggal/shift/storage.';
+ end if;
+ return new;
+end;
+$body$;
+drop trigger if exists trg_guard_ft_meter_before_stock_closing on public.stock_closing;
+create trigger trg_guard_ft_meter_before_stock_closing
+before insert on public.stock_closing
+for each row execute function public.guard_ft_meter_before_stock_closing();
