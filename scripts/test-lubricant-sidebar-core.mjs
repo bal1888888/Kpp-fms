@@ -16,6 +16,6 @@ test('Lubricant masuk ke core sidebar GL/Admin/Atasan',()=>{
 
 test('cache bust auth dan wib-time aktif pada halaman stock dan lubricant',()=>{
   assert.match(stock,/auth\.js\?v=20261019-shared-ui-refresh1/);
-  assert.match(lube,/auth\.js\?v=20260915-lubricant2/);
+  assert.match(lube,/auth\.js\?v=20261019-shared-ui-refresh1/);
   for(const html of [stock,lube])assert.match(html,/wib-time\.js\?v=20260915-lubricant2/);
 });
