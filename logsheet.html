@@ -1526,8 +1526,23 @@ document.getElementById("refreshBtn").addEventListener("click",loadData);
 document.getElementById("downloadBtn").addEventListener("click",downloadExcel);
 
 async function downloadHoFormTrial(){
-  const data=applyFilter(ALL_DATA);
-  if(!data.length){alert("Tidak ada data pengisian sesuai filter.");return;}
+  const mode=document.getElementById("dateMode").value;
+  const singleDate=document.getElementById("filterTanggal").value;
+  const rangeStart=document.getElementById("filterTanggalAwal").value;
+  const rangeEnd=document.getElementById("filterTanggalAkhir").value;
+  // HO is a physical daily form. Never silently export other dates.
+  if(mode==="all"){alert("Pilih Tanggal Tertentu atau Rentang Tanggal sebelum download Form HO.");return;}
+  if(mode==="single" && !/^\d{4}-\d{2}-\d{2}$/.test(singleDate)){
+    alert("Pilih tanggal Form HO terlebih dahulu.");return;
+  }
+  if(mode==="range" && (!/^\d{4}-\d{2}-\d{2}$/.test(rangeStart) || !/^\d{4}-\d{2}-\d{2}$/.test(rangeEnd) || rangeStart>rangeEnd)){
+    alert("Lengkapi rentang tanggal Form HO yang valid.");return;
+  }
+  const data=applyFilter(ALL_DATA).filter(item=>{
+    const d=String(item.tanggal||"").slice(0,10);
+    return mode==="single" ? d===singleDate : d>=rangeStart && d<=rangeEnd;
+  });
+  if(!data.length){alert("Tidak ada data pengisian sesuai tanggal dan filter yang dipilih.");return;}
   if(!window.ExcelJS){alert("Library Excel belum dimuat. Coba refresh.");return;}
   const btn=document.getElementById("downloadHoBtn");
   btn.disabled=true;btn.textContent="⏳ MEMBUAT FORM HO...";
@@ -1646,7 +1661,7 @@ async function downloadHoFormTrial(){
     const bytes=await wb.xlsx.writeBuffer();
     const link=document.createElement("a");
     const url=URL.createObjectURL(new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
-    link.href=url;link.download="KPP_Logsheet_Form_HO_Uji_Coba.xlsx";
+    link.href=url;link.download="KPP_Form_HO_"+(mode==="single"?singleDate:rangeStart+"_sd_"+rangeEnd)+".xlsx";
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
     if(missingTime)alert("Form HO dibuat. "+missingTime+" baris belum memiliki jam pengisian di data yang dimuat. Kolom waktu dan flowmeter yang belum tersedia dibiarkan kosong untuk audit, bukan diisi perkiraan.");
