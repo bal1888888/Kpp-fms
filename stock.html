@@ -3676,6 +3676,7 @@ async function loadFuelmanSession(){
     }
 
     ACTIVE_FUELMAN_SESSION={...data[0],duty_type:data[0].duty_type||"FUELMAN"};
+    configureClosingFtMeter();
 
     document.getElementById("tanggal").value=ACTIVE_FUELMAN_SESSION.tanggal;
     document.getElementById("shift").value=String(
