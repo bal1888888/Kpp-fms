@@ -1007,13 +1007,15 @@ async function loadData(){
   const errorBox=document.getElementById("errorBox");
 
   loading.style.display="block";
-  loading.textContent="Mengambil seluruh data dari database...";
+  loading.textContent="Mengambil riwayat pengisian dan audit...";
   errorBox.style.display="none";
 
   try{
-    await Promise.all([loadStorageMaster(),loadUnitMasterOnline()]);
-
-    const [fuelRows,auditRows]=await Promise.all([
+    // Independent server reads start together. Previously the full fuel-history
+    // request waited for both master requests, delaying every page open.
+    const [storageReady,unitReady,fuelRows,auditRows]=await Promise.all([
+      loadStorageMaster(),
+      loadUnitMasterOnline(),
       fetchAllFuelHistory(),
       fetchAllAudit().catch(error=>{
         console.warn("Audit perubahan belum terbaca:",error.message);
