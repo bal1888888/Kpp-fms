@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logsheet Fuel - KPP FMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <script>
 window.KPP_ALLOWED_ROLES=["gl","admin","atasan"];
@@ -686,21 +684,27 @@ function getRowStatus(item,index,forExport=false){
   return dataError || duplicate || visibleAnomaly || {text:"",cls:"",reason:"",kind:""};
 }
 
+// Fetch all pages in bounded parallel batches. Full history remains intact
+// for cross-date HM baselines, audits and the digital/physical exports.
 async function fetchAllFuelHistory(){
-  const pageSize=1000;
-  let from=0, all=[];
-  while(true){
-    const {data,error}=await supabaseClient
-      .from("fuel_history")
-      .select("*")
-      .order("tanggal",{ascending:true})
-      .order("id",{ascending:true})
-      .range(from,from+pageSize-1);
-
-    if(error) throw error;
-    all=all.concat(data||[]);
-    if(!data || data.length<pageSize) break;
-    from+=pageSize;
+  const pageSize=1000, batchSize=4;
+  const all=[];
+  for(let from=0;;from+=pageSize*batchSize){
+    const pages=await Promise.all(Array.from({length:batchSize},(_,i)=>
+      supabaseClient.from("fuel_history")
+        .select("*")
+        .order("tanggal",{ascending:true})
+        .order("id",{ascending:true})
+        .range(from+i*pageSize,from+(i+1)*pageSize-1)
+    ));
+    let finished=false;
+    for(const {data,error} of pages){
+      if(error)throw error;
+      const rows=data||[];
+      all.push(...rows);
+      if(rows.length<pageSize){finished=true;break;}
+    }
+    if(finished)break;
   }
   return all;
 }
@@ -1083,6 +1087,21 @@ async function saveHmCleanup(){
   }
 }
 
+// ExcelJS is only needed on download, not on every Logsheet page open.
+let LOGSHEET_EXCEL_LIBRARY_PROMISE=null;
+function ensureLogsheetExcelLibrary(){
+  if(window.ExcelJS?.Workbook)return Promise.resolve();
+  if(LOGSHEET_EXCEL_LIBRARY_PROMISE)return LOGSHEET_EXCEL_LIBRARY_PROMISE;
+  LOGSHEET_EXCEL_LIBRARY_PROMISE=new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+    script.async=true;
+    script.onload=()=>window.ExcelJS?.Workbook?resolve():reject(new Error("Library Excel belum siap."));
+    script.onerror=()=>reject(new Error("Library Excel gagal dimuat. Periksa sinyal internet lalu coba lagi."));
+    document.head.appendChild(script);
+  }).catch(error=>{LOGSHEET_EXCEL_LIBRARY_PROMISE=null;throw error;});
+  return LOGSHEET_EXCEL_LIBRARY_PROMISE;
+}
 async function downloadExcel(){
   const data=applyFilter(ALL_DATA);
 
@@ -1097,6 +1116,7 @@ async function downloadExcel(){
   btn.textContent="⏳ MEMBUAT EXCEL...";
 
   try{
+    await ensureLogsheetExcelLibrary();
     const workbook=new ExcelJS.Workbook();
     workbook.creator="KPP Fuel Management System";
     workbook.company="PT. KALIMANTAN PRIMA PERSADA";
@@ -1552,10 +1572,11 @@ async function downloadHoFormTrial(){
     return dateMatches && String(item.shift)===chosenShift && getFuelTruck(item)===chosenFT;
   });
   if(!data.length){alert("Tidak ada data pengisian sesuai tanggal dan filter yang dipilih.");return;}
-  if(!window.ExcelJS){alert("Library Excel belum dimuat. Coba refresh.");return;}
+  // Library is loaded inside try so failure resets the button and offers retry.
   const btn=document.getElementById("downloadHoBtn");
   btn.disabled=true;btn.textContent="⏳ MEMBUAT LOGSHEET FISIK...";
   try{
+    await ensureLogsheetExcelLibrary();
     const grouped=new Map();
     data.forEach(item=>{
       const date=String(item.tanggal||"TANPA-TANGGAL").slice(0,10);
