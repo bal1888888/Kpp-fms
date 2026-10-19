@@ -1542,6 +1542,20 @@ async function downloadHoFormTrial(){
       grouped.get(key).push(item);
     });
     if(grouped.size>30 && !confirm("Filter ini akan membuat "+grouped.size+" lembar HO. Lanjut?"))return;
+    // Fetch only the selected shift/FT flowmeter records, independently
+    // of transporter flowmeter and individual fuel-history rows.
+    const dates=[...new Set([...grouped.keys()].map(k=>k.split("|")[0]))].filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d));
+    let meters=[];
+    if(dates.length){
+      const {data:meterRows,error:meterError}=await supabaseClient.from("ft_shift_flowmeter")
+        .select("tanggal,shift,fuel_truck,meter_start,meter_end")
+        .in("tanggal",dates);
+      if(meterError)throw new Error("Flowmeter shift FT belum bisa dimuat: "+meterError.message);
+      meters=meterRows||[];
+    }
+    const meterMap=new Map(meters.map(row=>[
+      [row.tanggal,String(row.shift),String(row.fuel_truck).toUpperCase()].join("|"),row
+    ]));
     const wb=new ExcelJS.Workbook();
     wb.creator="KPP TRAM FMS";
     wb.subject="Form Logsheet Fuel HO - versi percobaan";
@@ -1550,17 +1564,17 @@ async function downloadHoFormTrial(){
     for(const [key,records] of grouped){
       const [date,shift,truck]=key.split("|");
       const ws=wb.addWorksheet("HO "+(++noSheet),{pageSetup:{paperSize:9,orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:1},views:[{state:"frozen",ySplit:8}]});
-      const widths=[6,15,12,12,15,20,14,12,13,15,17,18];
+      const widths=[6,15,12,12,31,22,14,16,19,24];
       widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
-      ws.mergeCells("A1:L1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA | KPP TRAM";
+      ws.mergeCells("A1:J1");ws.getCell("A1").value="PT. KALIMANTAN PRIMA PERSADA | KPP TRAM";
       ws.getCell("A1").font={bold:true,size:14};
-      ws.mergeCells("A2:L2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
+      ws.mergeCells("A2:J2");ws.getCell("A2").value="FORM LOGSHEET FUEL - VERSI UJI COBA CETAK";
       ws.getCell("A2").font={bold:true,size:14};
       ws.mergeCells("A3:F3");ws.getCell("A3").value="Tanggal: "+date+"     Shift: "+shift;
-      ws.mergeCells("G3:L3");ws.getCell("G3").value="Fuel Truck: "+truck;
-      ws.mergeCells("A4:L4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
+      ws.mergeCells("G3:J3");ws.getCell("G3").value="Fuel Truck: "+truck;
+      ws.mergeCells("A4:J4");ws.getCell("A4").value="Sumber: transaksi pengisian KPP-FMS. Kosong berarti belum tercatat, bukan nol.";
       ws.getCell("A4").font={italic:true,color:{argb:"FF9A3412"},size:10};
-      const heads=["NO","JAM MULAI","JAM SELESAI","KODE UNIT","EGI","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FLOWMETER AWAL","FLOWMETER AKHIR","FUELMAN","KETERANGAN"];
+      const heads=["NO","JAM MULAI","JAM SELESAI","KODE UNIT","EGI","NAMA OPERATOR","HM / KM","QTY ISSUE (L)","FUELMAN","KETERANGAN"];
       const h=ws.getRow(6);heads.forEach((v,i)=>{const c=h.getCell(i+1);c.value=v;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF163968"}};c.alignment={wrapText:true,vertical:"middle",horizontal:"center"};c.border=borders;});h.height=32;
       records.sort((a,b)=>String(a.jam||"").localeCompare(String(b.jam||"")));
       records.forEach((item,i)=>{
@@ -1571,7 +1585,7 @@ async function downloadHoFormTrial(){
         const finish=item.jam_selesai??item.end_time??null;
         if(start==null||finish==null)missingTime++;
         const fmtTime=x=>x==null?"":String(x).slice(0,8);
-        const row=ws.addRow([i+1,fmtTime(start),fmtTime(finish),unit,m.egi||"",item.operator||"",item.hm_akhir??"",Number(item.fuel)||0,"","",getFuelman(item)==="-"?"":getFuelman(item),""]);
+        const row=ws.addRow([i+1,fmtTime(start),fmtTime(finish),unit,m.egi||"",item.operator||"",item.hm_akhir??"",Number(item.fuel)||0,getFuelman(item)==="-"?"":getFuelman(item),""]);
         row.height=21;
         row.eachCell({includeEmpty:true},c=>{c.border=borders;c.alignment={vertical:"middle",horizontal:"center",wrapText:true};});
       });
@@ -1580,12 +1594,33 @@ async function downloadHoFormTrial(){
       ws.getCell("H"+totalAt).value=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
       ws.getCell("H"+totalAt).numFmt="#,##0.##";
       ws.getRow(totalAt).font={bold:true};
-      const signRow=totalAt+3;
+      const meter=meterMap.get([date,shift,String(truck).toUpperCase()].join("|"));
+      const start=meter?.meter_start==null?null:Number(meter.meter_start);
+      const end=meter?.meter_end==null?null:Number(meter.meter_end);
+      const issued=records.reduce((a,x)=>a+(Number(x.fuel)||0),0);
+      const meterOutput=start!=null&&end!=null?end-start:null;
+      const summary=[
+        ["FLOWMETER AWAL FT",start],
+        ["FLOWMETER AKHIR FT",end],
+        ["TOTAL MENURUT FLOWMETER (AKHIR - AWAL)",meterOutput],
+        ["SELISIH FLOWMETER - QTY ISSUE",meterOutput==null?null:meterOutput-issued]
+      ];
+      summary.forEach(([label,value],i)=>{
+        const n=totalAt+i+1;
+        ws.mergeCells("A"+n+":G"+n);
+        ws.getCell("A"+n).value=label;
+        const cell=ws.getCell("H"+n);
+        cell.value=value;
+        cell.numFmt="#,##0.##";
+        ws.getRow(n).font={bold:true};
+        if(value==null)ws.getCell("I"+n).value="BELUM TERCATAT";
+      });
+      const signRow=totalAt+7;
       ws.mergeCells("B"+signRow+":E"+signRow);ws.getCell("B"+signRow).value="Dibuat oleh, Fuelman";
-      ws.mergeCells("H"+signRow+":K"+signRow);ws.getCell("H"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";
+      ws.mergeCells("H"+signRow+":J"+signRow);ws.getCell("H"+signRow).value="Diperiksa / Disetujui, Fuel & Oil GL";
       ws.mergeCells("B"+(signRow+4)+":E"+(signRow+4));ws.getCell("B"+(signRow+4)).value="(............................................)";
-      ws.mergeCells("H"+(signRow+4)+":K"+(signRow+4));ws.getCell("H"+(signRow+4)).value="(............................................)";
-      ws.pageSetup.printArea="A1:L"+(signRow+5);
+      ws.mergeCells("H"+(signRow+4)+":J"+(signRow+4));ws.getCell("H"+(signRow+4)).value="(............................................)";
+      ws.pageSetup.printArea="A1:J"+(signRow+5);
       ws.headerFooter.oddFooter="Halaman &P dari &N";
     }
     const bytes=await wb.xlsx.writeBuffer();
