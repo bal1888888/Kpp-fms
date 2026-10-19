@@ -76,8 +76,8 @@ test("receipts use only a two-query preflight, LIVE idempotent RPC, and one in-f
  assert.ok(save.indexOf("await finishStockSave(")<save.lastIndexOf("void loadStock()"));
  assert.match(html,/db\.rpc\("save_stock_movement_safe"/);
 });
-test("Transfer needs loaded Stock, Opening RPC and Closing independent snapshot guard remain",()=>{
- assert.match(html,/async function saveTransfer\(\)\{\s*if\(!stockCanSubmit\(\)\)return;/);
+test("Transfer uses direct server snapshot while Opening and Closing guards remain",()=>{
+ assert.match(html,/if\(!await stockCanSubmitTransfer\(checkSource,checkDestination,checkPeriod\)\)return;/);
  assert.match(html,/async function saveOpening\(\)\{/);
  assert.match(html,/if\(!await stockCanSubmitClosing\(\)\)return/);
 });
