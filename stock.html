@@ -1496,7 +1496,7 @@ th{background:#f8fafc;color:#475569}
         </div>
     </div>
 
-    <div id="closingFtMeterBox" class="panel" style="margin-bottom:12px">
+    <div id="closingFtMeterBox" class="panel" style="margin-bottom:12px;display:none">
       <label>Flowmeter Akhir FT (Liter) • Diisi Fuelman saat Closing</label>
       <input id="closingFtMeterEnd" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Masukkan angka counter flowmeter akhir FT">
       <div class="note">Flowmeter akhir harus sama atau lebih besar dari awal. Qty menurut flowmeter = Akhir - Awal. PIC MT tidak perlu mengisi.</div>
@@ -4930,12 +4930,14 @@ async function saveTransfer(){
     }finally{TRANSFER_PREFLIGHT_BUSY=false;}
 }
 
+document.addEventListener("kpp-auth-ready",()=>setTimeout(configureClosingFtMeter,250));
 function configureClosingFtMeter(){
  const panel=document.getElementById("closingFtMeterBox");
  if(!panel)return;
  panel.style.display=CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION?.duty_type!=="PIC_TRANSFER"?"block":"none";
 }
 async function saveClosing(){
+    configureClosingFtMeter();
     if(CLOSING_SAVE_ATTEMPT_BUSY || STOCK_SAVE_LOCK)return;
     CLOSING_SAVE_ATTEMPT_BUSY=true;
     try{
