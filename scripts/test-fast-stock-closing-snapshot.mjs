@@ -60,7 +60,7 @@ test("existing server-validated proof Closing and safe Opening/Transfer paths re
  assert.match(opening,/save_stock_opening_safe/);
  assert.match(opening,/await finishStockSave\(true/);
  const transfer=html.slice(html.indexOf("async function saveTransfer(){"),html.indexOf("async function saveClosing(){"));
- assert.match(transfer,/if\(!stockCanSubmit\(\)\)return/);
+ assert.match(transfer,/if\(!await stockCanSubmitTransfer\(checkSource,checkDestination,checkPeriod\)\)return/);
  assert.match(transfer,/operation_mode:"LIVE"/);
  assert.doesNotMatch(transfer,/Tetap simpan\?/);
 });
