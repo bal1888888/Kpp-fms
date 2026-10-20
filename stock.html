@@ -2654,9 +2654,20 @@ function buildClosingCopyReport(){
     let actualTotal=0;
 
     const blocks=storages.map(storage=>{
-        const systemQty=n(CURRENT_SYSTEM_STOCK[storage]);
+        const known=stockBookQtyKnown(storage);
+        const systemQty=known?n(CURRENT_SYSTEM_STOCK[storage]):null;
         const heightInput=document.getElementById(`height-${storage}`);
         const actualInput=document.getElementById(`actual-${storage}`);
+        if(!known){
+            complete=false;
+            return [
+                `${reportStorageName(storage)} SONDING AKHIR`,
+                `High: ${heightInput?.value?reportNumber(heightInput.value)+" cm":"BELUM DISONDING"}`,
+                `Volume: ${actualInput?.value!=="" && actualInput?.value!=null?reportLiters(n(actualInput.value)):"-"}`,
+                `Stock Sistem: ${closingBalancePendingText(storage)}`,
+                "Selisih: BELUM DAPAT DIHITUNG"
+            ].join("\\n");
+        }
         systemTotal+=systemQty;
 
         if(!heightInput || heightInput.value==="" || !actualInput || actualInput.value===""){
@@ -2705,7 +2716,7 @@ function buildClosingCopyReport(){
         blocks.join("\n\n"),
         "",
         "TOTAL STOCK CLOSING",
-        `Total Stock Sistem: ${reportLiters(systemTotal)}`,
+        `Total Stock Sistem: ${storages.every(stockBookQtyKnown)?reportLiters(systemTotal):"BELUM LENGKAP"}`,
         `Total Stock Fisik: ${complete?reportLiters(actualTotal):"BELUM LENGKAP"}`,
         `Total Selisih: ${complete?reportSignedLiters(totalDifference):"BELUM LENGKAP"}`,
         `Keterangan: ${note||"-"}`
