@@ -3825,8 +3825,19 @@ let FAST_CLOSING_PERIOD="";
 let FAST_CLOSING_READY=false;
 let FAST_CLOSING_REQUEST_SEQ=0;
 let CLOSING_SAVE_ATTEMPT_BUSY=false;
+// An absent Opening is UNKNOWN, not a recorded balance of zero liters.
+let VERIFIED_OPENING_PERIOD="";
+let VERIFIED_OPENING_CODES=new Set();
+function missingOpeningForPeriod(storage){
+    return VERIFIED_OPENING_PERIOD===getPeriod().tanggal+":"+getPeriod().shift &&
+           !VERIFIED_OPENING_CODES.has(storage);
+}
+function closingBalancePendingText(storage){
+    return missingOpeningForPeriod(storage)?"OPENING BELUM ADA":"Saldo belum dimuat";
+}
 function stockBookQtyKnown(storage){
-    return CURRENT_SYSTEM_STOCK[storage]!==null &&
+    return !missingOpeningForPeriod(storage) &&
+      CURRENT_SYSTEM_STOCK[storage]!==null &&
       CURRENT_SYSTEM_STOCK[storage]!==undefined &&
       (STOCK_DATA_READY && STOCK_DATA_PERIOD===getPeriod().tanggal+":"+getPeriod().shift ||
        FAST_CLOSING_READY && FAST_CLOSING_PERIOD===getPeriod().tanggal+":"+getPeriod().shift);
@@ -3861,6 +3872,8 @@ async function loadClosingFast(){
         if(STOCK_DATA_READY && STOCK_DATA_PERIOD===key)return true;
         FAST_CLOSING_PERIOD=key;
         FAST_CLOSING_READY=true;
+        VERIFIED_OPENING_PERIOD=key;
+        VERIFIED_OPENING_CODES=new Set(snap.rows.filter(row=>row.opening_exists && row.system_qty!=null).map(row=>row.storage));
         CURRENT_SYSTEM_STOCK=Object.fromEntries(snap.rows.map(row=>[row.storage,
             row.opening_exists&&row.system_qty!=null?Number(row.system_qty):null]));
         const saved=snap.rows.filter(row=>row.closing).map(row=>row.closing);
@@ -3870,8 +3883,12 @@ async function loadClosingFast(){
             renderClosing(CURRENT_SYSTEM_STOCK,saved);
             window.KPPStockDrafts?.onRendered({stockReady:true});
         }else updateClosingDifference();
-        if(status && !STOCK_CLOSING_INPUT_DIRTY)
-            status.textContent="CLOSING CEPAT SIAP • saldo MT/FT diverifikasi langsung ke server. Dashboard lengkap boleh menyusul.";
+        if(status && !STOCK_CLOSING_INPUT_DIRTY){
+            const missing=snap.rows.filter(row=>!row.opening_exists || row.system_qty==null).map(row=>row.storage);
+            status.textContent=missing.length
+                ?"BELUM OPENING: "+missing.join(", ")+". Sonding fisik terbaca, tetapi saldo sistem belum dapat dibandingkan. Simpan Opening dahulu."
+                :"CLOSING CEPAT SIAP • saldo MT/FT diverifikasi langsung ke server. Dashboard lengkap boleh menyusul.";
+        }
         return true;
     }catch(error){
         if(token===FAST_CLOSING_REQUEST_SEQ && status)
@@ -3966,6 +3983,11 @@ async function loadStock(){
     });
 
     const bookStock={...stock};
+    // Keep master additions and un-opened storages distinct from real 0 L.
+    const openingCodes=new Set((o.data||[]).map(row=>String(row.storage||"").trim().toUpperCase()));
+    VERIFIED_OPENING_PERIOD=tanggal+":"+shift;
+    VERIFIED_OPENING_CODES=openingCodes;
+    STORAGES.forEach(code=>{if(!openingCodes.has(code))bookStock[code]=null;});
     const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
     // Only apply the physical snapshot when every opening storage for this
     // exact shift has a closing. Current master may contain tanks added later.
@@ -4010,6 +4032,17 @@ async function loadStock(){
     FAST_CLOSING_PERIOD=tanggal+":"+shift;
     FAST_CLOSING_READY=true;
     updateStockRefreshMeta(tanggal,shift);
+    const missing=STORAGES.filter(code=>!openingCodes.has(code));
+    if(missing.length){
+        const info=document.getElementById("stockRefreshInfo");
+        if(info)info.textContent="OPENING BELUM LENGKAP: "+missing.join(", ")+". Sonding tidak menggantikan Opening. Saldo sistem untuk storage tersebut belum dapat dihitung.";
+        const badge=document.getElementById("stockRefreshBadge");
+        if(badge){badge.textContent="BELUM OPENING";badge.classList.remove("is-live");}
+        if(!STOCK_CLOSING_INPUT_DIRTY){
+            const status=document.getElementById("closingStatus");
+            if(status)status.textContent="Opening belum tercatat untuk: "+missing.join(", ")+". Closing hanya boleh setelah Opening lengkap.";
+        }
+    }
     return true;
     }catch(error){
         if(requestSequence!==STOCK_LOAD_REQUEST_SEQUENCE ||
@@ -4293,7 +4326,7 @@ function renderClosing(stock,savedClosing){
             <td><b>${storage}</b></td>
             <td>
                 <div class="closing-system-reading">
-                    <strong class="closing-system-number">${saved?(stock[storage]==null?"Dihitung server":fmt(stock[storage])):"Ukur sonding dahulu"}</strong>
+                    <strong class="closing-system-number">${saved?(stock[storage]==null?closingBalancePendingText(storage):fmt(stock[storage])):"Ukur sonding dahulu"}</strong>
                     <small>Stock Sistem (pembanding, bukan hasil sonding)</small>
                 </div>
             </td>
@@ -4355,7 +4388,7 @@ function updateClosingFromHeight(storage,refreshDifference=true){
     if(!heightInput || !actualInput)return;
     const comparison=heightInput.closest("tr")?.querySelector(".closing-system-number");
     if(comparison)comparison.textContent=heightInput.value!==""
-        ?(stockBookQtyKnown(storage)?fmt(CURRENT_SYSTEM_STOCK[storage]):"Saldo dihitung server")
+        ?(stockBookQtyKnown(storage)?fmt(CURRENT_SYSTEM_STOCK[storage]):closingBalancePendingText(storage))
         :"Ukur sonding dahulu";
 
     if(heightInput.value===""){
@@ -4411,7 +4444,7 @@ function updateClosingDifference(){
         const difference=actualQty-systemQty;
 
         if(diffCell){
-            diffCell.textContent=known?fmtSigned(difference):"Menunggu saldo server";
+            diffCell.textContent=known?fmtSigned(difference):closingBalancePendingText(storage);
             diffCell.className=!known?"diff-zero":
                 difference>0?"diff-positive":
                 difference<0?"diff-negative":
@@ -4419,7 +4452,7 @@ function updateClosingDifference(){
         }
     });
 
-    document.getElementById("closingSystemTotal").textContent=hasAllActual?(allBookQtyKnown?fmt(systemTotal):"Menunggu saldo server"):"Isi sonding dahulu";
+    document.getElementById("closingSystemTotal").textContent=hasAllActual?(allBookQtyKnown?fmt(systemTotal):(closingStorages.some(missingOpeningForPeriod)?"Opening belum lengkap":"Menunggu saldo server")):"Isi sonding dahulu";
     document.getElementById("closingActualTotal").textContent=hasAllActual?fmt(actualTotal):"-";
 
     const totalDifference=actualTotal-systemTotal;
