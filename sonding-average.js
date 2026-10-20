@@ -62,7 +62,9 @@
     input.parentNode.insertBefore(wrap, input);
     input.style.display = "none";
     input.setAttribute("aria-hidden", "true");
-    const label = input.parentElement.querySelector("label");
+    // Only rename the original label. A descendant query also grabs the new
+    // front sounding label in Closing and incorrectly calls it the final height.
+    const label = input.parentElement.querySelector(":scope > label");
     if (label) label.textContent = "Sonding final rata-rata otomatis (CM)";
     function update() {
       const a = numberOf(front.field.value);
