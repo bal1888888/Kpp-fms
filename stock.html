@@ -4037,6 +4037,19 @@ async function loadStock(){
     STOCK_DATA_READY=true;
     FAST_CLOSING_PERIOD=tanggal+":"+shift;
     FAST_CLOSING_READY=true;
+    // Rendering happened before READY=true. Reconcile visible Closing cells
+    // once the verified balance is actually available, without rebuilding
+    // any entered front/rear sounding fields or clearing device drafts.
+    closingStoragesForAccount().forEach(storage=>{
+        const field=document.getElementById(`height-${storage}`);
+        const number=field?.closest("tr")?.querySelector(".closing-system-number");
+        if(number && field.value!=="")
+            number.textContent=stockBookQtyKnown(storage)
+                ?fmt(CURRENT_SYSTEM_STOCK[storage])
+                :closingBalancePendingText(storage);
+    });
+    updateClosingDifference();
+    renderClosingCopyPreview();
     updateStockRefreshMeta(tanggal,shift);
     const missing=STORAGES.filter(code=>!openingCodes.has(code));
     if(missing.length){
