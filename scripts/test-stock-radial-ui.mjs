@@ -22,7 +22,8 @@ test("stock cards no longer render horizontal capacity bars",()=>{
 });
 
 test("radial UI preserves stock metrics and sounding estimate",()=>{
-  assert.match(renderBlock,/\$\{fmt\(stock\[storage\]\)\}/);
+  assert.match(renderBlock,/\$\{missing\?"Belum Opening":fmt\(stock\[storage\]\)\}/);
+  assert.match(renderBlock,/const missing=stock\[storage\]===null \|\| stock\[storage\]===undefined/);
   assert.match(renderBlock,/\$\{fmt\(cap\)\}/);
   assert.match(renderBlock,/Sonding estimasi/);
   assert.match(renderBlock,/TOTAL STOCK ALL WHS/);
