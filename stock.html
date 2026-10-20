@@ -1102,6 +1102,12 @@ th{background:#f8fafc;color:#475569}
   }
 }
 </style>
+<style id="kpp-stock-opening-unknown-v1">
+/* No Opening is an unknown balance, not a zero-liter capacity warning. */
+.stock-workspace .stock-gauge-card.capacity-unknown{border-color:#cbd5e1!important;background:#f8fafc!important}
+.stock-workspace .stock-radial.unknown{--ring-color:#64748b}
+.stock-workspace .stock-gauge-card.capacity-unknown .stock-gauge-metric strong{font-size:12px!important;white-space:normal}
+</style>
 <style id="kpp-stock-aux-collapse-v1">
 .stock-aux-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .stock-aux-panel-head h3{margin:0!important;min-width:0}
@@ -4127,6 +4133,7 @@ function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelR
         .reduce((sum,row)=>sum+(row.destination_measured_qty!==null&&row.destination_measured_qty!==undefined
             ?n(row.destination_measured_qty):n(row.qty)),0);
     const fuelTotal=(fuelRows||[]).reduce((sum,row)=>sum+n(row.fuel),0);
+    const missingOpening=Object.values(calculatedStock||{}).some(value=>value===null || value===undefined);
     const calculatedTotal=Object.values(calculatedStock||{}).reduce((sum,value)=>sum+n(value),0);
     const closingRowsValid=(closingRows||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
     // Use the same period-specific snapshot rule as loadStock() and Daily Report.
@@ -4146,7 +4153,7 @@ function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelR
     const closingTotal=closingComplete
         ? Object.values(physicalStock).reduce((sum,qty)=>sum+n(qty),0)
         : 0;
-    const delta=closingComplete?closingTotal-calculatedTotal:null;
+    const delta=closingComplete&&!missingOpening?closingTotal-calculatedTotal:null;
 
     const status=delta===null
         ?"OPEN"
@@ -4167,18 +4174,20 @@ function renderStockReconciliation({tanggal,shift,openingRows,movementRows,fuelR
         <div><small>PENERIMAAN</small><strong>+${fmt(receiptTotal)} L</strong></div>
         <div><small>TRANSFER NET</small><strong>${fmt(transferIn-transferOut)} L</strong></div>
         <div><small>PEMAKAIAN</small><strong>-${fmt(fuelTotal)} L</strong></div>
-        <div><small>HASIL SISTEM</small><strong>${fmt(calculatedTotal)} L</strong></div>
+        <div><small>HASIL SISTEM</small><strong>${missingOpening?"Belum lengkap":fmt(calculatedTotal)+" L"}</strong></div>
         <div><small>STOCK CLOSING</small><strong>${closingComplete?fmt(closingTotal)+" L":"Belum lengkap"}</strong></div>
       </div>
       <div class="stock-recon-foot">
         <span>${closingComplete
             ? "Selisih closing vs hasil sistem: "+fmtSigned(delta)+" L"
-            : "Closing belum lengkap, jadi selisih fisik belum dinilai."}</span>
+            : missingOpening?"Ada storage yang belum Opening. Selisih fisik belum bisa dinilai.":"Closing belum lengkap, jadi selisih fisik belum dinilai."}</span>
         <span>Rumus: Opening + Penerimaan + Transfer Net - Pemakaian</span>
       </div>`;
 }
 
 function renderStockCards(stock,sourceLabel="SISTEM"){
+    const missingStorages=STORAGES.filter(code=>stock[code]===null || stock[code]===undefined);
+    const incomplete=missingStorages.length>0;
     const total=Object.values(stock).reduce((sum,value)=>sum+n(value),0);
     const cards=document.getElementById("stockCards");
     cards.innerHTML="";
@@ -4187,17 +4196,18 @@ function renderStockCards(stock,sourceLabel="SISTEM"){
         const row=storageRow(storage);
         const context=row?.warehouse ? row.warehouse : (row?.display_name && row.display_name!==storage ? row.display_name : "");
         const cap=capacity(storage);
-        const p=capacityPercent(storage,stock[storage]);
-        const state=capacityState(storage,stock[storage]);
+        const missing=stock[storage]===null || stock[storage]===undefined;
+        const p=missing?0:capacityPercent(storage,stock[storage]);
+        const state=missing?"unknown":capacityState(storage,stock[storage]);
         const ringPct=Math.max(0,Math.min(p,100));
         const estimatedHeight=teraHeightForLiters(
             storage,
             Math.max(0,n(stock[storage]))
         );
 
-        const cardClass=state==="critical"?"capacity-critical":state==="low"?"capacity-low":state==="high"?"capacity-high":"capacity-safe";
-        const statusText=state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
-        const soundingText=estimatedHeight===null || estimatedHeight===undefined
+        const cardClass=missing?"capacity-unknown":state==="critical"?"capacity-critical":state==="low"?"capacity-low":state==="high"?"capacity-high":"capacity-safe";
+        const statusText=missing?"BELUM OPENING":state==="critical"?"KRITIS":state==="low"?"RENDAH":state==="high"?"TINGGI":"AMAN";
+        const soundingText=missing || estimatedHeight===null || estimatedHeight===undefined
             ? "-"
             : "~ "+fmtCm(estimatedHeight);
 
@@ -4207,13 +4217,13 @@ function renderStockCards(stock,sourceLabel="SISTEM"){
             <div class="stock-radial ${state}" style="--ring-pct:${ringPct}">
                 <div class="stock-radial-inner">
                     <span class="stock-radial-code">${esc(storage)}</span>
-                    <span class="stock-radial-percent">${pct(p)}%</span>
+                    <span class="stock-radial-percent">${missing?"-":pct(p)+"%"}</span>
                     <span class="stock-radial-status">${statusText}</span>
                 </div>
             </div>
             <div class="stock-gauge-metrics">
                 <div class="stock-gauge-metric">
-                    <strong>${fmt(stock[storage])}</strong>
+                    <strong>${missing?"Belum Opening":fmt(stock[storage])}</strong>
                     <small>STOCK</small>
                 </div>
                 <div class="stock-gauge-metric">
@@ -4236,13 +4246,13 @@ function renderStockCards(stock,sourceLabel="SISTEM"){
     document.getElementById("stockTotalWide").innerHTML=`
     <div class="stock-total-card ${totalCardClass}">
         <div class="stock-total-main">
-            <small>TOTAL STOCK ALL WHS • ${esc(sourceLabel)}</small>
-            <strong>${fmt(total)}</strong>
+            <small>TOTAL STOCK ALL WHS • ${incomplete?"BELUM LENGKAP":esc(sourceLabel)}</small>
+            <strong>${incomplete?"Belum lengkap":fmt(total)}</strong>
         </div>
         <div class="stock-total-side">
             <div class="stock-total-compact">
                 <span>KAPASITAS TOTAL ${fmt(TOTAL_CAPACITY)}</span>
-                <strong class="capacity-${totalState}-text">${pct(totalPct)}% | ${totalStatus}</strong>
+                <strong class="capacity-${totalState}-text">${incomplete?"Opening belum lengkap":pct(totalPct)+"% | "+totalStatus}</strong>
             </div>
         </div>
     </div>`;
