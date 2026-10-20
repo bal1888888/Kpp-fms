@@ -236,7 +236,7 @@
 
   if(window.KPP_ACTIVE_PAGE==="stock" && !document.querySelector("script[data-kpp-stock-status-hardening]")){
     const script=document.createElement("script");
-    script.src="stock-status-hardening.js?v=20260916-integrity1";
+    script.src="stock-status-hardening.js?v=20261020-single-loader1";
     script.defer=true;
     script.dataset.kppStockStatusHardening="1";
     document.head.appendChild(script);

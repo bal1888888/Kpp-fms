@@ -4,7 +4,6 @@
   "use strict";
 
   const PATCH_FLAG="KPP_STOCK_STATUS_HARDENING_INSTALLED";
-  const LOAD_PATCH_FLAG="KPP_STOCK_AUTHORITATIVE_LOAD_INSTALLED";
   const STYLE_ID="kpp-stock-status-hardening-style";
 
   function classify(percent){
@@ -163,96 +162,17 @@
     return true;
   }
 
-  function assignCurrentSystemStock(stock){
-    // CURRENT_SYSTEM_STOCK adalah global lexical di stock.html. Tetap sediakan
-    // fallback window property agar patch tidak menjatuhkan halaman bila layout berubah.
-    try{
-      CURRENT_SYSTEM_STOCK={...stock};
-    }catch(_){
-      window.CURRENT_SYSTEM_STOCK={...stock};
-    }
-  }
-
-  function installAuthoritativeLoad(){
-    if(window[LOAD_PATCH_FLAG])return true;
-    if(typeof window.loadStock!=="function"
-      || typeof window.getPeriod!=="function"
-      || typeof window.renderStockCards!=="function"
-      || typeof window.renderClosing!=="function"
-      || typeof window.renderMovement!=="function")return false;
-
-    const originalLoad=window.loadStock;
-    window.KPP_STOCK_ORIGINAL_LOAD=originalLoad;
-
-    window.loadStock=async function(...args){
-      const period=window.getPeriod();
-      const tanggal=period?.tanggal;
-      const shift=Number(period?.shift);
-      if(!tanggal || ![1,2].includes(shift))return originalLoad.apply(this,args);
-
-      const client=window.KPP?.db||window.kppDb;
-      if(!client)return originalLoad.apply(this,args);
-
-      try{
-        const [snapshot,movements,fuelRows,closings]=await Promise.all([
-          client.rpc("stock_shift_system_snapshot",{p_tanggal:tanggal,p_shift:shift}),
-          client.from("stock_movements")
-            .select("id,jam,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,operator,document_reference,transporter,note")
-            .eq("tanggal",tanggal).eq("shift",shift).order("id",{ascending:true}),
-          client.from("fuel_history")
-            .select("id,tanggal,jam,shift,fuel_truck,wh,unit,fuel,operator,duplicate_of_id")
-            .eq("tanggal",tanggal).eq("shift",shift)
-            .is("duplicate_of_id",null),
-          client.from("stock_closing")
-            .select("storage,system_qty,actual_qty,sonding_height_cm,operator,note")
-            .eq("tanggal",tanggal).eq("shift",shift)
-        ]);
-
-        const error=snapshot.error||movements.error||fuelRows.error||closings.error;
-        if(error)throw error;
-        if(!Array.isArray(snapshot.data)||!snapshot.data.length){
-          throw new Error("Snapshot stock server kosong.");
-        }
-
-        const stock={};
-        snapshot.data.forEach(row=>{
-          const code=String(row.storage||"").trim().toUpperCase();
-          const value=Number(row.display_system_qty);
-          if(code && Number.isFinite(value))stock[code]=value;
-        });
-        if(!Object.keys(stock).length)throw new Error("Snapshot stock server tidak memiliki nilai valid.");
-
-        assignCurrentSystemStock(stock);
-        window.renderStockCards(stock);
-        window.renderClosing(stock,closings.data||[]);
-        window.renderMovement(movements.data||[],fuelRows.data||[]);
-        if(typeof window.showCapacityAlertOnce==="function")window.showCapacityAlertOnce(stock);
-        patchRenderedStatus();
-        return stock;
-      }catch(error){
-        console.warn("Stock authoritative snapshot gagal, fallback ke loader lama:",error?.message||error);
-        return originalLoad.apply(this,args);
-      }
-    };
-
-    window[LOAD_PATCH_FLAG]=true;
-    return true;
-  }
-
+  // Only the stock.html loadStock() implementation may fetch/update stock.
+  // This module intentionally patches indicator colors, never the data loader.
+  // The former parallel snapshot loader rendered cards without updating
+  // STOCK_DATA_READY or the refresh timestamp, leaving a misleading UI state.
   let attempts=0;
   const timer=setInterval(()=>{
     attempts++;
-    const statusReady=installStatus();
-    const loadReady=installAuthoritativeLoad();
-    if((statusReady&&loadReady)||attempts>=120)clearInterval(timer);
+    if(installStatus()||attempts>=120)clearInterval(timer);
   },50);
 
   document.addEventListener("kpp-auth-ready",()=>{
-    setTimeout(()=>{
-      patchRenderedStatus();
-      if(installAuthoritativeLoad() && typeof window.loadStock==="function"){
-        window.loadStock().catch(error=>console.warn("Refresh stock authoritative gagal:",error?.message||error));
-      }
-    },0);
+    setTimeout(patchRenderedStatus,0);
   });
 })();

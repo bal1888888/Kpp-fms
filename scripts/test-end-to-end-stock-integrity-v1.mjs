@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const sql=fs.readFileSync('supabase/migrations/20260916150000_end_to_end_stock_integrity_v1.sql','utf8');
 const permissions=fs.readFileSync('supabase/migrations/20260916151000_end_to_end_stock_integrity_permissions_v1.sql','utf8');
 const stock=fs.readFileSync('stock-status-hardening.js','utf8');
+const stockPage=fs.readFileSync('stock.html','utf8');
 const storage=fs.readFileSync('storage-master.js','utf8');
 
 test('server menghitung stock system dan mengabaikan fuel duplicate',()=>{
@@ -39,12 +40,14 @@ test('closing system_qty authoritative dari server dan snapshot closed tidak ber
   assert.match(sql,/coalesce\(c\.system_qty,private\.kpp_stock_system_qty/i);
 });
 
-test('UI Stock memakai snapshot server dan hanya menampilkan fuel valid',()=>{
-  assert.match(stock,/stock_shift_system_snapshot/);
-  assert.match(stock,/\.is\("duplicate_of_id",null\)/);
-  assert.match(stock,/row\.display_system_qty/);
-  assert.match(stock,/renderClosing\(stock,closings\.data\|\|\[\]\)/);
-  assert.match(storage,/stock-status-hardening\.js\?v=20260916-integrity1/);
+test('UI Stock memakai satu loader dengan filter duplikat dan verifikasi Closing server',()=>{
+  assert.match(stockPage,/async function loadStock\(\)/);
+  assert.match(stockPage,/\.is\("duplicate_of_id",null\)/);
+  assert.match(stockPage,/get_stock_closing_fast_snapshot/);
+  assert.match(stockPage,/STOCK_DATA_READY=true/);
+  assert.match(stockPage,/updateStockRefreshMeta\(tanggal,shift\)/);
+  assert.doesNotMatch(stock,/window\.loadStock\s*=/);
+  assert.match(storage,/stock-status-hardening\.js\?v=20261020-single-loader1/);
 });
 
 test('private helper tidak dapat dieksekusi langsung API roles',()=>{
