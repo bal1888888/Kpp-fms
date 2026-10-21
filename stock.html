@@ -12,7 +12,7 @@ window.KPP_ACTIVE_PAGE="stock";
 </script>
 <script src="wib-time.js?v=20260915-lubricant2"></script>
 <script src="auth.js?v=20261019-shared-ui-refresh1"></script>
-<script src="storage-master.js?v=20261020-stock-loader1"></script>
+<script src="storage-master.js?v=20261021-level-colors3"></script>
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
@@ -1134,6 +1134,30 @@ th{background:#f8fafc;color:#475569}
 .receipt-draft-indicator{background:#eef6ff;color:#1d4e80;border:1px solid #c9dff5;
   border-radius:8px;padding:9px 11px;margin:8px 0 12px;font-size:12px;line-height:1.5}
 @media(max-width:700px){.stock-draft-actions{width:100%}.stock-draft-actions button{flex:1;min-width:0}}
+</style>
+<style id="kpp-stock-capacity-palette-v3">
+/* Five distinct storage-level meanings. Threshold logic stays unchanged. */
+.stock-workspace .stock-radial.low{--ring-color:#f97316!important}
+.stock-workspace .stock-radial.caution{--ring-color:#eab308!important}
+.stock-workspace .stock-radial.high{--ring-color:#2563eb!important}
+.stock-workspace .stock-radial.low .stock-radial-percent,
+.stock-workspace .stock-radial.low .stock-radial-status{color:#c2410c!important}
+.stock-workspace .stock-radial.caution .stock-radial-percent,
+.stock-workspace .stock-radial.caution .stock-radial-status{color:#854d0e!important}
+.stock-workspace .stock-radial.high .stock-radial-percent,
+.stock-workspace .stock-radial.high .stock-radial-status{color:#1d4ed8!important}
+.stock-workspace .stock-gauge-card.capacity-low{border-left-color:#f97316!important}
+.stock-workspace .stock-gauge-card.capacity-caution{border-color:#eab308!important;border-left-color:#eab308!important}
+.stock-workspace .stock-gauge-card.capacity-high{border-left-color:#2563eb!important}
+.stock-workspace .stock-total-card.capacity-low{border-left-color:#f97316!important}
+.stock-workspace .stock-total-card.capacity-caution{border-left-color:#eab308!important}
+.stock-workspace .stock-total-card.capacity-high{border-left-color:#2563eb!important}
+.stock-workspace .capacity-low-text{color:#c2410c!important}
+.stock-workspace .capacity-caution-text{color:#854d0e!important}
+.stock-workspace .capacity-high-text{color:#1d4ed8!important}
+.stock-workspace .stock-capacity-fill.low{background:#f97316!important}
+.stock-workspace .stock-capacity-fill.caution{background:#eab308!important}
+.stock-workspace .stock-capacity-fill.high{background:#2563eb!important}
 </style>
 </head>
 
