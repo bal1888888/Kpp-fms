@@ -3815,6 +3815,9 @@ async function loadFuelmanSession(){
 
     ACTIVE_FUELMAN_SESSION={...data[0],duty_type:data[0].duty_type||"FUELMAN"};
     configureClosingFtMeter();
+    try{await loadClosingFtMeter();}catch(error){
+      document.getElementById("closingStatus").textContent="Flowmeter belum dapat dimuat: "+error.message;
+    }
 
     document.getElementById("tanggal").value=ACTIVE_FUELMAN_SESSION.tanggal;
     document.getElementById("shift").value=String(
@@ -5137,6 +5140,16 @@ function configureClosingFtMeter(){
  if(!panel)return;
  panel.style.display=CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION && ACTIVE_FUELMAN_SESSION.duty_type!=="PIC_TRANSFER"?"block":"none";
 }
+async function loadClosingFtMeter(){
+    const session=ACTIVE_FUELMAN_SESSION;
+    if(CURRENT_PROFILE?.role!=="fuelman" || !session || session.duty_type==="PIC_TRANSFER")return;
+    const {data,error}=await db.from("ft_shift_flowmeter").select("meter_start,meter_end").eq("session_id",session.id).maybeSingle();
+    if(error){document.getElementById("closingStatus").textContent="Flowmeter belum dapat dimuat: "+error.message;return;}
+    if(ACTIVE_FUELMAN_SESSION?.id!==session.id)return;
+    const input=document.getElementById("closingFtMeterEnd");
+    input.readOnly=data?.meter_end!=null;
+    if(data?.meter_end!=null)input.value=String(data.meter_end);
+}
 async function saveClosing(){
     configureClosingFtMeter();
     if(CLOSING_SAVE_ATTEMPT_BUSY || STOCK_SAVE_LOCK)return;
@@ -5146,25 +5159,6 @@ async function saveClosing(){
     // determined exclusively by sonding/tera, never by this meter.
     if(CURRENT_PROFILE?.role==="fuelman" && !ACTIVE_FUELMAN_SESSION){
       alert("Sesi Fuelman belum terbaca. Periksa Start Shift dan tunggu sesi selesai dimuat sebelum Closing.");return;
-    }
-    if(CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION.duty_type!=="PIC_TRANSFER"){
-      const rawMeter=document.getElementById("closingFtMeterEnd")?.value.trim()||"";
-      const activeSession=ACTIVE_FUELMAN_SESSION;
-      if(!rawMeter || !Number.isFinite(Number(rawMeter)) || Number(rawMeter)<0){
-        alert("Isi Flowmeter Akhir FT sebelum menyimpan Closing.");return;
-      }
-      const {data:meter,error:meterError}=await db.from("ft_shift_flowmeter")
-        .select("meter_start,meter_end").eq("session_id",activeSession.id).maybeSingle();
-      if(meterError || !meter){
-        alert("Flowmeter Awal belum dapat dikonfirmasi dari server. "+(meterError?.message||"Catat Flowmeter Awal di menu Fuelman."));return;
-      }
-      if(Number(rawMeter)<Number(meter.meter_start)){
-        alert("Flowmeter Akhir tidak boleh lebih kecil dari Flowmeter Awal.");return;
-      }
-      const {error:saveMeterError}=await db.rpc("save_ft_shift_flowmeter",{
-        p_session_id:activeSession.id,p_stage:"END",p_meter:Number(rawMeter)
-      });
-      if(saveMeterError){alert("Flowmeter Akhir belum tersimpan: "+saveMeterError.message);return;}
     }
     if(!await stockCanSubmitClosing())return;
     const {tanggal,shift}=getPeriod();
@@ -5433,6 +5427,29 @@ async function saveClosing(){
         if(!lanjut)return;
     }
 
+    if(CURRENT_PROFILE?.role==="fuelman" && ACTIVE_FUELMAN_SESSION.duty_type!=="PIC_TRANSFER"){
+      let rawMeter=document.getElementById("closingFtMeterEnd")?.value.trim()||"";
+      const activeSession=ACTIVE_FUELMAN_SESSION;
+      const {data:meter,error:meterError}=await db.from("ft_shift_flowmeter")
+        .select("meter_start,meter_end").eq("session_id",activeSession.id).maybeSingle();
+      if(meterError || !meter){
+        alert("Flowmeter Awal belum dapat dikonfirmasi dari server. "+(meterError?.message||"Catat Flowmeter Awal di menu Fuelman."));return;
+      }
+      if(meter.meter_end!=null)rawMeter=String(meter.meter_end);
+      if(!rawMeter || !Number.isFinite(Number(rawMeter)) || Number(rawMeter)<0){
+        alert("Isi Flowmeter Akhir FT sebelum menyimpan Closing.");return;
+      }
+      if(Number(rawMeter)<Number(meter.meter_start)){
+        alert("Flowmeter Akhir tidak boleh lebih kecil dari Flowmeter Awal.");return;
+      }
+      const {error:saveMeterError}=await db.rpc("save_ft_shift_flowmeter",{
+        p_session_id:activeSession.id,p_stage:"END",p_meter:Number(rawMeter)
+      });
+      if(saveMeterError){alert("Flowmeter Akhir belum tersimpan: "+saveMeterError.message);return;}
+      document.getElementById("closingFtMeterEnd").value=rawMeter;
+      document.getElementById("closingFtMeterEnd").readOnly=true;
+    }
+
     if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
 
     const carryForward=document.getElementById("carryForward").checked;
@@ -5487,6 +5504,10 @@ async function saveClosing(){
     STOCK_CLOSING_INPUT_DIRTY=false;
     void loadClosingFast().catch(error=>console.warn("Snapshot sesudah Closing:",error));
     void loadStock().catch(error=>console.warn("Refresh sesudah Closing:",error));
+    }catch(error){
+      const message="Closing belum terkonfirmasi. Periksa status sebelum mengulang: "+error.message;
+      document.getElementById("closingStatus").textContent=message;
+      if(STOCK_SAVE_LOCK)await finishStockSave(false,message);
     }finally{CLOSING_SAVE_ATTEMPT_BUSY=false;}
 }
 
