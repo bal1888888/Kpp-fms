@@ -4887,11 +4887,20 @@ async function stockCanSubmitTransfer(source,destination,period){
                 throw new Error("Opening "+code+" belum tercatat untuk shift ini.");
             if(row.closing)
                 throw new Error(code+" sudah Closing. Transfer LIVE tidak diperbolehkan.");
-            if(!Number.isFinite(Number(row.system_qty)) || Number(row.system_qty)<0)
+            const balance=Number(row.system_qty);
+            // Logsheet may be posted before the physical Transfer is keyed in.
+            // In that case the FT destination is temporarily negative. Keep
+            // this discrepancy visible for audit; never waive source checks.
+            if(!Number.isFinite(balance) || (code===source && balance<0))
                 throw new Error("Saldo server "+code+" tidak valid.");
-            CURRENT_SYSTEM_STOCK[code]=Number(row.system_qty);
+            CURRENT_SYSTEM_STOCK[code]=balance;
         }
-        if(status)status.textContent="Opening dan saldo kedua storage terverifikasi langsung dari server.";
+        const destinationBalance=CURRENT_SYSTEM_STOCK[destination];
+        if(status){
+            status.textContent=destinationBalance<0
+                ?"[AUDIT] Saldo "+destination+" sementara "+fmt(destinationBalance)+" L. Logsheet mungkin dicatat lebih dulu daripada Transfer. Opening dan Closing valid; saldo sumber tetap diperiksa."
+                :"Opening dan saldo kedua storage terverifikasi langsung dari server.";
+        }
         return true;
     }catch(error){
         if(status)status.textContent="[BELUM DIKIRIM] "+error.message;
@@ -5002,6 +5011,11 @@ async function saveTransfer(){
     ];
 
     noteParts.push(`Loss sounding sumber vs tujuan ${lossQty} L`);
+    if(CURRENT_SYSTEM_STOCK[destination_storage]<0){
+        // Preserve the recorded anomaly in the movement audit trail. The
+        // database calculates the resulting balance; do not rewrite history.
+        noteParts.push(`Saldo sistem tujuan sebelum transfer ${CURRENT_SYSTEM_STOCK[destination_storage]} L (sementara negatif; transaksi dicatat menyusul setelah Logsheet)`);
+    }
 
     const {error,previousOnly}=await sendStockMovementSafe({
         tanggal,
