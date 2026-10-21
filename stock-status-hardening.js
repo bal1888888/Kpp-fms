@@ -40,12 +40,12 @@
     const style=document.createElement("style");
     style.id=STYLE_ID;
     style.textContent=`
-      .capacity-caution{border-left-color:#e6b51e!important}
-      .capacity-caution-text{color:#805500!important;font-weight:bold}
-      .stock-gauge-card.capacity-caution{border-color:#e6b51e!important;border-left-color:#e6b51e!important}
-      .stock-radial.caution{--ring-color:#e6b51e}
+      .capacity-caution{border-left-color:#d5ac48!important}
+      .capacity-caution-text{color:#785b16!important;font-weight:bold}
+      .stock-gauge-card.capacity-caution{border-color:#d5ac48!important;border-left-color:#d5ac48!important}
+      .stock-radial.caution{--ring-color:#d5ac48}
       .stock-radial.caution .stock-radial-percent,
-      .stock-radial.caution .stock-radial-status{color:#805500!important}
+      .stock-radial.caution .stock-radial-status{color:#785b16!important}
     `;
     document.head.appendChild(style);
   }
