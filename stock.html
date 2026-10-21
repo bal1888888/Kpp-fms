@@ -3527,6 +3527,22 @@ async function updateReceiptReference(id){
     await finishStockSave(true,`PO/LO ${next} berhasil disimpan. Data volume penerimaan tetap terkunci.`);
 }
 
+// Clear only a server-confirmed transfer. Hidden final-height inputs are
+// backed by four visible front/rear measurements from sonding-average.js.
+function resetSubmittedTransferForm(){
+    for(const id of [
+        "transferSourceHeightBefore","transferSourceHeightAfter",
+        "transferDestinationHeightBefore","transferDestinationHeightAfter"
+    ]){
+        const field=document.getElementById(id);
+        if(!field)continue;
+        // Clear visible front/rear, displayed final and the derived hidden
+        // height together. Never leave old liters ready for a second submit.
+        field.dispatchEvent(new Event("kpp-clear-paired-sounding"));
+        field.value="";
+    }
+    clearTransferMeasurements();
+}
 function clearTransferMeasurements(){
     document.getElementById("transferQty").value="";
     document.getElementById("transferSourceSoundingQty").value="";
@@ -5064,17 +5080,13 @@ async function saveTransfer(){
     }
 
     LAST_COPY_REPORTS.transfer=transferReport;
+    resetSubmittedTransferForm();
     window.KPPStockDrafts?.clear("transfer");
+    // Preserve the just-saved report for audit even after clearing inputs.
     setCopyPreview("transferCopyPreview",transferReport);
-    [
-        "transferSourceHeightBefore",
-        "transferSourceHeightAfter",
-        "transferSourceSoundingQty",
-        "transferDestinationHeightBefore",
-        "transferDestinationHeightAfter",
-        "transferQty"
-    ].forEach(id=>{document.getElementById(id).value="";});
-    clearTransferMeasurements();
+    document.getElementById("transferStatus").textContent=
+        "[OK] Transfer "+source_storage+" -> "+destination_storage+
+        " tersimpan. "+fmt(qty)+" L masuk; seluruh isian sonding sudah dikosongkan.";
     await finishStockSave(
         true,
         "Transfer "+source_storage+" -> "+destination_storage+" sudah tersimpan."
