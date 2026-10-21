@@ -1,0 +1,197 @@
+/* KPP-FMS Stock bright theme v1
+   Visual only: no inventory logic, events, or data bindings are changed. */
+html body.stock-workspace{
+  background:#f3f9ff!important;
+  background-image:linear-gradient(180deg,#f9fcff 0%,#f1f8ff 48%,#f7fbff 100%)!important;
+  color:#10213c;
+}
+html body.stock-workspace.kpp-sidebar-shell{
+  background:#f3f9ff!important;
+  background-image:linear-gradient(180deg,#f9fcff,#eef7ff 55%,#f9fcff)!important;
+  background-attachment:scroll!important;
+}
+.stock-workspace .header{
+  background:#ffffff!important;
+  border-bottom:1px solid #dce9f7!important;
+  color:#142641!important;
+}
+.stock-workspace .header h2{color:#142641!important}
+.stock-workspace .header div{color:#547397!important}
+.stock-workspace .container .workspace-intro.stock-intro{
+  color:#142747!important;
+  background:linear-gradient(112deg,#ffffff 0%,#f2f8ff 60%,#e8f4ff 100%)!important;
+  border:1px solid #d4e6fa!important;
+  box-shadow:0 10px 26px rgba(37,99,235,.075)!important;
+}
+.stock-workspace .stock-intro .workspace-kicker{color:#1476e5!important}
+.stock-workspace .stock-intro h1{color:#102445!important}
+.stock-workspace .stock-intro p{color:#526c8d!important}
+.stock-workspace .stock-intro .workspace-status{
+  color:#1967ca!important;
+  background:#e7f2ff!important;
+  border:1px solid #c4dfff!important;
+}
+.stock-workspace .stock-intro .workspace-status span{background:#10b981}
+.stock-workspace .panel{
+  border-color:#dce9f6!important;
+  background:#fff!important;
+  box-shadow:0 8px 28px rgba(35,95,153,.055)!important;
+}
+.stock-workspace .stock-position-panel{
+  background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)!important;
+}
+.stock-workspace .panel-title-row h3,
+.stock-workspace .stock-position-panel h3{color:#112746!important}
+.stock-workspace .stock-section-sub,
+.stock-workspace .stock-last-updated{color:#5b7799!important}
+
+/* Reconciliasi: brighter overview cards and higher text contrast. */
+.stock-workspace .stock-reconciliation{
+  border:1px solid #d7e6f8!important;
+  border-radius:16px!important;
+  background:linear-gradient(125deg,#fff,#f6faff)!important;
+  box-shadow:0 6px 20px rgba(51,115,187,.045);
+  padding:14px!important;
+}
+.stock-workspace .stock-recon-head strong{
+  color:#10213c!important;
+  font-size:13px;
+  letter-spacing:.03em;
+}
+.stock-workspace .stock-recon-head span{color:#6480a3!important;font-size:10px}
+.stock-workspace .stock-recon-grid{gap:8px}
+.stock-workspace .stock-recon-grid>div{
+  border-color:#dce8f7!important;
+  border-radius:10px;
+  background:#fff!important;
+  padding:11px 9px;
+  box-shadow:0 2px 7px rgba(48,98,153,.025);
+}
+.stock-workspace .stock-recon-grid small{
+  color:#577298!important;
+  font-size:9px;
+  letter-spacing:.015em;
+}
+.stock-workspace .stock-recon-grid strong{
+  color:#13233d!important;
+  font-size:12px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.stock-workspace .stock-recon-foot{color:#627da0!important;font-size:9px;line-height:1.45}
+.stock-workspace .stock-recon-status.open{color:#1265d6;background:#e2f0ff}
+.stock-workspace .stock-recon-status.match{color:#087d55;background:#e0faed}
+.stock-workspace .stock-recon-status.selisih{color:#bd304b;background:#ffeaef}
+
+/* White cards, lively rings, status palette matches the preview. */
+.stock-workspace .stock-position-panel #stockCards{gap:12px}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card{
+  padding:17px 12px 14px!important;
+  border:1px solid #dce7f3!important;
+  border-radius:17px!important;
+  background:#fff!important;
+  box-shadow:0 9px 26px rgba(30,76,136,.07)!important;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-high{border-color:#4b99ff!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-safe{border-color:#19b77e!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-low,
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-caution{border-color:#f0b933!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card:has(.stock-radial.caution){border-color:#f0b933!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-critical{border-color:#fb6275!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-card.capacity-unknown{border-color:#dce5ef!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-context{
+  color:#56739a!important;
+  font-size:11px;
+  letter-spacing:.035em;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial{
+  width:min(146px,100%);
+  background:conic-gradient(var(--ring-color) calc(var(--ring-pct)*1%),#e8eef7 0);
+  box-shadow:0 0 0 1px rgba(59,130,246,.05);
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial::before{
+  background:#fff;
+  box-shadow:inset 0 0 0 1px #eef3fa;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.high{--ring-color:#2585f5!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.safe{--ring-color:#10b879!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.caution{--ring-color:#f4b51c!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.low{--ring-color:#f19b20!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.critical{--ring-color:#ed405b!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.unknown{--ring-color:#98a9be!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial-code{
+  color:#0f2343!important;
+  font-weight:900;
+  font-size:17px;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial-percent{
+  color:var(--ring-color)!important;
+  font-size:28px;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial-status{
+  color:var(--ring-color)!important;
+  background:#eff6ff!important;
+  font-size:9px;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.safe .stock-radial-status{background:#e7f9f0!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.caution .stock-radial-status,
+.stock-workspace .stock-position-panel #stockCards .stock-radial.low .stock-radial-status{background:#fff5dc!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.critical .stock-radial-status{background:#ffedf0!important}
+.stock-workspace .stock-position-panel #stockCards .stock-radial.unknown .stock-radial-status{background:#edf2f7!important}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-metrics{
+  border-top-color:#e7eef8;
+  margin-top:15px;
+  padding-top:12px;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-metric + .stock-gauge-metric{border-left-color:#e3ebf5}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-metric strong{
+  color:#122440!important;
+  font-size:14px!important;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-gauge-metric small{
+  color:#627c9c!important;
+  font-size:9px!important;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-sounding-estimate{
+  padding:9px 8px;
+  margin-top:12px;
+  border-radius:9px;
+  background:#f2f7fd!important;
+  color:#4c688c;
+}
+.stock-workspace .stock-position-panel #stockCards .stock-sounding-estimate b{color:#174778!important}
+.stock-workspace .stock-total-card{
+  background:linear-gradient(115deg,#ffffff,#f4faff)!important;
+  border-color:#d8e7f8!important;
+  box-shadow:0 4px 15px rgba(54,114,184,.06)!important;
+}
+.stock-workspace .stock-total-compact{background:#f4f9ff;border-color:#dce9f7}
+
+/* Keep mobile stock cards legible and prevent horizontal scroll. */
+@media(max-width:760px){
+  .stock-workspace .stock-position-panel #stockCards{gap:8px!important}
+  .stock-workspace .stock-position-panel #stockCards .stock-gauge-card{
+    padding:11px 6px 10px!important;
+    border-radius:12px!important;
+    box-shadow:0 4px 12px rgba(30,76,136,.05)!important;
+  }
+  .stock-workspace .stock-position-panel #stockCards .stock-radial-percent{font-size:19px!important}
+  .stock-workspace .stock-position-panel #stockCards .stock-radial-code{font-size:12px!important}
+  .stock-workspace .stock-position-panel #stockCards .stock-gauge-context{font-size:8px!important}
+  .stock-workspace .stock-position-panel #stockCards .stock-gauge-metric strong{font-size:10px!important}
+  .stock-workspace .stock-position-panel #stockCards .stock-gauge-metric small{font-size:8px!important}
+  .stock-workspace .stock-recon-grid strong{font-size:11px}
+  .stock-workspace .stock-recon-foot{font-size:9px}
+}
+@media(max-width:420px){
+  .stock-workspace .stock-position-panel #stockCards .stock-sounding-estimate{
+    flex-wrap:wrap;
+    justify-content:center;
+    text-align:center;
+  }
+  .stock-workspace .stock-position-panel #stockCards .stock-sounding-estimate span,
+  .stock-workspace .stock-position-panel #stockCards .stock-sounding-estimate b{
+    white-space:normal!important;
+    overflow-wrap:anywhere;
+  }
+}
