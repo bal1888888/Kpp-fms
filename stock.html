@@ -1171,6 +1171,14 @@ th{background:#f8fafc;color:#475569}
 .stock-workspace .stock-capacity-fill.high{background:#477fca!important}
 </style>
 <link rel="stylesheet" href="stock-bright-ui.css?v=20261021-bright1">
+<style id="stock-section-picker-style">
+.stock-section-hidden{display:none!important}
+.stock-section-picker{flex-wrap:wrap;position:static!important}
+.stock-section-picker .workflow-compact-actions{flex-wrap:wrap;flex:1 1 420px;justify-content:flex-end;gap:7px!important}
+.stock-section-picker .workflow-compact-actions button{min-height:44px!important;padding:10px 12px!important;font-size:12px!important;border-radius:9px}
+.stock-section-picker button[aria-pressed="true"]{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
+@media(max-width:700px){.stock-section-picker .workflow-compact-actions{justify-content:flex-start;flex-basis:100%}.stock-section-picker .workflow-compact-actions button{flex:1 1 auto}}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -5603,6 +5611,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
 /* ===== KPP-FMS STOCK MOBILE WORKFLOW COMPACT v1 ===== */
 (()=>{
   const PREF_KEY="kpp-stock-workflow-collapse-v1";
+  const VIEW_KEY="kpp-stock-transaction-view-v1";
   const isMobile=()=>window.matchMedia("(max-width: 700px)").matches;
   const panels=()=>Array.from(document.querySelectorAll(".workflow-panel[data-step]"));
   function readPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||"{}")}catch{return {}}}
@@ -5626,20 +5635,30 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
       writePrefs(prefs);
     }
   }
-  function setAll(collapsed){
-    panels().forEach(p=>setCollapsed(p,collapsed,{persist:false}));
-    const prefs={};panels().forEach(p=>prefs[p.dataset.step]=collapsed);writePrefs(prefs);
-  }
   function init(){
     const list=panels();
     if(!list.length||document.querySelector(".workflow-compact-tools"))return;
     const prefs=readPrefs(),hasSaved=Object.keys(prefs).length>0;
     const tools=document.createElement("div");
     tools.className="workflow-compact-tools";
-    tools.innerHTML='<div class="workflow-compact-copy"><strong>Mode Ringkas</strong><span>Tap proses untuk buka/tutup.</span></div><div class="workflow-compact-actions"><button type="button" data-action="collapse">Ringkas Semua</button><button type="button" data-action="expand">Buka Semua</button></div>';
+    tools.classList.add("stock-section-picker");
+    tools.innerHTML='<div class="workflow-compact-copy"><strong>Transaksi Stock</strong><span>Pilih bagian yang ingin ditampilkan.</span></div><div class="workflow-compact-actions" role="group" aria-label="Tampilkan bagian transaksi"><button type="button" data-view="all">Tampilkan Semua</button><button type="button" data-view="01">Opening</button><button type="button" data-view="02">Penerimaan</button><button type="button" data-view="03">Transfer</button><button type="button" data-view="none">Sembunyikan Semua</button></div>';
     list[0].before(tools);
-    tools.querySelector('[data-action="collapse"]').addEventListener("click",()=>setAll(true));
-    tools.querySelector('[data-action="expand"]').addEventListener("click",()=>setAll(false));
+    const transactionPanels=list.filter(panel=>["01","02","03"].includes(panel.dataset.step));
+    function selectView(view,{persist=true,expand=true}={}){
+      if(!["all","none","01","02","03"].includes(view))view="all";
+      transactionPanels.forEach(panel=>{
+        const visible=view==="all" || view===panel.dataset.step;
+        panel.classList.toggle("stock-section-hidden",!visible);
+        if(visible&&expand)setCollapsed(panel,false,{persist:false});
+      });
+      tools.querySelectorAll("[data-view]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.view===view)));
+      if(persist){
+        try{localStorage.setItem(VIEW_KEY,view)}catch{}
+        const prefs=readPrefs();panels().forEach(panel=>prefs[panel.dataset.step]=panel.classList.contains("is-collapsed"));writePrefs(prefs);
+      }
+    }
+    tools.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>selectView(button.dataset.view)));
     list.forEach(panel=>{
       const title=panel.querySelector(":scope > h3");if(!title)return;
       const head=document.createElement("div");head.className="workflow-panel-head";panel.insertBefore(head,title);head.appendChild(title);
@@ -5650,6 +5669,8 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
       btn.addEventListener("click",e=>{e.stopPropagation();toggle()});head.addEventListener("click",toggle);
     });
     if(!hasSaved&&!isMobile())list.forEach(panel=>setCollapsed(panel,false,{persist:false}));
+    let savedView="all";try{savedView=localStorage.getItem(VIEW_KEY)||"all"}catch{}
+    selectView(savedView,{persist:false,expand:false});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();
