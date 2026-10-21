@@ -118,7 +118,7 @@ button,.btn,.actions a{min-height:44px}
       </div>
     </div>
 
-    <div id="meterStartGroup" class="hidden" style="margin-top:12px"><label>Flowmeter Awal FT (Liter) • wajib bagi FUELMAN</label><input id="meterStart" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Angka counter flowmeter saat mulai shift"></div>
+    <div id="meterStartGroup" class="hidden" style="margin-top:12px"><label>Flowmeter Awal FT (Liter) • wajib bagi FUELMAN</label><input id="meterStart" required type="number" min="0" step="0.01" inputmode="decimal" placeholder="Angka counter flowmeter saat mulai shift"></div>
     <div class="actions">
       <button id="startBtn" class="btn-green">START SHIFT</button>
     </div>
@@ -169,6 +169,7 @@ button,.btn,.actions a{min-height:44px}
       <div class="actions"><button id="saveMeterBtn" class="btn-blue" type="button">SIMPAN FLOWMETER</button></div>
       <div class="status" id="meterStatus"></div>
     </div>
+    <p id="closingMeterHint" class="hidden">Isi Flowmeter Akhir sekali di Stock saat Closing FT. Angka awal dan akhir otomatis masuk download fisik Logsheet.</p>
     <div class="actions">
       <a id="fuelingLink" class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
       <a class="btn btn-gray" href="stock.html">🛢️ Stock</a>
@@ -194,7 +195,8 @@ function syncDutyForm(){
   const needsTruck=duty==="FUELMAN";
   group.classList.toggle("hidden",!needsTruck);
   truck.disabled=!needsTruck;
-  if(!needsTruck)truck.value="";
+  if(!needsTruck){truck.value="";document.getElementById("meterStart").value="";}
+  document.getElementById("meterStart").disabled=!needsTruck;
   document.getElementById("meterStartGroup")?.classList.toggle("hidden",!needsTruck);
 }
 async function loadFuelTruckMaster(){
@@ -230,7 +232,7 @@ function refreshSessionPeriodGuard(){
       ? `PERIODE SHIFT SUDAH BERGANTI. Sesi ini ${currentSession.tanggal||"-"} ${currentSession.shift||"-"}, sedangkan sekarang ${expected.tanggal} ${expected.shift}. Pengisian dikunci. Selesaikan Closing dan End Shift lama terlebih dahulu.`
       : "";
   }
-  const blockFueling=duty==="PIC_TRANSFER" || stale;
+  const blockFueling=duty==="PIC_TRANSFER" || stale || !meterData || meterData.meter_end!=null;
   document.getElementById("fuelingLink")?.classList.toggle("hidden",blockFueling);
   document.querySelectorAll('a[href="pengisian.html"]').forEach(link=>link.classList.toggle("hidden",blockFueling));
 }
@@ -287,24 +289,28 @@ async function loadActiveSession(){
   renderActive();
 }
 let meterData=null;
+let meterLoaded=false;
 async function refreshMeterData(){
- if(!currentSession || (currentSession.duty_type||"FUELMAN")!=="FUELMAN"){meterData=null;return;}
+ meterLoaded=false;
+ if(!currentSession || (currentSession.duty_type||"FUELMAN")!=="FUELMAN"){meterData=null;meterLoaded=true;return;}
  const {data,error}=await KPP.db.from("ft_shift_flowmeter").select("meter_start,meter_end").eq("session_id",currentSession.id).maybeSingle();
  if(error){meterData=null;document.getElementById("meterStatus").textContent="Flowmeter belum dapat dimuat: "+error.message;return;}
- meterData=data||null;
+ meterData=data||null;meterLoaded=true;
 }
 async function saveActiveMeter(){
- if(!currentSession)return;
+ if(!currentSession || !meterLoaded || meterData || document.getElementById("saveMeterBtn").disabled)return;
  const field=document.getElementById("activeMeterValue");
  const raw=field.value.trim();
  const status=document.getElementById("meterStatus");
  if(!raw || !Number.isFinite(Number(raw)) || Number(raw)<0){status.textContent="Isi angka flowmeter yang valid.";return;}
- const stage=meterData?"END":"START";
+ const stage="START";
  const btn=document.getElementById("saveMeterBtn");btn.disabled=true;
  try{
   const {error}=await KPP.db.rpc("save_ft_shift_flowmeter",{p_session_id:currentSession.id,p_stage:stage,p_meter:Number(raw)});
   if(error)throw error;
+  field.value="";
   await refreshMeterData();renderActive();
+  if(!meterLoaded)return;
   status.textContent="✅ Flowmeter "+(stage==="START"?"awal":"akhir")+" tersimpan.";
  }catch(error){status.textContent="❌ "+error.message;}
  finally{btn.disabled=false;}
@@ -323,16 +329,19 @@ function renderActive(){
   const hasFt=duty==="FUELMAN";
   document.getElementById("meterStartRow").classList.toggle("hidden",!hasFt);
   document.getElementById("meterEndRow").classList.toggle("hidden",!hasFt);
-  document.getElementById("activeMeterBox").classList.toggle("hidden",!hasFt || meterData?.meter_end!=null);
+  document.getElementById("activeMeterBox").classList.toggle("hidden",!hasFt || !!meterData);
   document.getElementById("sMeterStart").textContent=meterData?.meter_start??"Belum dicatat";
   document.getElementById("sMeterEnd").textContent=meterData?.meter_end??"Belum dicatat";
-  document.getElementById("activeMeterLabel").textContent=meterData?"Flowmeter Akhir (sebelum Closing FT)":"Flowmeter Awal (wajib)";
-  document.getElementById("activeMeterValue").placeholder=meterData?"Angka flowmeter akhir":"Angka flowmeter awal";
+  document.getElementById("saveMeterBtn").disabled=!meterLoaded;
+  document.getElementById("activeMeterLabel").textContent="Flowmeter Awal (wajib)";
+  document.getElementById("activeMeterValue").placeholder="Angka flowmeter awal";
+  document.getElementById("closingMeterHint").classList.toggle("hidden",!hasFt || !meterData);
   hide("startPanel"); show("activePanel");
   refreshSessionPeriodGuard();
 }
 
 async function startShift(){
+  if(document.getElementById("startBtn").disabled || currentSession)return;
   const shift=document.getElementById("shift").value;
   const dutyType=document.getElementById("dutyType").value;
   const fuelTruck=dutyType==="FUELMAN"?document.getElementById("fuelTruck").value:null;
@@ -354,23 +363,34 @@ Tugas: ${dutyLabel(dutyType)}`+(fuelTruck?`
 Fuel Truck: ${fuelTruck}`:"")+`
 Tanggung jawab: ${responsibility}`))return;
   btn.disabled=true;btn.textContent="MEMULAI...";
+  try{
   const {data,error}=await KPP.db.rpc("start_fuelman_shift",{p_shift:shift,p_duty_type:dutyType,p_fuel_truck:fuelTruck||null});
-  btn.disabled=false;btn.textContent="START SHIFT";
   if(error){status.textContent="❌ "+error.message;return;}
   currentSession=data?.data||null;
-  if(!currentSession){status.textContent="❌ Sesi belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
-  meterData=null;
+  if(!data?.ok || !currentSession){status.textContent="❌ Sesi belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
+  meterData=null;meterLoaded=false;
   if(dutyType==="FUELMAN"){
     const meterResult=await KPP.db.rpc("save_ft_shift_flowmeter",{p_session_id:currentSession.id,p_stage:"START",p_meter:Number(startMeterText)});
     if(meterResult.error){
-      status.textContent="⚠️ Sesi sudah aktif tetapi flowmeter awal belum tersimpan: "+meterResult.error.message+". Lengkapi pada panel aktif sebelum pengisian.";
-    }else await refreshMeterData();
+      document.getElementById("meterStatus").textContent="⚠️ Sesi sudah aktif tetapi flowmeter awal belum tersimpan: "+meterResult.error.message+". Lengkapi pada panel aktif sebelum pengisian.";
+    }
   }
+  await refreshMeterData();
+  document.getElementById("meterStart").value="";
   renderActive();
+  }catch(error){
+    const target=document.getElementById(currentSession?"meterStatus":"startStatus");
+    target.textContent="❌ Status belum terkonfirmasi. Muat ulang halaman untuk memeriksa sesi: "+error.message;
+    if(currentSession)renderActive();
+  }finally{btn.disabled=false;btn.textContent="START SHIFT";}
 }
 
 async function endShift(){
-  if(!currentSession)return;
+  if(!currentSession || document.getElementById("endBtn").disabled)return;
+  try{await refreshMeterData();}catch(error){
+    document.getElementById("endStatus").textContent="❌ Flowmeter belum dapat dikonfirmasi: "+error.message;return;
+  }
+  if(document.getElementById("endBtn").disabled || !currentSession)return;
   const duty=currentSession.duty_type||"FUELMAN";
   if(duty==="FUELMAN" && (!meterData || meterData.meter_end==null)){
     document.getElementById("endStatus").textContent="❌ Catat Flowmeter Awal dan Akhir sebelum End Shift.";return;
@@ -383,16 +403,22 @@ ${currentSession.shift} • ${dutyLabel(duty)}`+(currentSession.fuel_truck?` •
 Wajib sudah Closing: ${responsibility}.`))return;
   const btn=document.getElementById("endBtn"),status=document.getElementById("endStatus");
   btn.disabled=true;btn.textContent="MENGAKHIRI...";status.textContent="";
+  try{
   const {data,error}=await KPP.db.rpc("end_fuelman_shift",{p_session_id:currentSession.id});
-  btn.disabled=false;btn.textContent="END SHIFT";
   if(error){status.textContent="❌ "+error.message+" Buka menu Stock dan lengkapi sonding yang diwajibkan.";return;}
   if(!data?.ok){status.textContent="❌ End Shift belum terkonfirmasi. Refresh halaman sebelum mencoba lagi.";return;}
-  currentSession=null;
+  currentSession=null;meterData=null;meterLoaded=false;
+  ["meterStart","activeMeterValue"].forEach(id=>document.getElementById(id).value="");
+  ["meterStatus","endStatus"].forEach(id=>document.getElementById(id).textContent="");
   document.getElementById("shift").value="";document.getElementById("dutyType").value="";document.getElementById("fuelTruck").value="";syncDutyForm();
   document.getElementById("startStatus").textContent="✅ Shift sebelumnya sudah diakhiri.";
   hide("activePanel");show("startPanel");
+  suggestCurrentOperationalShift();
+  }catch(error){status.textContent="❌ Status End Shift belum terkonfirmasi. Muat ulang halaman: "+error.message;}
+  finally{btn.disabled=false;btn.textContent="END SHIFT";}
 }
 
+document.getElementById("fuelTruck").addEventListener("change",()=>{document.getElementById("meterStart").value="";});
 document.getElementById("dutyType").addEventListener("change",syncDutyForm);
 document.getElementById("startBtn").addEventListener("click",startShift);
 document.getElementById("endBtn").addEventListener("click",endShift);
