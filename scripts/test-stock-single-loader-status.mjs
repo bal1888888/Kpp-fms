@@ -43,8 +43,8 @@ test("legacy injected stock hardener is strictly visual, never a second data loa
 });
 
 test("Stock HTML cache-busts both loader injector and status module",()=>{
- assert.match(stock,/storage-master\.js\?v=20261021-bright-gold5/);
- assert.match(storage,/stock-status-hardening\.js\?v=20261021-bright-gold5/);
+ assert.match(stock,/storage-master\.js\?v=20261021-soft-palette6/);
+ assert.match(storage,/stock-status-hardening\.js\?v=20261021-soft-palette6/);
  const fullStart=stock.indexOf("async function loadStock(){");
  const meta=stock.indexOf("updateStockRefreshMeta(tanggal,shift);",fullStart);
  assert.ok(fullStart>=0 && meta>fullStart);
