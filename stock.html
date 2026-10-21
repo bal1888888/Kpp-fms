@@ -1136,6 +1136,17 @@ th{background:#f8fafc;color:#475569}
 @media(max-width:700px){.stock-draft-actions{width:100%}.stock-draft-actions button{flex:1;min-width:0}}
 </style>
 <style id="kpp-stock-capacity-palette-v3">
+/* Softer harmonized five-state palette; shape, thickness and sizing unchanged. */
+.stock-workspace .stock-radial.critical{--ring-color:#dc5964!important}
+.stock-workspace .stock-radial.safe{--ring-color:#259e70!important}
+.stock-workspace .stock-radial.critical .stock-radial-percent,
+.stock-workspace .stock-radial.critical .stock-radial-status{color:#b83444!important}
+.stock-workspace .stock-radial.safe .stock-radial-percent,
+.stock-workspace .stock-radial.safe .stock-radial-status{color:#14784f!important}
+.stock-workspace .stock-gauge-card.capacity-critical{border-left-color:#dc5964!important}
+.stock-workspace .stock-gauge-card.capacity-safe{border-left-color:#259e70!important}
+.stock-workspace .stock-total-card.capacity-critical{border-left-color:#dc5964!important}
+.stock-workspace .stock-total-card.capacity-safe{border-left-color:#259e70!important}
 /* Five distinct storage-level meanings. Threshold logic stays unchanged. */
 .stock-workspace .stock-radial.low{--ring-color:#d98a52!important}
 .stock-workspace .stock-radial.caution{--ring-color:#d5ac48!important}
