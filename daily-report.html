@@ -855,27 +855,29 @@ function renderStock(stock){
   host.innerHTML="";
   const criticalList=[];
   const highList=[];
-  const statusCounts={safe:0,low:0,caution:0,critical:0,high:0};
+  const statusCounts={safe:0,low:0,critical:0,high:0};
+  let cautionCount=0;
 
   STORAGES.forEach(storage=>{
     const suffix=FT_MAP[storage] ? ` / WH ${FT_MAP[storage]}` : "";
     const cap=STORAGE_CAPACITY[storage];
     const pct=capacityPct(storage,stock[storage]);
-    const operationalClass=capacityClass(pct);
-    // Visual-only mid-level caution band (35%-<50%): does not affect stock alerts/calculations.
-    const cls=operationalClass==="safe" && pct<50 ? "caution" : operationalClass;
-    statusCounts[cls]=(statusCounts[cls]||0)+1;
+    const cls=capacityClass(pct);
+    // Visual-only caution (35%-<50%). Preserve the operational 20/35/90 thresholds.
+    const visualCls=cls==="safe" && pct<50 ? "caution" : cls;
+    if(visualCls==="caution")cautionCount+=1;
+    else statusCounts[cls]=(statusCounts[cls]||0)+1;
     const width=Math.max(0,Math.min(pct,100));
     const sounding=estimatedSonding(storage,stock[storage]);
     if(cls==="critical")criticalList.push(`${storage} ${pctFmt(pct)}%`);
     if(cls==="high")highList.push(`${storage} ${pctFmt(pct)}%`);
-    const cardClass=`capacity-${cls}`;
-    const statusText=cls==="critical"?"KRITIS":cls==="low"?"RENDAH":cls==="caution"?"WASPADA":cls==="high"?"TINGGI":"AMAN";
+    const cardClass=`capacity-${visualCls}`;
+    const statusText=visualCls==="critical"?"KRITIS":visualCls==="low"?"RENDAH":visualCls==="caution"?"WASPADA":visualCls==="high"?"TINGGI":"AMAN";
 
     host.innerHTML+=`
       <div class="card daily-stock-gauge ${cardClass}">
         <div class="daily-stock-context">${suffix ? suffix.replace(/^\s*\/\s*/,"") : "STORAGE FUEL"}</div>
-        <div class="daily-stock-radial ${cls}" style="--ring-pct:${width}">
+        <div class="daily-stock-radial ${visualCls}" style="--ring-pct:${width}">
           <div class="daily-stock-radial-inner">
             <span class="daily-stock-code">${storage}</span>
             <span class="daily-stock-pct">${pctFmt(pct)}%</span>
@@ -942,7 +944,7 @@ function renderStock(stock){
         <div class="stock-total-status-row" aria-label="Ringkasan status storage">
           <span class="stock-total-chip safe">AMAN ${statusCounts.safe}</span>
           <span class="stock-total-chip low">RENDAH ${statusCounts.low}</span>
-          <span class="stock-total-chip caution">WASPADA ${statusCounts.caution}</span>
+          <span class="stock-total-chip caution">WASPADA ${cautionCount}</span>
           <span class="stock-total-chip critical">KRITIS ${statusCounts.critical}</span>
           <span class="stock-total-chip high">TINGGI ${statusCounts.high}</span>
         </div>
