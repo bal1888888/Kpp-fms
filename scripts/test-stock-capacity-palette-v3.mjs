@@ -30,12 +30,12 @@ test("20-<35 RENDAH = orange (ring, readable labels, card, total)",()=>{
  assert.match(css,/\.stock-total-card\.capacity-low\{border-left-color:#f97316!important\}/);
 });
 test("35-<50 WASPADA = yellow, also from dynamically injected status styling",()=>{
- assert.match(css,/\.stock-radial\.caution\{--ring-color:#eab308!important\}/);
- assert.match(css,/\.stock-radial\.caution \.stock-radial-status\{color:#854d0e!important\}/);
- assert.match(css,/\.stock-gauge-card\.capacity-caution\{border-color:#eab308!important/);
- assert.match(css,/\.stock-total-card\.capacity-caution\{border-left-color:#eab308!important\}/);
- assert.match(helper,/\.stock-radial\.caution\{--ring-color:#eab308\}/);
- assert.match(helper,/\.capacity-caution-text\{color:#854d0e!important/);
+ assert.match(css,/\.stock-radial\.caution\{--ring-color:#d4a017!important\}/);
+ assert.match(css,/\.stock-radial\.caution \.stock-radial-status\{color:#8a5a00!important\}/);
+ assert.match(css,/\.stock-gauge-card\.capacity-caution\{border-color:#d4a017!important/);
+ assert.match(css,/\.stock-total-card\.capacity-caution\{border-left-color:#d4a017!important\}/);
+ assert.match(helper,/\.stock-radial\.caution\{--ring-color:#d4a017\}/);
+ assert.match(helper,/\.capacity-caution-text\{color:#8a5a00!important/);
 });
 test(">=90 TINGGI = blue; green AMAN and red KRITIS remain intact",()=>{
  assert.match(css,/\.stock-radial\.high\{--ring-color:#2563eb!important\}/);
@@ -47,7 +47,7 @@ test(">=90 TINGGI = blue; green AMAN and red KRITIS remain intact",()=>{
  assert.match(stock,/if\(p<CAPACITY_WARNING_PCT\)return true/);
 });
 test("Stock HTML refreshes status helper and cache with one loader",()=>{
- assert.match(stock,/storage-master\.js\?v=20261021-level-colors3/);
- assert.match(storage,/stock-status-hardening\.js\?v=20261021-level-colors3/);
+ assert.match(stock,/storage-master\.js\?v=20261021-muted-gold4/);
+ assert.match(storage,/stock-status-hardening\.js\?v=20261021-muted-gold4/);
  assert.doesNotMatch(helper,/window\.loadStock\s*=/);
 });
