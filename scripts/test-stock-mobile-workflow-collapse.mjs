@@ -10,8 +10,8 @@ test("Stock mobile workflow has compact collapsible process UI",()=>{
   assert.match(stock,/workflow-panel-head/);
   assert.match(stock,/workflow-toggle-btn/);
   assert.match(stock,/kpp-stock-workflow-collapse-v1/);
-  assert.match(stock,/Ringkas Semua/);
-  assert.match(stock,/Buka Semua/);
+  assert.match(stock,/Sembunyikan Semua/);
+  assert.match(stock,/Tampilkan Semua/);
 });
 
 test("Mobile defaults to compact focus and keeps closing form tighter",()=>{
