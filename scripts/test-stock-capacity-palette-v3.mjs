@@ -24,30 +24,30 @@ test("precise thresholds remain 20/35/50/90; only hues have changed",()=>{
 });
 
 test("20-<35 RENDAH = orange (ring, readable labels, card, total)",()=>{
- assert.match(css,/\.stock-radial\.low\{--ring-color:#f97316!important\}/);
- assert.match(css,/\.stock-radial\.low \.stock-radial-status\{color:#c2410c!important\}/);
- assert.match(css,/\.stock-gauge-card\.capacity-low\{border-left-color:#f97316!important\}/);
- assert.match(css,/\.stock-total-card\.capacity-low\{border-left-color:#f97316!important\}/);
+ assert.match(css,/\.stock-radial\.low\{--ring-color:#d98a52!important\}/);
+ assert.match(css,/\.stock-radial\.low \.stock-radial-status\{color:#9a4d22!important\}/);
+ assert.match(css,/\.stock-gauge-card\.capacity-low\{border-left-color:#d98a52!important\}/);
+ assert.match(css,/\.stock-total-card\.capacity-low\{border-left-color:#d98a52!important\}/);
 });
 test("35-<50 WASPADA = yellow, also from dynamically injected status styling",()=>{
- assert.match(css,/\.stock-radial\.caution\{--ring-color:#e6b51e!important\}/);
- assert.match(css,/\.stock-radial\.caution \.stock-radial-status\{color:#805500!important\}/);
- assert.match(css,/\.stock-gauge-card\.capacity-caution\{border-color:#e6b51e!important/);
- assert.match(css,/\.stock-total-card\.capacity-caution\{border-left-color:#e6b51e!important\}/);
- assert.match(helper,/\.stock-radial\.caution\{--ring-color:#e6b51e\}/);
- assert.match(helper,/\.capacity-caution-text\{color:#805500!important/);
+ assert.match(css,/\.stock-radial\.caution\{--ring-color:#d5ac48!important\}/);
+ assert.match(css,/\.stock-radial\.caution \.stock-radial-status\{color:#785b16!important\}/);
+ assert.match(css,/\.stock-gauge-card\.capacity-caution\{border-color:#d5ac48!important/);
+ assert.match(css,/\.stock-total-card\.capacity-caution\{border-left-color:#d5ac48!important\}/);
+ assert.match(helper,/\.stock-radial\.caution\{--ring-color:#d5ac48\}/);
+ assert.match(helper,/\.capacity-caution-text\{color:#785b16!important/);
 });
 test(">=90 TINGGI = blue; green AMAN and red KRITIS remain intact",()=>{
- assert.match(css,/\.stock-radial\.high\{--ring-color:#2563eb!important\}/);
- assert.match(css,/\.stock-radial\.high \.stock-radial-status\{color:#1d4ed8!important\}/);
- assert.match(css,/\.stock-gauge-card\.capacity-high\{border-left-color:#2563eb!important\}/);
- assert.match(css,/\.stock-total-card\.capacity-high\{border-left-color:#2563eb!important\}/);
+ assert.match(css,/\.stock-radial\.high\{--ring-color:#477fca!important\}/);
+ assert.match(css,/\.stock-radial\.high \.stock-radial-status\{color:#2d5f9f!important\}/);
+ assert.match(css,/\.stock-gauge-card\.capacity-high\{border-left-color:#477fca!important\}/);
+ assert.match(css,/\.stock-total-card\.capacity-high\{border-left-color:#477fca!important\}/);
  assert.match(stock,/\.stock-radial\.safe\{--ring-color:#16a34a\}/);
  assert.match(stock,/\.stock-radial\.critical\{--ring-color:#ef4444\}/);
  assert.match(stock,/if\(p<CAPACITY_WARNING_PCT\)return true/);
 });
 test("Stock HTML refreshes status helper and cache with one loader",()=>{
- assert.match(stock,/storage-master\.js\?v=20261021-bright-gold5/);
- assert.match(storage,/stock-status-hardening\.js\?v=20261021-bright-gold5/);
+ assert.match(stock,/storage-master\.js\?v=20261021-soft-palette6/);
+ assert.match(storage,/stock-status-hardening\.js\?v=20261021-soft-palette6/);
  assert.doesNotMatch(helper,/window\.loadStock\s*=/);
 });
