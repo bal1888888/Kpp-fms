@@ -1,0 +1,269 @@
+/* KPP-FMS bright Daily Report + Dashboard v1
+   Visual-only: retains data calculations, fetches, thresholds, and bar heights. */
+
+/* Light canvas with enough contrast for field use. */
+html body.daily-workspace,
+html body.dashboard-workspace,
+html body.daily-workspace.kpp-sidebar-shell,
+html body.dashboard-workspace.kpp-sidebar-shell{
+  background:#f4faff!important;
+  background-image:linear-gradient(180deg,#fbfdff 0%,#edf7ff 60%,#fafcff 100%)!important;
+  background-attachment:scroll!important;
+  color:#122541!important;
+}
+html body.daily-workspace.kpp-sidebar-shell>.container,
+html body.dashboard-workspace.kpp-sidebar-shell>.container{
+  background:linear-gradient(180deg,#ffffff 0%,#f5faff 100%)!important;
+  border-color:#dceaf9!important;
+  box-shadow:0 12px 30px rgba(44,108,173,.08)!important;
+}
+.daily-workspace .header,
+.dashboard-workspace .header{
+  background:#ffffff!important;
+  border-bottom:1px solid #dce9f7!important;
+  color:#172d4b!important;
+}
+.daily-workspace .header h1,
+.dashboard-workspace .header h1{color:#172d4b!important}
+.daily-workspace .header p,
+.dashboard-workspace .header p{color:#607c9f!important;opacity:1!important}
+.daily-workspace .container .workspace-intro.daily-intro,
+.dashboard-workspace .container .top-bar{
+  color:#132949!important;
+  border:1px solid #d0e5fc!important;
+  border-radius:20px!important;
+  background:linear-gradient(115deg,#fff 0%,#f5faff 58%,#e9f5ff 100%)!important;
+  box-shadow:0 10px 26px rgba(45,110,188,.065)!important;
+}
+.daily-workspace .daily-intro .workspace-kicker,
+.dashboard-workspace .top-bar .dashboard-eyebrow{color:#1476e5!important}
+.daily-workspace .daily-intro h1,
+.dashboard-workspace .top-bar .page-heading h2{color:#122541!important}
+.daily-workspace .daily-intro p,
+.dashboard-workspace .top-bar .page-heading p{color:#506d91!important}
+.daily-workspace .daily-intro .workspace-link{
+  color:#1263cf!important;
+  border:1px solid #c4defb!important;
+  background:#e8f3ff!important;
+}
+.dashboard-workspace .refresh-cluster>span{color:#58769a!important}
+.dashboard-workspace .refresh-btn{
+  color:#fff!important;
+  background:#2585f5!important;
+  border-color:#2585f5!important;
+  box-shadow:0 6px 16px rgba(37,133,245,.18)!important;
+}
+.dashboard-workspace .refresh-btn:hover{background:#136fe1!important}
+
+/* Clean surfaces and strong numbers. */
+.daily-workspace .panel,
+.dashboard-workspace .section,
+.dashboard-workspace .overview-card{
+  background:#fff!important;
+  border:1px solid #dce8f7!important;
+  box-shadow:0 8px 24px rgba(30,90,153,.05)!important;
+}
+.daily-workspace .section-title,
+.dashboard-workspace .section-head h2,
+.dashboard-workspace .overview-title{color:#102849!important}
+.daily-workspace .section-kicker,
+.dashboard-workspace .section-kicker{color:#197be8!important}
+.daily-workspace .stock-section-sub,
+.daily-workspace .notice,
+.dashboard-workspace .overview-sub{color:#587396!important}
+.daily-workspace .notice{
+  background:#f3f9ff!important;
+  border-color:#d5e8fc!important;
+  border-left-color:#2c85ee!important;
+}
+.daily-workspace .report-control-panel{
+  background:linear-gradient(135deg,#fff,#f9fcff)!important;
+}
+.daily-workspace .btn-blue{background:#2585f5!important;color:#fff!important}
+.daily-workspace input,
+.daily-workspace select{background:#fff!important;border-color:#cddff2!important;color:#132b4a!important}
+
+/* Daily MTD metric tiles. Avoid overriding warning/error colors. */
+.daily-workspace .metric{
+  border-color:#d9e8fa!important;
+  border-top:4px solid #3490f9!important;
+  background:linear-gradient(155deg,#fff,#f7fbff)!important;
+  box-shadow:0 6px 18px rgba(27,103,183,.055)!important;
+}
+.daily-workspace .metric.green{border-top-color:#19bb82!important}
+.daily-workspace .metric.amber{border-top-color:#f2b92e!important}
+.daily-workspace .metric.purple{border-top-color:#9c78f4!important}
+.daily-workspace .metric.warn-state{border-color:#f3bb40!important;border-left:4px solid #e9aa1a!important}
+.daily-workspace .metric.danger-state{border-color:#f56c81!important;border-left:4px solid #ec405d!important}
+.daily-workspace .metric .label{color:#58759a!important}
+.daily-workspace .metric .value{color:#112944!important}
+.daily-workspace .metric .sub,
+.daily-workspace .metric .metric-note{color:#617e9d!important}
+
+/* Daily stock gauges: same crisp green, blue, gold, red as Stock page. */
+.daily-workspace #stockCards.cards{gap:12px!important}
+.daily-workspace #stockCards .daily-stock-gauge{
+  border:1px solid #dbe8f8!important;
+  border-radius:16px!important;
+  background:#fff!important;
+  box-shadow:0 7px 22px rgba(33,93,156,.055)!important;
+  padding:14px 10px!important;
+}
+.daily-workspace #stockCards .daily-stock-gauge.capacity-safe{border-color:#29c18a!important}
+.daily-workspace #stockCards .daily-stock-gauge.capacity-low,
+.daily-workspace #stockCards .daily-stock-gauge.capacity-warn{border-color:#f1bd3d!important}
+.daily-workspace #stockCards .daily-stock-gauge.capacity-critical{border-color:#fa6379!important}
+.daily-workspace #stockCards .daily-stock-gauge.capacity-high{border-color:#3f98f6!important}
+.daily-workspace #stockCards .daily-stock-context{color:#587599!important}
+.daily-workspace #stockCards .daily-stock-radial{
+  background:conic-gradient(var(--ring-color) calc(var(--ring-pct)*1%),#e8eef7 0)!important;
+  box-shadow:0 0 0 1px rgba(48,121,198,.055);
+}
+.daily-workspace #stockCards .daily-stock-radial::before{background:#fff!important}
+.daily-workspace #stockCards .daily-stock-radial.safe{--ring-color:#12ba7e!important}
+.daily-workspace #stockCards .daily-stock-radial.low{--ring-color:#f3b72c!important}
+.daily-workspace #stockCards .daily-stock-radial.critical{--ring-color:#ed435e!important}
+.daily-workspace #stockCards .daily-stock-radial.high{--ring-color:#2788f5!important}
+.daily-workspace #stockCards .daily-stock-code{color:#102949!important}
+.daily-workspace #stockCards .daily-stock-pct,
+.daily-workspace #stockCards .daily-stock-status{color:var(--ring-color)!important}
+.daily-workspace #stockCards .daily-stock-status{background:#f0f6ff!important}
+.daily-workspace #stockCards .daily-stock-radial.safe .daily-stock-status{background:#e7fbf2!important}
+.daily-workspace #stockCards .daily-stock-radial.low .daily-stock-status{background:#fff4da!important}
+.daily-workspace #stockCards .daily-stock-radial.critical .daily-stock-status{background:#ffedf1!important}
+.daily-workspace #stockCards .daily-stock-metrics{border-top-color:#e9f0f9}
+.daily-workspace #stockCards .daily-stock-metric strong{color:#122a49!important}
+.daily-workspace #stockCards .daily-stock-gauge .stock-sounding-estimate{background:#f3f8ff!important}
+.daily-workspace .stock-total-card,
+.daily-workspace .stock-total-kpi{
+  background:linear-gradient(120deg,#fff,#f5faff)!important;
+  border-color:#d8e8f8!important;
+}
+.daily-workspace .stock-total-card.warn{border-left-color:#eaae1e!important}
+.daily-workspace .stock-total-card.danger{border-left-color:#ea4860!important}
+.daily-workspace .capacity-bar,
+.daily-workspace .stock-total-progress{background:#e8eff9!important}
+.daily-workspace .capacity-fill.safe,
+.daily-workspace .stock-total-progress-fill{background:#19b981}
+.daily-workspace .capacity-fill.high,
+.daily-workspace .stock-total-progress-fill.high{background:#2888f6}
+.daily-workspace .capacity-fill.low,
+.daily-workspace .stock-total-progress-fill.low{background:#f2b62a}
+.daily-workspace .capacity-fill.critical,
+.daily-workspace .stock-total-progress-fill.critical{background:#ec415e}
+
+/* Dashboard KPI hero and performance cards. */
+.dashboard-workspace .wide-hero-card{
+  color:#122946!important;
+  background:linear-gradient(118deg,#fff 0%,#f1f8ff 100%)!important;
+  border:1px solid #cfe3fc!important;
+  border-left:5px solid #2786f6!important;
+  box-shadow:0 8px 26px rgba(33,103,181,.07)!important;
+}
+.dashboard-workspace .hero-icon{
+  color:#217be7!important;
+  background:#e7f3ff!important;
+  border-color:#c5e2ff!important;
+}
+.dashboard-workspace .hero-label,
+.dashboard-workspace .hero-sub,
+.dashboard-workspace .wide-hero-side,
+.dashboard-workspace .mtd-compare-note{color:#5e799e!important}
+.dashboard-workspace .hero-value{color:#102b50!important}
+.dashboard-workspace .wide-hero-card .trend-badge.flat{background:#eaf2fd!important;color:#587398!important}
+.dashboard-workspace .daily-card{
+  border:1px solid #dceafa!important;
+  border-top:4px solid #348bf5!important;
+  background:linear-gradient(155deg,#fff,#f7fbff)!important;
+  box-shadow:0 5px 16px rgba(30,90,153,.04)!important;
+}
+.dashboard-workspace .daily-card.amber{border-top-color:#efb52c!important}
+.dashboard-workspace .daily-card.purple{border-top-color:#9b78f4!important}
+.dashboard-workspace .daily-label{color:#587399!important}
+.dashboard-workspace .daily-value{color:#102747!important}
+.dashboard-workspace .daily-sub{color:#6580a2!important}
+.dashboard-workspace .performance-section{
+  background:linear-gradient(180deg,#fff,#f9fcff)!important;
+  border-color:#d3e5fb!important;
+}
+.dashboard-workspace .performance-section .usage-card{
+  border-color:#b7d9ff!important;
+  background:linear-gradient(165deg,#fff,#f1f8ff)!important;
+  box-shadow:0 8px 22px rgba(43,127,219,.065)!important;
+}
+.dashboard-workspace .performance-section .stock-trend-card{
+  border-color:#a9eacb!important;
+  background:linear-gradient(165deg,#fff,#f2fdf8)!important;
+}
+.dashboard-workspace .performance-section .receipt-card{
+  border-color:#f5dcaa!important;
+  background:linear-gradient(160deg,#fff,#fffaf1)!important;
+}
+
+/* Preserve existing 5-day bar geometry: only improve its color/track. */
+.dashboard-workspace #usageTrendBars.usage-bars{
+  border-bottom-color:#d4e6fb!important;
+}
+.dashboard-workspace #usageTrendBars .usage-trend-ring{
+  background:linear-gradient(180deg,#67beff 0%,#2585f5 52%,#176de6 100%)!important;
+  box-shadow:0 4px 12px rgba(36,122,238,.21)!important;
+}
+.dashboard-workspace #usageTrendBars .trend-ring-liter{color:#174776!important}
+.dashboard-workspace #usageTrendBars .trend-radial-label{color:#5b799e!important}
+.dashboard-workspace #usageTrendBars .usage-radial-item.is-latest .usage-trend-ring{
+  background:linear-gradient(180deg,#4aaeff,#1671eb)!important;
+  box-shadow:0 5px 14px rgba(30,112,231,.28)!important;
+}
+.dashboard-workspace #stockTrendBars .stock-trend-ring{background:conic-gradient(var(--trend-color) calc(var(--trend-pct)*1%),#e9f0f8 0)!important}
+.dashboard-workspace #stockTrendBars .stock-trend-ring.safe{--trend-color:#17b87b}
+.dashboard-workspace #stockTrendBars .stock-trend-ring.low{--trend-color:#f4b72d}
+.dashboard-workspace #stockTrendBars .stock-trend-ring.critical{--trend-color:#ed425d}
+.dashboard-workspace #stockTrendBars .stock-trend-ring.high{--trend-color:#2786f5}
+.dashboard-workspace #stockTrendBars .stock-trend-ring span{color:var(--trend-color)!important}
+.dashboard-workspace #stockTrendBars .trend-radial-item{
+  border-color:#e0eaf7!important;
+  background:#fff!important;
+  box-shadow:0 4px 12px rgba(30,90,153,.045)!important;
+}
+.dashboard-workspace #stockTrendBars .trend-radial-item.is-latest{border-color:#78dcb2!important;background:#f6fffb!important}
+.dashboard-workspace .receipt-track{background:#e8eff8!important}
+.dashboard-workspace .receipt-fill{
+  background:linear-gradient(90deg,#ffc56a,#f6a326)!important;
+  box-shadow:0 1px 5px rgba(243,173,44,.15);
+}
+.dashboard-workspace .receipt-company,
+.dashboard-workspace .receipt-value,
+.dashboard-workspace .receipt-total{color:#173353!important}
+.dashboard-workspace .shift-card{background:linear-gradient(135deg,#fff,#f5faff)!important;border-color:#dce9f8!important}
+
+/* Tables stay readable instead of dark, without changing their data. */
+.daily-workspace th,
+.dashboard-workspace th{
+  background:#eaf4ff!important;
+  color:#214c7d!important;
+  border-bottom:1px solid #d2e4f8!important;
+}
+.daily-workspace td,
+.dashboard-workspace td{color:#253c58}
+.daily-workspace tbody tr:nth-child(even) td,
+.dashboard-workspace tbody tr:nth-child(even) td{background:#f8fbff!important}
+.daily-workspace .table-wrap,
+.dashboard-workspace .table-container{border-color:#d8e7f8!important}
+.daily-workspace .report-box{
+  background:#f3f8ff!important;
+  border:1px solid #d4e5f9!important;
+  color:#17324f!important;
+}
+
+/* No forced sideways page scroll on phones. */
+@media(max-width:720px){
+  .daily-workspace .daily-intro,
+  .dashboard-workspace .top-bar{padding:17px!important;border-radius:15px!important}
+  .daily-workspace .panel,
+  .dashboard-workspace .section{box-shadow:0 4px 12px rgba(42,99,160,.04)!important}
+  .dashboard-workspace .wide-hero-card{padding:17px!important}
+  .daily-workspace #stockCards .daily-stock-gauge{padding:9px 5px!important}
+  .daily-workspace #stockCards .daily-stock-context{font-size:8px!important}
+  .daily-workspace #stockCards .daily-stock-metric strong{overflow-wrap:anywhere}
+  .dashboard-workspace #usageTrendBars .usage-trend-ring{max-width:100%!important}
+}
