@@ -47,7 +47,7 @@ test('UI Stock memakai satu loader dengan filter duplikat dan verifikasi Closing
   assert.match(stockPage,/STOCK_DATA_READY=true/);
   assert.match(stockPage,/updateStockRefreshMeta\(tanggal,shift\)/);
   assert.doesNotMatch(stock,/window\.loadStock\s*=/);
-  assert.match(storage,/stock-status-hardening\.js\?v=20261020-single-loader1/);
+  assert.match(storage,/stock-status-hardening\.js\?v=20261021-level-colors3/);
 });
 
 test('private helper tidak dapat dieksekusi langsung API roles',()=>{
