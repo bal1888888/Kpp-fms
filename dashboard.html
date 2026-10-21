@@ -893,7 +893,61 @@ async function calculateStockTrend(endDate){
   return results;
 }
 
+let activeSessionActionBusy=false;
+async function loadAllActiveSessionActions(){
+  let host=document.getElementById("allActiveSessionActions");
+  if(!host){
+    host=document.createElement("div");host.id="allActiveSessionActions";
+    document.getElementById("activeSessions").after(host);
+  }
+  const canEnd=["admin","gl"].includes(window.KPP_PROFILE?.role);
+  try{
+    const rows=[];
+    for(let offset=0;;offset+=500){
+      const {data,error}=await db.from("fuelman_sessions")
+        .select("id,fuelman_name,username,tanggal,shift,fuel_truck,duty_type,created_at")
+        .eq("status","ACTIVE").order("created_at",{ascending:true}).order("id",{ascending:true}).range(offset,offset+499);
+      if(error)throw error;
+      rows.push(...(data||[]));if((data||[]).length<500)break;
+    }
+    const period=currentOperationalShift();
+    host.innerHTML='<h3 style="margin-top:20px">Semua Sesi Aktif ('+rows.length+')</h3>';
+    if(!rows.length){host.innerHTML+='<div class="session-empty">Tidak ada sesi aktif yang mengunci penugasan.</div>';return;}
+    rows.forEach(session=>{
+      const stale=session.tanggal!==period.tanggal || session.shift!==`Shift ${period.shift}`;
+      const card=document.createElement("div");card.className="session-card";
+      card.innerHTML=`<div class="name-main">${escapeHtml(session.fuelman_name||session.username||"Fuelman")}</div>
+        <div class="meta">${escapeHtml(session.fuel_truck||"PIC TRANSFER")} • ${escapeHtml(formatTanggal(session.tanggal))} • ${escapeHtml(session.shift)}</div>
+        <div class="session-missing">${stale?"SESI LAMA MASIH AKTIF":"SESI PERIODE SEKARANG"}</div>`;
+      if(canEnd){
+        const button=document.createElement("button");button.type="button";button.textContent="End Shift Admin/GL";
+        button.style.cssText="margin-top:10px;min-height:44px;background:#b91c1c;color:white;border:0;border-radius:8px;padding:10px 14px;cursor:pointer";
+        button.disabled=activeSessionActionBusy;
+        button.addEventListener("click",()=>adminEndFuelmanSession(session,button));card.appendChild(button);
+      }
+      host.appendChild(card);
+    });
+  }catch(error){host.textContent="Gagal membaca semua sesi aktif: "+error.message;}
+}
+async function adminEndFuelmanSession(session,button){
+  if(activeSessionActionBusy || !["admin","gl"].includes(window.KPP_PROFILE?.role))return;
+  const identity=`${session.fuelman_name||session.username||"Fuelman"} • ${session.fuel_truck||"PIC TRANSFER"} • ${session.tanggal} • ${session.shift}`;
+  const reason=prompt("Alasan End Shift administratif (minimal 10 karakter):\n"+identity);
+  if(reason===null)return;
+  if(reason.trim().length<10 || reason.trim().length>1000){alert("Isi alasan 10–1000 karakter.");return;}
+  if(!confirm("Akhiri sesi ini?\n"+identity+"\n\nPastikan petugas sudah berhenti bertransaksi. FT akan dilepas dari sesi aktif. Closing/flowmeter yang belum lengkap tetap harus ditindaklanjuti; tindakan ini tidak membuat data tersebut."))return;
+  activeSessionActionBusy=true;button.disabled=true;
+  try{
+    const {data,error}=await db.rpc("admin_end_fuelman_shift",{p_session_id:session.id,p_reason:reason.trim()});
+    if(error)throw error;
+    if(!data?.ok)throw new Error("Hasil belum terkonfirmasi. Muat ulang daftar sesi.");
+    alert(data.replayed?"Sesi sudah diakhiri sebelumnya.":"Sesi diakhiri. Alasan dan petugas tersimpan di audit.");
+  }catch(error){alert("End Shift belum terkonfirmasi: "+error.message+". Periksa daftar sesi sebelum mencoba lagi.");}
+  finally{activeSessionActionBusy=false;button.disabled=false;await loadActiveSessions();}
+}
+
 async function loadActiveSessions(){
+  await loadAllActiveSessionActions();
   const host=document.getElementById("activeSessions");
   const countEl=document.getElementById("activeFuelmanCount");
   const periodEl=document.getElementById("sessionPeriodLabel");
