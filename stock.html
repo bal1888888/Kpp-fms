@@ -5227,8 +5227,9 @@ async function saveClosing(){
             const sameRear=historical.sonding_rear_cm==null
                 ? rearNow===""
                 : rearNow!=="" && Math.abs(Number(rearNow)-n(historical.sonding_rear_cm))<0.00001;
-            const sameNote=note===String(historical.note||"").trim();
-            if(sameHeight && sameFront && sameRear && sameNote)continue;
+            // A shared note or newer tera version is not proof that this tank
+            // was physically revised. Send only storages whose measurements changed.
+            if(sameHeight && sameFront && sameRear)continue;
         }
 
         if(!heightInput || heightInput.value==="" || !input || input.value===""){
@@ -5359,12 +5360,14 @@ async function saveClosing(){
             const old=revisionState.savedMap[row.storage];
             if(!old)return false;
             return (
-                n(old.actual_qty)!==n(row.actual_qty) ||
-                n(old.sonding_height_cm)!==n(row.sonding_height_cm) ||
-                (old.sonding_front_cm==null || n(old.sonding_front_cm)!==n(row.sonding_front_cm)) ||
-                (old.sonding_rear_cm==null || n(old.sonding_rear_cm)!==n(row.sonding_rear_cm)) ||
-                String(old.note||"").trim()!==String(row.note||"").trim() ||
-                String(old.tera_version||"")!==String(row.tera_version||"")
+                Math.abs(n(old.actual_qty)-n(row.actual_qty))>0.00001 ||
+                Math.abs(n(old.sonding_height_cm)-n(row.sonding_height_cm))>0.00001 ||
+                (old.sonding_front_cm!=null &&
+                 Math.abs(n(old.sonding_front_cm)-n(row.sonding_front_cm))>0.00001) ||
+                (old.sonding_rear_cm!=null &&
+                 Math.abs(n(old.sonding_rear_cm)-n(row.sonding_rear_cm))>0.00001) ||
+                (old.sonding_front_cm==null && row.sonding_front_cm!=null) ||
+                (old.sonding_rear_cm==null && row.sonding_rear_cm!=null)
             );
         });
 
