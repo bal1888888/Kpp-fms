@@ -4068,22 +4068,10 @@ async function loadStock(){
     VERIFIED_OPENING_PERIOD=tanggal+":"+shift;
     VERIFIED_OPENING_CODES=openingCodes;
     STORAGES.forEach(code=>{if(!openingCodes.has(code))bookStock[code]=null;});
-    const closingRows=(c.data||[]).filter(row=>row.actual_qty!==null&&row.actual_qty!==undefined);
-    // Only apply the physical snapshot when every opening storage for this
-    // exact shift has a closing. Current master may contain tanks added later.
-    const openingStorages=(o.data||[]).map(row=>String(row.storage||"").trim().toUpperCase()).filter(Boolean);
-    const closingComplete=openingStorages.length>0 && openingStorages.every(storage=>
-        closingRows.some(row=>String(row.storage).toUpperCase()===String(storage).toUpperCase())
-    );
+    // Posisi Stock selalu menunjukkan hasil sistem untuk tanggal dan shift
+    // yang dipilih. Closing fisik hanya ditampilkan di Rekonsiliasi Stock;
+    // carry forward ke opening shift berikutnya tetap melalui alur closing.
     const displayStock={...bookStock};
-    if(closingComplete){
-        closingRows.forEach(row=>{
-            if(row.storage in displayStock)displayStock[row.storage]=n(row.actual_qty);
-        });
-    }
-
-    // Stock sistem tetap dipakai untuk validasi transaksi. Kartu historis memakai
-    // closing fisik jika closing seluruh storage sudah lengkap.
     CURRENT_SYSTEM_STOCK={...bookStock};
 
     startStockAutoRefresh();
@@ -4096,7 +4084,7 @@ async function loadStock(){
         closingRows:c.data||[],
         calculatedStock:bookStock
     });
-    renderStockCards(displayStock,closingComplete?"CLOSING FISIK":"SISTEM");
+    renderStockCards(displayStock,"SISTEM");
     if(!STOCK_CLOSING_INPUT_DIRTY){
         renderClosing(bookStock,c.data||[]);
         STOCK_CLOSING_INPUT_DIRTY=false;
