@@ -5221,11 +5221,13 @@ async function saveClosing(){
             const rearNow=oldPair?.[1]?.value??"";
             const sameHeight=heightInput.value!=="" &&
                 Math.abs(Number(heightInput.value)-n(historical.sonding_height_cm))<0.00001;
+            // Legacy rows can have no stored front/rear. The sounding UI may
+            // prefill those fields from the saved height, which is NOT a user edit.
             const sameFront=historical.sonding_front_cm==null
-                ? frontNow===""
+                ? true
                 : frontNow!=="" && Math.abs(Number(frontNow)-n(historical.sonding_front_cm))<0.00001;
             const sameRear=historical.sonding_rear_cm==null
-                ? rearNow===""
+                ? true
                 : rearNow!=="" && Math.abs(Number(rearNow)-n(historical.sonding_rear_cm))<0.00001;
             // A shared note or newer tera version is not proof that this tank
             // was physically revised. Send only storages whose measurements changed.
