@@ -73,6 +73,11 @@ th{background:#e5e7eb}
 .summary-box strong{display:block;font-size:19px;margin-top:4px}
 .checkbox-row{display:flex;align-items:flex-start;gap:8px;margin-top:12px}
 .checkbox-row input{width:auto;margin-top:2px}
+.closing-panel .checkbox-row{align-items:center;gap:14px;padding:15px 14px;border:1px solid #bbd5f5;border-radius:12px;background:#eff6ff;cursor:pointer;font-size:14px;line-height:1.5}
+.closing-panel .checkbox-row #carryForward{appearance:auto;flex:0 0 25px;width:25px;height:25px;min-width:25px;margin:0;accent-color:#2563eb}
+.closing-panel .checkbox-row #carryForward:disabled{opacity:1;cursor:not-allowed}
+.closing-panel .checkbox-row:has(#carryForward:disabled){cursor:default}
+@media(max-width:700px){.closing-panel .checkbox-row{min-height:74px;padding:14px 12px;font-size:14px}}
 @media(max-width:700px){
  .container{padding:6px}
  .panel{padding:12px}
@@ -1643,7 +1648,7 @@ th{background:#f8fafc;color:#475569}
 
     <label class="checkbox-row">
         <input type="checkbox" id="carryForward" checked>
-        <span>
+        <span id="carryForwardLabel">
             Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>.
             Shift 1 -> Opening Shift 2. Shift 2 -> Opening Shift 1 tanggal berikutnya.
         </span>
@@ -4367,7 +4372,9 @@ function applyClosingRevisionUi(savedClosing){
 
     if(state.isFinal){
         note.disabled=!canRevise;
+        carry.checked=true;
         carry.disabled=true;
+        document.getElementById("carryForwardLabel").innerHTML="<b>OTOMATIS SAAT REVISI:</b> Closing fisik yang direvisi akan memperbarui Opening shift berikutnya jika datanya masih cocok. Centang dikunci agar riwayat tidak terputus.";
         saveButton.disabled=!canRevise;
         saveButton.textContent=canRevise?"SIMPAN REVISI STOCK AKHIR":"STOCK AKHIR TERKUNCI";
         revisionBox.classList.toggle("hidden",!canRevise);
@@ -4380,6 +4387,7 @@ function applyClosingRevisionUi(savedClosing){
 
     note.disabled=false;
     carry.disabled=false;
+    document.getElementById("carryForwardLabel").innerHTML="Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>. Shift 1 → Shift 2, Shift 2 → Shift 1 besok.";
     saveButton.disabled=false;
     saveButton.textContent=state.hasSaved?"SIMPAN SISA STOCK CLOSING":"SIMPAN STOCK CLOSING";
     revisionBox.classList.add("hidden");
