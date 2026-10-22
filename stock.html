@@ -4399,6 +4399,20 @@ function applyClosingRevisionUi(savedClosing){
     return state;
 }
 
+function closingMeasurementValues(heightInput){
+    const pair=heightInput?.closest("td")?.querySelectorAll(".front-rear-value");
+    return [heightInput?.value??"",pair?.[0]?.value??"",pair?.[1]?.value??""]
+        .map(value=>value===""?null:Number(String(value).replace(",",".")));
+}
+
+function closingMeasurementEdited(heightInput){
+    if(!heightInput?.dataset.revisionBaseline)return true;
+    const before=JSON.parse(heightInput.dataset.revisionBaseline);
+    return closingMeasurementValues(heightInput).some((value,index)=>
+        value===null || before[index]===null ? value!==before[index]
+            : Math.abs(value-before[index])>0.00001);
+}
+
 function renderClosing(stock,savedClosing){
     const savedMap={};
 
@@ -4450,6 +4464,9 @@ function renderClosing(stock,savedClosing){
     });
 
     window.KPPSoundingAverage?.scan(body);
+    body.querySelectorAll(".sonding-height").forEach(height=>{
+        height.dataset.revisionBaseline=JSON.stringify(closingMeasurementValues(height));
+    });
     const firstSaved=savedClosing.length?savedClosing[0]:null;
 
     if(firstSaved){
@@ -5212,27 +5229,10 @@ async function saveClosing(){
         const heightInput=document.getElementById(`height-${storage}`);
         const input=document.getElementById(`actual-${storage}`);
         const historical=revisionState.savedMap[storage];
-        const oldPair=heightInput?.closest("td")?.querySelectorAll(".front-rear-value");
-        // During revision, untouched saved rows are not revalidated or rewritten.
-        // Older closings may have no front/rear measurements; only the edited
-        // storage must provide fresh physical evidence.
-        if(isRevision && historical && heightInput && input){
-            const frontNow=oldPair?.[0]?.value??"";
-            const rearNow=oldPair?.[1]?.value??"";
-            const sameHeight=heightInput.value!=="" &&
-                Math.abs(Number(heightInput.value)-n(historical.sonding_height_cm))<0.00001;
-            // Legacy rows can have no stored front/rear. The sounding UI may
-            // prefill those fields from the saved height, which is NOT a user edit.
-            const sameFront=historical.sonding_front_cm==null
-                ? true
-                : frontNow!=="" && Math.abs(Number(frontNow)-n(historical.sonding_front_cm))<0.00001;
-            const sameRear=historical.sonding_rear_cm==null
-                ? true
-                : rearNow!=="" && Math.abs(Number(rearNow)-n(historical.sonding_rear_cm))<0.00001;
-            // A shared note or newer tera version is not proof that this tank
-            // was physically revised. Send only storages whose measurements changed.
-            if(sameHeight && sameFront && sameRear)continue;
-        }
+        // Compare against the rendered measurements, before drafts/user input.
+        // Enhancement may normalize the saved final height or recalculate tera;
+        // neither is an operator revision of this tank.
+        if(isRevision && historical && !closingMeasurementEdited(heightInput))continue;
 
         if(!heightInput || heightInput.value==="" || !input || input.value===""){
             alert(

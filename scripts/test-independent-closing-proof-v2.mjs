@@ -65,9 +65,7 @@ test("form: proof is transmitted, existing inputs lock together, historical reco
  assert.match(stock,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(stock,/STOCK_CLOSING_INPUT_DIRTY=true/);
  assert.match(stock,/STOCK_AUTO_REFRESH_BUSY \|\| STOCK_SAVE_LOCK \|\| STOCK_CLOSING_INPUT_DIRTY/);
- assert.match(stock,/historical\.sonding_front_cm==null && historical\.sonding_rear_cm==null/);
- assert.match(stock,/oldPair\[0\]\.value==="" && oldPair\[1\]\.value===""\)continue/);
- assert.match(stock,/old\.sonding_front_cm==null \|\|/);
+ assert.match(stock,/isRevision && historical && !closingMeasurementEdited\(heightInput\)/);
  assert.match(history,/DATA LAMA · BUKTI DEPAN\/BELAKANG TIDAK TERSEDIA/);
 });
 
@@ -124,4 +122,32 @@ test("Postgres: atomic save, mismatch rollback, network retry, legacy protection
   assert.equal(Number(proofTrail.rows[2].old_front_cm),36);
   assert.equal(Number(proofTrail.rows[2].new_front_cm),35.8);
  } finally {await db.close();}
+});
+
+test("revision: normalized untouched MT is skipped while only edited FT is selected",()=>{
+ const source=stock.slice(stock.indexOf('function closingMeasurementValues('),stock.indexOf('function renderClosing('));
+ const ctx={};vm.createContext(ctx);vm.runInContext(source,ctx);
+ const field=(height,front,rear)=>{
+   const pair=[{value:front},{value:rear}];
+   const input={value:height,dataset:{},closest:()=>({querySelectorAll:()=>pair})};
+   input.dataset.revisionBaseline=JSON.stringify(ctx.closingMeasurementValues(input));
+   return {input,pair};
+ };
+ // The renderer can normalize an old 36.65 height to 36.6. The final
+ // rendered value is the baseline, not a new physical measurement.
+ const mt=field('36.6','36.6','36.7');
+ const legacy=field('40','','');
+ const ft=field('81.6','81.6','81.6');
+ assert.equal(ctx.closingMeasurementEdited(mt.input),false);
+ assert.equal(ctx.closingMeasurementEdited(legacy.input),false);
+ ft.pair[0].value='81.8';
+ assert.equal(ctx.closingMeasurementEdited(ft.input),true);
+ assert.deepEqual([mt,legacy,ft].filter(x=>ctx.closingMeasurementEdited(x.input)),[ft]);
+ // Evidence-only correction still counts even when the final height stays equal.
+ mt.pair[0].value='36.5';mt.pair[1].value='36.8';
+ assert.equal(ctx.closingMeasurementEdited(mt.input),true);
+ mt.pair[0].value='36.6';mt.pair[1].value='36.7';
+ assert.equal(ctx.closingMeasurementEdited(mt.input),false);
+ legacy.pair[0].value='40';legacy.pair[1].value='40';
+ assert.equal(ctx.closingMeasurementEdited(legacy.input),true);
 });
