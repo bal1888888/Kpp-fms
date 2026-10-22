@@ -33,6 +33,10 @@ button,.btn{border:0;border-radius:7px;padding:11px 14px;cursor:pointer;font-wei
 .green{background:#16a34a;color:#fff}
 .orange{background:#ea580c;color:#fff}
 .purple{background:#7c3aed;color:#fff}
+/* Accessible closing/revision action for touchscreens */
+#closingSaveButton{min-height:54px;min-width:270px;padding:15px 22px;font-size:15px;line-height:1.35;touch-action:manipulation}
+@media(max-width:700px){#closingSaveButton{display:block;width:100%;min-width:0;min-height:60px;font-size:16px;border-radius:12px;margin:0}}
+
 .gray{background:#475569;color:#fff}
 .stock-total-wide{display:block;margin-bottom:12px}
 .stock-total-card{border:1px solid #86efac;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:18px;background:#f0fdf4}
@@ -5517,7 +5521,13 @@ async function saveClosing(){
       const message="Closing belum terkonfirmasi. Periksa status sebelum mengulang: "+error.message;
       document.getElementById("closingStatus").textContent=message;
       if(STOCK_SAVE_LOCK)await finishStockSave(false,message);
-    }finally{CLOSING_SAVE_ATTEMPT_BUSY=false;}
+    }finally{
+      CLOSING_SAVE_ATTEMPT_BUSY=false;
+      const status=document.getElementById("closingStatus");
+      if(status?.textContent==="Saldo server terbaru terverifikasi. Memvalidasi pengukuran fisik..."){
+        status.textContent="Revisi belum dikirim. Periksa pesan validasi dan data sonding yang berubah, lalu coba simpan kembali.";
+      }
+    }
 }
 
 function refreshStorageInputs(){
