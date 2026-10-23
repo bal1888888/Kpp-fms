@@ -629,6 +629,7 @@ async function ambilHmTerakhir(unit){
     const after=await db.from("fuel_history")
       .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
       .eq("hm_ref_excluded",false)
+      .is("duplicate_of_id",null)
       .gte("tanggal",correctionRow.tanggal).not("hm_akhir","is",null)
       .order("tanggal",{ascending:true}).order("jam",{ascending:true})
       .order("id",{ascending:true}).limit(1000);
@@ -646,6 +647,7 @@ async function ambilHmTerakhir(unit){
   const fuelResult=await db.from("fuel_history")
     .select("id,tanggal,jam,hm_akhir").eq("unit",unit)
     .eq("hm_ref_excluded",false)
+    .is("duplicate_of_id",null)
     .not("hm_akhir","is",null).order("hm_akhir",{ascending:false})
     .order("tanggal",{ascending:false}).order("id",{ascending:false}).limit(1);
   if(fuelResult.error)throw fuelResult.error;
