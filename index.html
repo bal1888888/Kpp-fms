@@ -302,6 +302,7 @@ async function login(){
   btn.disabled=true;
   btn.textContent="MEMERIKSA...";
   status.textContent="";
+  let authenticated=false;
 
   try{
     const email=username+"@kpp.local";
@@ -309,9 +310,13 @@ async function login(){
     const {error}=await db.auth.signInWithPassword({email,password});
     if(error)throw error;
 
-    await route();
+    authenticated=true;
+    const routed=await route();
+    if(!routed)throw new Error("Session login belum tersedia.");
   }catch(error){
-    status.textContent="❌ Password salah atau akun tidak dapat digunakan.";
+    status.textContent=authenticated
+      ? "❌ Login berhasil, tetapi profil/session gagal dimuat. Muat ulang halaman lalu coba lagi."
+      : "❌ Password salah atau akun tidak dapat digunakan.";
     btn.disabled=false;
     btn.textContent="MASUK";
   }
