@@ -17,3 +17,23 @@
 - Hindari uraian implementasi internal di layar pengguna.
 - Warning hanya ditampilkan bila membantu mencegah salah input, kehilangan data, atau salah alur.
 - Gunakan istilah utama secara konsisten: Fuelman, Fuel Truck (FT), Shift, HM Aktual, Qty, Stock, Closing, CCR, dan PIC Transfer.
+
+## Code Review Rules
+
+### Alur stock dan transaksi
+
+- Tandai perubahan yang dapat menghitung ulang, menimpa, atau menghapus transaksi dan histori lama. Koreksi harus tetap memakai alur revisi dengan jejak audit.
+- Pastikan perubahan Closing hanya memengaruhi storage yang benar-benar diedit dan carry forward hanya memperbarui Opening shift berikutnya.
+- Tandai risiko transaksi ganda, retry yang tidak idempotent, atau kegagalan parsial antara Closing, Opening, transfer, penerimaan, dan flowmeter.
+
+### Supabase dan keamanan
+
+- Tandai secret atau service-role key yang masuk ke kode browser, log, dokumentasi, atau hasil build.
+- Untuk perubahan schema, RLS, RPC, function, trigger, dan grant, pastikan ada migration yang dapat diaudit serta pembatasan role dan identitas pengguna tetap berlaku.
+- Jangan menerima perubahan yang mengandalkan validasi browser saja untuk otorisasi, revisi histori, atau transaksi stock.
+
+### Kompatibilitas dan verifikasi
+
+- Pastikan alur utama tetap dapat dipakai di GitHub Pages pada HP dan PC, termasuk tombol, checkbox, tabel, dan form dengan layar sempit.
+- Perubahan perilaku wajib memiliki tes regresi yang memeriksa hasil pengguna atau batas transaksi; pemeriksaan format mekanis tetap ditangani CI.
+- Jangan menyetujui PR bila `npm run check` gagal karena perubahan dalam PR atau bila file sementara ikut masuk.
