@@ -1,0 +1,57 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const read=p=>fs.readFileSync(p,'utf8');
+const day=d=>new Date(Date.parse(d+'T00:00:00Z')-86400000).toISOString().slice(0,10);
+function harness(page){
+ const nodes=new Map();
+ const doc={createElement(){return {ownerDocument:doc,children:[],dataset:{},style:{},classList:{add(){},remove(){}},append(...x){this.children.push(...x);},appendChild(x){this.children.push(x);},replaceChildren(){this.children=[];},textContent:''};},getElementById(id){if(!nodes.has(id))nodes.set(id,doc.createElement('div'));return nodes.get(id);}};
+ doc.getElementById('reportDate').value='2026-10-24';doc.getElementById('reportShift').value='1';
+ const h={document:doc,db:{from(table){return {select(){return this;},eq(k,date){this.date=date;return this;},order(){return this;},async range(){
+  if(h.failLoss)throw new Error('offline');
+  const sh=shift=>({shift,storage:'FT0073'});
+  const data=table==='stock_opening'?[{...sh(1),qty:1000},{...sh(2),qty:890}]:table==='stock_closing'?[{...sh(1),actual_qty:890},{...sh(2),actual_qty:780}]:[];
+  return {data};
+ } };}},STORAGE_ROWS:[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02'}],
+ console:{error(){},warn(){}},n:Number,fmt:String,fmtIto:String,formatAngka:String,formatIto:String,formatTanggal:d=>d,formatDateID:d=>d,
+ localDate:()=>doc.getElementById('reportDate').value,dateMinusOne:day,dateShift:day,operationalPeriod:d=>({start:d}),previousEquivalentWindow:(p,d)=>({start:d,end:d}),currentOperationalShift:()=>({tanggal:'2026-10-24',shift:1}),
+ calculateStock:async()=>({FT0073:780}),fetchPagedFuel:async(d)=>[{tanggal:d,shift:1,fuel_truck:'FT0073',fuel:100},{tanggal:d,shift:2,fuel_truck:'FT0073',fuel:100}],
+ renderStock:()=>780,summarizeYesterday:()=>({FT0073:{1:100,2:100}}),renderUsageTable(){},trendData:()=>({}),applyTrend(){},itoState:()=>({}),stockReportLine:()=>'',shiftNumber:Number,
+ fetchLatest:async()=>[],fetchPagedReceipts:async()=>[],calculateStockTrend:async()=>[],loadActiveSessions:async()=>{},renderMTDCompare(){},renderUsageTrend(){},renderStockTrend(){},renderReceipts(){},renderLatest(){}
+ };
+ h.window=h;vm.createContext(h);vm.runInContext(read('daily-loss.js'),h);
+ const source=read(page);
+ if(page==='daily-report.html')vm.runInContext(source.slice(source.indexOf('function makeReportText('),source.indexOf('document.getElementById("refreshBtn").addEventListener("click",loadReport)')),h);
+ else vm.runInContext(source.slice(source.indexOf('let DASHBOARD_LOAD_SEQUENCE=')>=0?source.indexOf('let DASHBOARD_LOAD_SEQUENCE='):source.indexOf('async function loadDashboard(){'),source.indexOf('document.getElementById("refreshBtn").addEventListener("click",loadDashboard)')),h);
+ return h;
+}
+const texts=node=>[node.textContent,...node.children.flatMap(texts)].join('\n');
+test('both pages load shared module and show identical H-1 working qty and percentage',async()=>{
+ for(const page of ['daily-report.html','dashboard.html']){
+  assert.match(read(page),/src="daily-loss\.js\?v=/);assert.match(read(page),/id="dailyLossPanel"/);
+  const h=harness(page);await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
+  const text=texts(h.document.getElementById('dailyLossPanel'));
+  assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
+  if(page==='daily-report.html'){assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
+ }
+});
+test('failed loss query preserves report but copies explicit unavailable status',async()=>{
+ const h=harness('daily-report.html');h.failLoss=true;await h.loadReport();
+ assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = Gagal memuat/);
+ assert.doesNotMatch(h.document.getElementById('reportText').textContent,/WORKING LOSS = (?:LOSS|BALANCE) 0/);
+});
+test('refresh clears stale report, blocks copy and an older date response cannot overwrite latest report',async()=>{
+ const h=harness('daily-report.html');await h.loadReport();
+ const prior=h.fetchPagedFuel;
+ // Hold all older reads with a shared barrier.
+ let release;const barrier=new Promise(r=>release=r);h.fetchPagedFuel=async(d,e)=>{if(d==='2026-10-23')await barrier;return prior(d,e);};
+ const old=h.loadReport();assert.equal(h.document.getElementById('copyBtn').disabled,true);assert.equal(h.document.getElementById('reportText').textContent,'Memuat...');
+ h.document.getElementById('reportDate').value='2026-10-22';await h.loadReport();release();await old;
+ assert.match(h.document.getElementById('reportText').textContent,/LOSS HARIAN \(21\/10\/2026/);
+ assert.match(texts(h.document.getElementById('dailyLossPanel')),/21\/10\/2026/);
+});
+test('main report query failure leaves copying disabled and no previous numbers',async()=>{
+ const h=harness('daily-report.html');await h.loadReport();h.calculateStock=async()=>{throw new Error('stock failed');};await h.loadReport();
+ assert.equal(h.document.getElementById('copyBtn').disabled,true);assert.doesNotMatch(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS/);
+});

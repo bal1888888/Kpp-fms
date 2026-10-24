@@ -15,6 +15,8 @@ window.KPP_ACTIVE_PAGE="daily-report";
 <script src="wib-time.js?v=20260915-lubricant2"></script>
 <script src="auth.js?v=20261019-shared-ui-refresh1"></script>
 <script src="storage-master.js"></script>
+<script src="daily-loss.js?v=20261024-loss1"></script>
+<link rel="stylesheet" href="daily-loss.css?v=20261024-loss1">
 <script src="tera-data_v1_aug2026.js"></script>
 
 <style>
@@ -546,6 +548,8 @@ html body.daily-workspace .stock-total-chip.caution{
     </div>
   </div>
 
+  <section id="dailyLossPanel" class="daily-loss-panel" aria-live="polite"></section>
+
   <div class="panel report-shift-panel">
     <span class="section-kicker">DISTRIBUSI H-1</span>
     <h2 class="section-title">Pemakaian per Fuel Truck dan Shift</h2>
@@ -570,7 +574,7 @@ html body.daily-workspace .stock-total-chip.caution{
     <h2 class="section-title">Format Siap Salin</h2>
     <div id="reportText" class="report-box">Memuat...</div>
     <div style="margin-top:12px">
-      <button class="btn-gray" id="copyBtn">SALIN REPORT</button>
+      <button class="btn-gray" id="copyBtn" disabled>SALIN REPORT</button>
     </div>
   </div>
 
@@ -992,7 +996,7 @@ function renderUsageTable(summary){
 
 function makeReportText({
   reportDate,stock,totalStock,yesterday,ySummary,
-  usageYesterday,usageMTD,avgMTD,ito,activeDays
+  usageYesterday,usageMTD,avgMTD,ito,activeDays,dailyLoss
 }){
   const stockLines=STORAGE_ROWS.map(row=>{
     const label=row.warehouse ? `${row.code} / ${row.warehouse}` : row.code;
@@ -1016,17 +1020,27 @@ ${usageLines}
 
 TOTAL PEMAKAIAN = ${fmt(usageYesterday)} LTR
 
+${dailyLoss?window.KPPDailyLoss.reportText(dailyLoss):""}
+
 USAGE MTD = ${fmt(usageMTD)} LTR
 AVG MTD = ${fmt(avgMTD)} LTR/HARI (${activeDays} hari aktif)
 ITO = ${fmtIto(ito)} HARI`;
 }
 
+let DAILY_REPORT_LOAD_SEQUENCE=0;
 async function loadReport(){
+  const requestSequence=++DAILY_REPORT_LOAD_SEQUENCE;
   const status=document.getElementById("status");
   const reportDate=document.getElementById("reportDate").value;
   const shift=Number(document.getElementById("reportShift").value);
 
-  if(!reportDate)return;
+  const copyButton=document.getElementById("copyBtn");
+  copyButton.disabled=true;
+  document.getElementById("reportText").textContent="Memuat...";
+  const lossHost=document.getElementById("dailyLossPanel");
+  if(!reportDate){window.KPPDailyLoss.pending(lossHost,"","Pilih tanggal report");return;}
+  const isCurrent=()=>requestSequence===DAILY_REPORT_LOAD_SEQUENCE && document.getElementById("reportDate").value===reportDate && Number(document.getElementById("reportShift").value)===shift;
+  window.KPPDailyLoss.pending(lossHost,dateMinusOne(reportDate));
 
   status.textContent="Memuat report...";
 
@@ -1045,6 +1059,13 @@ async function loadReport(){
       fetchPagedFuel(startMTD,yesterday),
       fetchPagedFuel(prevWindow.start,prevWindow.end)
     ]);
+
+    if(!isCurrent())return;
+    let dailyLoss;
+    try{dailyLoss=await window.KPPDailyLoss.load(db,yesterday,yRows,STORAGE_ROWS);}
+    catch(error){console.warn("Daily loss:",error);dailyLoss=window.KPPDailyLoss.unavailable(yesterday,"Gagal memuat");}
+    if(!isCurrent())return;
+    window.KPPDailyLoss.render(lossHost,dailyLoss);
 
     const totalStock=renderStock(stock);
     const prevTotalStock=Object.values(prevStock).reduce((a,b)=>a+n(b),0);
@@ -1112,20 +1133,27 @@ async function loadReport(){
 
     const reportText=makeReportText({
       reportDate,stock,totalStock,yesterday,ySummary,
-      usageYesterday,usageMTD,avgMTD,ito,activeDays
+      usageYesterday,usageMTD,avgMTD,ito,activeDays,dailyLoss
     });
 
     document.getElementById("reportText").textContent=reportText;
+    copyButton.disabled=false;
     status.textContent="Daily Report berhasil dihitung.";
   }catch(error){
+    if(!isCurrent())return;
     console.error(error);
+    document.getElementById("reportText").textContent="Gagal memuat report. Silakan refresh.";
+    window.KPPDailyLoss.pending(lossHost,dateMinusOne(reportDate),"Gagal memuat");
     status.textContent="ERROR: "+error.message;
   }
 }
 
 document.getElementById("refreshBtn").addEventListener("click",loadReport);
+document.getElementById("reportDate").addEventListener("change",loadReport);
+document.getElementById("reportShift").addEventListener("change",loadReport);
 
 document.getElementById("copyBtn").addEventListener("click",async()=>{
+  if(document.getElementById("copyBtn").disabled)return;
   const text=document.getElementById("reportText").textContent;
   try{
     await navigator.clipboard.writeText(text);

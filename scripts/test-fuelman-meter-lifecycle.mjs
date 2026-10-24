@@ -46,7 +46,7 @@ test('Closing restores saved final counter and locks it without asking for secon
 });
 test('Closing readiness rejection performs no meter read or write',async()=>{
  let calls=0;
- const ctx=vm.createContext({configureClosingFtMeter(){},CLOSING_SAVE_ATTEMPT_BUSY:false,STOCK_SAVE_LOCK:false,CURRENT_PROFILE:{role:'fuelman'},ACTIVE_FUELMAN_SESSION:{id:'a'},stockCanSubmitClosing:async()=>false,db:{from(){calls++;},rpc(){calls++;}}});
+ const ctx=vm.createContext({document:{getElementById:()=>({textContent:""})},configureClosingFtMeter(){},CLOSING_SAVE_ATTEMPT_BUSY:false,STOCK_SAVE_LOCK:false,CURRENT_PROFILE:{role:'fuelman'},ACTIVE_FUELMAN_SESSION:{id:'a'},stockCanSubmitClosing:async()=>false,db:{from(){calls++;},rpc(){calls++;}}});
  vm.runInContext(stock.slice(stock.indexOf('async function saveClosing(){'),stock.indexOf('function refreshStorageInputs(){')),ctx);
  await vm.runInContext('saveClosing()',ctx);assert.equal(calls,0);assert.equal(ctx.CLOSING_SAVE_ATTEMPT_BUSY,false);
 });
