@@ -12,6 +12,8 @@ window.KPP_ACTIVE_PAGE="dashboard";
 <script src="wib-time.js?v=20260915-lubricant2"></script>
 <script src="auth.js?v=20261019-shared-ui-refresh1"></script>
 <script src="storage-master.js"></script>
+<script src="daily-loss.js?v=20261024-loss1"></script>
+<link rel="stylesheet" href="daily-loss.css?v=20261024-loss1">
 <script src="fc-chart.js?v=20260919-foundation1"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
@@ -403,6 +405,8 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
       </div>
     </div>
   </div>
+
+  <section id="dailyLossPanel" class="daily-loss-panel" aria-live="polite"></section>
 
   <div class="section performance-section">
     <div class="section-head">
@@ -1079,7 +1083,12 @@ function renderLatest(rows){
   if(!rows.length)status.textContent="Belum ada transaksi.";
 }
 
+let DASHBOARD_LOAD_SEQUENCE=0;
 async function loadDashboard(){
+  const requestSequence=++DASHBOARD_LOAD_SEQUENCE;
+  const lossHost=document.getElementById("dailyLossPanel");
+  const lossDate=dateMinusOne(localDate());
+  window.KPPDailyLoss.pending(lossHost,lossDate);
   const errorBox=document.getElementById("errorBox");
   const status=document.getElementById("statusData");
   errorBox.style.display="none";
@@ -1105,6 +1114,13 @@ async function loadDashboard(){
       calculateStockTrend(yesterday),
       loadActiveSessions()
     ]);
+
+    if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
+    let dailyLoss;
+    try{dailyLoss=await window.KPPDailyLoss.load(db,yesterday,yesterdayRows,STORAGE_ROWS);}
+    catch(error){console.warn("Daily loss:",error);dailyLoss=window.KPPDailyLoss.unavailable(yesterday,"Gagal memuat");}
+    if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
+    window.KPPDailyLoss.render(lossHost,dailyLoss);
 
     let usageMTD=0,shift1=0,shift2=0;
     mtdRows.forEach(row=>{
@@ -1137,6 +1153,8 @@ async function loadDashboard(){
     renderReceipts(receiptRows);
     renderLatest(latestRows);
   }catch(error){
+    if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
+    window.KPPDailyLoss.pending(lossHost,lossDate,"Gagal memuat");
     console.error(error);
     errorBox.style.display="block";
     errorBox.textContent="❌ Gagal mengambil data dashboard: "+error.message;

@@ -1,0 +1,11 @@
+.daily-loss-panel{margin:0 0 18px;padding:18px;background:#fff;border:1px solid #e2e8f0;border-radius:15px}
+.daily-loss-heading{margin:0 0 12px;font-size:15px;line-height:1.5;color:#0f172a}
+.daily-loss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.daily-loss-card{min-width:0;padding:16px;border:1px solid #e2e8f0;border-top:4px solid #94a3b8;border-radius:12px;background:#f8fafc}
+.daily-loss-card[data-state="loss"]{background:#fff7ed;border-color:#fdba74}
+.daily-loss-card[data-state="gain"]{background:#f0fdf4;border-color:#86efac}
+.daily-loss-card[data-state="balance"]{background:#eff6ff;border-color:#93c5fd}
+.daily-loss-label{font-size:12px;font-weight:700;color:#334155;margin-bottom:8px}
+.daily-loss-value{font-size:20px;font-weight:800;color:#0f172a;line-height:1.45;overflow-wrap:anywhere}
+.daily-loss-note{font-size:11px;line-height:1.5;color:#64748b;margin-top:8px}
+@media(max-width:560px){.daily-loss-grid{grid-template-columns:1fr}.daily-loss-panel{padding:14px}.daily-loss-value{font-size:18px}}
