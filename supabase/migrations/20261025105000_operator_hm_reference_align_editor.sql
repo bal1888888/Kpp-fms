@@ -4,7 +4,6 @@ CREATE OR REPLACE FUNCTION public.operator_hm_reference_info(p_unit text, p_toke
 RETURNS TABLE(hm numeric,source text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $function$
-DECLARE v_base record;
 BEGIN
   IF NOT EXISTS(
     SELECT 1 FROM public.unit_checkin_tokens t
@@ -19,14 +18,7 @@ BEGIN
   FROM private.kpp_current_hm_reference(p_unit) r LIMIT 1;
 
   IF hm IS NULL THEN
-    SELECT * INTO v_base FROM private.kpp_ccr_last_fueling_baseline(p_unit) LIMIT 1;
-    IF coalesce(v_base.valid,false) AND v_base.hm IS NOT NULL THEN
-      hm:=v_base.hm;
-      source:=v_base.source;
-    ELSE
-      hm:=null;
-      source:='Belum ada HM terpercaya. Logsheet Editor manual tidak otomatis menjadi patokan; Admin/GL perlu memverifikasi melalui HM Master.';
-    END IF;
+    source:='Belum ada HM terpercaya. Logsheet Editor manual tidak otomatis menjadi patokan; Admin/GL perlu memverifikasi melalui HM Master.';
   END IF;
   RETURN NEXT;
 END;
