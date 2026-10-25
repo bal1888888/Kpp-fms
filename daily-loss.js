@@ -146,7 +146,9 @@
     return `${state} ${fmt(Math.abs(m.qty))} LTR (${m.percent===null?'—':fmt(Math.abs(m.percent))+'%'})`;
   }
   function reportText(result){
-    return `LOSS HARIAN (${dateLabel(result.date)} • Shift 1 + 2)\nSUPPLY LOSS = ${valueText(result.supply)}\nWORKING LOSS = ${valueText(result.working)}`;
+    const shift1=result.workingByShift?.[1]||result.working;
+    const shift2=result.workingByShift?.[2]||result.working;
+    return `LOSS HARIAN (${dateLabel(result.date)} • Shift 1 + 2)\nSUPPLY LOSS = ${valueText(result.supply)}\nWORKING LOSS = ${valueText(result.working)}\n  SHIFT 1 = ${valueText(shift1)}\n  SHIFT 2 = ${valueText(shift2)}`;
   }
   function render(host,result){
     if(!host)return;
@@ -163,7 +165,9 @@
       [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD']
     ]:[
       ['Supply Loss',result.supply,'Flowmeter transportir − aktual masuk tangki • % dari qty transportir'],
-      ['Working Loss',result.working,'Stock sistem − closing fisik • % dari pemakaian harian']
+      ['Working Loss • Total',result.working,'Shift 1 + 2 • % dari total pemakaian harian'],
+      ['Working Loss • Shift 1',result.workingByShift?.[1]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 1'],
+      ['Working Loss • Shift 2',result.workingByShift?.[2]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 2']
     ];
     for(const [title,m,note] of cards){
       const card=doc.createElement('div');card.className='daily-loss-card';

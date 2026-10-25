@@ -34,8 +34,8 @@ test('both pages load shared module and show identical H-1 working qty and perce
   const text=texts(h.document.getElementById('dailyLossPanel'));
   assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
   if(page==='dashboard.html'){assert.match(text,/Total Working Loss Harian/);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);}
-  else assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,2);
-  if(page==='daily-report.html'){assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
+  else {assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);assert.match(text,/Working Loss • Shift 1/);assert.match(text,/Working Loss • Shift 2/);}
+  if(page==='daily-report.html'){const copy=h.document.getElementById('reportText').textContent;assert.match(copy,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.match(copy,/SHIFT 1 = LOSS 10 LTR \(10%\)/);assert.match(copy,/SHIFT 2 = LOSS 10 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
  }
 });
 test('failed loss query preserves report but copies explicit unavailable status',async()=>{
