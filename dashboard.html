@@ -1150,7 +1150,9 @@ async function loadDashboard(){
     document.getElementById("shift2Fuel").textContent=formatAngka(shift2)+" L";
 
     renderUsageTrend(trendFuelRows,yesterday);
+    window.KPPDashboardStockTrendHistory=stockTrendPoints.map(row=>({...row}));
     renderStockTrend(stockTrendPoints,yesterday);
+    window.KPPDashboardSyncLiveStockTrend?.();
     renderReceipts(receiptRows);
     renderLatest(latestRows);
   }catch(error){
@@ -1169,6 +1171,7 @@ document.addEventListener("kpp-auth-ready",async()=>{
   await loadDashboard();
 });
 </script>
+<script src="dashboard-command-center-v2.js?v=20261025-live-stock30-v1"></script>
 
 <script>
 (function mountDashboardFc(){
