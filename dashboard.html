@@ -12,7 +12,7 @@ window.KPP_ACTIVE_PAGE="dashboard";
 <script src="wib-time.js?v=20260915-lubricant2"></script>
 <script src="auth.js?v=20261019-shared-ui-refresh1"></script>
 <script src="storage-master.js"></script>
-<script src="daily-loss.js?v=20261024-loss1"></script>
+<script src="daily-loss.js?v=20261025-mtd-shifts1"></script>
 <link rel="stylesheet" href="daily-loss.css?v=20261024-loss1">
 <script src="fc-chart.js?v=20260919-foundation1"></script>
 <style>
@@ -1088,7 +1088,8 @@ async function loadDashboard(){
   const requestSequence=++DASHBOARD_LOAD_SEQUENCE;
   const lossHost=document.getElementById("dailyLossPanel");
   const lossDate=dateMinusOne(localDate());
-  window.KPPDailyLoss.pending(lossHost,lossDate);
+  const lossPeriod=operationalPeriod(lossDate);
+  window.KPPDailyLoss.render(lossHost,window.KPPDailyLoss.unavailablePeriod(lossPeriod.start,lossDate));
   const errorBox=document.getElementById("errorBox");
   const status=document.getElementById("statusData");
   errorBox.style.display="none";
@@ -1117,8 +1118,8 @@ async function loadDashboard(){
 
     if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
     let dailyLoss;
-    try{dailyLoss=await window.KPPDailyLoss.load(db,yesterday,yesterdayRows,STORAGE_ROWS);}
-    catch(error){console.warn("Daily loss:",error);dailyLoss=window.KPPDailyLoss.unavailable(yesterday,"Gagal memuat");}
+    try{dailyLoss=await window.KPPDailyLoss.loadPeriod(db,period.start,yesterday,mtdRows,STORAGE_ROWS);}
+    catch(error){console.warn("Daily loss:",error);dailyLoss=window.KPPDailyLoss.unavailablePeriod(period.start,yesterday,"Gagal memuat");}
     if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
     window.KPPDailyLoss.render(lossHost,dailyLoss);
 
@@ -1154,7 +1155,7 @@ async function loadDashboard(){
     renderLatest(latestRows);
   }catch(error){
     if(requestSequence!==DASHBOARD_LOAD_SEQUENCE)return;
-    window.KPPDailyLoss.pending(lossHost,lossDate,"Gagal memuat");
+    window.KPPDailyLoss.render(lossHost,window.KPPDailyLoss.unavailablePeriod(lossPeriod.start,lossDate,"Gagal memuat"));
     console.error(error);
     errorBox.style.display="block";
     errorBox.textContent="❌ Gagal mengambil data dashboard: "+error.message;

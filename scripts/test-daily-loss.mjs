@@ -88,3 +88,51 @@ test('explicit missing FT cannot be silently replaced by warehouse fallback',()=
  f.fuels[0].fuel_truck='FT0999';f.fuels[0].wh='FT02';
  assert.equal(api().calculate(f).working.status,'incomplete');
 });
+function periodFixture(){
+ const first=fixture(),second=fixture();
+ for(const key of ['openings','closings','movements','fuels']){
+  first[key].forEach(r=>r.tanggal='2026-10-22');second[key].forEach(r=>r.tanggal='2026-10-23');
+ }
+ // Day 2: supply 9000 - 8970 = 30; shift 1 loss 20 / usage 800; shift 2 gain 10 / usage 100.
+ second.movements[0].transporter_measured_qty=9000;second.movements[0].destination_measured_qty=8970;
+ second.fuels[0].fuel=800;second.fuels[1].fuel=100;
+ second.closings[0].actual_qty=8560;second.openings[1].qty=8560;second.closings[1].actual_qty=8470;
+ const result={startDate:'2026-10-22',endDate:'2026-10-23',master:[]};
+ for(const key of ['openings','closings','movements','fuels'])result[key]=[...first[key],...second[key]];
+ return result;
+}
+test('MTD preserves total and splits working shifts with weighted own-shift percentages',()=>{
+ assert.equal(typeof api().calculatePeriod,'function');
+ const r=api().calculatePeriod(periodFixture());
+ assert.equal(r.supply.qty,40);assert.equal(r.supply.percent,0.4);
+ assert.equal(r.workingByShift[1].qty,35);assert.equal(r.workingByShift[1].percent,3.5);
+ assert.equal(r.workingByShift[2].qty,0);assert.equal(r.workingByShift[2].percent,0);
+ assert.equal(r.working.qty,35);assert.equal(r.working.percent,2.692308);
+});
+test('MTD incomplete shift does not hide the other shift or supply; total stays incomplete',()=>{
+ const f=periodFixture();f.closings=f.closings.filter(r=>!(r.shift===2&&r.tanggal==='2026-10-23'));
+ const r=api().calculatePeriod(f);
+ assert.equal(r.workingByShift[1].qty,35);assert.equal(r.workingByShift[1].status,'complete');
+ assert.equal(r.workingByShift[2].qty,null);assert.match(r.workingByShift[2].note,/1\/2/);
+ assert.equal(r.working.qty,null);assert.equal(r.supply.qty,40);
+});
+test('MTD missing whole day is incomplete, not a zero-loss day',()=>{
+ const f=periodFixture();f.startDate='2026-10-21';const r=api().calculatePeriod(f);
+ assert.equal(r.working.status,'incomplete');assert.equal(r.workingByShift[1].status,'incomplete');
+ assert.match(r.workingByShift[1].note,/2\/3/);
+});
+test('MTD retains gain and unavailable percent with zero own-shift usage',()=>{
+ const f=periodFixture();f.fuels=f.fuels.filter(r=>Number(r.shift)!==2 && r.shift!=='Shift 2');
+ f.closings.filter(r=>r.shift===2).forEach(r=>r.actual_qty=99999);
+ const r=api().calculatePeriod(f);assert.ok(r.workingByShift[2].qty<0);assert.equal(r.workingByShift[2].percent,null);
+});
+test('period loader pages three range queries and does not re-fetch existing fuel',async()=>{
+ const f=periodFixture();const calls=[];
+ const db={from(table){const q={table,filters:[]};calls.push(q);return {
+ select(){return this;},gte(k,v){q.filters.push(['gte',k,v]);return this;},lte(k,v){q.filters.push(['lte',k,v]);return this;},order(k){q.order=k;return this;},async range(a,b){
+ const rows=table==='stock_opening'?f.openings:table==='stock_closing'?f.closings:f.movements;return {data:rows.slice(a,b+1)};
+ }};}};
+ const r=await api().loadPeriod(db,f.startDate,f.endDate,f.fuels,f.master);
+ assert.equal(r.working.qty,35);assert.equal(calls.length,3);
+ for(const q of calls){assert.equal(q.order,'id');assert.deepEqual(q.filters,[['gte','tanggal',f.startDate],['lte','tanggal',f.endDate]]);}
+});
