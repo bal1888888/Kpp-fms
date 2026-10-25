@@ -112,7 +112,9 @@
     const host=buildKpis();if(!host)return;patchStockStatuses();
     const stockItems=[...document.querySelectorAll("#stockTrendBars .stock-radial-item")];const latest=stockItems.find(x=>x.classList.contains("is-latest"))||stockItems.at(-1);
     const set=(key,value,foot)=>{const v=host.querySelector(`[data-kpi="${key}"]`),f=host.querySelector(`[data-foot="${key}"]`);if(v&&v.textContent!==value)v.textContent=value;if(f&&foot){if(f.textContent!==foot)f.textContent=foot;f.className=`kpp-cc-kpi-foot ${footClass(foot)}`;}};
-    if(latest){const liter=text(latest.querySelector(".trend-ring-liter"),"0 L"),pct=parseIdNumber(latest.querySelector(".stock-trend-ring span")?.textContent)||0,state=levelState(pct);set("stock",liter,`${nf1.format(pct)}% • ${state.label}`);}
+    // Historical rings must NEVER override the authoritative shift-live stock.
+    if(liveStockStale)markStockStale("Koneksi terputus / pembacaan terakhir gagal");
+    else if(liveSnapshot)displayLiveSnapshot(liveSnapshot);
     set("yesterday",text(document.getElementById("usageYesterday"),"0 L"),text(document.getElementById("usageTrendBadge"),"vs. hari sebelumnya"));
     set("mtd",text(document.getElementById("totalFuelMTD"),"0 L"),text(document.getElementById("mtdCompareBadge"),"periode berjalan"));
     set("avg",text(document.getElementById("avgMTD"),"0 L/hari"),text(document.getElementById("activeDays"),"rata-rata harian"));
@@ -125,7 +127,7 @@
     const h=performance.querySelector(":scope > .section-head h2"),k=performance.querySelector(":scope > .section-head .section-kicker");if(h)h.textContent="Monitoring Fuel 5 Hari";if(k)k.textContent="COMMAND CENTER";
     const ut=usage.querySelector(".overview-title"),us=usage.querySelector(".overview-sub");if(ut)ut.textContent="Pemakaian Fuel";if(us)us.textContent="Realisasi harian dan perubahan vs hari sebelumnya.";
     const shell=document.createElement("div"),main=document.createElement("div"),side=document.createElement("div");shell.className="kpp-performance-shell";main.className="kpp-performance-main";side.className="kpp-performance-side";
-    const storage=document.createElement("div");storage.id=STORAGE_ID;storage.className="kpp-cc-side-card";storage.innerHTML=`<div class="kpp-cc-side-card-head"><div><div class="kpp-cc-side-card-title">Stock per Tanki / WH</div><div class="kpp-cc-side-card-sub">Posisi akhir H-1 per storage aktif</div></div><a class="kpp-cc-side-link" href="stock.html">Lihat Semua →</a></div><div class="kpp-storage-list"><div class="kpp-storage-empty">Memuat posisi storage...</div></div>`;
+    const storage=document.createElement("div");storage.id=STORAGE_ID;storage.className="kpp-cc-side-card";storage.innerHTML=`<div class="kpp-cc-side-card-head"><div><div class="kpp-cc-side-card-title">Stock per Tanki / WH</div><div class="kpp-cc-side-card-sub">Memuat stock shift aktif...</div></div><a class="kpp-cc-side-link" href="stock.html">Lihat Semua →</a></div><div class="kpp-storage-list"><div class="kpp-storage-empty">Memuat posisi storage...</div></div>`;
     const activity=document.createElement("div");activity.id=ACTIVITY_ID;activity.className="kpp-cc-side-card";activity.innerHTML=`<div class="kpp-cc-side-card-head"><div><div class="kpp-cc-side-card-title">Aktivitas Terbaru</div><div class="kpp-cc-side-card-sub">Transaksi pengisian terakhir</div></div><a class="kpp-cc-side-link" href="logsheet.html">Lihat Semua →</a></div><div class="kpp-activity-list"><div class="kpp-storage-empty">Memuat aktivitas...</div></div>`;
     main.append(stock,usage);side.append(storage,activity);shell.append(main,side);overview.replaceWith(shell);receipt.classList.add("kpp-performance-receipt");performance.append(receipt);performance.dataset.commandCenter="2";return true;
   }
@@ -151,15 +153,155 @@
 
   function sourceForFuel(row,storageRows){const direct=String(row?.fuel_truck||"").trim().toUpperCase();if(direct&&storageRows.some(s=>s.storage_type==="FT"&&s.code===direct))return direct;const wh=window.KPPStorage.normalizeWarehouse(row?.wh);return storageRows.find(s=>s.storage_type==="FT"&&window.KPPStorage.whCode(s)===wh)?.code||"";}
   async function hasShiftData(db,tanggal,shift){const tables=["stock_opening","stock_movements","fuel_history","stock_closing"];const results=await Promise.all(tables.map(t=>db.from(t).select("id").eq("tanggal",tanggal).eq("shift",shift).limit(1)));const err=results.find(r=>r.error)?.error;if(err)throw err;return results.some(r=>(r.data||[]).length>0);}
-  async function calculateStorageSnapshot(tanggal){const db=window.KPP?.db;if(!db||!window.KPPStorage)throw new Error("Database/storage helper belum siap");const storageRows=await window.KPPStorage.load(db,{activeOnly:true});const shift=await hasShiftData(db,tanggal,2)?2:1;const [o,m,f,c]=await Promise.all([db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),db.from("stock_movements").select("jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",tanggal).eq("shift",shift),db.from("fuel_history").select("fuel,fuel_truck,wh").eq("tanggal",tanggal).eq("shift",shift),db.from("stock_closing").select("storage,actual_qty").eq("tanggal",tanggal).eq("shift",shift)]);const err=o.error||m.error||f.error||c.error;if(err)throw err;const stock=Object.fromEntries(storageRows.map(r=>[r.code,0]));(o.data||[]).forEach(r=>{if(r.storage in stock)stock[r.storage]=Number(r.qty)||0;});(m.data||[]).forEach(r=>{if(r.jenis==="RECEIPT"&&r.destination_storage in stock)stock[r.destination_storage]+=Number(r.destination_measured_qty??r.qty)||0;if(r.jenis==="TRANSFER"){if(r.source_storage in stock)stock[r.source_storage]-=Number(r.source_measured_qty??r.qty)||0;if(r.destination_storage in stock)stock[r.destination_storage]+=Number(r.destination_measured_qty??r.qty)||0;}});(f.data||[]).forEach(r=>{const s=sourceForFuel(r,storageRows);if(s in stock)stock[s]-=Number(r.fuel)||0;});(c.data||[]).forEach(r=>{if(r.storage in stock&&r.actual_qty!==null&&r.actual_qty!==undefined)stock[r.storage]=Number(r.actual_qty)||0;});return {tanggal,shift,storageRows,stock};}
+  // Same ledger as Stock: Opening + Receipt + Transfer in - out - Fuel.
+  // Closing is a physical audit, NOT an override of system stock.
+  async function calculateStorageSnapshot(tanggal,shift){
+    const db=window.KPP?.db;
+    if(!db||!window.KPPStorage)throw new Error("Database/storage belum siap");
+    if(![1,2].includes(Number(shift)))throw new Error("Shift operasional belum diketahui");
+    const storageRows=await window.KPPStorage.load(db,{activeOnly:true});
+    if(!storageRows.length)throw new Error("Master storage kosong");
+    const [o,m,f]=await Promise.all([
+      db.from("stock_opening").select("storage,qty").eq("tanggal",tanggal).eq("shift",shift),
+      db.from("stock_movements").select("jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty").eq("tanggal",tanggal).eq("shift",shift),
+      db.from("fuel_history").select("fuel,fuel_truck,wh,duplicate_of_id").eq("tanggal",tanggal).eq("shift",shift).is("duplicate_of_id",null)
+    ]);
+    const err=o.error||m.error||f.error;
+    if(err)throw err;
+    const codes=new Set(storageRows.map(r=>r.code));
+    const stock=Object.fromEntries(storageRows.map(r=>[r.code,null]));
+    const opened=new Set();
+    for(const row of o.data||[]){
+      if(!codes.has(row.storage))continue;
+      const qty=Number(row.qty);
+      if(!Number.isFinite(qty))throw new Error("Opening tidak valid: "+row.storage);
+      stock[row.storage]=qty;
+      opened.add(row.storage);
+    }
+    const change=(code,qty)=>{
+      if(!codes.has(code))return;
+      if(!opened.has(code))return;
+      const value=Number(qty);
+      if(!Number.isFinite(value))throw new Error("Pergerakan stock tidak valid: "+code);
+      stock[code]+=value;
+    };
+    for(const row of m.data||[]){
+      if(row.jenis==="RECEIPT"){
+        change(row.destination_storage,row.destination_measured_qty??row.qty);
+      }else if(row.jenis==="TRANSFER"){
+        change(row.source_storage,-Number(row.source_measured_qty??row.qty));
+        change(row.destination_storage,row.destination_measured_qty??row.qty);
+      }
+    }
+    for(const row of f.data||[]){
+      const source=sourceForFuel(row,storageRows);
+      if(source)change(source,-Number(row.fuel));
+    }
+    const missing=storageRows.map(r=>r.code).filter(code=>!opened.has(code));
+    const total=missing.length?null:Object.values(stock).reduce((sum,value)=>sum+value,0);
+    return {tanggal,shift,storageRows,stock,missing,total};
+  }
 
-  function renderStorage(snapshot){const panel=document.getElementById(STORAGE_ID);if(!panel)return;const sub=panel.querySelector(".kpp-cc-side-card-sub");if(sub)sub.textContent=`Posisi ${snapshot.tanggal.split("-").reverse().join("/")} • Shift ${snapshot.shift}`;const list=panel.querySelector(".kpp-storage-list");list.innerHTML=snapshot.storageRows.map(row=>{const value=Number(snapshot.stock[row.code])||0,cap=Number(row.nominal_capacity_liter)||0,pct=cap>0?clampPct(value/cap*100):0,state=levelState(pct),wh=row.storage_type==="FT"?(window.KPPStorage.whCode(row)||""):"";return `<div class="kpp-storage-row"><div class="kpp-storage-name">${row.code}${wh?`<span class="kpp-storage-wh">${wh}</span>`:""}</div><div class="kpp-storage-liter">${nf1.format(value)} L</div><div class="kpp-storage-track" title="Kapasitas ${nf0.format(cap)} L"><div class="kpp-storage-fill ${state.key}" style="width:${pct.toFixed(1)}%"></div></div><div class="kpp-storage-level ${state.key}">${nf0.format(pct)}%</div></div>`;}).join("")||'<div class="kpp-storage-empty">Master storage aktif belum tersedia.</div>';}
+  function renderStorage(snapshot){
+    const panel=document.getElementById(STORAGE_ID);
+    if(!panel)return;
+    const sub=panel.querySelector(".kpp-cc-side-card-sub");
+    if(sub)sub.textContent="LIVE • "+snapshot.tanggal.split("-").reverse().join("/")+" • Shift "+snapshot.shift+
+      (snapshot.missing.length?" • OPENING BELUM LENGKAP":" • Terakhir "+new Intl.DateTimeFormat("id-ID",{timeZone:"Asia/Jakarta",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(new Date()));
+    const list=panel.querySelector(".kpp-storage-list");
+    list.innerHTML=snapshot.storageRows.map(row=>{
+      const value=snapshot.stock[row.code],known=Number.isFinite(value);
+      const cap=Number(row.nominal_capacity_liter)||0;
+      const pct=known&&cap>0?clampPct(value/cap*100):0;
+      const state=known?levelState(pct):{key:"pending",label:"BELUM OPENING"};
+      const wh=row.storage_type==="FT"?(window.KPPStorage.whCode(row)||""):"";
+      return `<div class="kpp-storage-row"><div class="kpp-storage-name">${row.code}${wh?`<span class="kpp-storage-wh">${wh}</span>`:""}</div><div class="kpp-storage-liter">${known?nf1.format(value)+" L":"BELUM OPENING"}</div><div class="kpp-storage-track" title="Kapasitas ${nf0.format(cap)} L"><div class="kpp-storage-fill ${state.key}" style="width:${pct.toFixed(1)}%"></div></div><div class="kpp-storage-level ${state.key}">${known?nf0.format(pct)+"%":"–"}</div></div>`;
+    }).join("")||'<div class="kpp-storage-empty">Master storage aktif belum tersedia.</div>';
+  }
 
-  async function loadStorage(force=false){const panel=document.getElementById(STORAGE_ID);if(!panel||storageBusy)return;const today=window.KPPTime?.localDate?.();if(!today)return;const tanggal=window.KPPTime.addDays(today,-1);if(!force&&storageLoadedFor===tanggal)return;storageBusy=true;try{const snapshot=await calculateStorageSnapshot(tanggal);renderStorage(snapshot);storageLoadedFor=tanggal;}catch(err){const list=panel.querySelector(".kpp-storage-list");if(list)list.innerHTML=`<div class="kpp-storage-empty">Gagal membaca posisi storage: ${String(err?.message||err)}</div>`;}finally{storageBusy=false;}}
+  let liveSnapshot=null;
+  let liveStockStale=false;
+  let stockLiveTimer=null;
+  let stockLoadSerial=0;
+  let lastStockRefreshAt=0;
+  const LIVE_STOCK_POLL_MS=30000;
+  function displayLiveSnapshot(snapshot){
+    const kpis=buildKpis();
+    const value=kpis?.querySelector('[data-kpi="stock"]');
+    const foot=kpis?.querySelector('[data-foot="stock"]');
+    if(!value||!foot)return;
+    if(snapshot.missing.length || !Number.isFinite(snapshot.total)){
+      value.textContent="BELUM LENGKAP";
+      foot.textContent="Opening: "+snapshot.missing.join(", ");
+      foot.className="kpp-cc-kpi-foot bad";
+      return;
+    }
+    const cap=snapshot.storageRows.reduce((sum,row)=>sum+(Number(row.nominal_capacity_liter)||0),0);
+    const pct=cap>0?snapshot.total/cap*100:0;
+    const state=levelState(pct);
+    value.textContent=nf1.format(snapshot.total)+" L";
+    foot.textContent="LIVE • "+nf1.format(pct)+"% • "+state.label;
+    foot.className="kpp-cc-kpi-foot "+footClass(state.label);
+    // ITO denominator stays yesterday's consumption, not today's partial shift.
+    const usage=parseIdNumber(document.getElementById("usageYesterday")?.textContent);
+    const ito=document.getElementById("ito");
+    if(ito&&Number.isFinite(usage)&&usage>0){
+      const v=(snapshot.total/usage).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})+" hari";
+      if(ito.textContent!==v)ito.textContent=v;
+    }
+  }
+  function liveStockTrend(){
+    if(!liveSnapshot||!Number.isFinite(liveSnapshot.total))return;
+    const history=Array.isArray(window.KPPDashboardStockTrendHistory)?window.KPPDashboardStockTrendHistory:[];
+    if(!history.length||typeof window.renderStockTrend!=="function")return;
+    const points=history.filter(x=>x.tanggal<liveSnapshot.tanggal).slice(-4)
+      .concat([{tanggal:liveSnapshot.tanggal,total:liveSnapshot.total,shift:liveSnapshot.shift}]);
+    window.renderStockTrend(points,liveSnapshot.tanggal);
+    const subtitle=document.querySelector(".stock-trend-card .overview-sub");
+    if(subtitle)subtitle.textContent="4 hari terakhir + stock berjalan shift aktif (LIVE).";
+  }
+  function markStockStale(reason){
+    const panel=document.getElementById(STORAGE_ID);
+    const sub=panel?.querySelector(".kpp-cc-side-card-sub");
+    if(sub)sub.textContent="BELUM TERSINKRON • "+reason;
+    const foot=document.getElementById(KPI_ID)?.querySelector('[data-foot="stock"]');
+    if(foot){foot.textContent="BELUM TERSINKRON • "+reason;foot.className="kpp-cc-kpi-foot bad";}
+  }
+  async function loadStorage(force=false){
+    if(storageBusy||(!force&&document.hidden))return;
+    const period=window.KPPTime?.operationalShift?.();
+    if(!period?.tanggal||![1,2].includes(Number(period.shift)))return;
+    const serial=++stockLoadSerial;
+    storageBusy=true;
+    try{
+      const snapshot=await calculateStorageSnapshot(period.tanggal,period.shift);
+      const latestPeriod=window.KPPTime.operationalShift();
+      if(serial!==stockLoadSerial||period.tanggal!==latestPeriod.tanggal||period.shift!==latestPeriod.shift)return;
+      liveSnapshot=snapshot;
+      liveStockStale=false;
+      window.KPPDashboardLiveStock=snapshot;
+      renderStorage(snapshot);
+      displayLiveSnapshot(snapshot);
+      liveStockTrend();
+      lastStockRefreshAt=Date.now();
+    }catch(error){
+      console.warn("Dashboard live stock:",error);
+      liveStockStale=true;
+      markStockStale(String(error?.message||"Gagal membaca data").slice(0,90));
+    }finally{storageBusy=false;}
+  }
+  window.KPPDashboardSyncLiveStockTrend=liveStockTrend;
+  function startStockLive(){
+    if(stockLiveTimer)return;
+    stockLiveTimer=setInterval(()=>loadStorage(false),LIVE_STOCK_POLL_MS);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadStorage(true);});
+    window.addEventListener("online",()=>loadStorage(true));
+    window.addEventListener("beforeunload",()=>{clearInterval(stockLiveTimer);stockLiveTimer=null;},{once:true});
+  }
 
   function watchSources(){const targets=["stockTrendBars","stockTrendBadge","usageYesterday","usageTrendBadge","totalFuelMTD","mtdCompareBadge","avgMTD","activeDays","ito"].map(id=>document.getElementById(id)).filter(Boolean);if(!targets.length)return false;sourceObserver?.disconnect();sourceObserver=new MutationObserver(()=>syncKpis());targets.forEach(el=>sourceObserver.observe(el,{childList:true,subtree:true,characterData:true}));return true;}
 
-  function install(){injectStyle();document.body?.classList.add(ROOT_CLASS);if(!setupPerformance())return false;buildKpis();watchUsage();watchActivities();watchSources();syncKpis();loadStorage(false);const refresh=document.getElementById("refreshBtn");if(refresh&&refresh.dataset.ccV2!=="1"){refresh.dataset.ccV2="1";refresh.addEventListener("click",()=>{storageLoadedFor="";setTimeout(()=>loadStorage(true),500);});}return true;}
+  function install(){injectStyle();document.body?.classList.add(ROOT_CLASS);if(!setupPerformance())return false;buildKpis();watchUsage();watchActivities();watchSources();syncKpis();loadStorage(true);startStockLive();const refresh=document.getElementById("refreshBtn");if(refresh&&refresh.dataset.ccV2!=="1"){refresh.dataset.ccV2="1";refresh.addEventListener("click",()=>{setTimeout(()=>loadStorage(true),500);});}return true;}
 
   let attempts=0;const timer=setInterval(()=>{attempts++;if(install()||attempts>=180)clearInterval(timer);},100);document.addEventListener("DOMContentLoaded",install,{once:true});
 })();
