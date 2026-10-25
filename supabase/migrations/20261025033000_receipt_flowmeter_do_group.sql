@@ -39,8 +39,8 @@ BEGIN
   END IF;
   RETURN new;
 END;$body$;
-DROP TRIGGER IF EXISTS trg_aa_receipt_do_group ON public.stock_movements;
-CREATE TRIGGER trg_aa_receipt_do_group BEFORE INSERT ON public.stock_movements
+DROP TRIGGER IF EXISTS trg_aad_receipt_do_group ON public.stock_movements;
+CREATE TRIGGER trg_aad_receipt_do_group BEFORE INSERT ON public.stock_movements
 FOR EACH ROW EXECUTE FUNCTION private.kpp_guard_receipt_do_group();
 
 CREATE OR REPLACE FUNCTION public.kpp_guard_measured_stock_movement()
