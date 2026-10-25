@@ -152,30 +152,57 @@
   }
   function render(host,result){
     if(!host)return;
-    const doc=host.ownerDocument;host.replaceChildren();
-    const heading=doc.createElement('h3');heading.className='daily-loss-heading';
+    const doc=host.ownerDocument;
+    host.replaceChildren();
+    const heading=doc.createElement('h3');
+    heading.className='daily-loss-heading';
     const isPeriod=!!result.startDate;
     const dailyWorking=!!result.workingDate;
-    heading.textContent=isPeriod?`Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)}`:`Loss Harian • ${dateLabel(result.date)} • Shift 1 + 2`;if(dailyWorking)heading.textContent=`Supply MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)} | Working Harian • ${dateLabel(result.workingDate)}`;host.appendChild(heading);
-    const grid=doc.createElement('div');grid.className='daily-loss-grid';host.appendChild(grid);
+    heading.textContent=isPeriod
+      ? `Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)}`
+      : `Loss Harian • ${dateLabel(result.date)} • Shift 1 + 2`;
+    if(dailyWorking)heading.textContent=`Supply MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)} | Working Harian • ${dateLabel(result.workingDate)}`;
+    host.appendChild(heading);
+
+    const grid=doc.createElement('div');
+    grid.className='daily-loss-grid';
+    host.appendChild(grid);
     const cards=isPeriod?[
-      ['Supply Loss MTD',result.supply,'% dari total qty transportir MTD'],
-      [dailyWorking?'Total Working Loss Harian':'Total Working Loss MTD',result.working,dailyWorking?'Shift 1 + 2 • % dari total pemakaian harian':'Shift 1 + 2 • % dari total pemakaian MTD'],
-      [dailyWorking?'Working Loss Harian • Shift 1':'Working Loss MTD • Shift 1',result.workingByShift[1],dailyWorking?'% dari pemakaian Shift 1 harian':'% dari pemakaian Shift 1 MTD'],
-      [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD']
+      ['Supply Loss MTD',result.supply,'% dari total qty transportir MTD','⛽','supply'],
+      [dailyWorking?'Total Working Loss Harian':'Total Working Loss MTD',result.working,dailyWorking?'Shift 1 + 2 • % dari total pemakaian harian':'Shift 1 + 2 • % dari total pemakaian MTD','Σ','working-total'],
+      [dailyWorking?'Working Loss Harian • Shift 1':'Working Loss MTD • Shift 1',result.workingByShift[1],dailyWorking?'% dari pemakaian Shift 1 harian':'% dari pemakaian Shift 1 MTD','1','working-1'],
+      [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD','2','working-2']
     ]:[
-      ['Supply Loss',result.supply,'Flowmeter transportir − aktual masuk tangki • % dari qty transportir'],
-      ['Working Loss • Total',result.working,'Shift 1 + 2 • % dari total pemakaian harian'],
-      ['Working Loss • Shift 1',result.workingByShift?.[1]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 1'],
-      ['Working Loss • Shift 2',result.workingByShift?.[2]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 2']
+      ['Supply Loss',result.supply,'Flowmeter transportir − aktual masuk tangki • % dari qty transportir','⛽','supply'],
+      ['Working Loss • Total',result.working,'Shift 1 + 2 • % dari total pemakaian harian','Σ','working-total'],
+      ['Working Loss • Shift 1',result.workingByShift?.[1]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 1','1','working-1'],
+      ['Working Loss • Shift 2',result.workingByShift?.[2]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 2','2','working-2']
     ];
-    for(const [title,m,note] of cards){
-      const card=doc.createElement('div');card.className='daily-loss-card';
+    for(const [title,m,note,iconText,kind] of cards){
+      const card=doc.createElement('div');
+      card.className='daily-loss-card';
+      card.dataset.kind=kind;
       card.dataset.state=m.status!=='complete'?'pending':m.qty>0?'loss':m.qty<0?'gain':'balance';
-      const label=doc.createElement('div');label.className='daily-loss-label';label.textContent=title;
-      const value=doc.createElement('div');value.className='daily-loss-value';value.textContent=valueText(m);
-      const detail=doc.createElement('div');detail.className='daily-loss-note';detail.textContent=note;
-      card.append(label,value,detail);grid.appendChild(card);
+
+      const top=doc.createElement('div');
+      top.className='daily-loss-top';
+      const icon=doc.createElement('div');
+      icon.className='daily-loss-icon';
+      icon.textContent=iconText;
+      icon.setAttribute('aria-hidden','true');
+      const label=doc.createElement('div');
+      label.className='daily-loss-label';
+      label.textContent=title;
+      top.append(icon,label);
+
+      const value=doc.createElement('div');
+      value.className='daily-loss-value';
+      value.textContent=valueText(m);
+      const detail=doc.createElement('div');
+      detail.className='daily-loss-note';
+      detail.textContent=note;
+      card.append(top,value,detail);
+      grid.appendChild(card);
     }
   }
   function pending(host,date,message='Memuat...'){render(host,unavailable(date,message));}
