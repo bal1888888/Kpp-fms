@@ -36,7 +36,7 @@
       if(row.do_final===true)group.final++;
     }
     const unfinished=[...groups.values()].filter(g=>!g.consistent||g.final!==1).length;
-    if(invalid||unfinished)return {...incomplete(),note:'Belum lengkap: '+invalid+' transaksi tanpa DO baru; '+unfinished+' DO belum selesai/berbeda'};
+    if(invalid||unfinished)return {...incomplete(),detail:invalid+' transaksi belum punya Qty DO baru; '+unfinished+' DO belum selesai atau berbeda'};
     const all=[...groups.values()];
     const totalFlow=all.reduce((n,g)=>n+g.flow,0);
     const totalDo=all.reduce((n,g)=>n+g.doQty,0);
@@ -218,7 +218,7 @@
       value.textContent=valueText(m);
       const detail=doc.createElement('div');
       detail.className='daily-loss-note';
-      detail.textContent=note;
+      detail.textContent=m.detail||note;
       card.append(top,value,detail);
       grid.appendChild(card);
     }
