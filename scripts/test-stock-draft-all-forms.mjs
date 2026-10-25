@@ -134,7 +134,7 @@ test("stale device drafts expire, while manual clearing is scoped to current use
  assert.equal(backend.size,0);
 });
 test("integration: Stock only saves drafts after user events and clears on confirmed successes",()=>{
- assert.match(html,/stock-drafts\.js\?v=20261018-preload-v5/);
+ assert.match(html,/stock-drafts\.js\?v=20261025-do-flow1/);
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
