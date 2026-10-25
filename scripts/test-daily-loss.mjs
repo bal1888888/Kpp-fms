@@ -18,6 +18,20 @@ test('daily receipt loss and both-shift working loss have independent correct de
  assert.equal(r.working.status,'complete');
  assert.match(api().reportText(r),/23\/10\/2026/);assert.match(api().reportText(r),/WORKING LOSS = LOSS 25 LTR \(6,25%\)/);
 });
+test('copy report keeps working total and breaks out shift 1 and shift 2 with independent percentages',()=>{
+ const r=api().calculate(fixture());
+ const text=api().reportText(r);
+ assert.match(text,/WORKING LOSS = LOSS 25 LTR \\(6,25%\\)\\n  SHIFT 1 = LOSS 15 LTR \\(7,5%\\)\\n  SHIFT 2 = LOSS 10 LTR \\(5%\\)/);
+ const f=fixture();f.closings[1].actual_qty=995;
+ const gain=api().reportText(api().calculate(f));
+ assert.match(gain,/WORKING LOSS = GAIN 5 LTR \\(1,25%\\)/);
+ assert.match(gain,/SHIFT 2 = GAIN 10 LTR \\(5%\\)/);
+ const missing=fixture();missing.closings.pop();
+ const incomplete=api().reportText(api().calculate(missing));
+ assert.match(incomplete,/WORKING LOSS = Belum lengkap/);
+ assert.match(incomplete,/SHIFT 1 = LOSS 15 LTR \\(7,5%\\)/);
+ assert.match(incomplete,/SHIFT 2 = Belum lengkap/);
+});
 test('gain remains gain and supply uses weighted totals, not averaged percentages',()=>{
  const f=fixture();f.movements.push({shift:2,jenis:'RECEIPT',destination_storage:'FT0073',transporter_measured_qty:9000,destination_measured_qty:9030,qty:9000});
  f.closings[1].actual_qty+=9060;
