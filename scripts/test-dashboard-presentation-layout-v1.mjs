@@ -38,7 +38,7 @@ test("presentation helpers are display-only and do not mutate database",()=>{
 test("runtime loads presentation layout after dashboard polish",()=>{
   assert.match(time,/dashboard-reference-polish-guard-v3\.js\?v=20260913h1/);
   assert.match(time,/fc-chart-gap-bridge-v1\.js\?v=20260913a2/);
-  assert.match(time,/dashboard-presentation-layout-v1\.js\?v=20260913a1/);
+  assert.match(time,/dashboard-presentation-layout-v1\.js\?v=20261025-fc-state1/);
 });
 
 test("presentation script is syntactically valid",()=>{
