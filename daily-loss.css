@@ -1,11 +1,19 @@
 .daily-loss-panel{margin:0 0 18px;padding:18px;background:#fff;border:1px solid #e2e8f0;border-radius:15px}
 .daily-loss-heading{margin:0 0 12px;font-size:15px;line-height:1.5;color:#0f172a}
 .daily-loss-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.daily-loss-card{min-width:0;padding:16px;border:1px solid #e2e8f0;border-top:4px solid #94a3b8;border-radius:12px;background:#f8fafc}
-.daily-loss-card[data-state="loss"]{background:#fff7ed;border-color:#fdba74}
-.daily-loss-card[data-state="gain"]{background:#f0fdf4;border-color:#86efac}
-.daily-loss-card[data-state="balance"]{background:#eff6ff;border-color:#93c5fd}
+.daily-loss-card{min-width:0;padding:16px;border:1px solid #cbd5e1;border-top:4px solid #64748b;border-radius:12px;background:#f1f5f9;box-shadow:0 2px 6px rgba(15,23,42,.05)}
+.daily-loss-card[data-state="loss"]{background:#ffe4e6;border-color:#fb7185;border-top-color:#be123c}
+.daily-loss-card[data-state="gain"]{background:#dcfce7;border-color:#4ade80;border-top-color:#15803d}
+.daily-loss-card[data-state="balance"]{background:#dbeafe;border-color:#60a5fa;border-top-color:#1d4ed8}
 .daily-loss-label{font-size:12px;font-weight:700;color:#334155;margin-bottom:8px}
 .daily-loss-value{font-size:20px;font-weight:800;color:#0f172a;line-height:1.45;overflow-wrap:anywhere}
-.daily-loss-note{font-size:11px;line-height:1.5;color:#64748b;margin-top:8px}
+.daily-loss-note{font-size:11px;line-height:1.5;color:#475569;margin-top:8px}
+.daily-loss-card[data-state="gain"] .daily-loss-value{color:#166534}
+.daily-loss-card[data-state="loss"] .daily-loss-value{color:#9f1239}
+.daily-loss-card[data-state="balance"] .daily-loss-value{color:#1e40af}
+.daily-loss-card[data-state="gain"] .daily-loss-label{color:#14532d}
+.daily-loss-card[data-state="loss"] .daily-loss-label{color:#881337}
+.daily-loss-card[data-state="balance"] .daily-loss-label{color:#1e3a8a}
+.daily-loss-card[data-state="loss"] .daily-loss-note{color:#881337}
+.daily-loss-card[data-state="gain"] .daily-loss-note{color:#166534}
 @media(max-width:560px){.daily-loss-grid{grid-template-columns:1fr}.daily-loss-panel{padding:14px}.daily-loss-value{font-size:18px}}
