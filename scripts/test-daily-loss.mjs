@@ -10,11 +10,11 @@ const date='2026-10-23';
 function fixture(){return {date,master:[],
  openings:[{storage:'FT0073',shift:1,qty:410},{storage:'FT0073',shift:2,qty:1185}],
  closings:[{storage:'FT0073',shift:1,actual_qty:1185},{storage:'FT0073',shift:2,actual_qty:975}],
- movements:[{shift:1,jenis:'RECEIPT',destination_storage:'FT0073',transporter_measured_qty:1000,destination_measured_qty:990,qty:1000}],
+ movements:[{shift:1,jenis:'RECEIPT',destination_storage:'FT0073',transporter_measured_qty:1000,destination_measured_qty:990,qty:1000,transporter:'PT DKA',document_reference:'DO-22',do_qty_liter:10000,do_final:true,calculation_method:'RECEIPT_FLOWMETER_DO'}],
  fuels:[{shift:'Shift 1',fuel_truck:'FT0073',fuel:200},{shift:'Shift 2',fuel_truck:'FT0073',fuel:200}]};}
 test('daily receipt loss and both-shift working loss have independent correct denominators',()=>{
  const r=api().calculate(fixture());
- assert.equal(r.supply.qty,10);assert.equal(r.supply.percent,1);assert.equal(r.working.qty,25);assert.equal(r.working.percent,6.25);
+ assert.equal(r.supply.qty,-9000);assert.equal(r.supply.percent,-90);assert.equal(r.working.qty,25);assert.equal(r.working.percent,6.25);
  assert.equal(r.working.status,'complete');
  assert.match(api().reportText(r),/23\/10\/2026/);assert.match(api().reportText(r),/WORKING LOSS = LOSS 25 LTR \(6,25%\)/);
 });
@@ -32,26 +32,31 @@ test('copy report keeps working total and breaks out shift 1 and shift 2 with in
  assert.match(incomplete,/SHIFT 1 = LOSS 15 LTR \(7,5%\)/);
  assert.match(incomplete,/SHIFT 2 = Belum lengkap/);
 });
-test('gain remains gain and supply uses weighted totals, not averaged percentages',()=>{
- const f=fixture();f.movements.push({shift:2,jenis:'RECEIPT',destination_storage:'FT0073',transporter_measured_qty:9000,destination_measured_qty:9030,qty:9000});
+test('Supply signed gain is positive actual flow - DO and uses weighted DO denominator',()=>{
+ const f=fixture();
+ f.movements[0].transporter_measured_qty=10100;
+ f.movements.push({shift:2,jenis:'RECEIPT',destination_storage:'FT0073',transporter_measured_qty:10050,destination_measured_qty:9030,qty:9030,transporter:'PT DKA',document_reference:'DO-23',do_qty_liter:10000,do_final:true,calculation_method:'RECEIPT_FLOWMETER_DO'});
  f.closings[1].actual_qty+=9060;
- const r=api().calculate(f);assert.equal(r.supply.qty,-20);assert.equal(r.supply.percent,-0.2);assert.equal(r.working.qty,-5);
- assert.match(api().reportText(r),/SUPPLY LOSS = GAIN 20 LTR \(0,2%\)/);
+ const r=api().calculate(f);
+ assert.equal(r.supply.qty,150);assert.equal(r.supply.percent,0.75);
+ assert.equal(r.working.qty,-5);
+ assert.match(api().reportText(r),/SUPPLY LOSS = GAIN 150 LTR \(0,75%\)/);
 });
 test('missing either shift, one tank, malformed values or duplicate snapshot is incomplete',()=>{
  for(const mutate of [f=>f.closings.pop(),f=>f.openings.pop(),f=>f.openings[0].qty=null,f=>f.closings[1].actual_qty='',f=>f.closings.push({...f.closings[0]}),f=>f.movements.push({shift:2,jenis:'TRANSFER',source_storage:'MT06',destination_storage:'FT0073',qty:10}),f=>f.fuels[0].shift=3,f=>f.fuels[0].fuel='oops']){
   const f=fixture();mutate(f);const r=api().calculate(f);assert.equal(r.working.status,'incomplete');assert.equal(r.working.qty,null);assert.equal(r.working.percent,null);
  }
 });
-test('missing receipt audit stays incomplete, zero measured receipt is a real full loss',()=>{
- const f=fixture();delete f.movements[0].destination_measured_qty;
+test('legacy receipts or missing DO details stay incomplete, never silently zero or old sonding loss',()=>{
+ const f=fixture();
+ delete f.movements[0].do_qty_liter;
  assert.equal(api().calculate(f).supply.status,'incomplete');
- f.movements[0].destination_measured_qty=0;
- assert.equal(api().calculate(f).supply.percent,100);
+ f.movements[0].do_qty_liter=10000;
+ f.movements[0].do_final=false;
+ assert.equal(api().calculate(f).supply.status,'incomplete');
+ f.movements[0].do_final=true;
+ assert.equal(api().calculate(f).supply.qty,-9000);
  delete f.movements[0].transporter_measured_qty;
- f.movements[0].meter_start_liter=500;f.movements[0].meter_end_liter=1500;
- assert.equal(api().calculate(f).supply.qty,1000);
- f.movements[0].meter_start_liter=null;
  assert.equal(api().calculate(f).supply.status,'incomplete');
 });
 test('no receipts and no usage never invent a percentage or divide by zero',()=>{
@@ -82,10 +87,10 @@ function fakeDb(tables,errorTable){
  };}};
 }
 test('loader paginates ordered one-day reads and reuses already deduplicated fuel',async()=>{
- const f=fixture();const receipts=Array.from({length:501},()=>({...f.movements[0]}));
+ const f=fixture();const receipts=Array.from({length:501},(_,i)=>({...f.movements[0],document_reference:'DO-'+i}));
  const db=fakeDb({stock_opening:f.openings,stock_closing:f.closings,stock_movements:receipts});
  const r=await api().load(db,date,f.fuels,f.master);
- assert.equal(r.supply.qty,5010);assert.equal(db.calls.filter(x=>x.table==='stock_movements').length,2);
+ assert.equal(r.supply.qty,-4509000);assert.equal(db.calls.filter(x=>x.table==='stock_movements').length,2);
  for(const q of db.calls){assert.equal(q.order,'id');assert.deepEqual(q.filters,[['tanggal',date]]);assert.notEqual(q.columns,'*');}
  assert.equal(db.calls.some(x=>x.table==='fuel_history'),false);
 });
@@ -107,8 +112,8 @@ function periodFixture(){
  for(const key of ['openings','closings','movements','fuels']){
   first[key].forEach(r=>r.tanggal='2026-10-22');second[key].forEach(r=>r.tanggal='2026-10-23');
  }
- // Day 2: supply 9000 - 8970 = 30; shift 1 loss 20 / usage 800; shift 2 gain 10 / usage 100.
- second.movements[0].transporter_measured_qty=9000;second.movements[0].destination_measured_qty=8970;
+ // Day 2: flow 9000 vs DO 10000; working shifts independently retain original fixture math.
+ second.movements[0].transporter_measured_qty=9000;second.movements[0].destination_measured_qty=8970;second.movements[0].document_reference='DO-23';
  second.fuels[0].fuel=800;second.fuels[1].fuel=100;
  second.closings[0].actual_qty=8560;second.openings[1].qty=8560;second.closings[1].actual_qty=8470;
  const result={startDate:'2026-10-22',endDate:'2026-10-23',master:[]};
@@ -118,7 +123,7 @@ function periodFixture(){
 test('MTD preserves total and splits working shifts with weighted own-shift percentages',()=>{
  assert.equal(typeof api().calculatePeriod,'function');
  const r=api().calculatePeriod(periodFixture());
- assert.equal(r.supply.qty,40);assert.equal(r.supply.percent,0.4);
+ assert.equal(r.supply.qty,-10000);assert.equal(r.supply.percent,-50);
  assert.equal(r.workingByShift[1].qty,35);assert.equal(r.workingByShift[1].percent,3.5);
  assert.equal(r.workingByShift[2].qty,0);assert.equal(r.workingByShift[2].percent,0);
  assert.equal(r.working.qty,35);assert.equal(r.working.percent,2.692308);
@@ -128,7 +133,7 @@ test('MTD incomplete shift does not hide the other shift or supply; total stays 
  const r=api().calculatePeriod(f);
  assert.equal(r.workingByShift[1].qty,35);assert.equal(r.workingByShift[1].status,'complete');
  assert.equal(r.workingByShift[2].qty,null);assert.match(r.workingByShift[2].note,/1\/2/);
- assert.equal(r.working.qty,null);assert.equal(r.supply.qty,40);
+ assert.equal(r.working.qty,null);assert.equal(r.supply.qty,-10000);
 });
 test('MTD missing whole day is incomplete, not a zero-loss day',()=>{
  const f=periodFixture();f.startDate='2026-10-21';const r=api().calculatePeriod(f);
@@ -153,12 +158,32 @@ test('period loader pages three range queries and does not re-fetch existing fue
 test('Dashboard combines MTD supply with H-1 working total and independent shifts',()=>{
  assert.equal(typeof api().calculateDashboard,'function');
  const r=api().calculateDashboard(periodFixture());
- assert.equal(r.supply.qty,40);assert.equal(r.supply.percent,0.4);
+ assert.equal(r.supply.qty,-10000);assert.equal(r.supply.percent,-50);
  assert.equal(r.workingDate,'2026-10-23');assert.equal(r.working.qty,10);
  assert.equal(r.workingByShift[1].qty,20);assert.equal(r.workingByShift[1].percent,2.5);
  assert.equal(r.workingByShift[2].qty,-10);assert.equal(r.workingByShift[2].percent,-10);
 });
 test('missing older closing does not hide completed H-1 working results',()=>{
  const f=periodFixture();f.closings=f.closings.filter(r=>r.tanggal===f.endDate);
- const r=api().calculateDashboard(f);assert.equal(r.working.status,'complete');assert.equal(r.working.qty,10);assert.equal(r.supply.qty,40);
+ const r=api().calculateDashboard(f);assert.equal(r.working.status,'complete');assert.equal(r.working.qty,10);assert.equal(r.supply.qty,-10000);
+});
+
+test('one DO split across MT and FT uses DO only once; unfinished DO never generates fake loss',()=>{
+ const basic={startDate:'2026-10-26',endDate:'2026-10-27',openings:[],closings:[],fuels:[],master:[]};
+ const movements=[
+  {tanggal:'2026-10-26',jenis:'RECEIPT',transporter:'PT. DKA',document_reference:'DO-100',
+   do_qty_liter:16000,do_final:false,calculation_method:'RECEIPT_FLOWMETER_DO',destination_storage:'MT01',transporter_measured_qty:9600},
+  {tanggal:'2026-10-27',jenis:'RECEIPT',transporter:'PT DKA',document_reference:'do-100',
+   do_qty_liter:16000,do_final:true,calculation_method:'RECEIPT_FLOWMETER_DO',destination_storage:'FT0073',transporter_measured_qty:6350}
+ ];
+ const incomplete=api().calculatePeriod({...basic,movements:movements.slice(0,1)});
+ assert.equal(incomplete.supply.status,'incomplete');
+ const result=api().calculatePeriod({...basic,movements});
+ assert.equal(result.supply.qty,-50);
+ assert.equal(result.supply.base,16000);
+ assert.equal(result.supply.percent,-0.3125);
+ assert.match(api().reportText({date:'2026-10-27',supply:result.supply,working:{status:'incomplete',note:'Belum lengkap'},workingByShift:{}}),/LOSS 50 LTR \(0,31%\)/);
+ movements[1].transporter_measured_qty=6500;
+ assert.equal(api().calculatePeriod({...basic,movements}).supply.qty,100);
+ assert.match(api().reportText({date:'2026-10-27',supply:api().calculatePeriod({...basic,movements}).supply,working:{status:'incomplete',note:'Belum lengkap'},workingByShift:{}}),/GAIN 100 LTR \(0,63%\)/);
 });

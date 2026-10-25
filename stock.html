@@ -16,7 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
-<script src="stock-drafts.js?v=20261018-preload-v5"></script>
+<script src="stock-drafts.js?v=20261025-do-flow1"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -1449,15 +1449,32 @@ th{background:#f8fafc;color:#475569}
             <input type="time" id="receiptArrivalTime" step="1">
         </div>
         <div>
-            <label>Nomor PO / LO</label>
-            <input id="receiptReference" autocomplete="off" placeholder="Contoh: PO/LO-2026-001">
-            <span class="field-hint">PO/LO bisa dilengkapi kemudian.</span>
+            <label>Nomor DO / PO (wajib, unik per pengiriman)</label>
+            <input id="receiptReference" autocomplete="off" required maxlength="80" placeholder="Contoh: DO-2026-001">
+            <span class="field-hint">Pakai nomor yang sama bila satu DO dibongkar ke MT dan FT. Jangan gunakan nomor PO umum untuk beberapa truk.</span>
         </div>
         <div>
             <label>Transportir</label>
             <select id="receiptTransporter">
                 <option value="">Memuat Master Transportir...</option>
             </select>
+        </div>
+        <div>
+            <label>Qty DO (wajib, liter)</label>
+            <select id="receiptDoQty" required onchange="updateReceiptCalculation()">
+                <option value="">Pilih Qty DO</option>
+                <option value="10000">10.000 L</option>
+                <option value="16000">16.000 L</option>
+                <option value="24000">24.000 L</option>
+            </select>
+        </div>
+        <div>
+            <label>Status Bongkaran DO</label>
+            <select id="receiptDoFinal" required onchange="updateReceiptCalculation()">
+                <option value="false">Masih bongkar ke MT/FT lain</option>
+                <option value="true">Bongkaran terakhir DO ini</option>
+            </select>
+            <span class="field-hint">Tandai terakhir hanya setelah semua MT/FT selesai. MTD tidak menghitung DO yang belum selesai.</span>
         </div>
         <div>
             <label>Flowmeter Awal Transporter (Liter)</label>
@@ -1468,7 +1485,7 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="receiptMeterEnd" min="0" step="0.1" inputmode="decimal" oninput="updateReceiptCalculation()" placeholder="Setelah bongkar">
         </div>
         <div>
-            <label>Qty Menurut Transporter (Liter)</label>
+            <label>Qty Masuk Sistem (Flowmeter, Liter)</label>
             <input type="number" id="receiptQty" class="auto-liter" readonly placeholder="Flowmeter akhir - awal">
         </div>
         <div>
@@ -1484,9 +1501,9 @@ th{background:#f8fafc;color:#475569}
             <input type="number" id="receiptTankQty" class="auto-liter" readonly placeholder="Liter sesudah - sebelum">
         </div>
         <div>
-            <label id="receiptLossLabel">Hasil Audit Bongkaran (Transportir - Aktual)</label>
-            <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Transporter - tangki">
-            <span class="field-hint">Positif = LOSS, negatif = GAIN.</span>
+            <label id="receiptLossLabel">Selisih Flow vs Sonding (audit saja)</label>
+            <input type="number" id="receiptLoss" class="auto-liter" readonly placeholder="Flow - Sonding">
+            <span class="field-hint">Tidak dipakai menghitung Supply Loss. Supply memakai total Flowmeter satu DO.</span>
         </div>
         <div>
             <label>Petugas Sonding (Akun Login)</label>
@@ -1790,7 +1807,8 @@ function sameStockMovementPayload(left,right){
 }
 
 async function dispatchStockMovementRequest(request){
-    const {data,error}=await db.rpc("save_stock_movement_safe",{
+    const rpcName=request.payload?.calculation_method==="RECEIPT_FLOWMETER_DO"?"save_stock_receipt_do_safe":"save_stock_movement_safe";
+    const {data,error}=await db.rpc(rpcName,{
         p_request_id:request.id,
         p_payload:request.payload,
         p_recorded_at:request.recordedAt
@@ -2656,8 +2674,10 @@ function buildReceiptCopyReport(measurement=null,operatorOverride="",dateTimeOve
         `Flowmeter Akhir: ${reportLiters(data.meterEnd)}`,
         `Qty Menurut Transporter: ${reportLiters(data.transporterQty)}`,
         `Aktual Diterima ${destination}: ${reportLiters(data.tankQty)}`,
-        `Hasil Audit Bongkaran: ${receiptAuditReport(data.loss)}`,
-        `Stock Bertambah: ${reportLiters(data.tankQty)} (mengikuti hasil sonding)`
+        `Selisih Flowmeter - Sonding (audit): ${reportSignedLiters(data.loss)}`,
+        `Qty DO: ${reportLiters(Number(document.getElementById("receiptDoQty").value)||0)}`,
+        `Status DO: ${document.getElementById("receiptDoFinal").value==="true"?"BONGKAR SELESAI":"BELUM SELESAI / LANJUT STORAGE LAIN"}`,
+        `Stock Bertambah: ${reportLiters(data.transporterQty)} (mengikuti Flowmeter)`
     ].join("\n");
 }
 
@@ -3020,7 +3040,7 @@ function updateReceiptCalculation(){
     document.getElementById("receiptTankAfterLabel").textContent=
         `Sonding ${destination} Sesudah Bongkar (CM)`;
     document.getElementById("receiptTankQtyLabel").textContent=
-        `Qty Masuk ${destination} Menurut Tera (Liter)`;
+        `Qty Sonding ${destination} (audit saja)`;
     document.getElementById("receiptTankHeightBefore").placeholder=
         `Sonding awal ${destination}`;
     document.getElementById("receiptTankHeightAfter").placeholder=
@@ -3136,7 +3156,7 @@ function receiptHistoryQuantities(row){
         row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
             ? n(row.destination_measured_qty)
             : n(row.qty);
-    const loss=
+    const loss=row.calculation_method==="RECEIPT_FLOWMETER_DO"?null:
         row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
             ? n(row.measurement_loss_qty)
             : r1(transporterQty-tankQty);
@@ -3170,7 +3190,7 @@ async function loadReceiptHistory(){
     CURRENT_RECEIPT_HISTORY=[];
 
     let query=db.from("stock_movements")
-        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator,do_qty_liter,do_final,calculation_method")
         .eq("jenis","RECEIPT")
         .order("tanggal",{ascending:false})
         .order("jam",{ascending:false})
@@ -3240,10 +3260,10 @@ async function loadReceiptHistory(){
                     ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} -> ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
                     : ""}
             </td>
-            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${receiptAuditLabel(loss)}</td>
+            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"LIHAT SUPPLY PER DO":receiptAuditLabel(loss)}</td>
             <td>${esc(row.operator||"-")}</td>
             <td>${
-                isStockEditor()
+                isStockEditor() && row.calculation_method!=="RECEIPT_FLOWMETER_DO"
                     ? `<button class="edit-btn small-btn" type="button" onclick="updateReceiptReference(${Number(row.id)})">${hasReference?"EDIT":"ISI"} PO/LO</button>`
                     : "-"
             }</td>
@@ -4759,6 +4779,8 @@ async function saveReceipt(){
     const transporter=document.getElementById("receiptTransporter").value.trim();
     const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase()||null;
     const arrivalTime=document.getElementById("receiptArrivalTime").value;
+    const do_qty_liter=Number(document.getElementById("receiptDoQty").value);
+    const do_final=document.getElementById("receiptDoFinal").value==="true";
     let operator=soundingOfficerName()||document.getElementById("receiptOperator").value.trim();
 
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==="fuelman"){
@@ -4769,6 +4791,14 @@ async function saveReceipt(){
         operator=ACTIVE_FUELMAN_SESSION.fuelman_name||CURRENT_PROFILE.display_name||operator;
     }
 
+    if(!document_reference){
+        alert("Nomor DO / PO wajib diisi agar bongkaran MT dan FT bisa digabung.");
+        return;
+    }
+    if(![10000,16000,24000].includes(do_qty_liter)){
+        alert("Pilih Qty DO: 10.000, 16.000 atau 24.000 liter.");
+        return;
+    }
     if(!arrivalTime){
         alert("Masukkan jam kedatangan transporter.");
         return;
@@ -4852,12 +4882,14 @@ async function saveReceipt(){
         operation_mode:"LIVE",
         source_storage:null,
         destination_storage,
-        qty:measurement.tankQty,
+        qty:measurement.transporterQty,
+        do_qty_liter,
+        do_final,
         operator,
         transporter,
         document_reference,
         note:`PO/LO ${document_reference||"BELUM DIISI"} | Flowmeter ${measurement.meterStart} -> ${measurement.meterEnd} L | Tangki ${measurement.tankBefore.matchedHeightCm} -> ${measurement.tankAfter.matchedHeightCm} cm`,
-        calculation_method:"RECEIPT_FLOWMETER_VS_DESTINATION_TERA",
+        calculation_method:"RECEIPT_FLOWMETER_DO",
         meter_start_liter:measurement.meterStart,
         meter_end_liter:measurement.meterEnd,
         transporter_measured_qty:measurement.transporterQty,
@@ -4865,8 +4897,8 @@ async function saveReceipt(){
         destination_liter_before:measurement.tankBefore.liters,
         destination_height_after_cm:measurement.tankAfter.matchedHeightCm,
         destination_liter_after:measurement.tankAfter.liters,
-        destination_measured_qty:measurement.tankQty,
-        measurement_loss_qty:measurement.loss,
+        destination_measured_qty:measurement.transporterQty,
+        measurement_loss_qty:null,
         tera_version:TERA.version
     });
 
@@ -4880,9 +4912,7 @@ async function saveReceipt(){
 
     document.getElementById("receiptStatus").textContent=
         error?"[GAGAL] "+error.message:
-            document_reference
-                ? `[OK] Penerimaan ${document_reference} tersimpan dan masuk ke history.`
-                : "[OK] Penerimaan tersimpan. PO/LO ditandai BELUM DIISI untuk dilengkapi Admin/GL/Atasan.";
+            `[OK] Bongkar ${document_reference} tersimpan. Stock ${destination_storage} bertambah ${fmt(measurement.transporterQty)} L dari Flowmeter.`;
 
     if(error){
         await finishStockSave(false,error.message);
@@ -4893,7 +4923,7 @@ async function saveReceipt(){
     window.KPPStockDrafts?.clear("receipt");
     setCopyPreview("receiptCopyPreview",receiptReport);
     [
-        "receiptReference","receiptMeterStart","receiptMeterEnd","receiptQty",
+        "receiptReference","receiptDoQty","receiptMeterStart","receiptMeterEnd","receiptQty",
         "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
     ].forEach(id=>{document.getElementById(id).value="";});
     // Clear the visible front/rear fields only after a confirmed receipt save.
@@ -4901,14 +4931,13 @@ async function saveReceipt(){
     ["receiptTankHeightBefore","receiptTankHeightAfter"].forEach(id=>{
         document.getElementById(id).dispatchEvent(new Event("kpp-clear-paired-sounding"));
     });
+    document.getElementById("receiptDoFinal").value="false";
     document.getElementById("receiptArrivalTime").value=localTime();
     // A successful RPC is final; don't hold the operator in the save overlay
     // while the multi-table dashboard refreshes over a slow mine-site link.
     await finishStockSave(
         true,
-        document_reference
-            ? "Penerimaan Solar "+document_reference+" sudah tersimpan."
-            : "Penerimaan Solar sudah tersimpan. PO/LO dapat dilengkapi Admin/GL/Atasan dari History Penerimaan."
+        "Penerimaan Solar DO "+document_reference+" tersimpan dengan Qty Flowmeter."
     );
     void loadStock().catch(e=>console.warn("Refresh Stock sesudah penerimaan:",e));
     }finally{

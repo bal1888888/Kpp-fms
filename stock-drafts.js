@@ -7,7 +7,7 @@
   const GROUPS={
     check:["soundingCheckStorage","soundingCheckFront","soundingCheckRear"],
     opening:["openingStorage","openingHeight"],
-    receipt:["receiptDestination","receiptArrivalTime","receiptReference","receiptTransporter",
+    receipt:["receiptDestination","receiptArrivalTime","receiptReference","receiptTransporter","receiptDoQty","receiptDoFinal",
       "receiptMeterStart","receiptMeterEnd","receiptTankHeightBefore","receiptTankHeightAfter"],
     transfer:["transferSource","transferDestination","transferDestinationHeightBefore",
       "transferDestinationHeightAfter","transferSourceHeightBefore","transferSourceHeightAfter"],
