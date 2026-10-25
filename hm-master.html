@@ -170,6 +170,13 @@ tbody tr:hover{background:#f8fafc}
   .master-toolbar{grid-template-columns:1fr}.master-toolbar>div:first-child{grid-column:auto}
   .bulk-actions{grid-template-columns:1fr}.bulk-actions #bulkSaveBtn{grid-column:auto}
 }
+
+.unit-delete-btn,.unit-restore-btn{border:1px solid;border-radius:9px;padding:8px 11px;min-height:36px;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap}
+.unit-delete-btn{background:#fff1f2;border-color:#fda4af;color:#9f1239}
+.unit-delete-btn:hover{background:#ffe4e6}
+.unit-restore-btn{background:#ecfdf5;border-color:#86efac;color:#166534}
+.unit-restore-btn:hover{background:#dcfce7}
+@media(max-width:760px){.unit-delete-btn,.unit-restore-btn{min-height:42px;padding:10px 12px}}
 </style>
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20261019-ui-refresh1">
 </head>
@@ -188,7 +195,7 @@ tbody tr:hover{background:#f8fafc}
     <div id="tabUnit" class="tab-page active">
         <div class="panel">
             <div class="info">Unit aktif otomatis tersedia di Pengisian Fuel.</div>
-            <div class="warning">Unit berhistori: nonaktifkan, jangan hapus.</div>
+            <div class="warning">HAPUS hanya menghilangkan unit tanpa histori. Unit yang pernah dipakai akan DINONAKTIFKAN agar data pengisian, CCR, HM dan Logsheet tetap aman.</div>
         </div>
 
         <div class="panel">
@@ -289,6 +296,14 @@ tbody tr:hover{background:#f8fafc}
                     <label>Cari Unit / EGI</label>
                     <input id="unitSearch" placeholder="Ketik DT, EX, HD785..." oninput="renderUnitTable()">
                 </div>
+                <div>
+                    <label>Tampilkan Status</label>
+                    <select id="unitActiveFilter" onchange="renderUnitTable()">
+                        <option value="active">AKTIF</option>
+                        <option value="inactive">NONAKTIF / ARSIP</option>
+                        <option value="all">SEMUA UNIT</option>
+                    </select>
+                </div>
                 <div class="card">
                     <small>TOTAL UNIT</small>
                     <strong id="totalMasterUnit">0</strong>
@@ -339,6 +354,7 @@ tbody tr:hover{background:#f8fafc}
 
             <div class="qr-selected-note">Centang unit, lalu pilih <b>GENERATE QR TERPILIH</b>.</div>
 
+            <div id="unitRemoveStatus" class="status" role="status" aria-live="polite"></div>
             <div class="table-wrap table-scroll">
                 <table>
                     <thead>
@@ -746,6 +762,7 @@ const BULK_HM_SELECTED=new Set();
 const BULK_HM_VALUES=new Map();
 let BULK_HM_CURRENT=new Map();
 let BULK_CAPACITY_ROWS=[];
+let UNIT_REMOVE_BUSY=false;
 
 function pad(v){return String(v).padStart(2,"0")}
 function localDate(){return window.KPPTime.localDate();}
@@ -754,6 +771,9 @@ function n(v){return Number(v||0)}
 function fmt(v){return Number(v).toLocaleString("id-ID",{maximumFractionDigits:1})}
 function normalizeUnit(v){return String(v||"").trim().toUpperCase()}
 function normalizeTransporter(v){return String(v||"").trim().replace(/\s+/g," ").toUpperCase()}
+function canEditUnitRemoval(){
+    return ["gl","admin"].includes(String(window.KPP_PROFILE?.role||"").trim().toLowerCase());
+}
 function canEditTankCapacity(){
     const role=String(window.KPP_PROFILE?.role||"").trim().toLowerCase();
     return role==="gl" || role==="admin";
@@ -925,8 +945,9 @@ function renderUnitOptions(){
         });
 }
 
-function mergeUnitMasterRows(rows){
-    const map=new Map(BASE_MASTER_UNITS.map(code=>[
+function mergeUnitMasterRows(rows,{fallback=false}={}){
+    // Master online is authoritative; deleted units must not reappear from hardcoded fallback.
+    const map=new Map((fallback?BASE_MASTER_UNITS:[]).map(code=>[
         code,
         {
             code_unit:code,
@@ -985,7 +1006,7 @@ async function loadUnitMaster(){
 
     if(error){
         console.warn("Unit Master online belum tersedia:",error.message);
-        mergeUnitMasterRows([]);
+        mergeUnitMasterRows([],{fallback:true});
         document.getElementById("unitSaveStatus").textContent=
             "⚠️ Unit Master online belum tersedia. Jalankan unit_master_setup.sql terlebih dahulu.";
         return;
@@ -998,6 +1019,7 @@ function getFilteredUnitRows(){
     const q=normalizeUnit(document.getElementById("unitSearch")?.value||"");
     const qrMode=document.getElementById("qrFilter")?.value||"all";
     const capacityMode=document.getElementById("capacityFilter")?.value||"all";
+    const activeMode=document.getElementById("unitActiveFilter")?.value||"active";
 
     return UNIT_MASTER_ROWS.filter(row=>{
         const hay=[
@@ -1023,7 +1045,8 @@ function getFilteredUnitRows(){
             (capacityMode==="missing" && row.active && !hasCapacity) ||
             (capacityMode==="ready" && hasCapacity);
 
-        return searchOk && qrOk && capacityOk;
+        const activeOk=activeMode==="all" || (activeMode==="active"&&row.active) || (activeMode==="inactive"&&!row.active);
+        return searchOk && qrOk && capacityOk && activeOk;
     });
 }
 
@@ -1261,7 +1284,12 @@ function renderUnitTable(){
             <td>
                 <div class="qr-actions">
                     <button class="small-btn" onclick="editUnitMaster('${row.code_unit}')">EDIT</button>
-                    <button class="qr-btn" onclick="generateOneQr('${row.code_unit}')">QR INI</button>
+                    ${row.active?`<button class="qr-btn" onclick="generateOneQr('${row.code_unit}')">QR INI</button>`:""}
+                    ${canEditUnitRemoval()?
+                        (row.active
+                          ? `<button type="button" class="unit-delete-btn" onclick="removeUnitMaster('${row.code_unit}')">HAPUS</button>`
+                          : `<button type="button" class="unit-restore-btn" onclick="restoreUnitMaster('${row.code_unit}')">AKTIFKAN</button>`)
+                        : ""}
                 </div>
             </td>
         </tr>`;
@@ -1338,6 +1366,50 @@ async function generateSelectedQr(){
         encodeURIComponent(codes.join(","));
 
     window.location.href=url;
+}
+
+async function removeUnitMaster(code){
+    code=normalizeUnit(code);
+    if(UNIT_REMOVE_BUSY||!canEditUnitRemoval())return;
+    const row=UNIT_MASTER_ROWS.find(r=>r.code_unit===code);
+    if(!row)return;
+    const ok=confirm("HAPUS UNIT "+code+"?\n\nTanpa histori: unit & token QR dihapus permanen.\nDengan histori: unit hanya DINONAKTIFKAN, histori tetap aman.\n\nLanjutkan?");
+    if(!ok)return;
+    const status=document.getElementById("unitRemoveStatus");
+    UNIT_REMOVE_BUSY=true;
+    if(status)status.textContent="Memeriksa histori unit "+code+"...";
+    try{
+        const {data,error}=await db.rpc("remove_unit_master_safe",{p_unit:code});
+        if(error)throw error;
+        if(!data?.ok)throw new Error("Perubahan belum dikonfirmasi server.");
+        QR_SELECTED.delete(code);
+        BULK_HM_SELECTED.delete(code);
+        BULK_HM_VALUES.delete(code);
+        await loadUnitMaster();
+        if(status)status.textContent=data.action==="DELETED"
+          ? "✅ "+code+" dihapus dari Master Unit (tidak ada histori)."
+          : "✅ "+code+" dinonaktifkan. Histori tetap aman. Pilih NONAKTIF / ARSIP untuk mengaktifkannya lagi.";
+    }catch(error){
+        if(status)status.textContent="❌ Gagal memproses "+code+": "+(error.message||"kesalahan server");
+    }finally{UNIT_REMOVE_BUSY=false;}
+}
+
+async function restoreUnitMaster(code){
+    code=normalizeUnit(code);
+    if(UNIT_REMOVE_BUSY||!canEditUnitRemoval())return;
+    const row=UNIT_MASTER_ROWS.find(r=>r.code_unit===code);
+    if(!row||row.active)return;
+    if(!confirm("Aktifkan kembali unit "+code+" ke Pengisian dan Check-in?"))return;
+    const status=document.getElementById("unitRemoveStatus");
+    UNIT_REMOVE_BUSY=true;
+    try{
+        const {data,error}=await db.from("unit_master").update({active:true}).eq("code_unit",code).select("code_unit");
+        if(error)throw error;
+        if(!data||data.length!==1)throw new Error("Perubahan status tidak dikonfirmasi database.");
+        await loadUnitMaster();
+        if(status)status.textContent="✅ "+code+" kembali AKTIF.";
+    }catch(error){if(status)status.textContent="❌ Gagal mengaktifkan "+code+": "+(error.message||"kesalahan server");}
+    finally{UNIT_REMOVE_BUSY=false;}
 }
 
 function editUnitMaster(code){
