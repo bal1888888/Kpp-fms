@@ -119,7 +119,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.save_stock_receipt_do_safe(p_request_id uuid, p_payload jsonb, p_recorded_at timestamp with time zone DEFAULT now())
@@ -384,7 +384,7 @@ exception when others then
   get stacked diagnostics v_state=returned_sqlstate,v_message=message_text;
   return jsonb_build_object('ok',false,'code',v_state,'message',v_message);
 end;
-$function$
+$function$;
 
 
 REVOKE ALL ON FUNCTION public.save_stock_receipt_do_safe(uuid,jsonb,timestamptz) FROM public,anon;
