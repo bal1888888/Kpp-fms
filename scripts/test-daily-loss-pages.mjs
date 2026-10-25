@@ -79,3 +79,15 @@ test('Dashboard loss errors retain four unavailable cards and stale responses ca
  const old=h.loadDashboard();h.document.getElementById('reportDate').value='2026-10-22';await h.loadDashboard();release();await old;
  const text=texts(h.document.getElementById('dailyLossPanel'));assert.match(text,/21\/10\/2026 – 21\/10\/2026/);assert.doesNotMatch(text,/23\/10\/2026/);
 });
+
+test('loss cards use clear green gain, red loss and blue balance colors across Daily and Dashboard',()=>{
+ const css=read('daily-loss.css');
+ assert.match(css,/\.daily-loss-card\[data-state="gain"\]\{background:#dcfce7;border-color:#4ade80;border-top-color:#15803d\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="loss"\]\{background:#ffe4e6;border-color:#fb7185;border-top-color:#be123c\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="balance"\]\{background:#dbeafe;border-color:#60a5fa;border-top-color:#1d4ed8\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="gain"\] \.daily-loss-value\{color:#166534\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="loss"\] \.daily-loss-value\{color:#9f1239\}/);
+ for(const page of ['daily-report.html','dashboard.html']){
+  assert.match(read(page),/daily-loss\.css\?v=20261025-strong-status1/);
+ }
+});
