@@ -12,7 +12,7 @@ function harness(page){
   if(h.failLoss)throw new Error('offline');
   const sh=shift=>({shift,storage:'FT0073'});
   const data=table==='stock_opening'?[{...sh(1),qty:1000},{...sh(2),qty:890}]:table==='stock_closing'?[{...sh(1),actual_qty:890},{...sh(2),actual_qty:780}]:[];
-  return {data};
+  return {data:data.map(r=>({...r,tanggal:this.date}))};
  } };}},STORAGE_ROWS:[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02'}],
  console:{error(){},warn(){}},n:Number,fmt:String,fmtIto:String,formatAngka:String,formatIto:String,formatTanggal:d=>d,formatDateID:d=>d,
  localDate:()=>doc.getElementById('reportDate').value,dateMinusOne:day,dateShift:day,operationalPeriod:d=>({start:d}),previousEquivalentWindow:(p,d)=>({start:d,end:d}),currentOperationalShift:()=>({tanggal:'2026-10-24',shift:1}),
@@ -33,6 +33,8 @@ test('both pages load shared module and show identical H-1 working qty and perce
   const h=harness(page);await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
   const text=texts(h.document.getElementById('dailyLossPanel'));
   assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
+  if(page==='dashboard.html'){assert.match(text,/Total Working Loss MTD/);assert.match(text,/Working Loss MTD • Shift 1/);assert.match(text,/Working Loss MTD • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);}
+  else assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,2);
   if(page==='daily-report.html'){assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
  }
 });
@@ -54,4 +56,26 @@ test('refresh clears stale report, blocks copy and an older date response cannot
 test('main report query failure leaves copying disabled and no previous numbers',async()=>{
  const h=harness('daily-report.html');await h.loadReport();h.calculateStock=async()=>{throw new Error('stock failed');};await h.loadReport();
  assert.equal(h.document.getElementById('copyBtn').disabled,true);assert.doesNotMatch(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS/);
+});
+test('Dashboard reads full MTD range and preserves total alongside both shift values',async()=>{
+ const h=harness('dashboard.html');h.operationalPeriod=()=>({start:'2026-10-22'});
+ h.fetchPagedFuel=async(start,end)=>['2026-10-22','2026-10-23'].filter(d=>d>=start&&d<=end).flatMap(tanggal=>[1,2].map(shift=>({tanggal,shift,fuel_truck:'FT0073',fuel:100})));
+ const requests=[];
+ h.db={from(table){const q={table};requests.push(q);return {
+ select(){return this;},gte(k,v){q.start=v;return this;},lte(k,v){q.end=v;return this;},order(){return this;},async range(){
+ const data=table==='stock_movements'?[]:['2026-10-22','2026-10-23'].flatMap(tanggal=>[1,2].map(shift=>table==='stock_opening'?{tanggal,shift,storage:'FT0073',qty:1000}:{tanggal,shift,storage:'FT0073',actual_qty:890}));return {data};
+ }};}};
+ await h.loadDashboard();const text=texts(h.document.getElementById('dailyLossPanel'));
+ assert.match(text,/22\/10\/2026 – 23\/10\/2026/);assert.match(text,/Total Working Loss MTD\nLOSS 40 LTR \(10%\)/);
+ assert.match(text,/Working Loss MTD • Shift 1\nLOSS 20 LTR \(10%\)/);assert.match(text,/Working Loss MTD • Shift 2\nLOSS 20 LTR \(10%\)/);
+ assert.equal(requests.length,3);assert.ok(requests.every(q=>q.start==='2026-10-22'&&q.end==='2026-10-23'));
+});
+test('Dashboard loss errors retain four unavailable cards and stale responses cannot replace latest period',async()=>{
+ const h=harness('dashboard.html');h.failLoss=true;await h.loadDashboard();
+ assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);
+ assert.match(texts(h.document.getElementById('dailyLossPanel')),/Gagal memuat/);
+ h.failLoss=false;const prior=h.fetchPagedFuel;let release;const barrier=new Promise(r=>release=r);
+ h.fetchPagedFuel=async(d,e)=>{if(d==='2026-10-23')await barrier;return prior(d,e);};
+ const old=h.loadDashboard();h.document.getElementById('reportDate').value='2026-10-22';await h.loadDashboard();release();await old;
+ const text=texts(h.document.getElementById('dailyLossPanel'));assert.match(text,/21\/10\/2026 – 21\/10\/2026/);assert.doesNotMatch(text,/23\/10\/2026/);
 });
