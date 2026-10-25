@@ -11,25 +11,43 @@
   const incomplete=()=>({status:'incomplete',qty:null,percent:null,note:'Belum lengkap'});
   function metric(qty,base){return {status:'complete',qty:rounded(qty),percent:base>0?rounded(qty/base*100):null,base,note:base>0?'':'Dasar persentase 0 L'};}
   function unavailable(date,message){return {date,supply:{...incomplete(),note:message},working:{...incomplete(),note:message}};}
+
+  // DO is counted ONCE per transportir + reference, even when posted to several storages.
+  // Supply signed variance: total actual flow - DO; positive is GAIN.
+  function calculateSupplyDO(movements=[]){
+    const receipts=movements.filter(r=>r.jenis==='RECEIPT');
+    if(!receipts.length)return {status:'empty',qty:0,percent:null,note:'Tidak ada penerimaan'};
+    const groups=new Map();
+    let invalid=0;
+    for(const row of receipts){
+      const document=code(row.document_reference);
+      const transporter=code(row.transporter).replace(/[^A-Z0-9]/g,'');
+      const doQty=number(row.do_qty_liter);
+      const flow=number(row.transporter_measured_qty);
+      if(!document||!transporter||![10000,16000,24000].includes(doQty) || flow===null || flow<=0 || row.do_final==null || row.calculation_method!=='RECEIPT_FLOWMETER_DO'){
+        invalid++;
+        continue;
+      }
+      const key=transporter+'|'+document;
+      if(!groups.has(key))groups.set(key,{doQty,flow:0,final:0,consistent:true});
+      const group=groups.get(key);
+      if(group.doQty!==doQty)group.consistent=false;
+      group.flow+=flow;
+      if(row.do_final===true)group.final++;
+    }
+    const unfinished=[...groups.values()].filter(g=>!g.consistent||g.final!==1).length;
+    if(invalid||unfinished)return {...incomplete(),note:'Belum lengkap: '+invalid+' transaksi tanpa DO baru; '+unfinished+' DO belum selesai/berbeda'};
+    const all=[...groups.values()];
+    const totalFlow=all.reduce((n,g)=>n+g.flow,0);
+    const totalDo=all.reduce((n,g)=>n+g.doQty,0);
+    return {...metric(totalFlow-totalDo,totalDo),sign:'actual-minus-do'};
+  }
   function calculate({date,openings=[],closings=[],movements=[],fuels=[],master=[]}){
     // Caller loads one operational date, retaining shift 1 and shift 2.
     const onDate=rows=>rows.filter(r=>!r.tanggal||r.tanggal===date);
     openings=onDate(openings);closings=onDate(closings);movements=onDate(movements);
     fuels=onDate(fuels).filter(r=>r.duplicate_of_id==null);
-    const receipts=movements.filter(r=>r.jenis==='RECEIPT');
-    let supplyLoss=0,supplyBase=0,supplyComplete=true;
-    for(const r of receipts){
-      let supplied=number(r.transporter_measured_qty);
-      if(supplied===null){
-        const start=number(r.meter_start_liter),end=number(r.meter_end_liter);
-        if(start!==null&&end!==null&&end>=start)supplied=end-start;
-      }
-      const received=number(r.destination_measured_qty);
-      if(supplied===null||supplied<=0||received===null||received<0){supplyComplete=false;continue;}
-      supplyLoss+=supplied-received;supplyBase+=supplied;
-    }
-    const supply=!receipts.length?{status:'empty',qty:0,percent:null,note:'Tidak ada penerimaan'}:
-      supplyComplete?metric(supplyLoss,supplyBase):incomplete();
+    const supply=calculateSupplyDO(movements);
     const workingByShift={};
     const dailyStorages=new Set([...openings,...closings].map(r=>code(r.storage)));
     const validShifts=![...openings,...closings,...movements,...fuels].some(r=>![1,2].includes(shift(r.shift)));
@@ -93,7 +111,7 @@
     const [openings,closings,movements]=await Promise.all([
       readDay(db,'stock_opening','id,tanggal,shift,storage,qty',date,endDate),
       readDay(db,'stock_closing','id,tanggal,shift,storage,actual_qty',date,endDate),
-      readDay(db,'stock_movements','id,tanggal,shift,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,transporter_measured_qty,meter_start_liter,meter_end_liter',date,endDate)
+      readDay(db,'stock_movements','id,tanggal,shift,jenis,qty,source_storage,destination_storage,source_measured_qty,destination_measured_qty,transporter_measured_qty,meter_start_liter,meter_end_liter,transporter,document_reference,do_qty_liter,do_final,calculation_method',date,endDate)
     ]);
     return {openings,closings,movements};
   }
@@ -120,7 +138,7 @@
       if(!complete.length)return {status:'empty',qty:0,percent:null,note:'Tidak ada penerimaan'};
       return metric(complete.reduce((n,m)=>n+m.qty,0),complete.reduce((n,m)=>n+m.base,0));
     };
-    return {startDate,endDate,supply:aggregate(days.map(d=>d.supply)),working:aggregate(days.map(d=>d.working),true),
+    return {startDate,endDate,supply:calculateSupplyDO(movements.filter(r=>r.tanggal>=startDate && r.tanggal<=endDate)),working:aggregate(days.map(d=>d.working),true),
       workingByShift:{1:aggregate(days.map(d=>d.workingByShift[1]),true),2:aggregate(days.map(d=>d.workingByShift[2]),true)}};
   }
   async function loadPeriod(db,startDate,endDate,fuels,master){
@@ -142,7 +160,7 @@
   }
   function valueText(m){
     if(m.status!=='complete')return m.note;
-    const state=m.qty>0?'LOSS':m.qty<0?'GAIN':'BALANCE';
+    const state=m.sign==='actual-minus-do' ? (m.qty>0?'GAIN':m.qty<0?'LOSS':'BALANCE') : (m.qty>0?'LOSS':m.qty<0?'GAIN':'BALANCE');
     return `${state} ${fmt(Math.abs(m.qty))} LTR (${m.percent===null?'—':fmt(Math.abs(m.percent))+'%'})`;
   }
   function reportText(result){
@@ -168,12 +186,12 @@
     grid.className='daily-loss-grid';
     host.appendChild(grid);
     const cards=isPeriod?[
-      ['Supply Loss MTD',result.supply,'% dari total qty transportir MTD','⛽','supply'],
+      ['Supply Loss MTD',result.supply,'% dari total Qty DO MTD','⛽','supply'],
       [dailyWorking?'Total Working Loss Harian':'Total Working Loss MTD',result.working,dailyWorking?'Shift 1 + 2 • % dari total pemakaian harian':'Shift 1 + 2 • % dari total pemakaian MTD','Σ','working-total'],
       [dailyWorking?'Working Loss Harian • Shift 1':'Working Loss MTD • Shift 1',result.workingByShift[1],dailyWorking?'% dari pemakaian Shift 1 harian':'% dari pemakaian Shift 1 MTD','1','working-1'],
       [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD','2','working-2']
     ]:[
-      ['Supply Loss',result.supply,'Flowmeter transportir − aktual masuk tangki • % dari qty transportir','⛽','supply'],
+      ['Supply Loss',result.supply,'Total Flowmeter − Qty DO (per DO selesai) • % dari Qty DO','⛽','supply'],
       ['Working Loss • Total',result.working,'Shift 1 + 2 • % dari total pemakaian harian','Σ','working-total'],
       ['Working Loss • Shift 1',result.workingByShift?.[1]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 1','1','working-1'],
       ['Working Loss • Shift 2',result.workingByShift?.[2]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 2','2','working-2']
@@ -182,7 +200,7 @@
       const card=doc.createElement('div');
       card.className='daily-loss-card';
       card.dataset.kind=kind;
-      card.dataset.state=m.status!=='complete'?'pending':m.qty>0?'loss':m.qty<0?'gain':'balance';
+      card.dataset.state=m.status!=='complete'?'pending':m.qty===0?'balance':m.sign==='actual-minus-do'?(m.qty>0?'gain':'loss'):(m.qty>0?'loss':'gain');
 
       const top=doc.createElement('div');
       top.className='daily-loss-top';
