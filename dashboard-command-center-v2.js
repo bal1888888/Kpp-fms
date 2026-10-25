@@ -113,7 +113,8 @@
     const stockItems=[...document.querySelectorAll("#stockTrendBars .stock-radial-item")];const latest=stockItems.find(x=>x.classList.contains("is-latest"))||stockItems.at(-1);
     const set=(key,value,foot)=>{const v=host.querySelector(`[data-kpi="${key}"]`),f=host.querySelector(`[data-foot="${key}"]`);if(v&&v.textContent!==value)v.textContent=value;if(f&&foot){if(f.textContent!==foot)f.textContent=foot;f.className=`kpp-cc-kpi-foot ${footClass(foot)}`;}};
     // Historical rings must NEVER override the authoritative shift-live stock.
-    if(liveSnapshot)displayLiveSnapshot(liveSnapshot);
+    if(liveStockStale)markStockStale("Koneksi terputus / pembacaan terakhir gagal");
+    else if(liveSnapshot)displayLiveSnapshot(liveSnapshot);
     set("yesterday",text(document.getElementById("usageYesterday"),"0 L"),text(document.getElementById("usageTrendBadge"),"vs. hari sebelumnya"));
     set("mtd",text(document.getElementById("totalFuelMTD"),"0 L"),text(document.getElementById("mtdCompareBadge"),"periode berjalan"));
     set("avg",text(document.getElementById("avgMTD"),"0 L/hari"),text(document.getElementById("activeDays"),"rata-rata harian"));
@@ -219,6 +220,7 @@
   }
 
   let liveSnapshot=null;
+  let liveStockStale=false;
   let stockLiveTimer=null;
   let stockLoadSerial=0;
   let lastStockRefreshAt=0;
@@ -276,6 +278,7 @@
       const latestPeriod=window.KPPTime.operationalShift();
       if(serial!==stockLoadSerial||period.tanggal!==latestPeriod.tanggal||period.shift!==latestPeriod.shift)return;
       liveSnapshot=snapshot;
+      liveStockStale=false;
       window.KPPDashboardLiveStock=snapshot;
       renderStorage(snapshot);
       displayLiveSnapshot(snapshot);
@@ -283,6 +286,7 @@
       lastStockRefreshAt=Date.now();
     }catch(error){
       console.warn("Dashboard live stock:",error);
+      liveStockStale=true;
       markStockStale(String(error?.message||"Gagal membaca data").slice(0,90));
     }finally{storageBusy=false;}
   }
