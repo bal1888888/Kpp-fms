@@ -238,6 +238,27 @@
       const clone=srcSvg.cloneNode(true);
       clone.removeAttribute("width");clone.removeAttribute("height");
       chart.replaceChildren(clone);
+    }else if(chart){
+      // FC has meaningful non-SVG states (no valid HM, failed query, still loading).
+      // Mirror those states rather than leaving the presentation placeholder forever.
+      const sourceStatus=document.querySelector("#dashboardFcChart [data-status]");
+      const chartStatus=document.querySelector("#dashboardFcChart [data-chart] .kpp-fc-status");
+      const outer=String(sourceStatus?.textContent||"").trim();
+      const inner=String(chartStatus?.textContent||"").trim();
+      const isError=!!sourceStatus?.classList?.contains("error")||!!chartStatus?.classList?.contains("error");
+      let message;
+      if(isError)message=outer.startsWith("Gagal")?outer:(inner||outer);
+      else if(inner&&inner!=="Pilih EGI lalu tampilkan.")message=inner;
+      else if(/Memuat|Menghitung/i.test(outer))message=outer;
+      else if(inner)message="Pilih EGI/unit pada panel Detail FC untuk menampilkan grafik.";
+      else message="FC belum tersedia. Buka Detail FC untuk memeriksa data.";
+      const current=chart.querySelector(".kpp-pv-empty");
+      if(!current||current.textContent!==message||current.classList.contains("is-error")!==isError){
+        const note=document.createElement("div");
+        note.className="kpp-pv-empty"+(isError?" is-error":"");
+        note.textContent=message;
+        chart.replaceChildren(note);
+      }
     }
     const legendUnit=document.querySelector("#dashboardFcChart .kpp-fc-legend-item[data-unit]")?.getAttribute("data-unit")||document.querySelector("#dashboardFcChart .kpp-fc-legend-item")?.textContent?.trim()||"FC unit";
     const unitEl=trend.querySelector("[data-fc-unit]");if(unitEl)unitEl.textContent=legendUnit;
