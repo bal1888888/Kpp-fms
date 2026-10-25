@@ -147,7 +147,7 @@
       await loadPageScript("dashboard-reference-polish-v3.js?v=20260913g2",{async:false});
       await loadPageScript("dashboard-reference-polish-guard-v3.js?v=20260913h1",{async:false});
       await loadPageScript("fc-chart-gap-bridge-v1.js?v=20260913a2",{async:false});
-      await loadPageScript("dashboard-presentation-layout-v1.js?v=20260913a1",{async:false});
+      await loadPageScript("dashboard-presentation-layout-v1.js?v=20261025-fc-state1",{async:false});
       await loadPageScript("dashboard-presentation-polish-v2.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-compact-trends-v3.js?v=20260913a1",{async:false});
       await loadPageScript("dashboard-visual-balance-v4.js?v=20260913a2",{async:false});
