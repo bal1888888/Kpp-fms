@@ -6,7 +6,7 @@ const read=p=>fs.readFileSync(p,'utf8');
 const day=d=>new Date(Date.parse(d+'T00:00:00Z')-86400000).toISOString().slice(0,10);
 function harness(page){
  const nodes=new Map();
- const doc={createElement(){return {ownerDocument:doc,children:[],dataset:{},style:{},classList:{add(){},remove(){}},append(...x){this.children.push(...x);},appendChild(x){this.children.push(x);},replaceChildren(){this.children=[];},textContent:''};},getElementById(id){if(!nodes.has(id))nodes.set(id,doc.createElement('div'));return nodes.get(id);}};
+ const doc={createElement(){return {ownerDocument:doc,children:[],dataset:{},style:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},classList:{add(){},remove(){}},append(...x){this.children.push(...x);},appendChild(x){this.children.push(x);},replaceChildren(){this.children=[];},textContent:''};},getElementById(id){if(!nodes.has(id))nodes.set(id,doc.createElement('div'));return nodes.get(id);}};
  doc.getElementById('reportDate').value='2026-10-24';doc.getElementById('reportShift').value='1';
  const h={document:doc,db:{from(table){return {select(){return this;},eq(k,date){this.date=date;return this;},order(){return this;},async range(){
   if(h.failLoss)throw new Error('offline');
@@ -88,6 +88,36 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
  assert.match(css,/\.daily-loss-card\[data-state="gain"\] \.daily-loss-value\{color:#166534\}/);
  assert.match(css,/\.daily-loss-card\[data-state="loss"\] \.daily-loss-value\{color:#9f1239\}/);
  for(const page of ['daily-report.html','dashboard.html']){
-  assert.match(read(page),/daily-loss\.css\?v=20261025-strong-status1/);
+  assert.match(read(page),/daily-loss\.css\?v=20261025-compact-icons1/);
+  assert.match(read(page),/daily-loss\.js\?v=20261025-compact-icons1/);
  }
+});
+
+test('compact loss KPI cards render icons in four stable metric slots for Dashboard and Daily',async()=>{
+ const kinds=['supply','working-total','working-1','working-2'];
+ const icons=['⛽','Σ','1','2'];
+ for(const page of ['daily-report.html','dashboard.html']){
+  const h=harness(page);
+  await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
+  const grid=h.document.getElementById('dailyLossPanel').children[1];
+  assert.equal(grid.className,'daily-loss-grid');
+  assert.equal(grid.children.length,4);
+  grid.children.forEach((card,i)=>{
+   assert.equal(card.className,'daily-loss-card');
+   assert.equal(card.dataset.kind,kinds[i]);
+   assert.equal(card.children.length,3);
+   const top=card.children[0];
+   assert.equal(top.className,'daily-loss-top');
+   assert.equal(top.children.length,2);
+   assert.equal(top.children[0].className,'daily-loss-icon');
+   assert.equal(top.children[0].textContent,icons[i]);
+   assert.equal(top.children[0].attributes['aria-hidden'],'true');
+   assert.equal(top.children[1].className,'daily-loss-label');
+   assert.equal(card.children[1].className,'daily-loss-value');
+  });
+ }
+ const css=read('daily-loss.css');
+ assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/@media\(max-width:1200px\)\{\.daily-loss-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
+ assert.match(css,/@media\(max-width:560px\)\{\.daily-loss-grid\{grid-template-columns:1fr\}/);
 });
