@@ -286,6 +286,7 @@
       markStockStale(String(error?.message||"Gagal membaca data").slice(0,90));
     }finally{storageBusy=false;}
   }
+  window.KPPDashboardSyncLiveStockTrend=liveStockTrend;
   function startStockLive(){
     if(stockLiveTimer)return;
     stockLiveTimer=setInterval(()=>loadStorage(false),LIVE_STOCK_POLL_MS);
