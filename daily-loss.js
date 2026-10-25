@@ -126,6 +126,17 @@
   async function loadPeriod(db,startDate,endDate,fuels,master){
     return calculatePeriod({startDate,endDate,...await loadRows(db,startDate,endDate),fuels,master});
   }
+  function calculateDashboard(input){
+    const period=calculatePeriod(input);
+    const daily=calculate({...input,date:input.endDate});
+    return {...period,workingDate:input.endDate,working:daily.working,workingByShift:daily.workingByShift};
+  }
+  async function loadDashboard(db,startDate,endDate,fuels,master){
+    return calculateDashboard({startDate,endDate,...await loadRows(db,startDate,endDate),fuels,master});
+  }
+  function unavailableDashboard(startDate,endDate,message='Memuat...'){
+    return {...unavailablePeriod(startDate,endDate,message),workingDate:endDate};
+  }
   function unavailablePeriod(startDate,endDate,message='Memuat...'){
     return {startDate,endDate,...unavailable(endDate,message),workingByShift:{1:{...incomplete(),note:message},2:{...incomplete(),note:message}}};
   }
@@ -142,13 +153,14 @@
     const doc=host.ownerDocument;host.replaceChildren();
     const heading=doc.createElement('h3');heading.className='daily-loss-heading';
     const isPeriod=!!result.startDate;
-    heading.textContent=isPeriod?`Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)}`:`Loss Harian • ${dateLabel(result.date)} • Shift 1 + 2`;host.appendChild(heading);
+    const dailyWorking=!!result.workingDate;
+    heading.textContent=isPeriod?`Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)}`:`Loss Harian • ${dateLabel(result.date)} • Shift 1 + 2`;if(dailyWorking)heading.textContent=`Supply MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)} | Working Harian • ${dateLabel(result.workingDate)}`;host.appendChild(heading);
     const grid=doc.createElement('div');grid.className='daily-loss-grid';host.appendChild(grid);
     const cards=isPeriod?[
       ['Supply Loss MTD',result.supply,'% dari total qty transportir MTD'],
-      ['Total Working Loss MTD',result.working,'Shift 1 + 2 • % dari total pemakaian MTD'],
-      ['Working Loss MTD • Shift 1',result.workingByShift[1],'% dari pemakaian Shift 1 MTD'],
-      ['Working Loss MTD • Shift 2',result.workingByShift[2],'% dari pemakaian Shift 2 MTD']
+      [dailyWorking?'Total Working Loss Harian':'Total Working Loss MTD',result.working,dailyWorking?'Shift 1 + 2 • % dari total pemakaian harian':'Shift 1 + 2 • % dari total pemakaian MTD'],
+      [dailyWorking?'Working Loss Harian • Shift 1':'Working Loss MTD • Shift 1',result.workingByShift[1],dailyWorking?'% dari pemakaian Shift 1 harian':'% dari pemakaian Shift 1 MTD'],
+      [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD']
     ]:[
       ['Supply Loss',result.supply,'Flowmeter transportir − aktual masuk tangki • % dari qty transportir'],
       ['Working Loss',result.working,'Stock sistem − closing fisik • % dari pemakaian harian']
@@ -163,5 +175,5 @@
     }
   }
   function pending(host,date,message='Memuat...'){render(host,unavailable(date,message));}
-  root.KPPDailyLoss=Object.freeze({calculate,load,calculatePeriod,loadPeriod,unavailablePeriod,reportText,render,pending,unavailable});
+  root.KPPDailyLoss=Object.freeze({calculate,load,calculateDashboard,loadDashboard,unavailableDashboard,calculatePeriod,loadPeriod,unavailablePeriod,reportText,render,pending,unavailable});
 })(typeof window==='undefined'?globalThis:window);

@@ -33,7 +33,7 @@ test('both pages load shared module and show identical H-1 working qty and perce
   const h=harness(page);await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
   const text=texts(h.document.getElementById('dailyLossPanel'));
   assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
-  if(page==='dashboard.html'){assert.match(text,/Total Working Loss MTD/);assert.match(text,/Working Loss MTD • Shift 1/);assert.match(text,/Working Loss MTD • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);}
+  if(page==='dashboard.html'){assert.match(text,/Total Working Loss Harian/);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);}
   else assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,2);
   if(page==='daily-report.html'){assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
  }
@@ -66,8 +66,8 @@ test('Dashboard reads full MTD range and preserves total alongside both shift va
  const data=table==='stock_movements'?[]:['2026-10-22','2026-10-23'].flatMap(tanggal=>[1,2].map(shift=>table==='stock_opening'?{tanggal,shift,storage:'FT0073',qty:1000}:{tanggal,shift,storage:'FT0073',actual_qty:890}));return {data};
  }};}};
  await h.loadDashboard();const text=texts(h.document.getElementById('dailyLossPanel'));
- assert.match(text,/22\/10\/2026 – 23\/10\/2026/);assert.match(text,/Total Working Loss MTD\nLOSS 40 LTR \(10%\)/);
- assert.match(text,/Working Loss MTD • Shift 1\nLOSS 20 LTR \(10%\)/);assert.match(text,/Working Loss MTD • Shift 2\nLOSS 20 LTR \(10%\)/);
+ assert.match(text,/22\/10\/2026 – 23\/10\/2026/);assert.match(text,/Total Working Loss Harian\nLOSS 20 LTR \(10%\)/);
+ assert.match(text,/Working Loss Harian • Shift 1\nLOSS 10 LTR \(10%\)/);assert.match(text,/Working Loss Harian • Shift 2\nLOSS 10 LTR \(10%\)/);
  assert.equal(requests.length,3);assert.ok(requests.every(q=>q.start==='2026-10-22'&&q.end==='2026-10-23'));
 });
 test('Dashboard loss errors retain four unavailable cards and stale responses cannot replace latest period',async()=>{
