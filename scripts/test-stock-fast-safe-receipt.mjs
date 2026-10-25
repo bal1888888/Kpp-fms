@@ -74,7 +74,11 @@ test("receipts use only a two-query preflight, LIVE idempotent RPC, and one in-f
  assert.match(save,/await sendStockMovementSafe\(/);
  assert.match(save,/RECEIPT_SAVE_ATTEMPT_BUSY=false/);
  assert.ok(save.indexOf("await finishStockSave(")<save.lastIndexOf("void loadStock()"));
- assert.match(html,/db\.rpc\("save_stock_movement_safe"/);
+ assert.match(html,/db\.rpc\(rpcName,/);
+ assert.match(html,/save_stock_receipt_do_safe/);
+ assert.match(save,/calculation_method:"RECEIPT_FLOWMETER_DO"/);
+ assert.match(save,/do_qty_liter/);
+ assert.match(save,/do_final/);
 });
 test("Transfer uses direct server snapshot while Opening and Closing guards remain",()=>{
  assert.match(html,/if\(!await stockCanSubmitTransfer\(checkSource,checkDestination,checkPeriod\)\)return;/);
