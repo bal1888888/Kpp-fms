@@ -16,7 +16,7 @@ window.KPP_ACTIVE_PAGE="stock";
 <script src="tera-data_v1_aug2026.js"></script>
 <script src="transfer-audit.js"></script>
 <script src="sonding-average.js?v=20261018-physical-proof"></script>
-<script src="stock-drafts.js?v=20261018-preload-v5"></script>
+<script src="stock-drafts.js?v=20261025-do-flow1"></script>
 
 <style>
 *{box-sizing:border-box;font-family:Arial,sans-serif}
@@ -3156,7 +3156,7 @@ function receiptHistoryQuantities(row){
         row.destination_measured_qty!==null && row.destination_measured_qty!==undefined
             ? n(row.destination_measured_qty)
             : n(row.qty);
-    const loss=
+    const loss=row.calculation_method==="RECEIPT_FLOWMETER_DO"?null:
         row.measurement_loss_qty!==null && row.measurement_loss_qty!==undefined
             ? n(row.measurement_loss_qty)
             : r1(transporterQty-tankQty);
@@ -3190,7 +3190,7 @@ async function loadReceiptHistory(){
     CURRENT_RECEIPT_HISTORY=[];
 
     let query=db.from("stock_movements")
-        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator")
+        .select("id,tanggal,jam,arrival_at,document_reference,reference_updated_at,reference_updated_by_name,transporter,destination_storage,meter_start_liter,meter_end_liter,transporter_measured_qty,destination_height_before_cm,destination_liter_before,destination_height_after_cm,destination_liter_after,destination_measured_qty,measurement_loss_qty,qty,operator,do_qty_liter,do_final,calculation_method")
         .eq("jenis","RECEIPT")
         .order("tanggal",{ascending:false})
         .order("jam",{ascending:false})
@@ -3260,10 +3260,10 @@ async function loadReceiptHistory(){
                     ? `<span class="ref-audit">Sonding ${esc(reportNumber(row.destination_height_before_cm))} -> ${esc(reportNumber(row.destination_height_after_cm))} cm</span>`
                     : ""}
             </td>
-            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${receiptAuditLabel(loss)}</td>
+            <td class="${loss>0?"diff-negative":loss<0?"diff-positive":"diff-zero"}">${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"LIHAT SUPPLY PER DO":receiptAuditLabel(loss)}</td>
             <td>${esc(row.operator||"-")}</td>
             <td>${
-                isStockEditor()
+                isStockEditor() && row.calculation_method!=="RECEIPT_FLOWMETER_DO"
                     ? `<button class="edit-btn small-btn" type="button" onclick="updateReceiptReference(${Number(row.id)})">${hasReference?"EDIT":"ISI"} PO/LO</button>`
                     : "-"
             }</td>
