@@ -40,7 +40,7 @@ test('Supply signed gain is positive actual flow - DO and uses weighted DO denom
  const r=api().calculate(f);
  assert.equal(r.supply.qty,150);assert.equal(r.supply.percent,0.75);
  assert.equal(r.working.qty,-5);
- assert.match(api().reportText(r),/SUPPLY LOSS = GAIN 150 LTR \\(0,75%\\)/);
+ assert.match(api().reportText(r),/SUPPLY LOSS = GAIN 150 LTR \(0,75%\)/);
 });
 test('missing either shift, one tank, malformed values or duplicate snapshot is incomplete',()=>{
  for(const mutate of [f=>f.closings.pop(),f=>f.openings.pop(),f=>f.openings[0].qty=null,f=>f.closings[1].actual_qty='',f=>f.closings.push({...f.closings[0]}),f=>f.movements.push({shift:2,jenis:'TRANSFER',source_storage:'MT06',destination_storage:'FT0073',qty:10}),f=>f.fuels[0].shift=3,f=>f.fuels[0].fuel='oops']){
