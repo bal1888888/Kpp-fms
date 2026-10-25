@@ -182,8 +182,8 @@ test('one DO split across MT and FT uses DO only once; unfinished DO never gener
  assert.equal(result.supply.qty,-50);
  assert.equal(result.supply.base,16000);
  assert.equal(result.supply.percent,-0.3125);
- assert.match(api().valueText(result.supply),/LOSS 50 LTR \(0,31%\)/);
+ assert.match(api().reportText({date:'2026-10-27',supply:result.supply,working:{status:'incomplete',note:'Belum lengkap'},workingByShift:{}}),/LOSS 50 LTR \(0,31%\)/);
  movements[1].transporter_measured_qty=6500;
  assert.equal(api().calculatePeriod({...basic,movements}).supply.qty,100);
- assert.match(api().valueText(api().calculatePeriod({...basic,movements}).supply),/GAIN 100 LTR \(0,63%\)/);
+ assert.match(api().reportText({date:'2026-10-27',supply:api().calculatePeriod({...basic,movements}).supply,working:{status:'incomplete',note:'Belum lengkap'},workingByShift:{}}),/GAIN 100 LTR \(0,63%\)/);
 });
