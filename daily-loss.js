@@ -20,7 +20,8 @@
     const groups=new Map();
     let invalid=0;
     for(const row of receipts){
-      const document=code(row.document_reference);
+      // Ignore accidental spaces in DO/PO numbers. Keep meaningful punctuation (e.g. /305).
+      const document=code(row.document_reference).replace(/\s+/g,'');
       const transporter=code(row.transporter).replace(/[^A-Z0-9]/g,'');
       const doQty=number(row.do_qty_liter);
       const flow=number(row.transporter_measured_qty);
