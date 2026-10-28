@@ -1460,6 +1460,13 @@ th{background:#f8fafc;color:#475569}
             </select>
         </div>
         <div>
+            <label>Lanjutkan DO yang belum selesai</label>
+            <select id="receiptPendingDO" onchange="selectReceiptPendingDO()">
+                <option value="">DO baru • pilih transportir</option>
+            </select>
+            <span id="receiptPendingHint" class="field-hint">Bongkaran lanjutan? Pilih DO sebelumnya agar tidak dihitung ganda.</span>
+        </div>
+        <div>
             <label>Qty DO (wajib, liter)</label>
             <select id="receiptDoQty" required onchange="updateReceiptCalculation()">
                 <option value="">Pilih Qty DO</option>
@@ -4768,6 +4775,70 @@ async function saveOpening(){
     void loadClosingFast().catch(error=>console.warn("Snapshot setelah Opening:",error));
 }
 
+
+const RECEIPT_PENDING_DO=new Map();
+let RECEIPT_PENDING_SEQ=0;
+const doIdentity=v=>String(v||"").trim().toUpperCase().replace(/\s+/g,"");
+async function reloadReceiptPendingDO(){
+    const picker=document.getElementById("receiptPendingDO");
+    const hint=document.getElementById("receiptPendingHint");
+    const transporter=document.getElementById("receiptTransporter").value;
+    const targetDate=getPeriod().tanggal;
+    const seq=++RECEIPT_PENDING_SEQ;
+    RECEIPT_PENDING_DO.clear();
+    picker.replaceChildren(new Option("DO baru / belum memilih DO lama",""));
+    if(!transporter||!targetDate){hint.textContent="Pilih transportir untuk menampilkan DO belum selesai.";return;}
+    const since=new Date(targetDate+"T12:00:00Z");
+    since.setUTCDate(since.getUTCDate()-14);
+    try{
+        const {data,error}=await db.from("stock_movements")
+          .select("id,tanggal,jenis,transporter,document_reference,do_qty_liter,do_final,transporter_measured_qty")
+          .eq("jenis","RECEIPT").eq("transporter",transporter)
+          .gte("tanggal",since.toISOString().slice(0,10)).lte("tanggal",targetDate)
+          .order("id",{ascending:false}).limit(400);
+        if(error)throw error;
+        if(seq!==RECEIPT_PENDING_SEQ)return;
+        const groups=new Map();
+        for(const r of data||[]){
+            const key=doIdentity(r.document_reference);
+            if(!key || r.do_qty_liter==null)continue;
+            if(!groups.has(key))groups.set(key,{
+                reference:String(r.document_reference).trim().toUpperCase(),
+                quantity:Number(r.do_qty_liter),flow:0,done:false,day:r.tanggal,valid:true
+            });
+            const group=groups.get(key);
+            if(group.quantity!==Number(r.do_qty_liter))group.valid=false;
+            group.flow+=Number(r.transporter_measured_qty)||0;
+            if(r.do_final===true)group.done=true;
+        }
+        for(const [key,group] of groups){
+            if(group.done||!group.valid||!group.quantity)continue;
+            RECEIPT_PENDING_DO.set(key,group);
+            picker.add(new Option(group.reference+" • "+group.day+" • "+
+              group.flow.toLocaleString("id-ID")+" / "+group.quantity.toLocaleString("id-ID")+" L",key));
+        }
+        const typed=doIdentity(document.getElementById("receiptReference").value);
+        const current=RECEIPT_PENDING_DO.get(typed);
+        if(current && Number(document.getElementById("receiptDoQty").value)===current.quantity)picker.value=typed;
+        hint.textContent=RECEIPT_PENDING_DO.size?
+          "Pilih DO yang belum selesai untuk mengisi nomor dan Qty DO otomatis.":
+          "Tidak ada DO terbuka dalam 14 hari terakhir untuk transportir ini.";
+    }catch(error){
+        if(seq===RECEIPT_PENDING_SEQ)hint.textContent="Daftar DO belum tersedia: "+error.message+". Masukkan nomor secara teliti.";
+    }
+}
+function selectReceiptPendingDO(){
+    const picker=document.getElementById("receiptPendingDO");
+    const group=RECEIPT_PENDING_DO.get(picker.value);
+    const ref=document.getElementById("receiptReference");
+    const qty=document.getElementById("receiptDoQty");
+    ref.value=group?group.reference:"";
+    qty.value=group?String(group.quantity):"";
+    ref.dispatchEvent(new Event("input",{bubbles:true}));
+    qty.dispatchEvent(new Event("change",{bubbles:true}));
+    updateReceiptCalculation();
+}
+
 let RECEIPT_SAVE_ATTEMPT_BUSY=false;
 async function saveReceipt(){
     if(RECEIPT_SAVE_ATTEMPT_BUSY || STOCK_SAVE_LOCK)return;
@@ -4827,6 +4898,23 @@ async function saveReceipt(){
     if(!transporter){
         alert("Pilih perusahaan transportir.");
         return;
+    }
+
+    const selectedDO=RECEIPT_PENDING_DO.get(document.getElementById("receiptPendingDO").value);
+    if(selectedDO && (doIdentity(document_reference)!==doIdentity(selectedDO.reference) ||
+                      do_qty_liter!==selectedDO.quantity)){
+        alert("DO yang dipilih berbeda dari isian nomor/Qty DO. Pilih kembali agar pengiriman tidak terpisah.");
+        return;
+    }
+    if(do_final){
+        const existing=RECEIPT_PENDING_DO.get(doIdentity(document_reference));
+        const groupFlow=measurement.transporterQty+(existing?existing.flow:0);
+        if(groupFlow<do_qty_liter*0.95 && !confirm(
+            "PERINGATAN DO BELUM PENUH\nTotal flowmeter DO saat ini "+
+            fmt(groupFlow)+" L dari Qty DO "+fmt(do_qty_liter)+
+            " L. Pastikan tidak ada bongkaran lanjutan ke MT/FT lain.\n"+
+            "Tetap tandai sebagai BONGKARAN TERAKHIR?"
+        ))return;
     }
 
     const projectedDestination=measurement.tankAfter.liters;
@@ -4940,6 +5028,8 @@ async function saveReceipt(){
             " dan Qty DO dipertahankan untuk tujuan MT/FT berikutnya.";
     }
     document.getElementById("receiptDoFinal").value="false";
+    document.getElementById("receiptPendingDO").value="";
+    void reloadReceiptPendingDO();
     document.getElementById("receiptArrivalTime").value=localTime();
     // A successful RPC is final; don't hold the operator in the save overlay
     // while the multi-table dashboard refreshes over a slow mine-site link.
@@ -5628,6 +5718,9 @@ document.getElementById("transferDestination").addEventListener("change",updateT
 document.getElementById("receiptDestination").addEventListener("change",updateReceiptCalculation);
 document.getElementById("receiptArrivalTime").addEventListener("input",updateReceiptCalculation);
 document.getElementById("receiptTransporter").addEventListener("change",updateReceiptCalculation);
+document.getElementById("receiptTransporter").addEventListener("change",()=>void reloadReceiptPendingDO());
+document.getElementById("tanggal").addEventListener("change",()=>void reloadReceiptPendingDO());
+document.getElementById("shift").addEventListener("change",()=>void reloadReceiptPendingDO());
 document.getElementById("closingNote").addEventListener("input",renderClosingCopyPreview);
 
 restoreStockPanelVisibility();
@@ -5653,6 +5746,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     // Never rely on Stock's four DB queries and the complete dashboard render
     // to succeed before a user can see a saved flowmeter or receipt sounding.
     window.KPPStockDrafts?.onRendered({stockReady:false});
+    void reloadReceiptPendingDO();
     // Closing's small read path loads independently of the heavy dashboard.
     // It restores paired sounding drafts as soon as its own snapshot arrives.
     void loadClosingFast();
