@@ -1451,7 +1451,7 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Nomor DO / PO (wajib, unik per pengiriman)</label>
             <input id="receiptReference" autocomplete="off" required maxlength="80" placeholder="Contoh: DO-2026-001">
-            <span class="field-hint">Pakai nomor yang sama bila satu DO dibongkar ke MT dan FT. Jangan gunakan nomor PO umum untuk beberapa truk.</span>
+            <span class="field-hint">Gunakan SATU nomor DO yang sama saat satu truk bongkar ke beberapa MT/FT. Setelah simpan bongkaran sebagian, nomor DO tidak akan dikosongkan.</span>
         </div>
         <div>
             <label>Transportir</label>
@@ -4777,7 +4777,7 @@ async function saveReceipt(){
     const destination_storage=document.getElementById("receiptDestination").value;
     const measurement=updateReceiptCalculation();
     const transporter=document.getElementById("receiptTransporter").value.trim();
-    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase()||null;
+    const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase().replace(/\s+/g," ")||null;
     const arrivalTime=document.getElementById("receiptArrivalTime").value;
     const do_qty_liter=Number(document.getElementById("receiptDoQty").value);
     const do_final=document.getElementById("receiptDoFinal").value==="true";
@@ -4923,7 +4923,7 @@ async function saveReceipt(){
     window.KPPStockDrafts?.clear("receipt");
     setCopyPreview("receiptCopyPreview",receiptReport);
     [
-        "receiptReference","receiptDoQty","receiptMeterStart","receiptMeterEnd","receiptQty",
+        "receiptMeterStart","receiptMeterEnd","receiptQty",
         "receiptTankHeightBefore","receiptTankHeightAfter","receiptTankQty","receiptLoss"
     ].forEach(id=>{document.getElementById(id).value="";});
     // Clear the visible front/rear fields only after a confirmed receipt save.
@@ -4931,6 +4931,14 @@ async function saveReceipt(){
     ["receiptTankHeightBefore","receiptTankHeightAfter"].forEach(id=>{
         document.getElementById(id).dispatchEvent(new Event("kpp-clear-paired-sounding"));
     });
+    if(do_final){
+        document.getElementById("receiptReference").value="";
+        document.getElementById("receiptDoQty").value="";
+    }else{
+        document.getElementById("receiptStatus").textContent=
+            "[OK] Bongkaran sebagian disimpan. Nomor DO "+document_reference+
+            " dan Qty DO dipertahankan untuk tujuan MT/FT berikutnya.";
+    }
     document.getElementById("receiptDoFinal").value="false";
     document.getElementById("receiptArrivalTime").value=localTime();
     // A successful RPC is final; don't hold the operator in the save overlay
