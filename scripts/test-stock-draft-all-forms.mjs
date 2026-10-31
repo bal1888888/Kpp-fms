@@ -382,6 +382,7 @@ test("auth bootstrap restores unsaved fields BEFORE the network Stock request be
    setAdminMovementTools:()=>actions.push("role"),
    loadStock:async()=>{actions.push("fetch");throw new Error("temporary network failure");},
    loadClosingFast:()=>{actions.push("closing-fast");},
+   reloadReceiptPendingDO:()=>{}, // Boot also checks pending DO; stub unrelated asynchronous loader.
    console:{error:()=>actions.push("error")}
  };
  vm.createContext(ctx);
