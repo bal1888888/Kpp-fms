@@ -167,6 +167,117 @@ button,.btn,.actions a{min-height:44px}
   .fuel-shift-start .fuel-shift-step strong{font-size:12px}
 }
 </style>
+
+<style id="fuelman-active-shift-ux-v1">
+/* Active shift: mobile-first presentation; transaction, session and validation logic unchanged. */
+#activePanel.fuel-shift-active.panel{
+  padding:0!important;overflow:hidden;border-radius:22px!important;
+  background:#fff!important;border:1px solid #d8e5f5!important;
+  box-shadow:0 18px 42px rgba(12,41,82,.12)!important;
+}
+.fuel-shift-active .fuel-active-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:25px 27px;background:linear-gradient(115deg,#f9fcff 0%,#edf6ff 65%,#daefff 100%);
+  border-bottom:1px solid #d8e6f7;
+}
+.fuel-shift-active .fuel-active-kicker{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:900;
+  color:#116a41;letter-spacing:.035em;border-radius:999px;background:#e0f8e9;padding:6px 11px}
+.fuel-shift-active .fuel-active-kicker i{width:8px;height:8px;border-radius:50%;display:inline-block;background:#16b66a}
+.fuel-shift-active .fuel-active-hero h2{font-size:clamp(24px,3vw,32px);line-height:1.17;letter-spacing:-.035em;
+  margin:12px 0 6px;color:#0b294d}
+.fuel-shift-active .fuel-active-hero p{font-size:13px;line-height:1.5;color:#496786;margin:0}
+.fuel-shift-active .fuel-active-hero-icon{width:72px;height:72px;border-radius:21px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#e5f2ff,#c5e5ff);font-size:37px;flex:none;
+  box-shadow:0 5px 17px rgba(18,90,164,.12)}
+.fuel-shift-active .fuel-active-content{padding:20px 26px 24px}
+.fuel-shift-active .fuel-active-statusbar{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  background:#eafaf0;border:1px solid #bceccc;border-radius:13px;padding:12px 14px;margin:0 0 16px;
+  color:#17633b;font-weight:800;font-size:12px
+}
+.fuel-shift-active .fuel-active-statusbar span:last-child{font-weight:700;color:#427a57}
+.fuel-shift-active .fuel-active-section-title{display:flex;gap:10px;align-items:center;
+  font-weight:900;color:#133454;font-size:16px;margin:0 0 12px}
+.fuel-shift-active .session-box{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+  padding:0!important;background:none!important;border:0!important;border-radius:0!important;
+}
+.fuel-shift-active .session-row{
+  display:flex!important;flex-direction:column;gap:7px;min-height:70px;
+  padding:12px 14px!important;border:1px solid #dbe7f5!important;
+  border-radius:13px;background:#f7fbff;min-width:0;
+}
+.fuel-shift-active .session-row>b{display:block;color:#5b7694;font-size:11px;font-weight:800;line-height:1.25}
+.fuel-shift-active .session-row>span{color:#13304d;font-size:14px;font-weight:900;
+  line-height:1.35;overflow-wrap:anywhere}
+.fuel-shift-active .session-row .tag{background:#d9fbe4!important;color:#147844!important;font-size:11px}
+.fuel-shift-active .fuel-shift-active-help{margin:15px 0 17px;background:#ebf5ff;border-color:#cbe3ff;
+  font-size:12px;align-items:flex-start}
+.fuel-shift-active .fuel-active-flow{margin:0 0 18px;border:1px solid #dae7f5;border-radius:16px;
+  padding:15px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.fuel-shift-active .fuel-active-flow h3{margin:0 0 5px;color:#163556;font-size:15px}
+.fuel-shift-active .fuel-active-flow>p{font-size:11px;color:#68839d;margin:0 0 13px;line-height:1.55}
+.fuel-shift-active .fuel-active-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.fuel-shift-active .fuel-active-step{
+  text-align:center;padding:12px 5px;background:#fff;border:1px solid #dfeaf7;
+  border-radius:12px;min-width:0;color:#486581
+}
+.fuel-shift-active .fuel-active-step.completed{background:#e9faef;border-color:#bce9cb;color:#1c7543}
+.fuel-shift-active .fuel-active-step.current{background:#eaf3ff;border-color:#acd2ff;color:#125bbc}
+.fuel-shift-active .fuel-active-step .icon{display:block;font-size:21px;margin-bottom:5px}
+.fuel-shift-active .fuel-active-step strong{display:block;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.fuel-shift-active .fuel-active-step small{display:block;font-size:10px;line-height:1.4;margin-top:4px;color:#70879f}
+.fuel-shift-active #activeMeterBox{
+  margin:0 0 16px!important;background:#fff7e9;border:1px solid #ffdf9c;
+  padding:14px 16px;border-radius:13px;
+}
+.fuel-shift-active #activeMeterBox label{color:#854b00}
+.fuel-shift-active #activeMeterValue{min-height:47px;background:#fff;border:1px solid #e7c68d}
+.fuel-shift-active #saveMeterBtn{min-height:44px;border-radius:10px}
+.fuel-shift-active #closingMeterHint{background:#f0f8ff;border:1px solid #d0e7ff;
+  border-radius:11px;padding:11px 13px;font-size:12px;line-height:1.55;color:#2e597d;margin:0 0 14px}
+.fuel-shift-active .fuel-active-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
+.fuel-shift-active .fuel-active-actions .btn{
+  min-height:50px;display:flex;align-items:center;justify-content:center;text-align:center;
+  border-radius:12px;font-size:13px;padding:12px;line-height:1.4;
+}
+.fuel-shift-active #stockLink{background:linear-gradient(180deg,#217bfa,#155aca);color:#fff}
+.fuel-shift-active #fuelingLink{background:linear-gradient(180deg,#217bfa,#155aca);color:#fff}
+.fuel-shift-active:has(#fuelingLink.hidden) .fuel-active-actions{grid-template-columns:1fr}
+.fuel-shift-active .fuel-active-end{display:flex;align-items:center;justify-content:space-between;
+  gap:14px;border-top:1px solid #e2ebf6;padding-top:17px}
+.fuel-shift-active .fuel-active-end-copy h3{margin:0 0 5px;color:#183658;font-size:14px}
+.fuel-shift-active .fuel-active-end-copy p{margin:0;font-size:11px;color:#6a829c;line-height:1.55;max-width:400px}
+.fuel-shift-active #endBtn{
+  min-height:45px;min-width:143px;border-radius:11px;background:#fff2f2;color:#b91c1c;
+  border:1px solid #f5caca;box-shadow:none;font-size:12px;
+}
+.fuel-shift-active #endBtn:disabled{opacity:.55}
+.fuel-shift-active #endStatus{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:650px){
+  .fuel-shift-active .fuel-active-hero{padding:18px 16px;gap:8px}
+  .fuel-shift-active .fuel-active-hero h2{font-size:25px}
+  .fuel-shift-active .fuel-active-hero p{font-size:12px}
+  .fuel-shift-active .fuel-active-hero-icon{width:52px;height:52px;border-radius:15px;font-size:27px}
+  .fuel-shift-active .fuel-active-content{padding:15px 13px 19px}
+  .fuel-shift-active .fuel-active-statusbar{font-size:11px}
+  .fuel-shift-active .session-box{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .fuel-shift-active .session-row{padding:12px!important;min-height:68px}
+  .fuel-shift-active .session-row>span{font-size:13px}
+  .fuel-shift-active .fuel-active-flow{padding:13px 9px}
+  .fuel-shift-active .fuel-active-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fuel-shift-active .fuel-active-step{padding:10px 6px}
+  .fuel-shift-active .fuel-active-step strong{font-size:12px}
+  .fuel-shift-active .fuel-active-actions{grid-template-columns:1fr}
+  .fuel-shift-active .fuel-active-actions .btn{width:100%;min-height:49px}
+  .fuel-shift-active .fuel-active-end{display:block}
+  .fuel-shift-active #endBtn{width:100%;margin-top:13px}
+}
+@media(max-width:340px){
+  .fuel-shift-active .session-box{grid-template-columns:1fr}
+  .fuel-shift-active .fuel-active-hero-icon{display:none}
+}
+</style>
 </head>
 
 <body>
@@ -264,60 +375,61 @@ button,.btn,.actions a{min-height:44px}
     </div>
   </div>
 
-  <div id="activePanel" class="panel hidden">
-    <h2>🟢 Shift Sedang Aktif</h2>
-    <div id="sessionPeriodWarning" class="session-warning hidden" role="alert"></div>
-    <div id="activeDutyGuide" class="fuel-shift-active-help" role="status" aria-live="polite"><span>💡</span><span id="activeDutyGuideText">Ikuti tugas shift Anda hingga Closing selesai.</span></div>
-
-    <div class="session-box">
-      <div class="session-row">
-        <b>Fuelman</b>
-        <span id="sFuelman">-</span>
+  <div id="activePanel" class="panel fuel-shift-active hidden">
+    <div class="fuel-active-hero">
+      <div>
+        <span class="fuel-active-kicker"><i aria-hidden="true"></i> SHIFT SEDANG AKTIF</span>
+        <h2>Halo, <span id="activeName">Fuelman</span> 👋</h2>
+        <p id="activeRoleSubtitle">Lanjutkan pekerjaan sesuai tugas shift Anda.</p>
       </div>
-      <div class="session-row">
-        <b>Tanggal</b>
-        <span id="sTanggal">-</span>
-      </div>
-      <div class="session-row">
-        <b>Shift</b>
-        <span id="sShift">-</span>
-      </div>
-      <div class="session-row">
-        <b>Tugas Shift</b>
-        <span id="sDuty">-</span>
-      </div>
-      <div class="session-row" id="sTruckRow">
-        <b>Fuel Truck</b>
-        <span id="sTruck">-</span>
-      </div>
-      <div class="session-row">
-        <b>Jam Mulai</b>
-        <span id="sMulai">-</span>
-      </div>
-      <div class="session-row" id="meterStartRow"><b>Flowmeter Awal</b><span id="sMeterStart">Belum dicatat</span></div>
-      <div class="session-row" id="meterEndRow"><b>Flowmeter Akhir</b><span id="sMeterEnd">Belum dicatat</span></div>
-      <div class="session-row">
-        <b>Status</b>
-        <span><span class="tag tag-active">ACTIVE</span></span>
-      </div>
+      <div class="fuel-active-hero-icon" id="activeHeroIcon" aria-hidden="true">🛢️</div>
     </div>
-
-    <div id="activeMeterBox" class="hidden" style="margin-top:14px">
-      <label id="activeMeterLabel">Flowmeter</label>
-      <input id="activeMeterValue" type="number" step="0.01" min="0" inputmode="decimal">
-      <div class="actions"><button id="saveMeterBtn" class="btn-blue" type="button">SIMPAN FLOWMETER</button></div>
-      <div class="status" id="meterStatus"></div>
+    <div class="fuel-active-content">
+      <div id="sessionPeriodWarning" class="session-warning hidden" role="alert"></div>
+      <div class="fuel-active-statusbar"><span>● SESI AKTIF</span><span id="activeHeaderShift">Shift sedang berjalan</span></div>
+      <h3 class="fuel-active-section-title">📋 Informasi Sesi Anda</h3>
+      <div class="session-box">
+        <div class="session-row"><b>Petugas</b><span id="sFuelman">-</span></div>
+        <div class="session-row"><b>Tanggal</b><span id="sTanggal">-</span></div>
+        <div class="session-row"><b>Shift</b><span id="sShift">-</span></div>
+        <div class="session-row"><b>Tugas Shift</b><span id="sDuty">-</span></div>
+        <div class="session-row" id="sTruckRow"><b>Fuel Truck</b><span id="sTruck">-</span></div>
+        <div class="session-row"><b>Jam Mulai</b><span id="sMulai">-</span></div>
+        <div class="session-row" id="meterStartRow"><b>Flowmeter Awal</b><span id="sMeterStart">Belum dicatat</span></div>
+        <div class="session-row" id="meterEndRow"><b>Flowmeter Akhir</b><span id="sMeterEnd">Belum dicatat</span></div>
+        <div class="session-row"><b>Status</b><span><span class="tag tag-active">ACTIVE</span></span></div>
+      </div>
+      <div id="activeDutyGuide" class="fuel-shift-active-help" role="status" aria-live="polite">
+        <span>💡</span><span id="activeDutyGuideText">Ikuti tugas shift Anda hingga Closing selesai.</span>
+      </div>
+      <div class="fuel-active-flow">
+        <h3>📍 Alur Pekerjaan Anda</h3>
+        <p>Petunjuk sesuai tugas. Status Closing hanya dapat dipastikan dari menu Stock.</p>
+        <div class="fuel-active-steps">
+          <div class="fuel-active-step completed"><span class="icon">✅</span><strong>Start Shift</strong><small>Sesi sudah aktif</small></div>
+          <div class="fuel-active-step current" id="activeWorkStepCard"><span class="icon" id="activeWorkIcon">🛢️</span><strong id="activeWorkStep">Pekerjaan</strong><small id="activeWorkInfo">Sedang berjalan</small></div>
+          <div class="fuel-active-step"><span class="icon">📋</span><strong id="activeClosingStep">Closing</strong><small id="activeClosingStepInfo">Periksa Stock</small></div>
+          <div class="fuel-active-step"><span class="icon">🏁</span><strong>End Shift</strong><small>Setelah Closing</small></div>
+        </div>
+      </div>
+      <div id="activeMeterBox" class="hidden">
+        <label id="activeMeterLabel">Flowmeter</label>
+        <input id="activeMeterValue" type="number" step="0.01" min="0" inputmode="decimal">
+        <div class="actions"><button id="saveMeterBtn" class="btn-blue" type="button">SIMPAN FLOWMETER</button></div>
+        <div class="status" id="meterStatus"></div>
+      </div>
+      <p id="closingMeterHint" class="hidden">Isi Flowmeter Akhir sekali di Stock saat Closing FT. Angka awal dan akhir otomatis masuk download fisik Logsheet.</p>
+      <div class="fuel-active-actions">
+        <a id="fuelingLink" class="btn btn-blue" href="pengisian.html">⛽ BUKA PENGISIAN</a>
+        <a id="stockLink" class="btn btn-gray" href="stock.html">🛢️ BUKA STOCK</a>
+      </div>
+      <div class="fuel-active-end">
+        <div class="fuel-active-end-copy"><h3>🏁 Selesai bekerja?</h3><p id="activeEndHint">Lakukan Closing di Stock sebelum memilih End Shift.</p></div>
+        <button id="endBtn" class="btn-red" type="button">END SHIFT</button>
+      </div>
+      <div id="endStatus" class="status" aria-live="polite"></div>
     </div>
-    <p id="closingMeterHint" class="hidden">Isi Flowmeter Akhir sekali di Stock saat Closing FT. Angka awal dan akhir otomatis masuk download fisik Logsheet.</p>
-    <div class="actions">
-      <a id="fuelingLink" class="btn btn-blue" href="pengisian.html">⛽ Pengisian</a>
-      <a class="btn btn-gray" href="stock.html">🛢️ Stock</a>
-      <button id="endBtn" class="btn-red">END SHIFT</button>
-    </div>
-
-    <div id="endStatus" class="status"></div>
   </div>
-
 </div>
 
 <script>
@@ -474,6 +586,24 @@ function renderActive(){
   document.getElementById("sTanggal").textContent=fmtDate(currentSession.tanggal);
   document.getElementById("sShift").textContent=currentSession.shift||"-";
   document.getElementById("sDuty").textContent=dutyLabel(duty);
+  document.getElementById("activeName").textContent=currentSession.fuelman_name||"Fuelman";
+  document.getElementById("activeRoleSubtitle").textContent=duty==="PIC_TRANSFER"
+    ?"PIC MT • Penerimaan, Transfer & Closing MT"
+    :"Fuelman FT • "+(currentSession.fuel_truck||"-");
+  document.getElementById("activeHeroIcon").textContent=duty==="PIC_TRANSFER"?"🛢️":"⛽";
+  document.getElementById("activeHeaderShift").textContent=(currentSession.shift||"-")+" • "+fmtDate(currentSession.tanggal);
+  document.getElementById("sDuty").textContent=duty==="PIC_TRANSFER"?"PIC MT":"FUELMAN FT";
+  document.getElementById("activeWorkIcon").textContent=duty==="PIC_TRANSFER"?"🔄":"⛽";
+  document.getElementById("activeWorkStep").textContent=duty==="PIC_TRANSFER"?"Aktivitas MT":"Pengisian FT";
+  document.getElementById("activeWorkInfo").textContent=duty==="PIC_TRANSFER"
+    ?"Penerimaan / Transfer bila ada"
+    :(!meterLoaded?"Periksa Flowmeter Awal":!meterData?"Isi Flowmeter Awal":"Pengisian sesuai FT");
+  document.getElementById("activeClosingStep").textContent=duty==="PIC_TRANSFER"?"Closing MT":"Closing FT";
+  document.getElementById("activeClosingStepInfo").textContent=duty==="PIC_TRANSFER"?"Seluruh MT aktif":"FT & Flowmeter akhir";
+  document.getElementById("stockLink").textContent=duty==="PIC_TRANSFER"?"🛢️ BUKA STOCK MT":"🛢️ CEK STOCK FT";
+  document.getElementById("activeEndHint").textContent=duty==="PIC_TRANSFER"
+    ?"Pastikan seluruh MT aktif sudah Closing di Stock sebelum End Shift."
+    :"Pastikan Flowmeter Akhir dan Closing FT sudah tersimpan di Stock sebelum End Shift.";
   document.getElementById("activeDutyGuideText").textContent=duty==="PIC_TRANSFER"
     ?"PIC MT: gunakan menu Stock untuk Penerimaan / Transfer bila ada aktivitas. Pastikan Closing semua MT aktif sebelum End Shift."
     :"Fuelman FT: lanjutkan Pengisian sesuai FT yang dipilih. Setelah selesai, isi Flowmeter Akhir dan Closing FT di Stock sebelum End Shift.";
