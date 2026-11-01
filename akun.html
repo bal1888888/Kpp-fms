@@ -35,6 +35,40 @@ th{background:#1f2937;color:#fff}
 
 </style>
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20261019-ui-refresh1">
+
+<style id="fuelman-account-replacement-ui-v1">
+#fuelmanReplacementPanel{border:1px solid #cfe1f7;border-left:4px solid #2177dc}
+.account-manage-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.account-manage-title h3{margin:0 0 12px}
+.account-secure-label{color:#1761ab;background:#edf6ff;border:1px solid #c9e2ff;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:900}
+.account-reason-field{grid-column:1/-1}
+.account-manage-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:14px}
+.account-manage-main{background:#1659c7;min-height:44px}
+.account-manage-cancel{background:#6b7280;min-height:44px}
+.account-manage-main:disabled{opacity:.55;cursor:wait}
+.account-list-hint{font-size:12px;color:#60748f;margin:-6px 0 13px;line-height:1.5}
+.account-list-filter{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.account-list-filter label{margin:0}
+.account-list-filter select{width:auto;min-width:155px}
+.account-status-chip{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:900}
+.account-status-chip.is-active{background:#dcfce7;color:#166534}
+.account-status-chip.is-inactive{background:#fee2e2;color:#991b1b}
+.account-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px}
+.account-actions button{font-size:11px!important;padding:8px 10px!important;min-height:38px;white-space:nowrap}
+.account-actions .account-replace-button{background:#0f766e}
+.account-actions .account-reactivate-button{background:#b45309}
+.account-actions .resetPickBtn:disabled{opacity:.45}
+@media(max-width:700px){
+ .container{padding:10px;margin:10px auto}
+ .panel{padding:14px}
+ input,select{font-size:16px;min-height:44px}
+ .account-manage-main,.account-manage-cancel{width:100%}
+ .account-list-filter{justify-content:space-between}
+ .account-list-filter select{max-width:200px}
+ .wrap{overflow-x:auto}
+ table{min-width:610px}
+}
+</style>
 </head>
 <body>
 <div class="header"><h2>KPP FUEL MANAGEMENT SYSTEM</h2><div>Kelola Akun - GL / Admin / Atasan</div></div>
@@ -100,8 +134,43 @@ th{background:#1f2937;color:#fff}
     <div id="resetStatus" class="status"></div>
   </div>
 
+  <div class="panel" id="fuelmanReplacementPanel">
+    <div class="account-manage-title"><h3>🔁 Ganti / Nonaktifkan Akun Fuelman</h3><span class="account-secure-label">ADMIN • GL • ATASAN</span></div>
+    <div class="note" style="margin-bottom:14px">
+      Jika petugas sudah keluar atau pindah site, <b>nonaktifkan akun lamanya</b>, lalu gunakan
+      <b>Tambah Anggota / Akun Baru</b> untuk membuat akun pengganti.
+      <b>Jangan memakai ulang akun lama</b> karena seluruh riwayat operasional harus tetap sesuai petugas aslinya.
+    </div>
+    <div class="grid">
+      <div>
+        <label for="manageUsername">Akun Fuelman yang dipilih</label>
+        <input id="manageUsername" placeholder="Pilih dari daftar anggota" readonly>
+      </div>
+      <div>
+        <label for="manageAction">Tindakan</label>
+        <select id="manageAction">
+          <option value="deactivate">Nonaktifkan akun lama</option>
+          <option value="reactivate">Aktifkan kembali</option>
+        </select>
+      </div>
+      <div class="account-reason-field">
+        <label for="manageReason">Alasan (wajib untuk audit)</label>
+        <input id="manageReason" maxlength="400" minlength="8" autocomplete="off" placeholder="Contoh: petugas tidak lagi bekerja di site TRAM">
+      </div>
+    </div>
+    <div class="account-manage-actions">
+      <button id="manageBtn" type="button" class="account-manage-main">TERAPKAN STATUS AKUN</button>
+      <button id="cancelManageBtn" type="button" class="account-manage-cancel">BATAL</button>
+    </div>
+    <div id="manageStatus" class="status" role="status" aria-live="polite"></div>
+  </div>
+
   <div class="panel">
     <h3>Daftar Anggota</h3>
+    <div class="account-list-hint">Kelola Fuelman yang tidak bertugas lagi tanpa menghapus riwayat transaksi.</div>
+    <div class="account-list-filter"><label for="accountFilter">Tampilkan</label>
+      <select id="accountFilter"><option value="all">Semua Akun</option><option value="active">Aktif</option><option value="inactive">Tidak Aktif</option></select>
+    </div>
     <div class="wrap">
       <table>
         <thead>
@@ -135,24 +204,34 @@ async function loadStaff(){
     return;
   }
 
-  body.innerHTML=(data||[]).map(row=>`
+  const filter=document.getElementById("accountFilter")?.value||"all";
+  const shown=(data||[]).filter(row=>filter==="all" || (filter==="active"?row.active===true:row.active!==true));
+  body.innerHTML=shown.map(row=>`
     <tr>
       <td>${esc(row.username)}</td>
       <td><b>${esc(row.display_name)}</b></td>
       <td>${esc(row.jabatan)}</td>
       <td>${esc(String(row.role).toUpperCase())}</td>
-      <td>${row.active?"AKTIF":"TIDAK AKTIF"}</td>
+      <td><span class="account-status-chip ${row.active?"is-active":"is-inactive"}">${row.active?"AKTIF":"TIDAK AKTIF"}</span></td>
       <td>
-        <button type="button"
-          class="resetPickBtn"
-          data-username="${esc(row.username)}"
-          data-name="${esc(row.display_name)}"
-          style="background:#2563eb;padding:7px 10px;font-size:11px">
-          🔑 Reset
-        </button>
+        <div class="account-actions">
+          <button type="button" class="resetPickBtn"
+            data-username="${esc(row.username)}"
+            data-name="${esc(row.display_name)}"
+            style="background:#2563eb"
+            ${row.active?"":"disabled title=\"Akun tidak aktif\""}>
+            🔑 Reset
+          </button>
+          ${row.role==="fuelman" ? `<button type="button"
+            class="${row.active?"account-replace-button":"account-reactivate-button"} account-manage-pick"
+            data-username="${esc(row.username)}" data-name="${esc(row.display_name)}"
+            data-action="${row.active?"deactivate":"reactivate"}">
+            ${row.active?"🔁 Ganti Petugas":"↩ Aktifkan"}
+          </button>` : ""}
+        </div>
       </td>
     </tr>
-  `).join("") || '<tr><td colspan="6">Belum ada anggota.</td></tr>';
+  `).join("") || '<tr><td colspan="6">Tidak ada anggota untuk filter ini.</td></tr>';
 
   document.querySelectorAll(".resetPickBtn").forEach(btn=>{
     btn.addEventListener("click",()=>{
@@ -162,6 +241,20 @@ async function loadStaff(){
         "Akun dipilih: "+(btn.dataset.name||btn.dataset.username||"");
       document.getElementById("resetPassword").focus();
       window.scrollTo({top:document.getElementById("resetUsername").getBoundingClientRect().top+window.scrollY-120,behavior:"smooth"});
+    });
+  });
+  document.querySelectorAll(".account-manage-pick").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const username=btn.dataset.username||"";
+      const name=btn.dataset.name||username;
+      const action=btn.dataset.action==="reactivate"?"reactivate":"deactivate";
+      document.getElementById("manageUsername").value=username;
+      document.getElementById("manageAction").value=action;
+      document.getElementById("manageReason").value="";
+      document.getElementById("manageStatus").textContent=
+        (action==="deactivate"?"Akun lama: ":"Aktifkan kembali: ")+name+" ("+username+").";
+      document.getElementById("fuelmanReplacementPanel").scrollIntoView({block:"start",behavior:"smooth"});
+      document.getElementById("manageReason").focus();
     });
   });
 }
@@ -291,6 +384,50 @@ document.getElementById("showResetPasswordBtn").addEventListener("click",()=>{
   const el=document.getElementById("resetPassword");
   el.type=el.type==="password"?"text":"password";
 });
+
+const accountFilter=document.getElementById("accountFilter");
+accountFilter.addEventListener("change",loadStaff);
+document.getElementById("cancelManageBtn").addEventListener("click",()=>{
+  ["manageUsername","manageReason"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("manageAction").value="deactivate";
+  document.getElementById("manageStatus").textContent="";
+});
+async function applyFuelmanStatus(){
+  const username=document.getElementById("manageUsername").value.trim().toLowerCase();
+  const action=document.getElementById("manageAction").value;
+  const reason=document.getElementById("manageReason").value.trim();
+  const status=document.getElementById("manageStatus");
+  const btn=document.getElementById("manageBtn");
+  if(!username){status.textContent="❌ Pilih Fuelman melalui tombol Ganti Petugas / Aktifkan di daftar anggota.";return;}
+  if(reason.length<8){status.textContent="❌ Isi alasan minimal 8 karakter untuk audit.";return;}
+  if(btn.disabled)return;
+  const instruction=action==="deactivate"
+    ?"Nonaktifkan akun "+username+"? Akun tidak dapat digunakan untuk login lagi. Riwayat lama tetap tersimpan."
+    :"Aktifkan kembali akun "+username+"? Akun dapat digunakan login sesuai akses Fuelman.";
+  if(!confirm(instruction+"\n\nAlasan: "+reason))return;
+  btn.disabled=true;btn.textContent="MEMPROSES...";status.textContent="Memeriksa status shift dan izin akun...";
+  try{
+    const {data,error}=await KPP.db.functions.invoke("manage-fuelman-account",{
+      body:{username,action,reason}
+    });
+    if(error)throw error;
+    if(data?.error)throw new Error(data.error);
+    if(!data?.ok)throw new Error("Perubahan belum terkonfirmasi.");
+    status.textContent="✅ "+data.message;
+    document.getElementById("manageReason").value="";
+    if(action==="deactivate"){
+      document.getElementById("username").focus();
+      document.getElementById("role").value="fuelman";
+    }
+    await loadStaff();
+  }catch(error){
+    status.textContent="❌ "+error.message+" — periksa kembali status anggota sebelum mengulang.";
+  }finally{
+    btn.disabled=false;btn.textContent="TERAPKAN STATUS AKUN";
+  }
+}
+document.getElementById("manageBtn").addEventListener("click",applyFuelmanStatus);
+
 
 </script>
 </body>
