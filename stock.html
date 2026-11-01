@@ -1729,6 +1729,41 @@ th{background:#f8fafc;color:#475569}
     </div>
 </div>
 
+<div class="panel converter-panel" id="soundingCheckPanel">
+    <div class="panel-title-row stock-aux-panel-head">
+        <h3>Cek Sonding MT / FT</h3>
+        <button id="toggleSoundingCheckBtn" class="stock-aux-toggle-btn" type="button" aria-expanded="true" aria-controls="soundingCheckPanelContent">SEMBUNYIKAN</button>
+    </div>
+    <div id="soundingCheckPanelContent">
+    <div class="grid">
+        <div>
+            <label for="soundingCheckStorage">Storage MT / FT</label>
+            <select id="soundingCheckStorage" onchange="updateSoundingCheck()"><option value="">Memuat Master MT / FT...</option></select>
+        </div>
+        <div>
+            <label for="soundingCheckFront">Sonding Depan (CM)</label>
+            <input type="number" id="soundingCheckFront" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.6" oninput="updateSoundingCheck()">
+        </div>
+        <div>
+            <label for="soundingCheckRear">Sonding Belakang (CM)</label>
+            <input type="number" id="soundingCheckRear" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" oninput="updateSoundingCheck()">
+        </div>
+        <div class="tera-result" id="soundingCheckResult">
+            <small>SONDING FINAL</small>
+            <strong>- cm</strong>
+        </div>
+    </div>
+    <div class="status" id="soundingCheckStatus"></div>
+    <details class="copy-report-card">
+        <summary>Hasil Cek Sonding Siap Salin</summary>
+        <div class="copy-report-content">
+            <pre id="soundingCheckCopyPreview" class="copy-report-preview">Belum ada hasil pengecekan.</pre>
+            <button class="copy-report-btn" type="button" onclick="copySoundingCheck()">SALIN HASIL CEK SONDING</button>
+        </div>
+    </details>
+    </div>
+</div>
+
 <div class="panel workflow-panel opening-panel" data-step="01">
     <h3>1. Stock Opening Awal Shift</h3>
     <div class="grid">
@@ -2018,41 +2053,6 @@ th{background:#f8fafc;color:#475569}
             <button class="copy-report-btn" type="button" onclick="copyClosingReport()"> SALIN HASIL SONDING AKHIR</button>
         </div>
     </details>
-</div>
-
-<div class="panel converter-panel" id="soundingCheckPanel">
-    <div class="panel-title-row stock-aux-panel-head">
-        <h3>Cek Sonding MT / FT</h3>
-        <button id="toggleSoundingCheckBtn" class="stock-aux-toggle-btn" type="button" aria-expanded="true" aria-controls="soundingCheckPanelContent">SEMBUNYIKAN</button>
-    </div>
-    <div id="soundingCheckPanelContent">
-    <div class="grid">
-        <div>
-            <label for="soundingCheckStorage">Storage MT / FT</label>
-            <select id="soundingCheckStorage" onchange="updateSoundingCheck()"><option value="">Memuat Master MT / FT...</option></select>
-        </div>
-        <div>
-            <label for="soundingCheckFront">Sonding Depan (CM)</label>
-            <input type="number" id="soundingCheckFront" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.6" oninput="updateSoundingCheck()">
-        </div>
-        <div>
-            <label for="soundingCheckRear">Sonding Belakang (CM)</label>
-            <input type="number" id="soundingCheckRear" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" oninput="updateSoundingCheck()">
-        </div>
-        <div class="tera-result" id="soundingCheckResult">
-            <small>SONDING FINAL</small>
-            <strong>- cm</strong>
-        </div>
-    </div>
-    <div class="status" id="soundingCheckStatus"></div>
-    <details class="copy-report-card">
-        <summary>Hasil Cek Sonding Siap Salin</summary>
-        <div class="copy-report-content">
-            <pre id="soundingCheckCopyPreview" class="copy-report-preview">Belum ada hasil pengecekan.</pre>
-            <button class="copy-report-btn" type="button" onclick="copySoundingCheck()">SALIN HASIL CEK SONDING</button>
-        </div>
-    </details>
-    </div>
 </div>
 
 <div class="panel movement-panel">
