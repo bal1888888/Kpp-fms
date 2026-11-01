@@ -1230,6 +1230,42 @@ th{background:#f8fafc;color:#475569}
     }
 }
 </style>
+
+<style id="stock-position-reconciliation-collapse-v1">
+/* UI only: retain all stock calculations, live refresh, safety warnings and inputs. */
+.stock-position-panel .stock-position-heading-tools{
+    display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;
+}
+.stock-position-panel .stock-visibility-toggle{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:39px;min-width:115px;
+    border:1px solid #bbd8ff;border-radius:10px;background:#eef6ff;color:#1857a7;
+    font-size:11px;font-weight:900;line-height:1.25;padding:9px 13px;
+    cursor:pointer;white-space:nowrap;letter-spacing:.025em;
+}
+.stock-position-panel .stock-visibility-toggle:hover{background:#dcebff;border-color:#8dbcfa}
+.stock-position-panel .stock-visibility-toggle[aria-expanded="false"]{background:#dceeff;color:#1256ac}
+.stock-position-panel .stock-visibility-toggle:focus-visible{
+    outline:3px solid rgba(37,99,235,.35);outline-offset:2px;
+}
+.stock-position-panel .stock-reconciliation-toggle-row{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:11px 13px;margin:11px 0 0;background:#f7fbff;
+    border:1px solid #d9e7f8;border-radius:11px;
+}
+.stock-position-panel .stock-reconciliation-toggle-row strong{font-size:12px;color:#23456c}
+.stock-position-panel #stockPositionContent[hidden],
+.stock-position-panel #stockReconciliation[hidden]{display:none!important}
+.stock-position-panel #stockPositionContent[hidden] + *{margin-top:0}
+@media(max-width:700px){
+    .stock-position-panel .panel-title-row{align-items:flex-start!important;gap:8px}
+    .stock-position-panel .stock-position-heading-tools{flex:0 0 auto;gap:6px;align-items:flex-end;flex-direction:column}
+    .stock-position-panel .stock-last-updated{font-size:9px;white-space:normal;text-align:right}
+    .stock-position-panel .stock-visibility-toggle{min-height:44px;min-width:115px;padding:10px 13px;font-size:11px}
+    .stock-position-panel .stock-reconciliation-toggle-row{padding:9px 10px}
+    .stock-position-panel .stock-reconciliation-toggle-row strong{font-size:11px}
+}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -1388,12 +1424,22 @@ th{background:#f8fafc;color:#475569}
             <h3>Posisi Stock</h3>
             <div class="stock-section-sub">Total stock seluruh storage pada tanggal dan shift yang dipilih.</div>
         </div>
-        <span id="stockLastUpdated" class="stock-last-updated">Belum dimuat</span>
+        <div class="stock-position-heading-tools">
+            <span id="stockLastUpdated" class="stock-last-updated">Belum dimuat</span>
+            <button id="toggleStockPositionBtn" class="stock-visibility-toggle" type="button" aria-expanded="true" aria-controls="stockPositionContent">SEMBUNYIKAN</button>
+        </div>
     </div>
+    <!-- Safety: stock critical/near-capacity alerts remain visible when cards are collapsed. -->
     <div id="stockLevelAlert" class="stock-level-alert"></div>
-    <div id="stockTotalWide" class="stock-total-wide"></div>
-    <div id="stockReconciliation" class="stock-reconciliation"></div>
-    <div class="cards" id="stockCards"></div>
+    <div id="stockPositionContent">
+        <div id="stockTotalWide" class="stock-total-wide"></div>
+        <div class="stock-reconciliation-toggle-row">
+            <strong>Rekonsiliasi Stock</strong>
+            <button id="toggleStockReconciliationBtn" class="stock-visibility-toggle" type="button" aria-expanded="true" aria-controls="stockReconciliation">SEMBUNYIKAN</button>
+        </div>
+        <div id="stockReconciliation" class="stock-reconciliation"></div>
+        <div class="cards" id="stockCards"></div>
+    </div>
 </div>
 
 <div class="stock-draft-banner" role="status" aria-live="polite">
@@ -5909,6 +5955,43 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
 })();
 </script>
 
+
+<script>
+/* Stock view-only collapse controls. Persisted per browser. Never modify storage values or forms. */
+(()=>{
+    const PREF_KEY="kpp-stock-position-visibility-v1";
+    function init(){
+        const position=document.getElementById("stockPositionContent");
+        const recon=document.getElementById("stockReconciliation");
+        const positionBtn=document.getElementById("toggleStockPositionBtn");
+        const reconBtn=document.getElementById("toggleStockReconciliationBtn");
+        if(!position||!recon||!positionBtn||!reconBtn)return;
+        const mobile=window.matchMedia("(max-width: 700px)").matches;
+        let prefs={};
+        try{
+            const stored=JSON.parse(localStorage.getItem(PREF_KEY)||"{}");
+            if(stored && typeof stored==="object" && !Array.isArray(stored))prefs=stored;
+        }catch(_err){}
+        const setCollapsed=(section,collapsed,persist)=>{
+            const el=section==="position"?position:recon;
+            const button=section==="position"?positionBtn:reconBtn;
+            el.hidden=!!collapsed;
+            button.setAttribute("aria-expanded",String(!collapsed));
+            button.textContent=collapsed?"TAMPILKAN":"SEMBUNYIKAN";
+            if(persist){
+                prefs[section]=!!collapsed;
+                try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch(_err){}
+            }
+        };
+        setCollapsed("position",typeof prefs.position==="boolean"?prefs.position:mobile,false);
+        setCollapsed("reconciliation",typeof prefs.reconciliation==="boolean"?prefs.reconciliation:mobile,false);
+        positionBtn.addEventListener("click",()=>setCollapsed("position",!position.hidden,true));
+        reconBtn.addEventListener("click",()=>setCollapsed("reconciliation",!recon.hidden,true));
+    }
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
+    else init();
+})();
+</script>
 <script src="stock-late-transfer.js?v=20261031-admin-late-transfer-v1"></script>
 </body>
 </html>
