@@ -17,6 +17,8 @@
     "transferDestinationHeightBefore","transferDestinationHeightAfter",
     "transferSourceHeightBefore","transferSourceHeightAfter"]);
   let activeKey=null,activePeriod=null,userId=null,started=false,suspended=false,dirty=new Set();
+  const volatileDrafts=new Map(); // Emergency in-tab copy when localStorage rejects writes.
+  let storageFailureAlerted=false;
   const status=()=>document.getElementById("stockDraftStatus");
   const getPeriod=()=>({tanggal:document.getElementById("tanggal")?.value||"",
     shift:Number(document.getElementById("shift")?.value||0)});
@@ -29,6 +31,8 @@
   };
   function read(key){
     if(!key)return null;
+    // Prefer latest emergency copy if a localStorage write failed.
+    if(volatileDrafts.has(key))return volatileDrafts.get(key);
     try{
       const raw=localStorage.getItem(key);
       if(!raw)return null;
@@ -43,16 +47,25 @@
   }
   function write(key,data){
     if(!key)return false;
+    const stored={...data,version:1,savedAt:Date.now()};
     try{
-      if(Object.keys(data.sections||{}).length){
-        const serialized=JSON.stringify({...data,version:1,savedAt:Date.now()});
+      if(Object.keys(stored.sections||{}).length){
+        const serialized=JSON.stringify(stored);
         localStorage.setItem(key,serialized);
         if(localStorage.getItem(key)!==serialized)throw new Error("Draft tidak terverifikasi sesudah ditulis.");
       }else localStorage.removeItem(key);
+      volatileDrafts.delete(key);
       return true;
     }catch(error){
       console.warn("Draft Stock gagal disimpan:",error);
-      setMessage("Perhatian: browser menolak penyimpanan draft. Jangan refresh sebelum transaksi disimpan.");
+      // This fallback can be copied from LIHAT DRAFT, but is lost on refresh.
+      if(Object.keys(stored.sections||{}).length)volatileDrafts.set(key,stored);
+      else volatileDrafts.delete(key);
+      setMessage("PERINGATAN: Draft hanya tersimpan sementara di tab ini. LIHAT DRAFT lalu salin angkanya. JANGAN REFRESH sebelum transaksi disimpan.");
+      if(!storageFailureAlerted){
+        storageFailureAlerted=true;
+        window.alert?.("Penyimpanan draft di perangkat gagal. Data sementara masih bisa disalin lewat LIHAT DRAFT, tetapi akan hilang jika halaman di-refresh. Jangan refresh sebelum transaksi selesai.");
+      }
       return false;
     }
   }
@@ -111,9 +124,14 @@
     // Only genuine visible front/rear measurements are saved.
     if(el.style?.display==="none")return;
     if(el.classList?.contains("front-rear-value") ||
+       el.id==="receiptPendingDO" ||
        (el.id && sectionsFor(group).includes(el.id))){
       dirty.add(group);
-      saveGroup(group);
+      // Event listeners run in capture phase. Allow inline onchange/onsounding
+      // handlers to update dependent values before capturing the entire form.
+      Promise.resolve().then(()=>{
+        if(started&&!suspended)saveGroup(group);
+      });
     }
   }
   const STORAGE_SELECTS=new Set([
@@ -215,6 +233,8 @@
     return result.join("\n");
   }
   function showDraft(){
+    // Flush any pending user edits before creating the manual copy.
+    persist();
     let period=getPeriod(),data=read(activeKey);
     if(!data || !Object.keys(data.sections||{}).length){
       // The current date/shift may differ from the last unfinished shift
@@ -334,7 +354,8 @@
   function clearCurrent(){
     if(!activeKey)return;
     if(!window.confirm("Hapus seluruh draft Stock yang BELUM disimpan untuk akun, tanggal, dan shift ini?"))return;
-    try{localStorage.removeItem(activeKey);}catch(error){setMessage("Draft belum dapat dihapus: "+error.message);return;}
+    try{localStorage.removeItem(activeKey);volatileDrafts.delete(activeKey);}
+    catch(error){setMessage("Draft belum dapat dihapus: "+error.message);return;}
     dirty.clear();
     setMessage("Draft periode ini dihapus. Form akan direset saat halaman dimuat ulang.");
   }
@@ -348,10 +369,17 @@
       if(!["opening","receipt","transfer","closing"].includes(group))return false;
       const hasPair=Object.values(entry.paired||{}).some(p=>
         String(p?.front??"").trim()!=="" || String(p?.rear??"").trim()!=="");
-      const meaningful=new Set(["receiptMeterStart","receiptMeterEnd","receiptReference",
-        "closingNote","closingRevisionReason"]);
+      const meaningful=new Set([
+        "openingHeight",
+        "receiptArrivalTime","receiptMeterStart","receiptMeterEnd","receiptReference",
+        "receiptTankHeightBefore","receiptTankHeightAfter",
+        "transferDestinationHeightBefore","transferDestinationHeightAfter",
+        "transferSourceHeightBefore","transferSourceHeightAfter",
+        "closingNote","closingRevisionReason"
+      ]);
       return hasPair || Object.entries(entry.fields||{}).some(([id,value])=>
-        meaningful.has(id)&&String(value??"").trim()!=="");
+        (meaningful.has(id)||/^height-(MT|FT)[A-Za-z0-9_-]+$/i.test(id)) &&
+        String(value??"").trim()!=="");
     });
   }
   function latestDraftPeriod(){
