@@ -1188,6 +1188,48 @@ th{background:#f8fafc;color:#475569}
 .stock-section-picker button[aria-pressed="true"]{background:#2563eb!important;color:#fff!important;border-color:#2563eb!important}
 @media(max-width:700px){.stock-section-picker .workflow-compact-actions{justify-content:flex-start;flex-basis:100%}.stock-section-picker .workflow-compact-actions button{flex:1 1 auto}}
 </style>
+
+<style id="stock-fuelman-session-compact-v1">
+/* Stock session badge: visual-only, no changes to stock/session permissions. */
+#fuelmanSessionInfo.stock-session-compact{
+    display:flex!important;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:5px 8px;
+    width:100%;
+    max-width:100%;
+    margin:10px 0 16px!important;
+    padding:10px 13px!important;
+    background:#ecfdf5!important;
+    border:1px solid #b9ead0!important;
+    border-radius:12px!important;
+    color:#17583b!important;
+    font-size:12px!important;
+    line-height:1.5!important;
+    box-shadow:none!important;
+}
+#fuelmanSessionInfo.stock-session-compact.hidden,
+#fuelmanSessionInfo.stock-session-compact .hidden{display:none!important}
+#fuelmanSessionInfo.stock-session-compact strong{font-weight:900;color:#126440}
+#fuelmanSessionInfo.stock-session-compact .stock-session-dot{
+    flex:0 0 9px;
+    width:9px;height:9px;
+    border-radius:50%;
+    background:#10b981;
+    box-shadow:0 0 0 3px #d1fae5;
+    margin-right:3px;
+}
+#fuelmanSessionInfo.stock-session-compact .stock-session-separator{color:#5a9879}
+#fuelmanSessionInfo.stock-session-compact #sessionTruckLine{display:inline-flex;align-items:center;gap:8px}
+@media(max-width:640px){
+    #fuelmanSessionInfo.stock-session-compact{
+        padding:10px 11px!important;
+        font-size:11px!important;
+        gap:4px 6px;
+        margin:10px 0 14px!important;
+    }
+}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -1302,13 +1344,15 @@ th{background:#f8fafc;color:#475569}
     <div class="workspace-status"><span></span> Data Supabase aktif</div>
 </div>
 
-<div id="fuelmanSessionInfo" class="session-info hidden">
-    <strong> SHIFT FUELMAN AKTIF</strong><br>
-    Fuelman: <span id="sessionFuelman">-</span><br>
-    Shift: <span id="sessionShift">-</span><br>
-    Tugas: <span id="sessionDuty">-</span><br>
-    <span id="sessionTruckLine">Fuel Truck: <span id="sessionTruck">-</span><br></span>
-    <span id="sessionResponsibility">Tanggal/shift dan tanggung jawab Closing mengikuti session.</span>
+<div id="fuelmanSessionInfo" class="session-info stock-session-compact hidden" role="status" aria-label="Sesi Fuelman aktif">
+    <span class="stock-session-dot" aria-hidden="true"></span>
+    <strong>Sesi Aktif:</strong>
+    <span id="sessionFuelman">-</span>
+    <span class="stock-session-separator" aria-hidden="true">•</span>
+    <span id="sessionShift">-</span>
+    <span class="stock-session-separator" aria-hidden="true">•</span>
+    <span id="sessionDuty">-</span>
+    <span id="sessionTruckLine" class="hidden"><span class="stock-session-separator" aria-hidden="true">•</span> <span id="sessionTruck">-</span></span>
 </div>
 
 <div class="panel period-panel">
@@ -3818,10 +3862,9 @@ function applyFuelmanIdentity(){
     }
     document.getElementById("sessionFuelman").textContent=name||"-";
     document.getElementById("sessionShift").textContent=ACTIVE_FUELMAN_SESSION.shift||"-";
-    document.getElementById("sessionDuty").textContent=picTransfer?"PIC TRANSFER":"FUELMAN";
+    document.getElementById("sessionDuty").textContent=picTransfer?"PIC MT":"FUELMAN FT";
     document.getElementById("sessionTruck").textContent=ACTIVE_FUELMAN_SESSION.fuel_truck||"-";
     document.getElementById("sessionTruckLine").classList.toggle("hidden",picTransfer);
-    document.getElementById("sessionResponsibility").textContent=picTransfer?"PIC TRANSFER / BONGKAR: catat penerimaan transporter, transfer antar storage, pantau pergerakan fuel, dan wajib Closing semua MT aktif sebelum End Shift.":"FUELMAN: Closing hanya untuk FT yang sedang dibawa sebelum End Shift.";
     document.getElementById("fuelmanSessionInfo").classList.remove("hidden");
 }
 
