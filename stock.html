@@ -1266,6 +1266,293 @@ th{background:#f8fafc;color:#475569}
     .stock-position-panel .stock-reconciliation-toggle-row strong{font-size:11px}
 }
 </style>
+
+<style id="stock-operation-spotlight-v1">
+/* Navigation only: focus the task selector and panel headers. No changes to stock records or forms. */
+.stock-workspace .stock-section-picker.workflow-compact-tools{
+    position:static!important;
+    display:grid!important;
+    grid-template-columns:minmax(195px,.7fr) minmax(0,2.3fr)!important;
+    gap:15px!important;
+    align-items:center!important;
+    margin:12px 0 16px!important;
+    padding:16px 17px!important;
+    border:1px solid #bddafa!important;
+    border-left:5px solid #237cf4!important;
+    border-radius:16px!important;
+    background:linear-gradient(116deg,#f8fbff 0%,#eaf4ff 100%)!important;
+    box-shadow:0 7px 23px rgba(17,86,172,.08)!important;
+}
+.stock-workspace .stock-section-picker .workflow-compact-copy{min-width:0}
+.stock-workspace .stock-section-picker .workflow-compact-eyebrow{
+    display:block!important;
+    color:#2975c7!important;
+    font-size:9px!important;
+    font-weight:900!important;
+    letter-spacing:.12em;
+    margin:0 0 4px;
+}
+.stock-workspace .stock-section-picker .workflow-compact-copy strong{
+    display:block;
+    font-size:18px!important;
+    font-weight:900!important;
+    color:#123457!important;
+    line-height:1.2;
+    margin:0 0 4px!important;
+}
+.stock-workspace .stock-section-picker .workflow-compact-hint{
+    display:block!important;
+    font-size:11px!important;
+    font-weight:600;
+    color:#647c99!important;
+    line-height:1.4!important;
+}
+.stock-workspace .stock-section-picker .workflow-compact-actions{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+    gap:11px!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    justify-content:stretch!important;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;
+}
+.stock-workspace .stock-section-picker .workflow-view-buttons{
+    display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button{
+    width:100%;min-width:0;min-height:54px!important;
+    padding:10px 8px!important;
+    font-size:12px!important;
+    font-weight:900!important;
+    border-radius:12px!important;
+    border:1px solid #bfd4ed!important;
+    background:#fff!important;
+    color:#23476e!important;
+    box-shadow:0 3px 9px rgba(35,86,144,.055);
+    line-height:1.3!important;
+    transition:background-color .12s ease, border-color .12s ease, transform .12s ease;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button>span{
+    font-size:16px;vertical-align:-1px;margin-right:2px;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button:focus-visible,
+.stock-workspace .stock-section-picker .workflow-view-buttons button:focus-visible{
+    outline:3px solid rgba(37,99,235,.32);outline-offset:2px
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button[data-view="01"][aria-pressed="true"]{
+    background:linear-gradient(160deg,#0ea765,#058448)!important;border-color:#03955b!important;
+    color:#fff!important;box-shadow:0 7px 17px rgba(5,132,72,.19)!important;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button[data-view="02"][aria-pressed="true"]{
+    background:linear-gradient(160deg,#e9a123,#c77a0b)!important;border-color:#cd800f!important;
+    color:#fff!important;box-shadow:0 7px 17px rgba(202,121,12,.19)!important;
+}
+.stock-workspace .stock-section-picker .workflow-task-buttons button[data-view="03"][aria-pressed="true"]{
+    background:linear-gradient(160deg,#2689ff,#1959ce)!important;border-color:#1860d9!important;
+    color:#fff!important;box-shadow:0 7px 17px rgba(25,89,206,.21)!important;
+}
+.stock-workspace .stock-section-picker .workflow-view-buttons button{
+    min-height:36px!important;
+    padding:8px 11px!important;
+    font-size:10px!important;
+    font-weight:800!important;
+    white-space:nowrap;
+    border-radius:9px!important;
+    border:1px solid #c9dcf2!important;
+    background:#f8fbff!important;
+    color:#4a6584!important;
+    box-shadow:none!important;
+}
+.stock-workspace .stock-section-picker .workflow-view-buttons button[aria-pressed="true"]{
+    color:#1457a7!important;background:#dceeff!important;border-color:#a3c9fa!important;
+}
+.stock-workspace .workflow-panel.stock-section-hidden{display:none!important}
+.stock-workspace .workflow-panel[data-step]{
+    --workflow-accent:#257be9;
+    --workflow-tint:#f3f8ff;
+    margin-bottom:11px!important;
+    border:1px solid #dce8f6!important;
+    border-left:4px solid var(--workflow-accent)!important;
+    border-radius:14px!important;
+    background:#fff!important;
+    box-shadow:0 4px 14px rgba(14,52,100,.045)!important;
+    overflow:hidden;
+    padding:15px 16px!important;
+    transition:border-color .13s ease,box-shadow .13s ease;
+}
+.stock-workspace .workflow-panel[data-step="01"]{--workflow-accent:#0fa968;--workflow-tint:#eafbf1}
+.stock-workspace .workflow-panel[data-step="02"]{--workflow-accent:#e6a126;--workflow-tint:#fff6e7}
+.stock-workspace .workflow-panel[data-step="03"]{--workflow-accent:#237af4;--workflow-tint:#eaf3ff}
+.stock-workspace .workflow-panel[data-step="04"]{--workflow-accent:#8b5cf6;--workflow-tint:#f4edff}
+.stock-workspace .workflow-panel[data-step]::before{content:none!important}
+.stock-workspace .workflow-panel[data-step]:not(.is-collapsed){
+    border-top:2px solid var(--workflow-accent)!important;
+    box-shadow:0 10px 25px rgba(22,79,149,.095)!important;
+}
+.stock-workspace .workflow-panel .workflow-panel-head{
+    display:flex!important;
+    align-items:center!important;
+    gap:12px!important;
+    justify-content:space-between!important;
+    min-height:44px;
+    cursor:pointer;
+}
+.stock-workspace .workflow-panel .workflow-panel-head h3{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    margin:0!important;
+    padding:0!important;
+    font-size:16px!important;
+    line-height:1.45!important;
+    font-weight:900!important;
+    color:#173554!important;
+}
+.stock-workspace .workflow-panel .workflow-panel-head h3::before{
+    content:"◉";
+    flex:0 0 35px;
+    width:35px;height:35px;
+    border-radius:10px;
+    display:grid;place-items:center;
+    background:var(--workflow-tint);
+    color:var(--workflow-accent);
+    font-size:20px;
+    font-weight:900;
+}
+.stock-workspace .workflow-panel[data-step="01"] .workflow-panel-head h3::before{content:"↗";font-size:23px}
+.stock-workspace .workflow-panel[data-step="02"] .workflow-panel-head h3::before{content:"↓";font-size:24px}
+.stock-workspace .workflow-panel[data-step="03"] .workflow-panel-head h3::before{content:"⇄";font-size:25px}
+.stock-workspace .workflow-panel[data-step="04"] .workflow-panel-head h3::before{content:"✓";font-size:22px}
+.stock-workspace .workflow-panel .workflow-toggle-btn{
+    display:inline-flex!important;align-items:center;justify-content:center;gap:7px;
+    min-width:121px!important;min-height:42px!important;padding:10px 12px!important;
+    border:1px solid #c9daf1!important;border-radius:10px!important;
+    background:#f5f9ff!important;color:#205eae!important;
+    font-size:11px!important;font-weight:900!important;
+    white-space:nowrap;
+}
+.stock-workspace .workflow-panel .workflow-toggle-btn::after{content:"−";font-size:15px;line-height:1}
+.stock-workspace .workflow-panel.is-collapsed .workflow-toggle-btn::after{content:"+"}
+.stock-workspace .workflow-panel.is-collapsed{
+    padding:10px 14px!important;
+    min-height:66px!important;
+}
+.stock-workspace .workflow-panel.is-collapsed .workflow-panel-head{min-height:44px!important}
+.stock-workspace #soundingCheckPanel{
+    border:1px solid #d6e9fa!important;
+    border-left:4px solid #16a5db!important;
+    border-radius:14px!important;
+    background:#fff!important;
+    box-shadow:0 4px 13px rgba(14,52,100,.045)!important;
+}
+.stock-workspace #soundingCheckPanel .stock-aux-panel-head h3{font-size:15px!important;color:#174463!important}
+.stock-workspace #soundingCheckPanel .stock-aux-toggle-btn{
+    background:#eaf7ff!important;border-color:#b9dffe!important;
+    color:#08649c!important;min-height:41px!important;
+    font-weight:900!important;font-size:11px!important;
+}
+.stock-workspace .stock-draft-banner{
+    background:#f8fbff!important;border:1px solid #d9e7f6!important;
+    border-left:3px solid #89b5ee!important;
+    border-radius:12px!important;color:#416280!important;
+    padding:12px 14px!important;font-size:11px!important;
+}
+.stock-workspace .stock-draft-banner .stock-draft-actions{display:flex;gap:7px;flex-wrap:wrap}
+.stock-workspace .stock-draft-banner .stock-draft-reset{
+    border:1px solid #c5d9ef!important;
+    background:#fff!important;
+    color:#245e9c!important;
+    border-radius:9px!important;
+    min-height:39px!important;
+    font-size:10px!important;
+    padding:8px 12px!important;
+    font-weight:800!important;
+}
+.stock-workspace .stock-draft-banner .stock-draft-reset:last-child{
+    color:#b64b55!important;border-color:#f0d1d5!important;
+}
+.stock-workspace .movement-panel{
+    border:1px solid #dce8f6!important;border-left:4px solid #0d9faa!important;
+    border-radius:14px!important;background:#fff!important;
+    box-shadow:0 4px 14px rgba(14,52,100,.045)!important;
+}
+.stock-workspace .movement-panel .panel-title-row h3{color:#174c58!important;font-size:16px!important}
+.stock-workspace .movement-panel .panel-toggle-btn{
+    min-height:41px!important;min-width:115px!important;
+    padding:9px 12px!important;font-size:11px!important;
+    font-weight:900!important;border-radius:9px!important;
+    background:#edfafb!important;color:#147d87!important;border:1px solid #b8e5e8!important;
+}
+@media(max-width:1020px){
+  .stock-workspace .stock-section-picker.workflow-compact-tools{
+      grid-template-columns:1fr!important;gap:11px!important;
+  }
+  .stock-workspace .stock-section-picker .workflow-compact-actions{
+      grid-template-columns:1fr!important;gap:10px!important;
+  }
+  .stock-workspace .stock-section-picker .workflow-view-buttons{justify-content:flex-start}
+}
+@media(max-width:700px){
+  .stock-workspace .stock-section-picker.workflow-compact-tools{
+      margin:9px 0 12px!important;
+      padding:12px!important;
+      gap:10px!important;
+      border-radius:14px!important;
+  }
+  .stock-workspace .stock-section-picker .workflow-compact-copy strong{font-size:16px!important}
+  .stock-workspace .stock-section-picker .workflow-compact-eyebrow{font-size:8px!important}
+  .stock-workspace .stock-section-picker .workflow-compact-hint{font-size:10px!important}
+  .stock-workspace .stock-section-picker .workflow-compact-actions{grid-template-columns:1fr!important;gap:10px!important}
+  .stock-workspace .stock-section-picker .workflow-task-buttons{gap:6px}
+  .stock-workspace .stock-section-picker .workflow-task-buttons button{
+      min-height:54px!important;
+      padding:8px 4px!important;
+      font-size:11px!important;
+      line-height:1.3!important;
+      border-radius:10px!important;
+  }
+  .stock-workspace .stock-section-picker .workflow-task-buttons button>span{
+      display:block;font-size:18px;margin:0 0 2px;
+  }
+  .stock-workspace .stock-section-picker .workflow-view-buttons button{
+      min-height:42px!important;font-size:10px!important;flex:1 1 0;
+  }
+  .stock-workspace .workflow-panel[data-step]{padding:12px!important;margin-bottom:9px!important}
+  .stock-workspace .workflow-panel.is-collapsed{
+      padding:9px 10px!important;
+      min-height:64px!important;
+  }
+  .stock-workspace .workflow-panel .workflow-panel-head h3{
+      font-size:13px!important;gap:8px!important;
+      line-height:1.35!important;
+  }
+  .stock-workspace .workflow-panel .workflow-panel-head h3::before{
+      width:32px;height:32px;flex-basis:32px;border-radius:9px;
+  }
+  .stock-workspace .workflow-panel .workflow-toggle-btn{
+      min-width:100px!important;
+      min-height:44px!important;
+      font-size:10px!important;
+      padding:9px 8px!important;
+  }
+  .stock-workspace #soundingCheckPanel .stock-aux-toggle-btn,
+  .stock-workspace .movement-panel .panel-toggle-btn{
+      min-height:44px!important;min-width:108px!important;font-size:10px!important;
+  }
+  .stock-workspace .stock-draft-banner{padding:10px 11px!important;font-size:10px!important}
+  .stock-workspace .stock-draft-banner .stock-draft-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stock-workspace .stock-draft-banner .stock-draft-reset{min-height:44px!important;width:100%;min-width:0}
+}
+@media(max-width:360px){
+  .stock-workspace .workflow-panel .workflow-panel-head h3{font-size:12px!important}
+  .stock-workspace .workflow-panel .workflow-panel-head h3::before{display:none!important}
+  .stock-workspace .workflow-panel .workflow-toggle-btn{min-width:94px!important}
+  .stock-workspace .stock-section-picker .workflow-task-buttons button{font-size:10px!important}
+}
+</style>
 </head>
 
 <body class="stock-workspace">
@@ -5886,7 +6173,7 @@ document.addEventListener("kpp-auth-ready",async(event)=>{
     const tools=document.createElement("div");
     tools.className="workflow-compact-tools";
     tools.classList.add("stock-section-picker");
-    tools.innerHTML='<div class="workflow-compact-copy"><strong>Transaksi Stock</strong><span>Pilih bagian yang ingin ditampilkan.</span></div><div class="workflow-compact-actions" role="group" aria-label="Tampilkan bagian transaksi"><button type="button" data-view="all">Tampilkan Semua</button><button type="button" data-view="01">Opening</button><button type="button" data-view="02">Penerimaan</button><button type="button" data-view="03">Transfer</button><button type="button" data-view="none">Sembunyikan Semua</button></div>';
+    tools.innerHTML='<div class="workflow-compact-copy"><span class="workflow-compact-eyebrow">MENU OPERASIONAL</span><strong>Transaksi Stock</strong><span class="workflow-compact-hint">Pilih pekerjaan yang akan dilakukan.</span></div><div class="workflow-compact-actions" role="group" aria-label="Pilih tampilan transaksi"><div class="workflow-task-buttons"><button type="button" data-view="01" aria-label="Buka Opening Stock"><span aria-hidden="true">📋</span> Opening</button><button type="button" data-view="02" aria-label="Buka Penerimaan Solar"><span aria-hidden="true">🚚</span> Penerimaan</button><button type="button" data-view="03" aria-label="Buka Transfer Storage"><span aria-hidden="true">🔄</span> Transfer</button></div><div class="workflow-view-buttons"><button type="button" data-view="all">Tampilkan Semua</button><button type="button" data-view="none">Sembunyikan Semua</button></div></div>';
     list[0].before(tools);
     const transactionPanels=list.filter(panel=>["01","02","03"].includes(panel.dataset.step));
     function selectView(view,{persist=true,expand=true}={}){
