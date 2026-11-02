@@ -3353,22 +3353,15 @@ function updateSoundingCheck(){
             window.KPP_SESSION?.user?.email?.split("@")[0] ||
             "-"
         ).trim();
-        const checkTime=localTime();
-        const checkTruck=/^FT/i.test(storage)
-            ? storage
-            : (ACTIVE_FUELMAN_SESSION?.fuel_truck || "-");
         const report=[
             "HASIL CEK SONDING",
             "Fuelman: "+fuelmanName,
             "Tanggal shift: "+period.tanggal,
-            "Jam pengecekan: "+checkTime,
             "Shift: "+period.shift,
-            "FT: "+checkTruck,
-            "Storage: "+storage,
+            (/^MT/i.test(storage) ? "MT" : /^FT/i.test(storage) ? "FT" : "Storage")+": "+storage,
             "Sonding depan: "+fmtCm(front).replace(/(?:\s*cm)+$/i,"")+" cm",
             "Sonding belakang: "+fmtCm(rear).replace(/(?:\s*cm)+$/i,"")+" cm",
             "Rata-rata: "+average.toLocaleString("id-ID",{maximumFractionDigits:3})+" cm",
-            "Sonding final: "+fmtCm(finalHeight),
             "Hasil tera: "+reportLiters(tera.liters)
         ].join("\n");
         result.classList.remove("error");
