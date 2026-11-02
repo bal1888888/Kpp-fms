@@ -399,13 +399,14 @@
       return;
     }
     const op = window.KPPTime.operationalShift();
-    const transferStatus = purpose() === "BEFORE" ? "Sebelum transfer dari"
-      : purpose() === "AFTER" ? "Setelah transfer dari" : null;
+    const transferStatus = purpose() === "BEFORE" ? "SEBELUM DARI"
+      : purpose() === "AFTER" ? "SESUDAH DARI" : null;
+    const tankLabel = result.code.replace(/^(FT|MT)/i, (_, prefix) => prefix.toUpperCase() + " ");
     const report = [
-      "HASIL CEK SONDING" + (transferStatus ? " " + transferStatus + " " + originDescription(selectedOrigin()) : ""),
+      "HASIL CEK SONDING " + tankLabel +
+        (transferStatus ? " " + transferStatus + " " + originDescription(selectedOrigin()) : ""),
       "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
-        " | Shift: " + op.shift +
-        " | " + (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
+        " | Shift: " + op.shift,
       "Tanggal shift: " + op.tanggal,
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
