@@ -130,8 +130,8 @@
       return;
     }
     const op = window.KPPTime.operationalShift();
-    const transferStatus = purpose() === "BEFORE" ? "Sebelum menerima dari MT"
-      : purpose() === "AFTER" ? "Setelah menerima dari MT" : null;
+    const transferStatus = purpose() === "BEFORE" ? "Sebelum menerima dari"
+      : purpose() === "AFTER" ? "Setelah menerima dari" : null;
     const report = [
       "HASIL CEK SONDING",
       "Fuelman: " + String(profile?.display_name || profile?.username || "-"),
