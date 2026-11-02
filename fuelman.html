@@ -329,6 +329,17 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-result strong{display:block;font-size:19px;line-height:1.3;color:#17476f;overflow-wrap:anywhere}
 .fuel-quick-result .fuel-quick-result-liter{background:#ebfaf1;border-color:#b8e8d1}
 .fuel-quick-result-liter strong{color:#078a51!important;font-size:22px}
+
+.fuel-quick-steps{margin-top:12px;padding:12px;border:1px solid #bfdcf9;border-radius:12px;background:#f5faff}
+.fuel-quick-steps[hidden],.fuel-quick-delta[hidden]{display:none!important}
+.fuel-quick-step-title{font-size:12px;font-weight:900;color:#17476f;line-height:1.45}
+.fuel-quick-step-state{margin-top:9px;padding:10px 11px;border-radius:9px;border:1px solid #d8e7f9;background:#fff;color:#2f5277;font-size:12px;line-height:1.5}
+.fuel-quick-delta{margin-top:9px;padding:11px;border:1px solid #a7e3c2;background:#effcf5;border-radius:9px;color:#136c41;font-size:13px;font-weight:800;line-height:1.5}
+.fuel-quick-step-actions{display:flex;gap:9px;margin-top:10px;flex-wrap:wrap}
+.fuel-quick-step-actions button{min-height:48px;border:0;border-radius:10px;padding:10px 15px;font-size:12px;font-weight:900;color:#fff;background:#1876dc}
+.fuel-quick-step-actions button:disabled{opacity:.48;cursor:not-allowed}
+.fuel-quick-step-actions .fuel-quick-after-btn{background:#089570}
+.fuel-quick-step-disclaimer{margin:9px 0 0;font-size:11px;line-height:1.5;color:#617d9c}
 .fuel-quick-status{margin-top:9px;min-height:16px;color:#496c8a;font-size:12px;line-height:1.5}
 .fuel-quick-status.error{color:#be2638}
 .fuel-quick-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
@@ -357,6 +368,8 @@ button,.btn,.actions a{min-height:44px}
  .fuel-quick-result small{font-size:9px}
  .fuel-quick-result strong{font-size:14px}
  .fuel-quick-result-liter strong{font-size:17px}
+ .fuel-quick-step-actions{display:grid;grid-template-columns:1fr}
+ .fuel-quick-step-actions button{width:100%;min-height:52px}
  .fuel-quick-actions{display:grid;grid-template-columns:1fr 1fr}
  .fuel-quick-actions button{width:100%;min-width:0;font-size:10px}
 }
@@ -499,6 +512,18 @@ button,.btn,.actions a{min-height:44px}
         <div><small>RATA-RATA</small><strong id="quickSondingAverage">—</strong></div>
         <div><small>SONDING FINAL</small><strong id="quickSondingFinal">—</strong></div>
         <div class="fuel-quick-result-liter"><small>HASIL TERA</small><strong id="quickSondingLiters">—</strong></div>
+      </div>
+      <div id="quickSondingSteps" class="fuel-quick-steps" hidden>
+        <div id="quickSondingStepHint" class="fuel-quick-step-title">Tahap 1: Ukur fisik sebelum transfer.</div>
+        <div id="quickSondingSavedBefore" class="fuel-quick-step-state" role="status" aria-live="polite">
+          Pilih FT dan MT asal agar catatan sebelumnya bisa dibaca dari web.
+        </div>
+        <div id="quickSondingDelta" class="fuel-quick-delta" hidden></div>
+        <div class="fuel-quick-step-actions">
+          <button type="button" id="quickSondingSaveBefore" disabled>1. SIMPAN SONDING SEBELUM</button>
+          <button type="button" id="quickSondingSaveAfter" class="fuel-quick-after-btn" disabled>2. SIMPAN SONDING SESUDAH</button>
+        </div>
+        <p class="fuel-quick-step-disclaimer">Pengukuran fisik diinput Fuelman. Catatan sebelum/sesudah disimpan di Supabase agar bisa dilanjutkan setelah refresh. Ini bukan transaksi transfer dan tidak mengubah stok.</p>
       </div>
       <div id="quickSondingStatus" class="fuel-quick-status" role="status" aria-live="polite"></div>
       <div class="fuel-quick-actions">
@@ -851,6 +876,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261102-report-identity-v4"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-before-after-wizard1"></script>
 </body>
 </html>
