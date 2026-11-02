@@ -130,15 +130,14 @@
       return;
     }
     const op = window.KPPTime.operationalShift();
-    const transferStatus = purpose() === "BEFORE" ? "Sebelum menerima dari"
-      : purpose() === "AFTER" ? "Setelah menerima dari" : null;
+    const transferStatus = purpose() === "BEFORE" ? "Sebelum transfer dari"
+      : purpose() === "AFTER" ? "Setelah transfer dari" : null;
     const report = [
-      "HASIL CEK SONDING",
+      "HASIL CEK SONDING" + (transferStatus ? " " + transferStatus + " " + sourceSelect.value : ""),
       "Fuelman: " + String(profile?.display_name || profile?.username || "-"),
       "Tanggal shift: " + op.tanggal,
       "Shift: " + op.shift,
       (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
-      ...(transferStatus ? ["Kondisi: " + transferStatus + " " + sourceSelect.value] : []),
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
