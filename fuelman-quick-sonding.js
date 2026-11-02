@@ -64,7 +64,7 @@
     const mode = purpose(), ctx = stageContext();
     steps.hidden = mode === "CHECK_ONLY";
     if (steps.hidden) return;
-    const valid = !!ctx && hasMeasurement() && ready && !evidenceBusy && !evidenceLoading;
+    const valid = !!ctx && evidenceLoadedKey === ctx.key && hasMeasurement() && ready && !evidenceBusy && !evidenceLoading;
     stepHint.textContent = mode === "BEFORE"
       ? "TAHAP 1 DARI 2 • Sonding fisik SEBELUM menerima solar dari MT. Simpan agar tersedia di web."
       : "TAHAP 2 DARI 2 • Muat data SEBELUM dari web, ukur fisik SESUDAH transfer, lalu simpan.";
@@ -126,6 +126,10 @@
   }
   async function saveStage(stage) {
     if (evidenceBusy || evidenceLoading) return;
+    if (!stageContext() || evidenceLoadedKey !== stageContext().key) {
+      message("Data pengecekan sebelumnya belum terverifikasi. Pilih ulang MT asal atau buka ulang panel.", true);
+      return;
+    }
     const ctx = stageContext();
     const result = calculate();
     if (!ctx || !result) {
