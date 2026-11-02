@@ -307,6 +307,21 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-field label{font-size:12px;color:#28506f;margin-bottom:7px}
 .fuel-quick-field input,.fuel-quick-field select{width:100%;min-height:46px;max-width:100%;min-width:0;
  border-radius:9px;background:#fff;border:1px solid #c5d9f0;color:#1a3e63;font-size:15px}
+.fuel-quick-purpose{min-width:0;margin:12px 0 0;padding:12px;border:1px solid #d8e7f9;border-radius:12px;background:#f9fbff}
+.fuel-quick-purpose legend{font-size:12px;font-weight:900;color:#28506f;padding:0 5px}
+.fuel-quick-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fuel-quick-choice{min-width:0;min-height:50px;display:flex;align-items:center;gap:7px;
+ padding:9px;border:1px solid #cedff4;border-radius:10px;background:#fff;color:#25496e;
+ cursor:pointer;font-size:12px;font-weight:800;line-height:1.35}
+.fuel-quick-choice input{appearance:auto;width:18px;height:18px;min-width:18px;flex:0 0 18px;margin:0;
+ accent-color:#2563eb;cursor:pointer}
+.fuel-quick-choice:has(input:checked){border-color:#60a5fa;background:#eaf4ff;color:#174d91}
+.fuel-quick-choice:focus-within{outline:2px solid #93c5fd;outline-offset:1px}
+.fuel-quick-source{margin-top:11px}
+.fuel-quick-source[hidden]{display:none!important}
+.fuel-quick-source label{display:block;font-size:12px;font-weight:800;color:#28506f;margin:0 0 7px}
+.fuel-quick-source select{width:100%;min-height:46px;min-width:0;border-radius:9px;
+ border:1px solid #c5d9f0;background:#fff;color:#1a3e63;padding:10px;font-size:15px}
 .fuel-quick-result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}
 .fuel-quick-result>div{min-width:0;text-align:center;background:#f6faff;
  border:1px solid #d7e6f9;border-radius:11px;padding:12px 6px}
@@ -333,6 +348,10 @@ button,.btn,.actions a{min-height:44px}
  .fuel-quick-fields{gap:8px}
  .fuel-quick-field{padding:10px 8px}
  .fuel-quick-field label{font-size:11px}
+ .fuel-quick-purpose{padding:10px 8px}
+ .fuel-quick-choice-grid{gap:5px}
+ .fuel-quick-choice{font-size:10.5px;gap:5px;padding:7px 5px;min-height:54px}
+ .fuel-quick-choice input{width:16px;height:16px;min-width:16px;flex-basis:16px}
  .fuel-quick-result{gap:6px}
  .fuel-quick-result>div{padding:11px 4px}
  .fuel-quick-result small{font-size:9px}
@@ -464,6 +483,18 @@ button,.btn,.actions a{min-height:44px}
           <input id="quickSondingRear" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" disabled>
         </div>
       </div>
+      <fieldset class="fuel-quick-purpose">
+        <legend>Jenis pengecekan</legend>
+        <div class="fuel-quick-choice-grid">
+          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="BEFORE"><span>Sebelum dari MT</span></label>
+          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="AFTER"><span>Setelah dari MT</span></label>
+          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="CHECK_ONLY" checked><span>Cek sonding saja</span></label>
+        </div>
+        <div class="fuel-quick-source" id="quickSondingSourceBox" hidden>
+          <label for="quickSondingSource">Dari MT mana?</label>
+          <select id="quickSondingSource" disabled><option value="">-- Pilih MT asal --</option></select>
+        </div>
+      </fieldset>
       <div class="fuel-quick-result">
         <div><small>RATA-RATA</small><strong id="quickSondingAverage">—</strong></div>
         <div><small>SONDING FINAL</small><strong id="quickSondingFinal">—</strong></div>
@@ -820,6 +851,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261101-quick-sonding1"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-mt-stage1"></script>
 </body>
 </html>
