@@ -336,6 +336,12 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-source label{display:block;font-size:12px;font-weight:800;color:#28506f;margin:0 0 7px}
 .fuel-quick-source select{width:100%;min-height:46px;min-width:0;border-radius:9px;
  border:1px solid #c5d9f0;background:#fff;color:#1a3e63;padding:10px;font-size:15px}
+
+.fuel-quick-transporter-pick{display:block;width:100%;min-height:48px;margin-top:10px;padding:10px 12px;
+border:1px solid #94baf0;border-radius:10px;background:#eaf3ff;color:#1758a8;
+font-weight:900;font-size:12px;text-align:center;cursor:pointer}
+.fuel-quick-transporter-pick.is-active{background:#d7f4e8;border-color:#25a47c;color:#116c53}
+.fuel-quick-transporter-pick:focus-visible{outline:3px solid #67aaff;outline-offset:2px}
 .fuel-quick-transporter{margin-top:11px;padding-top:11px;border-top:1px solid #d7e6f9}
 .fuel-quick-transporter[hidden]{display:none!important}
 .fuel-quick-transporter input{width:100%;min-height:48px;border:1px solid #c5d9f0;border-radius:9px;background:#fff;color:#1a3e63;font-size:15px;padding:9px 12px}
@@ -531,6 +537,8 @@ button,.btn,.actions a{min-height:44px}
           <div class="fuel-quick-source fuel-quick-field full" id="quickSondingSourceBox" hidden>
             <label for="quickSondingSource">🚛 Dari mana?</label>
             <select id="quickSondingSource" disabled><option value="">-- Pilih sumber solar --</option></select>
+            <button id="quickSondingTransporterPick" type="button" class="fuel-quick-transporter-pick"
+              aria-pressed="false">🚛 TRANSPORTIR — ISI MANUAL</button>
             <div class="fuel-quick-transporter" id="quickSondingTransporterBox" hidden>
               <label for="quickSondingTransporter">Nama Transportir (isi manual)</label>
               <input id="quickSondingTransporter" type="text" maxlength="80" autocomplete="off"
@@ -925,6 +933,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261102-transportir-source3"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-visible-transportir4"></script>
 </body>
 </html>
