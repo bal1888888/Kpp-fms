@@ -538,8 +538,8 @@
     }
     const op = window.KPPTime.operationalShift();
     const outbound = storage.value.startsWith("MT");
-    const transferStatus = purpose() === "BEFORE" ? (outbound ? "SEBELUM KE" : "SEBELUM DARI")
-      : purpose() === "AFTER" ? (outbound ? "SESUDAH KE" : "SESUDAH DARI") : null;
+    const transferStatus = purpose() === "BEFORE" ? (outbound ? "SEBELUM TRANFER KE" : "SEBELUM TRANFER DARI")
+      : purpose() === "AFTER" ? (outbound ? "SESUDAH TRANFER KE" : "SESUDAH TRANFER DARI") : null;
     const tankLabel = result.code.replace(/^(FT|MT)/i, (_, prefix) => prefix.toUpperCase() + " ");
     // The difference below is physical sonding evidence, not an official transfer quantity.
     const ctx = stageContext();
