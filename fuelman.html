@@ -316,14 +316,22 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-purpose{min-width:0;margin:12px 0 0;padding:12px;border:1px solid #d8e7f9;border-radius:12px;background:#f9fbff}
 .fuel-quick-purpose legend{font-size:12px;font-weight:900;color:#28506f;padding:0 5px}
 .fuel-quick-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.fuel-quick-choice{min-width:0;min-height:50px;display:flex;align-items:center;gap:7px;
- padding:9px;border:1px solid #cedff4;border-radius:10px;background:#fff;color:#25496e;
- cursor:pointer;font-size:12px;font-weight:800;line-height:1.35}
-.fuel-quick-choice input{appearance:auto;width:18px;height:18px;min-width:18px;flex:0 0 18px;margin:0;
- accent-color:#2563eb;cursor:pointer}
-.fuel-quick-choice:has(input:checked){border-color:#60a5fa;background:#eaf4ff;color:#174d91}
-.fuel-quick-choice:focus-within{outline:2px solid #93c5fd;outline-offset:1px}
-.fuel-quick-source{margin-top:11px}
+.fuel-quick-choice{min-width:0;min-height:80px;display:flex;align-items:center;justify-content:center;
+ gap:7px;padding:11px 7px;border:1px solid #bed5f1;border-radius:12px;background:#fff;color:#25496e;
+ cursor:pointer;font-size:12px;font-weight:800;line-height:1.4;box-shadow:0 2px 5px rgba(29,75,125,.05)}
+.fuel-quick-choice>span{display:grid;gap:5px;text-align:center;justify-items:center;font-size:22px}
+.fuel-quick-choice b{font-size:11px;letter-spacing:.01em}
+.fuel-quick-choice input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.fuel-quick-choice:has(input:checked){border:2px solid #2375e9;background:#eaf4ff;color:#1555ad;box-shadow:0 4px 14px rgba(37,99,235,.12)}
+.fuel-quick-choice:focus-within{outline:3px solid #93c5fd;outline-offset:2px}
+.fuel-quick-choice-start{border:0;background:transparent;padding:0;margin:0}
+.fuel-quick-work{margin-top:14px}
+.fuel-quick-work[hidden]{display:none!important}
+.fuel-quick-mode-title{border:1px solid #d7e6f9;border-radius:10px;background:#eff7ff;color:#164a7b;
+ padding:11px;font-size:12px;line-height:1.45;font-weight:800;margin-bottom:10px}
+.fuel-quick-source{margin-top:0}
+.fuel-quick-source[hidden]{display:none!important}
+
 .fuel-quick-source[hidden]{display:none!important}
 .fuel-quick-source label{display:block;font-size:12px;font-weight:800;color:#28506f;margin:0 0 7px}
 .fuel-quick-source select{width:100%;min-height:46px;min-width:0;border-radius:9px;
@@ -367,8 +375,10 @@ button,.btn,.actions a{min-height:44px}
  .fuel-quick-field label{font-size:11px}
  .fuel-quick-purpose{padding:10px 8px}
  .fuel-quick-choice-grid{gap:5px}
- .fuel-quick-choice{font-size:10.5px;gap:5px;padding:7px 5px;min-height:54px}
- .fuel-quick-choice input{width:16px;height:16px;min-width:16px;flex-basis:16px}
+ .fuel-quick-choice{gap:5px;padding:8px 4px;min-height:76px}
+ .fuel-quick-choice>span{font-size:18px}
+ .fuel-quick-choice b{font-size:10px;line-height:1.25}
+ .fuel-quick-choice input{width:1px;height:1px;min-width:1px}
  .fuel-quick-result{gap:6px}
  .fuel-quick-result>div{padding:11px 4px}
  .fuel-quick-result small{font-size:9px}
@@ -487,43 +497,44 @@ button,.btn,.actions a{min-height:44px}
       <button type="button" id="quickSondingToggle" class="fuel-quick-toggle" aria-expanded="false" aria-controls="quickSondingContent">TAMPILKAN ＋</button>
     </div>
     <div id="quickSondingContent" hidden>
-      <p class="fuel-quick-info">Pilih storage dan masukkan dua pengukuran. Hasil tera akan muncul otomatis.</p>
-      <div class="fuel-quick-fields">
-        <div class="fuel-quick-field full">
-          <label for="quickSondingStorage">🛢️ Storage MT / FT</label>
-          <select id="quickSondingStorage" disabled><option value="">Memuat Master MT/FT...</option></select>
-        </div>
-        <div class="fuel-quick-field">
-          <label for="quickSondingFront">Sonding Depan (cm)</label>
-          <input id="quickSondingFront" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.6" disabled>
-        </div>
-        <div class="fuel-quick-field">
-          <label for="quickSondingRear">Sonding Belakang (cm)</label>
-          <input id="quickSondingRear" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" disabled>
-        </div>
-      </div>
-      <details class="fuel-quick-tutorial">
-        <summary>📘 Cara cek sonding sebelum &amp; sesudah transfer</summary>
-        <div class="fuel-quick-guide">
-          <p><b>1. Pilih storage</b> yang akan diukur dan pilih <b>MT asal</b> sesuai pekerjaan di lapangan. Daftar MT/FT berasal dari Master MT/FT KPP-FMS.</p>
-          <p><b>2. Sebelum transfer</b> — pilih <b>Sebelum dari MT</b>, isi sonding depan dan belakang yang benar-benar diukur, lalu tekan <b>1. SIMPAN SONDING SEBELUM</b>.</p>
-          <p><b>3. Setelah transfer</b> — pilih <b>Setelah dari MT</b> dengan pasangan storage dan MT yang sama. Hasil SEBELUM otomatis diambil dari Supabase. Ukur lagi depan/belakang, lalu tekan <b>2. SIMPAN SONDING SESUDAH</b>.</p>
-          <p><b>4. Periksa hasil</b> — web menampilkan volume SEBELUM, SESUDAH, dan selisih berdasarkan tabel tera. Tombol <b>SALIN HASIL</b> dapat digunakan untuk laporan.</p>
-          <p><b>Cek sonding saja</b> hanya konversi cepat ke liter, tanpa perlu memilih MT. Catatan cek ini <b>bukan transaksi transfer</b>; transaksi resmi tetap dilakukan di menu Stock.</p>
-        </div>
-      </details>
-      <fieldset class="fuel-quick-purpose">
-        <legend>Jenis pengecekan</legend>
+      <p class="fuel-quick-info" id="quickSondingIntro">Pilih pekerjaan yang mau dilakukan.</p>
+      <fieldset class="fuel-quick-purpose fuel-quick-choice-start">
+        <legend>MAU CEK APA?</legend>
         <div class="fuel-quick-choice-grid">
-          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="BEFORE"><span>Sebelum dari MT</span></label>
-          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="AFTER"><span>Setelah dari MT</span></label>
-          <label class="fuel-quick-choice"><input type="radio" name="quickSondingPurpose" value="CHECK_ONLY" checked><span>Cek sonding saja</span></label>
-        </div>
-        <div class="fuel-quick-source" id="quickSondingSourceBox" hidden>
-          <label for="quickSondingSource">Dari MT mana?</label>
-          <select id="quickSondingSource" disabled><option value="">-- Pilih MT asal --</option></select>
+          <label class="fuel-quick-choice">
+            <input type="radio" name="quickSondingPurpose" value="BEFORE">
+            <span>📥 <b>SEBELUM TRANSFER</b></span>
+          </label>
+          <label class="fuel-quick-choice">
+            <input type="radio" name="quickSondingPurpose" value="AFTER">
+            <span>📤 <b>SESUDAH TRANSFER</b></span>
+          </label>
+          <label class="fuel-quick-choice">
+            <input type="radio" name="quickSondingPurpose" value="CHECK_ONLY">
+            <span>📏 <b>CEK SONDING SAJA</b></span>
+          </label>
         </div>
       </fieldset>
+      <div id="quickSondingWorkArea" class="fuel-quick-work" hidden>
+        <div id="quickSondingModeTitle" class="fuel-quick-mode-title">Pilih storage yang akan diukur.</div>
+        <div class="fuel-quick-fields">
+          <div class="fuel-quick-field full">
+            <label for="quickSondingStorage">🛢️ Storage yang dicek</label>
+            <select id="quickSondingStorage" disabled><option value="">Memuat Master MT/FT...</option></select>
+          </div>
+          <div class="fuel-quick-source fuel-quick-field full" id="quickSondingSourceBox" hidden>
+            <label for="quickSondingSource">🚛 Dari MT mana?</label>
+            <select id="quickSondingSource" disabled><option value="">-- Pilih MT asal --</option></select>
+          </div>
+          <div class="fuel-quick-field">
+            <label for="quickSondingFront">Sonding Depan (cm)</label>
+            <input id="quickSondingFront" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.6" disabled>
+          </div>
+          <div class="fuel-quick-field">
+            <label for="quickSondingRear">Sonding Belakang (cm)</label>
+            <input id="quickSondingRear" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" disabled>
+          </div>
+        </div>
       <div class="fuel-quick-result">
         <div><small>RATA-RATA</small><strong id="quickSondingAverage">—</strong></div>
         <div><small>SONDING FINAL</small><strong id="quickSondingFinal">—</strong></div>
@@ -546,7 +557,17 @@ button,.btn,.actions a{min-height:44px}
         <button type="button" id="quickSondingCopy" class="fuel-quick-copy" disabled>📋 SALIN HASIL</button>
         <button type="button" id="quickSondingReset" class="fuel-quick-reset">BERSIHKAN</button>
       </div>
-      <p class="fuel-quick-note">Pengecekan saja. Tidak mengubah stock, Opening, Closing, atau pengisian.</p>
+      <p class="fuel-quick-note">Pencatatan cek saja. Transfer resmi tetap melalui menu Stock.</p>
+      </div>
+      <details class="fuel-quick-tutorial">
+        <summary>📘 Butuh bantuan? Lihat cara pakai</summary>
+        <div class="fuel-quick-guide">
+          <p><b>Sebelum transfer:</b> Pilih FT dan MT asal, ukur sonding depan/belakang, lalu tekan SIMPAN SEBELUM.</p>
+          <p><b>Sesudah transfer:</b> Gunakan pasangan FT/MT yang sama. Web memanggil hasil sebelum secara otomatis. Ukur kembali, lalu tekan SIMPAN SESUDAH.</p>
+          <p><b>Cek sonding saja:</b> Pilih storage dan ukur. Tidak perlu MT asal atau penyimpanan sebelum/sesudah.</p>
+          <p>Hasil perbandingan berdasarkan tabel tera web dan bukan nilai transfer resmi. Transaksi stok tetap di menu Stock.</p>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -892,6 +913,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261102-before-after-wizard1"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-guided-flow2"></script>
 </body>
 </html>
