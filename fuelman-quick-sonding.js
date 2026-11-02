@@ -12,6 +12,7 @@
   const purposeInputs = [...document.querySelectorAll('input[name="quickSondingPurpose"]')];
   const sourceBox = $("quickSondingSourceBox"), sourceSelect = $("quickSondingSource");
   const transporterBox = $("quickSondingTransporterBox"), transporterInput = $("quickSondingTransporter");
+  const transporterPick = $("quickSondingTransporterPick");
   const normalizeTransporter = () => String(transporterInput.value || "").trim().replace(/\s+/g, " ").toUpperCase();
   let transporterDebounce = null;
   const purpose = () => purposeInputs.find(input => input.checked)?.value || "";
@@ -90,13 +91,16 @@
     sourceSelect.replaceChildren(
       new Option("-- Pilih asal solar --", ""),
       ...valid.map(row => new Option(row.code, row.code)),
-      ...(storage.value.startsWith("FT") ? [new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")] : [])
+      new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")
     );
-    if (valid.some(row => row.code === previous) ||
-        (previous === "TRANSPORTIR" && storage.value.startsWith("FT"))) sourceSelect.value = previous;
+    if (valid.some(row => row.code === previous) || previous === "TRANSPORTIR") sourceSelect.value = previous;
     sourceSelect.disabled = !ready || !required;
     transporterBox.hidden = !required || sourceSelect.value !== "TRANSPORTIR";
     transporterInput.disabled = transporterBox.hidden;
+    const activeTransporter = required && sourceSelect.value === "TRANSPORTIR";
+    transporterPick.classList.toggle("is-active", activeTransporter);
+    transporterPick.setAttribute("aria-pressed", String(activeTransporter));
+    transporterPick.disabled = !ready || !required;
   }
   function stageContext() {
     const op = window.KPPTime?.operationalShift?.();
@@ -287,7 +291,11 @@
       litersOut.textContent = liter(tera.liters);
       copy.disabled = !purpose() || (needsSource() && !selectedOrigin());
       message(copy.disabled
-        ? (sourceSelect.value === "TRANSPORTIR" ? "Isi nama Transportir (2–80 karakter)." : "Pilih asal solar.")
+        ? (sourceSelect.value === "TRANSPORTIR"
+            ? (!storage.value.startsWith("FT")
+                ? "Pilih FT yang akan disonding terlebih dahulu."
+                : "Isi nama Transportir (2–80 karakter).")
+            : "Pilih asal solar.")
         : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
       renderSteps();
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
@@ -349,6 +357,17 @@
   storage.addEventListener("change", onChoiceChange);
   purposeInputs.forEach(input => input.addEventListener("change", onChoiceChange));
   sourceSelect.addEventListener("change", onChoiceChange);
+  transporterPick.addEventListener("click", () => {
+    if (!ready || !needsSource()) return;
+    sourceSelect.value = "TRANSPORTIR";
+    onChoiceChange();
+    if (storage.value.startsWith("FT")) {
+      transporterInput.focus();
+    } else {
+      message("Pilih FT yang akan disonding, kemudian tulis nama Transportir.", true);
+      storage.focus();
+    }
+  });
   transporterInput.addEventListener("input", () => {
     activeDraftKey = draftKey();
     calculate();
