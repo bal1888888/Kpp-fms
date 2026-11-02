@@ -336,6 +336,12 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-source label{display:block;font-size:12px;font-weight:800;color:#28506f;margin:0 0 7px}
 .fuel-quick-source select{width:100%;min-height:46px;min-width:0;border-radius:9px;
  border:1px solid #c5d9f0;background:#fff;color:#1a3e63;padding:10px;font-size:15px}
+.fuel-quick-transporter{margin-top:11px;padding-top:11px;border-top:1px solid #d7e6f9}
+.fuel-quick-transporter[hidden]{display:none!important}
+.fuel-quick-transporter input{width:100%;min-height:48px;border:1px solid #c5d9f0;border-radius:9px;background:#fff;color:#1a3e63;font-size:15px;padding:9px 12px}
+.fuel-quick-transporter label{display:block;font-weight:900;font-size:12px;margin-bottom:7px;color:#24577f}
+.fuel-quick-transporter small{display:block;margin-top:6px;color:#587592;font-size:11px}
+
 .fuel-quick-result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}
 .fuel-quick-result>div{min-width:0;text-align:center;background:#f6faff;
  border:1px solid #d7e6f9;border-radius:11px;padding:12px 6px}
@@ -523,8 +529,14 @@ button,.btn,.actions a{min-height:44px}
             <select id="quickSondingStorage" disabled><option value="">Memuat Master MT/FT...</option></select>
           </div>
           <div class="fuel-quick-source fuel-quick-field full" id="quickSondingSourceBox" hidden>
-            <label for="quickSondingSource">🚛 Dari MT mana?</label>
-            <select id="quickSondingSource" disabled><option value="">-- Pilih MT asal --</option></select>
+            <label for="quickSondingSource">🚛 Dari mana?</label>
+            <select id="quickSondingSource" disabled><option value="">-- Pilih sumber solar --</option></select>
+            <div class="fuel-quick-transporter" id="quickSondingTransporterBox" hidden>
+              <label for="quickSondingTransporter">Nama Transportir (isi manual)</label>
+              <input id="quickSondingTransporter" type="text" maxlength="80" autocomplete="off"
+                placeholder="Contoh: PT SHA / PT DKA" aria-describedby="quickSondingTransporterHint">
+              <small id="quickSondingTransporterHint">Isi nama transportir yang membawa solar, bukan MT.</small>
+            </div>
           </div>
           <div class="fuel-quick-field">
             <label for="quickSondingFront">Sonding Depan (cm)</label>
@@ -562,8 +574,8 @@ button,.btn,.actions a{min-height:44px}
       <details class="fuel-quick-tutorial">
         <summary>📘 Butuh bantuan? Lihat cara pakai</summary>
         <div class="fuel-quick-guide">
-          <p><b>Sebelum transfer:</b> Pilih FT dan MT asal, ukur sonding depan/belakang, lalu tekan SIMPAN SEBELUM.</p>
-          <p><b>Sesudah transfer:</b> Gunakan pasangan FT/MT yang sama. Web memanggil hasil sebelum secara otomatis. Ukur kembali, lalu tekan SIMPAN SESUDAH.</p>
+          <p><b>Sebelum transfer:</b> Pilih FT, lalu sumbernya: MT atau Transportir. Jika Transportir, ketik nama secara manual. Ukur depan/belakang dan tekan SIMPAN SEBELUM.</p>
+          <p><b>Sesudah transfer:</b> Gunakan FT dan sumber yang sama (termasuk nama Transportir). Web memanggil hasil SEBELUM secara otomatis. Ukur lagi lalu tekan SIMPAN SESUDAH.</p>
           <p><b>Cek sonding saja:</b> Pilih storage dan ukur. Tidak perlu MT asal atau penyimpanan sebelum/sesudah.</p>
           <p>Hasil perbandingan berdasarkan tabel tera web dan bukan nilai transfer resmi. Transaksi stok tetap di menu Stock.</p>
         </div>
@@ -913,6 +925,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261102-guided-flow2"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-transportir-source3"></script>
 </body>
 </html>
