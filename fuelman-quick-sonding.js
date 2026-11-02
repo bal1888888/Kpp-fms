@@ -25,6 +25,9 @@
   const saveBefore = $("quickSondingSaveBefore"), saveAfter = $("quickSondingSaveAfter");
   let evidence = null, evidenceRequest = 0, evidenceLoading = false, evidenceBusy = false;
   let evidenceLoadedKey = "";
+  // Only display a completed cycle's volume while that cycle was just finished
+  // in this open form. Older completed records remain in Supabase history.
+  let justCompletedId = null;
   const inputDrafts = new Map();
   let activeDraftKey = "";
   function draftKey() {
@@ -157,13 +160,19 @@
       savedBefore.textContent = beforeText + " • Lanjut ke SESUDAH.";
       if (mode === "BEFORE") stepHint.textContent = "LANGKAH 1 SUDAH SELESAI • Pilih SESUDAH TRANSFER";
     } else {
-      savedBefore.textContent = beforeText + " • Pengecekan pasangan ini sudah SELESAI. " +
-        (mode === "BEFORE" ? "Boleh mulai pengecekan baru." : "Untuk pengukuran berikutnya mulai dari SEBELUM.");
+      // Do not present an old completed transfer as the result of blank inputs.
+      if (mode !== "AFTER" || justCompletedId !== evidence.id) {
+        savedBefore.textContent = mode === "BEFORE"
+          ? "Pengecekan sebelumnya sudah selesai. Isi sonding baru, lalu SIMPAN SEBELUM."
+          : "Tidak ada transfer yang menunggu tahap SESUDAH. Mulai dari SEBELUM TRANSFER.";
+        return;
+      }
+      savedBefore.textContent = beforeText + " • SESUDAH baru saja disimpan.";
       const diff = Number(evidence.after_liters) - Number(evidence.before_liters);
       deltaBox.hidden = false;
       deltaBox.textContent = "SESUDAH: " + liter(evidence.after_liters) +
-        " • PERUBAHAN VOLUME: " + (diff >= 0 ? "+" : "−") + liter(Math.abs(diff)) +
-        " (hasil perbandingan sonding, bukan jumlah transfer resmi).";
+        " • TOTAL TF (dari sonding): " + (diff >= 0 ? "+" : "−") + liter(Math.abs(diff)) +
+        " (catatan pengecekan, bukan transfer resmi).";
     }
   }
   function resumeAfterSavedBefore(ctx) {
@@ -262,6 +271,7 @@
         return;
       }
       if (stage === "BEFORE") {
+        justCompletedId = null;
         // Never reuse the BEFORE measurement as the AFTER input.
         inputDrafts.delete(activeDraftKey);
         inputDrafts.delete(["AFTER",ctx.storage,ctx.sourceType,ctx.source].join("|"));
@@ -273,6 +283,7 @@
         clearResult();
         message("✓ SEBELUM tersimpan di web. Sekarang ukur SESUDAH transfer.");
       } else {
+        justCompletedId = response.data.id;
         message("✓ SEBELUM dan SESUDAH sudah tersimpan di web. Hasil perbandingan siap dibaca.");
       }
     } catch (error) {
@@ -311,7 +322,12 @@
       averageOut.textContent = cm(average);
       finalOut.textContent = cm(finalHeight);
       litersOut.textContent = liter(tera.liters);
-      copy.disabled = !purpose() || (needsSource() && !selectedOrigin());
+      const ctx = stageContext();
+      const afterHasLinkedBefore = purpose() !== "AFTER" ||
+        (!!ctx && evidenceLoadedKey === ctx.key &&
+          (evidence?.status === "OPEN" ||
+            (evidence?.status === "COMPLETED" && justCompletedId === evidence.id)));
+      copy.disabled = !purpose() || (needsSource() && !selectedOrigin()) || !afterHasLinkedBefore;
       message(copy.disabled
         ? (sourceSelect.value === "TRANSPORTIR"
             ? (!storage.value.startsWith("FT")
@@ -369,6 +385,7 @@
     if (opening) void load().catch(() => {});
   });
   function onChoiceChange() {
+    justCompletedId = null;
     stashDraft();
     syncSource();
     restoreDraft();
@@ -403,12 +420,32 @@
   front.addEventListener("input", calculate);
   rear.addEventListener("input", calculate);
   reset.addEventListener("click", () => {
+    if (evidenceBusy) {
+      message("Sedang menyimpan ke web. Selesaikan penyimpanan sebelum membersihkan form.", true);
+      return;
+    }
+    // Clear the form, not the historical Supabase records.
+    // Invalidate any outstanding query so it cannot repopulate a cleared UI.
+    ++evidenceRequest;
+    if (transporterDebounce) clearTimeout(transporterDebounce);
+    transporterDebounce = null;
+    evidence = null;
+    evidenceLoadedKey = "";
+    evidenceLoading = false;
+    justCompletedId = null;
+    inputDrafts.clear();
+    activeDraftKey = "";
+    purposeInputs.forEach(input => { input.checked = false; });
+    storage.value = "";
+    sourceSelect.value = "";
+    transporterInput.value = "";
     front.value = rear.value = "";
-    if (activeDraftKey) inputDrafts.delete(activeDraftKey);
+    syncSource();
     clearResult();
-    renderSteps();
-    message("Isian kosong. Masukkan hasil sonding yang baru.");
-    if (!front.disabled) front.focus();
+    savedBefore.textContent = "Pilih FT dan asal solar untuk mulai.";
+    deltaBox.hidden = true;
+    updateModeUI();
+    message("✓ Form bersih. Pilih pekerjaan baru. Riwayat sebelumnya tetap tersimpan.");
   });
   copy.addEventListener("click", async () => {
     const result = calculate();
@@ -420,6 +457,14 @@
       (sourceSelect.value === "TRANSPORTIR" ? transporterInput : sourceSelect).focus();
       return;
     }
+    const linkedContext = stageContext();
+    if (purpose() === "AFTER" && (!linkedContext ||
+        evidenceLoadedKey !== linkedContext.key ||
+        !((evidence?.status === "OPEN") ||
+          (evidence?.status === "COMPLETED" && justCompletedId === evidence.id)))) {
+      message("Tidak ada pengecekan SEBELUM yang masih aktif. Mulai dari SEBELUM TRANSFER.", true);
+      return;
+    }
     const op = window.KPPTime.operationalShift();
     const transferStatus = purpose() === "BEFORE" ? "SEBELUM DARI"
       : purpose() === "AFTER" ? "SESUDAH DARI" : null;
@@ -427,7 +472,9 @@
     // The difference below is physical sonding evidence, not an official transfer quantity.
     const ctx = stageContext();
     const hasBefore = purpose() === "AFTER" && ctx &&
-      evidenceLoadedKey === ctx.key && evidence?.before_liters != null;
+      evidenceLoadedKey === ctx.key && evidence?.before_liters != null &&
+      (evidence.status === "OPEN" ||
+        (evidence.status === "COMPLETED" && justCompletedId === evidence.id));
     const volumeChange = hasBefore ? result.liters - Number(evidence.before_liters) : null;
     const report = [
       "HASIL CEK SONDING " + tankLabel +
