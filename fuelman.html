@@ -307,6 +307,12 @@ button,.btn,.actions a{min-height:44px}
 .fuel-quick-field label{font-size:12px;color:#28506f;margin-bottom:7px}
 .fuel-quick-field input,.fuel-quick-field select{width:100%;min-height:46px;max-width:100%;min-width:0;
  border-radius:9px;background:#fff;border:1px solid #c5d9f0;color:#1a3e63;font-size:15px}
+.fuel-quick-tutorial{margin-top:12px;border:1px solid #cfe2fa;border-radius:11px;background:#fff;overflow:hidden}
+.fuel-quick-tutorial summary{cursor:pointer;padding:12px;color:#215a91;font-size:12px;font-weight:900;min-height:44px}
+.fuel-quick-tutorial[open] summary{border-bottom:1px solid #dbeafe;background:#f0f7ff}
+.fuel-quick-guide{padding:12px 14px;color:#355671;font-size:12px;line-height:1.65}
+.fuel-quick-guide p{margin:0 0 9px}
+.fuel-quick-guide p:last-child{margin-bottom:0}
 .fuel-quick-purpose{min-width:0;margin:12px 0 0;padding:12px;border:1px solid #d8e7f9;border-radius:12px;background:#f9fbff}
 .fuel-quick-purpose legend{font-size:12px;font-weight:900;color:#28506f;padding:0 5px}
 .fuel-quick-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -496,6 +502,16 @@ button,.btn,.actions a{min-height:44px}
           <input id="quickSondingRear" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Contoh: 36.7" disabled>
         </div>
       </div>
+      <details class="fuel-quick-tutorial">
+        <summary>📘 Cara cek sonding sebelum &amp; sesudah transfer</summary>
+        <div class="fuel-quick-guide">
+          <p><b>1. Pilih storage</b> yang akan diukur dan pilih <b>MT asal</b> sesuai pekerjaan di lapangan. Daftar MT/FT berasal dari Master MT/FT KPP-FMS.</p>
+          <p><b>2. Sebelum transfer</b> — pilih <b>Sebelum dari MT</b>, isi sonding depan dan belakang yang benar-benar diukur, lalu tekan <b>1. SIMPAN SONDING SEBELUM</b>.</p>
+          <p><b>3. Setelah transfer</b> — pilih <b>Setelah dari MT</b> dengan pasangan storage dan MT yang sama. Hasil SEBELUM otomatis diambil dari Supabase. Ukur lagi depan/belakang, lalu tekan <b>2. SIMPAN SONDING SESUDAH</b>.</p>
+          <p><b>4. Periksa hasil</b> — web menampilkan volume SEBELUM, SESUDAH, dan selisih berdasarkan tabel tera. Tombol <b>SALIN HASIL</b> dapat digunakan untuk laporan.</p>
+          <p><b>Cek sonding saja</b> hanya konversi cepat ke liter, tanpa perlu memilih MT. Catatan cek ini <b>bukan transaksi transfer</b>; transaksi resmi tetap dilakukan di menu Stock.</p>
+        </div>
+      </details>
       <fieldset class="fuel-quick-purpose">
         <legend>Jenis pengecekan</legend>
         <div class="fuel-quick-choice-grid">
