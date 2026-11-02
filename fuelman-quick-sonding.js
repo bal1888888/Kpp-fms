@@ -9,6 +9,10 @@
   const averageOut = $("quickSondingAverage"), finalOut = $("quickSondingFinal");
   const litersOut = $("quickSondingLiters"), status = $("quickSondingStatus");
   const copy = $("quickSondingCopy"), reset = $("quickSondingReset");
+  const purposeInputs = [...document.querySelectorAll('input[name="quickSondingPurpose"]')];
+  const sourceBox = $("quickSondingSourceBox"), sourceSelect = $("quickSondingSource");
+  const purpose = () => purposeInputs.find(input => input.checked)?.value || "CHECK_ONLY";
+  const needsSource = () => purpose() !== "CHECK_ONLY";
   let profile = null, rows = [], ready = false, loading = null;
   const cm = n => Number(n).toLocaleString("id-ID", {minimumFractionDigits:1,maximumFractionDigits:3}) + " cm";
   const liter = n => Number(n).toLocaleString("id-ID", {maximumFractionDigits:1}) + " L";
@@ -19,6 +23,18 @@
   function clearResult() {
     averageOut.textContent = finalOut.textContent = litersOut.textContent = "—";
     copy.disabled = true;
+  }
+  function syncSource() {
+    const required = needsSource();
+    sourceBox.hidden = !required;
+    const previous = sourceSelect.value;
+    const valid = rows.filter(row => row.storage_type === "MT" && row.active !== false && row.code !== storage.value);
+    sourceSelect.replaceChildren(
+      new Option("-- Pilih MT asal --", ""),
+      ...valid.map(row => new Option(row.code, row.code))
+    );
+    if (valid.some(row => row.code === previous)) sourceSelect.value = previous;
+    sourceSelect.disabled = !ready || !required;
   }
   function number(field) {
     const s = String(field.value || "").trim().replace(",", ".");
@@ -45,8 +61,10 @@
       averageOut.textContent = cm(average);
       finalOut.textContent = cm(finalHeight);
       litersOut.textContent = liter(tera.liters);
-      copy.disabled = false;
-      message("Hasil siap disalin. Tidak ada transaksi yang disimpan.");
+      copy.disabled = needsSource() && !sourceSelect.value;
+      message(copy.disabled
+        ? "Pilih MT asal terlebih dahulu. Hasil tera tetap bisa dilihat."
+        : "Hasil siap disalin. Tidak ada transaksi yang disimpan.");
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
     } catch (error) {
       message(error.message || "Gagal menghitung sonding.", true);
@@ -76,6 +94,7 @@
       if (options.some(item => item.code === old)) storage.value = old;
       ready = true;
       storage.disabled = front.disabled = rear.disabled = false;
+      syncSource();
       calculate();
     })().catch(error => {
       storage.replaceChildren(new Option("Gagal memuat tabel tera", ""));
@@ -91,7 +110,9 @@
     toggle.textContent = opening ? "SEMBUNYIKAN −" : "TAMPILKAN ＋";
     if (opening) void load().catch(() => {});
   });
-  storage.addEventListener("change", calculate);
+  storage.addEventListener("change", () => { syncSource(); calculate(); });
+  purposeInputs.forEach(input => input.addEventListener("change", () => { syncSource(); calculate(); }));
+  sourceSelect.addEventListener("change", calculate);
   front.addEventListener("input", calculate);
   rear.addEventListener("input", calculate);
   reset.addEventListener("click", () => {
@@ -103,13 +124,21 @@
   copy.addEventListener("click", async () => {
     const result = calculate();
     if (!result) return;
+    if (needsSource() && !sourceSelect.value) {
+      message("Pilih MT asal sebelum menyalin hasil.", true);
+      sourceSelect.focus();
+      return;
+    }
     const op = window.KPPTime.operationalShift();
+    const transferStatus = purpose() === "BEFORE" ? "Sebelum menerima dari MT"
+      : purpose() === "AFTER" ? "Setelah menerima dari MT" : null;
     const report = [
       "HASIL CEK SONDING",
       "Fuelman: " + String(profile?.display_name || profile?.username || "-"),
       "Tanggal shift: " + op.tanggal,
       "Shift: " + op.shift,
       (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
+      ...(transferStatus ? ["Kondisi: " + transferStatus + " " + sourceSelect.value] : []),
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
