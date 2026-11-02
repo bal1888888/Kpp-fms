@@ -128,7 +128,7 @@
     const valid = !!ctx && evidenceLoadedKey === ctx.key && hasMeasurement() && ready && !evidenceBusy && !evidenceLoading;
     stepHint.textContent = mode === "BEFORE"
       ? "LANGKAH 1 / 2 • Simpan hasil SEBELUM"
-      : "LANGKAH 2 / 2 • Simpan hasil SESUDAH";
+      : "LANGKAH 2 / 2 • Isi sonding SESUDAH, lalu simpan";
     saveBefore.hidden = mode !== "BEFORE";
     saveAfter.hidden = mode !== "AFTER";
     saveBefore.disabled = mode !== "BEFORE" || !valid || evidence?.status === "OPEN";
@@ -166,6 +166,23 @@
         " (hasil perbandingan sonding, bukan jumlah transfer resmi).";
     }
   }
+  function resumeAfterSavedBefore(ctx) {
+    if (!ctx || purpose() !== "BEFORE" || evidence?.status !== "OPEN" ||
+        evidenceLoadedKey !== ctx.key || stageContext()?.key !== ctx.key) return false;
+    const afterChoice = purposeInputs.find(input => input.value === "AFTER");
+    if (!afterChoice) return false;
+    // Existing BEFORE is immutable. Never allow it to be entered twice.
+    // An in-progress AFTER draft remains separate and can be restored.
+    inputDrafts.delete(activeDraftKey);
+    afterChoice.checked = true;
+    syncSource();
+    restoreDraft();
+    updateModeUI();
+    calculate();
+    message("✓ SEBELUM sudah tersimpan (" + liter(evidence.before_liters) +
+      "). Sekarang isi sonding SESUDAH, lalu SIMPAN SESUDAH.");
+    return true;
+  }
   async function fetchEvidence() {
     const seq = ++evidenceRequest, ctx = stageContext();
     evidence = null; evidenceLoadedKey = ""; evidenceLoading = !!ctx && needsSource();
@@ -189,7 +206,10 @@
       message("Gagal mengambil cek sonding dari web: " + (error.message || error), true);
       evidenceLoadedKey = "";
     } finally {
-      if (seq === evidenceRequest) { evidenceLoading = false; renderSteps(); }
+      if (seq === evidenceRequest) {
+        evidenceLoading = false;
+        if (!resumeAfterSavedBefore(ctx)) renderSteps();
+      }
     }
   }
   async function saveStage(stage) {
