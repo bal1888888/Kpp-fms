@@ -108,14 +108,11 @@
       "HASIL CEK SONDING",
       "Fuelman: " + String(profile?.display_name || profile?.username || "-"),
       "Tanggal shift: " + op.tanggal,
-      "Jam pengecekan: " + window.KPPTime.localTime(),
       "Shift: " + op.shift,
-      "FT: " + (result.code.startsWith("FT") ? result.code : "-"),
-      "Storage: " + result.code,
+      (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
-      "Sonding final: " + cm(result.finalHeight),
       "Hasil tera: " + liter(result.liters)
     ].join("\n");
     try {
