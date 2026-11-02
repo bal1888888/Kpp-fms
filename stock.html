@@ -4789,8 +4789,12 @@ function applyClosingRevisionUi(savedClosing){
     }
 
     note.disabled=false;
-    carry.disabled=false;
-    document.getElementById("carryForwardLabel").innerHTML="Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>. Shift 1 → Shift 2, Shift 2 → Shift 1 besok.";
+    const fuelmanAutoCarry=CURRENT_PROFILE?.role==="fuelman";
+    if(fuelmanAutoCarry)carry.checked=true;
+    carry.disabled=fuelmanAutoCarry;
+    document.getElementById("carryForwardLabel").innerHTML=fuelmanAutoCarry
+        ? "<b>OTOMATIS (WAJIB):</b> Stock Closing Fuelman menjadi saldo Opening sistem shift berikutnya. Perbedaan sonding fisik awal shift ditindaklanjuti terpisah oleh Admin/GL."
+        : "Jadikan Stock Fisik ini sebagai <b>Stock Opening shift berikutnya</b>. Shift 1 → Shift 2, Shift 2 → Shift 1 besok.";
     saveButton.disabled=false;
     saveButton.textContent=state.hasSaved?"SIMPAN SISA STOCK CLOSING":"SIMPAN STOCK CLOSING";
     revisionBox.classList.add("hidden");
@@ -5981,7 +5985,8 @@ async function saveClosing(){
 
     if(!beginStockSave("Menyimpan Stock Closing dan menghitung carry forward..."))return;
 
-    const carryForward=document.getElementById("carryForward").checked;
+    // Server also forces carry-forward for Fuelman. Do not trust an old unchecked local UI state.
+    const carryForward=CURRENT_PROFILE?.role==="fuelman" || document.getElementById("carryForward").checked;
     let closingResult,closingError;
     try{
         ({data:closingResult,error:closingError}=await stockWithDeadline(db.rpc(
