@@ -11,6 +11,9 @@
   const copy = $("quickSondingCopy"), reset = $("quickSondingReset");
   const purposeInputs = [...document.querySelectorAll('input[name="quickSondingPurpose"]')];
   const sourceBox = $("quickSondingSourceBox"), sourceSelect = $("quickSondingSource");
+  const transporterBox = $("quickSondingTransporterBox"), transporterInput = $("quickSondingTransporter");
+  const normalizeTransporter = () => String(transporterInput.value || "").trim().replace(/\s+/g, " ").toUpperCase();
+  let transporterDebounce = null;
   const purpose = () => purposeInputs.find(input => input.checked)?.value || "";
   const needsSource = () => purpose() === "BEFORE" || purpose() === "AFTER";
   const workArea = $("quickSondingWorkArea"), modeTitle = $("quickSondingModeTitle");
@@ -25,7 +28,9 @@
   let activeDraftKey = "";
   function draftKey() {
     if (!purpose()) return "";
-    return [purpose(), storage.value, needsSource() ? sourceSelect.value : ""].join("|");
+    const origin = selectedOrigin();
+    return [purpose(),storage.value,needsSource() ? (origin?.type || sourceSelect.value) : "",
+      needsSource() ? (origin?.source || "") : ""].join("|");
   }
   function stashDraft() {
     if (activeDraftKey) inputDrafts.set(activeDraftKey, {front:front.value,rear:rear.value});
@@ -43,10 +48,10 @@
       intro.textContent = "Pilih pekerjaan yang mau dilakukan.";
     } else if (selected === "BEFORE") {
       intro.textContent = "1 • Ukur solar sebelum transfer.";
-      modeTitle.textContent = "TAHAP 1: Pilih storage dan MT asal, lalu isi hasil sonding SEBELUM.";
+      modeTitle.textContent = "TAHAP 1: Pilih FT dan asal solar (MT/Transportir), lalu isi sonding SEBELUM.";
     } else if (selected === "AFTER") {
       intro.textContent = "2 • Ukur solar setelah transfer.";
-      modeTitle.textContent = "TAHAP 2: Pilih pasangan yang sama. Data SEBELUM diambil dari web.";
+      modeTitle.textContent = "TAHAP 2: Pilih FT dan asal yang sama. Data SEBELUM diambil dari web.";
     } else {
       intro.textContent = "Cek cepat volume solar.";
       modeTitle.textContent = "Pilih tangki dan masukkan hasil sonding. Tidak perlu menyimpan.";
@@ -63,30 +68,46 @@
     averageOut.textContent = finalOut.textContent = litersOut.textContent = "—";
     copy.disabled = true;
   }
+  function selectedOrigin() {
+    if (!needsSource()) return null;
+    if (sourceSelect.value === "TRANSPORTIR") {
+      const name = normalizeTransporter();
+      return storage.value.startsWith("FT") && name.length >= 2 && name.length <= 80
+        ? {type:"TRANSPORTIR",source:name} : null;
+    }
+    const mt = rows.find(row => row.code === sourceSelect.value &&
+      row.storage_type === "MT" && row.active !== false);
+    return mt && storage.value !== mt.code ? {type:"MT",source:mt.code} : null;
+  }
+  function originDescription(origin) {
+    return origin?.type === "TRANSPORTIR" ? "Transportir " + origin.source : origin?.source || "";
+  }
   function syncSource() {
     const required = needsSource();
     sourceBox.hidden = !required;
     const previous = sourceSelect.value;
     const valid = rows.filter(row => row.storage_type === "MT" && row.active !== false && row.code !== storage.value);
     sourceSelect.replaceChildren(
-      new Option("-- Pilih MT asal --", ""),
-      ...valid.map(row => new Option(row.code, row.code))
+      new Option("-- Pilih asal solar --", ""),
+      ...valid.map(row => new Option(row.code, row.code)),
+      ...(storage.value.startsWith("FT") ? [new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")] : [])
     );
-    if (valid.some(row => row.code === previous)) sourceSelect.value = previous;
+    if (valid.some(row => row.code === previous) ||
+        (previous === "TRANSPORTIR" && storage.value.startsWith("FT"))) sourceSelect.value = previous;
     sourceSelect.disabled = !ready || !required;
+    transporterBox.hidden = !required || sourceSelect.value !== "TRANSPORTIR";
+    transporterInput.disabled = transporterBox.hidden;
   }
   function stageContext() {
     const op = window.KPPTime?.operationalShift?.();
     const userId = window.KPP_SESSION?.user?.id;
     const shift = Number(String(op?.shift ?? "").replace(/[^0-9]/g, ""));
+    const origin = selectedOrigin();
     if (!userId || !op?.tanggal || ![1, 2].includes(shift) ||
-        !storage.value || !sourceSelect.value ||
-        !rows.some(row => row.code === storage.value) ||
-        !rows.some(row => row.code === sourceSelect.value && row.storage_type === "MT") ||
-        sourceSelect.value === storage.value) return null;
+        !storage.value || !rows.some(row => row.code === storage.value) || !origin) return null;
     return {userId, tanggal:op.tanggal, shift,
-      storage:storage.value, source:sourceSelect.value,
-      key:[userId,op.tanggal,shift,storage.value,sourceSelect.value].join("|")};
+      storage:storage.value, source:origin.source, sourceType:origin.type,
+      key:[userId,op.tanggal,shift,storage.value,origin.type,origin.source].join("|")};
   }
   function hasMeasurement() {
     return !!storage.value && front.value !== "" && rear.value !== "" &&
@@ -108,7 +129,9 @@
     saveAfter.disabled = mode !== "AFTER" || !valid || evidence?.status !== "OPEN";
     deltaBox.hidden = true;
     if (!ctx) {
-      savedBefore.textContent = "Pilih storage yang diukur dan MT asal terlebih dahulu.";
+      savedBefore.textContent = sourceSelect.value === "TRANSPORTIR"
+        ? "Ketik nama Transportir terlebih dahulu."
+        : "Pilih storage dan asal solar terlebih dahulu.";
       return;
     }
     if (evidenceLoading || evidenceLoadedKey !== ctx.key) {
@@ -121,7 +144,8 @@
         : "Belum ada data SEBELUM. Kerjakan tahap 1 dahulu.";
       return;
     }
-    const beforeText = "SEBELUM TERSIMPAN • " + liter(evidence.before_liters) +
+    const beforeText = "SEBELUM dari " + originDescription(ctx && {type:ctx.sourceType,source:ctx.source}) +
+      " • " + liter(evidence.before_liters) +
       " (depan " + cm(evidence.before_front_cm) + " / belakang " + cm(evidence.before_rear_cm) + ")";
     if (evidence.status === "OPEN") {
       savedBefore.textContent = beforeText + " • Lanjut ke SESUDAH.";
@@ -142,11 +166,14 @@
     renderSteps();
     if (!ctx || !needsSource()) { evidenceLoading = false; renderSteps(); return; }
     try {
-      const {data, error} = await window.KPP.db.from("fuelman_sonding_checks")
+      let query = window.KPP.db.from("fuelman_sonding_checks")
         .select("id,status,before_front_cm,before_rear_cm,before_liters,after_front_cm,after_rear_cm,after_liters,before_at")
         .eq("user_id", ctx.userId).eq("tanggal", ctx.tanggal).eq("shift",ctx.shift)
-        .eq("storage",ctx.storage).eq("source_mt",ctx.source)
-        .order("before_at",{ascending:false}).limit(10);
+        .eq("storage",ctx.storage).eq("source_type",ctx.sourceType);
+      query = ctx.sourceType === "TRANSPORTIR"
+        ? query.eq("source_transporter",ctx.source)
+        : query.eq("source_mt",ctx.source);
+      const {data, error} = await query.order("before_at",{ascending:false}).limit(10);
       if (error) throw error;
       if (seq !== evidenceRequest || stageContext()?.key !== ctx.key) return;
       evidence = (data || []).find(row => row.status === "OPEN") || (data || [])[0] || null;
@@ -162,18 +189,18 @@
   async function saveStage(stage) {
     if (evidenceBusy || evidenceLoading) return;
     if (!stageContext() || evidenceLoadedKey !== stageContext().key) {
-      message("Data pengecekan sebelumnya belum terverifikasi. Pilih ulang MT asal atau buka ulang panel.", true);
+      message("Data pengecekan sebelumnya belum terverifikasi. Periksa FT dan asal solar, lalu coba lagi.", true);
       return;
     }
     const ctx = stageContext();
     const result = calculate();
     if (!ctx || !result) {
-      message("Pilih storage, MT asal, dan isi hasil sonding fisik dengan benar.", true);
+      message("Pilih storage, asal solar, dan isi hasil sonding fisik dengan benar.", true);
       return;
     }
     if (stage === "BEFORE" && (purpose() !== "BEFORE" || evidence?.status === "OPEN")) return;
     if (stage === "AFTER" && (purpose() !== "AFTER" || evidence?.status !== "OPEN")) {
-      message("Simpan hasil SEBELUM terlebih dahulu atau pilih pasangan FT/MT yang memiliki tahap SEBELUM.", true);
+      message("Simpan hasil SEBELUM terlebih dahulu untuk FT dan asal solar yang sama.", true);
       return;
     }
     const savedId = evidence?.id;
@@ -181,12 +208,14 @@
     renderSteps();
     message(stage === "BEFORE" ? "Menyimpan sonding SEBELUM ke web..." : "Menyimpan sonding SESUDAH ke web...");
     try {
-      if (stageContext()?.key !== ctx.key) throw new Error("Pilihan storage/MT berubah, simpan dibatalkan.");
+      if (stageContext()?.key !== ctx.key) throw new Error("Pilihan storage/asal berubah, simpan dibatalkan.");
       let response;
       if (stage === "BEFORE") {
         response = await window.KPP.db.from("fuelman_sonding_checks").insert({
           user_id:ctx.userId,tanggal:ctx.tanggal,shift:ctx.shift,
-          storage:ctx.storage,source_mt:ctx.source,
+          storage:ctx.storage,source_type:ctx.sourceType,
+          source_mt:ctx.sourceType === "MT" ? ctx.source : null,
+          source_transporter:ctx.sourceType === "TRANSPORTIR" ? ctx.source : null,
           before_front_cm:result.front,before_rear_cm:result.rear,
           before_final_cm:result.finalHeight,before_liters:result.liters
         }).select("id").single();
@@ -209,7 +238,7 @@
       if (stage === "BEFORE") {
         // Never reuse the BEFORE measurement as the AFTER input.
         inputDrafts.delete(activeDraftKey);
-        inputDrafts.delete(["AFTER",ctx.storage,ctx.source].join("|"));
+        inputDrafts.delete(["AFTER",ctx.storage,ctx.sourceType,ctx.source].join("|"));
         const afterOption = purposeInputs.find(input => input.value === "AFTER");
         if (afterOption) afterOption.checked = true;
         syncSource();
@@ -256,9 +285,9 @@
       averageOut.textContent = cm(average);
       finalOut.textContent = cm(finalHeight);
       litersOut.textContent = liter(tera.liters);
-      copy.disabled = !purpose() || (needsSource() && !sourceSelect.value);
+      copy.disabled = !purpose() || (needsSource() && !selectedOrigin());
       message(copy.disabled
-        ? "Pilih MT asal."
+        ? (sourceSelect.value === "TRANSPORTIR" ? "Isi nama Transportir (2–80 karakter)." : "Pilih asal solar.")
         : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
       renderSteps();
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
@@ -320,6 +349,16 @@
   storage.addEventListener("change", onChoiceChange);
   purposeInputs.forEach(input => input.addEventListener("change", onChoiceChange));
   sourceSelect.addEventListener("change", onChoiceChange);
+  transporterInput.addEventListener("input", () => {
+    activeDraftKey = draftKey();
+    calculate();
+    if (transporterDebounce) clearTimeout(transporterDebounce);
+    transporterDebounce = setTimeout(() => { void fetchEvidence(); }, 400);
+  });
+  transporterInput.addEventListener("change", () => {
+    if (transporterDebounce) clearTimeout(transporterDebounce);
+    void fetchEvidence();
+  });
   front.addEventListener("input", calculate);
   rear.addEventListener("input", calculate);
   reset.addEventListener("click", () => {
@@ -333,16 +372,18 @@
   copy.addEventListener("click", async () => {
     const result = calculate();
     if (!result) return;
-    if (needsSource() && !sourceSelect.value) {
-      message("Pilih MT asal sebelum menyalin hasil.", true);
-      sourceSelect.focus();
+    if (needsSource() && !selectedOrigin()) {
+      message(sourceSelect.value === "TRANSPORTIR"
+        ? "Isi nama Transportir minimal 2 karakter sebelum menyalin hasil."
+        : "Pilih asal solar sebelum menyalin hasil.", true);
+      (sourceSelect.value === "TRANSPORTIR" ? transporterInput : sourceSelect).focus();
       return;
     }
     const op = window.KPPTime.operationalShift();
     const transferStatus = purpose() === "BEFORE" ? "Sebelum transfer dari"
       : purpose() === "AFTER" ? "Setelah transfer dari" : null;
     const report = [
-      "HASIL CEK SONDING" + (transferStatus ? " " + transferStatus + " " + sourceSelect.value : ""),
+      "HASIL CEK SONDING" + (transferStatus ? " " + transferStatus + " " + originDescription(selectedOrigin()) : ""),
       "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
         " | Shift: " + op.shift +
         " | " + (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
