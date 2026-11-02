@@ -52,10 +52,10 @@
       intro.textContent = "Pilih pekerjaan yang mau dilakukan.";
     } else if (selected === "BEFORE") {
       intro.textContent = "1 • Ukur solar sebelum transfer.";
-      modeTitle.textContent = "TAHAP 1: Pilih FT dan asal solar (MT/Transportir), lalu isi sonding SEBELUM.";
+      modeTitle.textContent = storage.value.startsWith("MT") ? "TAHAP 1: Pilih MT dan FT tujuan, lalu ukur MT SEBELUM." : "TAHAP 1: Pilih FT dan asal solar (MT/Transportir), lalu isi sonding SEBELUM.";
     } else if (selected === "AFTER") {
       intro.textContent = "2 • Ukur solar setelah transfer.";
-      modeTitle.textContent = "TAHAP 2: Pilih FT dan asal yang sama. Data SEBELUM diambil dari web.";
+      modeTitle.textContent = storage.value.startsWith("MT") ? "TAHAP 2: Pilih MT dan FT tujuan yang sama, lalu ukur MT SESUDAH." : "TAHAP 2: Pilih FT dan asal yang sama. Data SEBELUM diambil dari web.";
     } else {
       intro.textContent = "Cek cepat volume solar.";
       modeTitle.textContent = "Pilih tangki dan masukkan hasil sonding. Tidak perlu menyimpan.";
@@ -76,6 +76,10 @@
   }
   function selectedOrigin() {
     if (!needsSource()) return null;
+    if (storage.value.startsWith("MT")) {
+      const ft = rows.find(row => row.code === sourceSelect.value && row.storage_type === "FT" && row.active !== false);
+      return ft ? {type:"FT_DEST",source:ft.code} : null;
+    }
     if (sourceSelect.value === "TRANSPORTIR") {
       const name = normalizeTransporter();
       return storage.value.startsWith("FT") && name.length >= 2 && name.length <= 80
@@ -90,23 +94,36 @@
   }
   function syncSource() {
     const required = needsSource();
+    const outbound = storage.value.startsWith("MT");
+    const label = $("quickSondingSourceLabel");
+    if (label) label.textContent = outbound ? "🚚 Ke FT mana?" : "🚛 Dari mana?";
     sourceBox.hidden = !required;
     const previous = sourceSelect.value;
-    const valid = rows.filter(row => row.storage_type === "MT" && row.active !== false && row.code !== storage.value);
+    const valid = rows.filter(row => row.storage_type === (outbound ? "FT" : "MT") &&
+      row.active !== false && row.code !== storage.value);
     sourceSelect.replaceChildren(
-      new Option("-- Pilih asal solar --", ""),
+      new Option(outbound ? "-- Pilih FT tujuan --" : "-- Pilih asal solar --", ""),
       ...valid.map(row => new Option(row.code, row.code)),
-      new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")
+      ...(!outbound ? [new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")] : [])
     );
-    if (valid.some(row => row.code === previous) || previous === "TRANSPORTIR") sourceSelect.value = previous;
+    if (valid.some(row => row.code === previous) || (!outbound && previous === "TRANSPORTIR"))
+      sourceSelect.value = previous;
     sourceSelect.disabled = !ready || !required;
-    transporterBox.hidden = !required || sourceSelect.value !== "TRANSPORTIR";
+    transporterBox.hidden = !required || outbound || sourceSelect.value !== "TRANSPORTIR";
     transporterInput.disabled = transporterBox.hidden;
-    const activeTransporter = required && sourceSelect.value === "TRANSPORTIR";
+    const activeTransporter = required && !outbound && sourceSelect.value === "TRANSPORTIR";
     transporterPick.classList.toggle("is-active", activeTransporter);
     transporterPick.setAttribute("aria-pressed", String(activeTransporter));
-    transporterPick.disabled = !ready || !required;
+    transporterPick.hidden = outbound;
+    transporterPick.disabled = !ready || !required || outbound;
   }
+  const checkTable = ctx => ctx?.sourceType === "FT_DEST"
+    ? "fuelman_mt_outbound_checks" : "fuelman_sonding_checks";
+  const pairedSourceField = ctx => ctx?.sourceType === "FT_DEST" ? "destination_ft"
+    : ctx?.sourceType === "TRANSPORTIR" ? "source_transporter" : "source_mt";
+  const pairDirection = ctx => ctx?.sourceType === "FT_DEST" ? "ke" : "dari";
+  const physicalTransferDiff = (ctx,beforeLiters,afterLiters) =>
+    ctx?.sourceType === "FT_DEST" ? beforeLiters - afterLiters : afterLiters - beforeLiters;
   function stageContext() {
     const op = window.KPPTime?.operationalShift?.();
     const userId = window.KPP_SESSION?.user?.id;
@@ -138,9 +155,7 @@
     saveAfter.disabled = mode !== "AFTER" || !valid || evidence?.status !== "OPEN";
     deltaBox.hidden = true;
     if (!ctx) {
-      savedBefore.textContent = sourceSelect.value === "TRANSPORTIR"
-        ? "Ketik nama Transportir terlebih dahulu."
-        : "Pilih storage dan asal solar terlebih dahulu.";
+      savedBefore.textContent = sourceSelect.value === "TRANSPORTIR" ? "Ketik nama Transportir terlebih dahulu." : storage.value.startsWith("MT") ? "Pilih MT dan FT tujuan." : "Pilih FT dan asal solar.";
       return;
     }
     if (evidenceLoading || evidenceLoadedKey !== ctx.key) {
@@ -153,7 +168,7 @@
         : "Belum ada data SEBELUM. Kerjakan tahap 1 dahulu.";
       return;
     }
-    const beforeText = "SEBELUM dari " + originDescription(ctx && {type:ctx.sourceType,source:ctx.source}) +
+    const beforeText = "SEBELUM " + pairDirection(ctx) + " " + originDescription(ctx && {type:ctx.sourceType,source:ctx.source}) +
       " • " + liter(evidence.before_liters) +
       " (depan " + cm(evidence.before_front_cm) + " / belakang " + cm(evidence.before_rear_cm) + ")";
     if (evidence.status === "OPEN") {
@@ -168,7 +183,7 @@
         return;
       }
       savedBefore.textContent = beforeText + " • SESUDAH baru saja disimpan.";
-      const diff = Number(evidence.after_liters) - Number(evidence.before_liters);
+      const diff = physicalTransferDiff(ctx,Number(evidence.before_liters),Number(evidence.after_liters));
       deltaBox.hidden = false;
       deltaBox.textContent = "SESUDAH: " + liter(evidence.after_liters) +
         " • TOTAL TF (dari sonding): " + (diff >= 0 ? "+" : "−") + liter(Math.abs(diff)) +
@@ -198,14 +213,13 @@
     renderSteps();
     if (!ctx || !needsSource()) { evidenceLoading = false; renderSteps(); return; }
     try {
-      let query = window.KPP.db.from("fuelman_sonding_checks")
+      let query = window.KPP.db.from(checkTable(ctx))
         .select("id,status,before_front_cm,before_rear_cm,before_liters,after_front_cm,after_rear_cm,after_liters,before_at")
-        .eq("user_id", ctx.userId).eq("tanggal", ctx.tanggal).eq("shift",ctx.shift)
-        .eq("storage",ctx.storage).eq("source_type",ctx.sourceType);
-      query = ctx.sourceType === "TRANSPORTIR"
-        ? query.eq("source_transporter",ctx.source)
-        : query.eq("source_mt",ctx.source);
-      const {data, error} = await query.order("before_at",{ascending:false}).limit(10);
+        .eq("user_id",ctx.userId).eq("tanggal",ctx.tanggal).eq("shift",ctx.shift);
+      query = ctx.sourceType === "FT_DEST" ? query.eq("storage_mt",ctx.storage)
+        : query.eq("storage",ctx.storage).eq("source_type",ctx.sourceType);
+      const {data,error} = await query.eq(pairedSourceField(ctx),ctx.source)
+        .order("before_at",{ascending:false}).limit(10);
       if (error) throw error;
       if (seq !== evidenceRequest || stageContext()?.key !== ctx.key) return;
       evidence = (data || []).find(row => row.status === "OPEN") ||
@@ -247,16 +261,19 @@
       if (stageContext()?.key !== ctx.key) throw new Error("Pilihan storage/asal berubah, simpan dibatalkan.");
       let response;
       if (stage === "BEFORE") {
-        response = await window.KPP.db.from("fuelman_sonding_checks").insert({
+        const pairDetails = ctx.sourceType === "FT_DEST"
+          ? {storage_mt:ctx.storage,destination_ft:ctx.source}
+          : {storage:ctx.storage,source_type:ctx.sourceType,
+             source_mt:ctx.sourceType === "MT" ? ctx.source : null,
+             source_transporter:ctx.sourceType === "TRANSPORTIR" ? ctx.source : null};
+        response = await window.KPP.db.from(checkTable(ctx)).insert({
           user_id:ctx.userId,tanggal:ctx.tanggal,shift:ctx.shift,
-          storage:ctx.storage,source_type:ctx.sourceType,
-          source_mt:ctx.sourceType === "MT" ? ctx.source : null,
-          source_transporter:ctx.sourceType === "TRANSPORTIR" ? ctx.source : null,
+          ...pairDetails,
           before_front_cm:result.front,before_rear_cm:result.rear,
           before_final_cm:result.finalHeight,before_liters:result.liters
         }).select("id").single();
       } else {
-        response = await window.KPP.db.from("fuelman_sonding_checks")
+        response = await window.KPP.db.from(checkTable(ctx))
           .update({
             after_front_cm:result.front,after_rear_cm:result.rear,
             after_final_cm:result.finalHeight,after_liters:result.liters,
@@ -457,13 +474,12 @@
     ++evidenceRequest; // Ignore earlier lookup responses from a different selection.
     try {
       if (ctx && needsSource()) {
-        const originKey = ctx.sourceType === "TRANSPORTIR" ? "source_transporter" : "source_mt";
-        const {data, error} = await window.KPP.db.from("fuelman_sonding_checks")
-          .select("id,status")
-          .eq("user_id",ctx.userId).eq("tanggal",ctx.tanggal).eq("shift",ctx.shift)
-          .eq("storage",ctx.storage).eq("source_type",ctx.sourceType)
-          .eq(originKey,ctx.source).eq("status","OPEN")
-          .limit(1);
+        let query = window.KPP.db.from(checkTable(ctx)).select("id,status")
+          .eq("user_id",ctx.userId).eq("tanggal",ctx.tanggal).eq("shift",ctx.shift);
+        query = ctx.sourceType === "FT_DEST" ? query.eq("storage_mt",ctx.storage)
+          : query.eq("storage",ctx.storage).eq("source_type",ctx.sourceType);
+        const {data,error} = await query.eq(pairedSourceField(ctx),ctx.source)
+          .eq("status","OPEN").limit(1);
         if (error) throw error;
         if (stageContext()?.key !== ctx.key) {
           throw new Error("FT atau sumber berubah. BERSIHKAN dibatalkan untuk keamanan.");
@@ -479,7 +495,7 @@
             message("Batal membersihkan. Data SEBELUM masih tersimpan dan bisa dilanjutkan.");
             return;
           }
-          const response = await window.KPP.db.from("fuelman_sonding_checks")
+          const response = await window.KPP.db.from(checkTable(ctx))
             .update({status:"CANCELLED",cancelled_at:new Date().toISOString()})
             .eq("id",data[0].id).eq("user_id",ctx.userId).eq("status","OPEN")
             .select("id").maybeSingle();
@@ -521,8 +537,9 @@
       return;
     }
     const op = window.KPPTime.operationalShift();
-    const transferStatus = purpose() === "BEFORE" ? "SEBELUM DARI"
-      : purpose() === "AFTER" ? "SESUDAH DARI" : null;
+    const outbound = storage.value.startsWith("MT");
+    const transferStatus = purpose() === "BEFORE" ? (outbound ? "SEBELUM KE" : "SEBELUM DARI")
+      : purpose() === "AFTER" ? (outbound ? "SESUDAH KE" : "SESUDAH DARI") : null;
     const tankLabel = result.code.replace(/^(FT|MT)/i, (_, prefix) => prefix.toUpperCase() + " ");
     // The difference below is physical sonding evidence, not an official transfer quantity.
     const ctx = stageContext();
@@ -530,7 +547,7 @@
       evidenceLoadedKey === ctx.key && evidence?.before_liters != null &&
       (evidence.status === "OPEN" ||
         (evidence.status === "COMPLETED" && justCompletedId === evidence.id));
-    const volumeChange = hasBefore ? result.liters - Number(evidence.before_liters) : null;
+    const volumeChange = hasBefore ? physicalTransferDiff(ctx,Number(evidence.before_liters),result.liters) : null;
     const report = [
       "HASIL CEK SONDING " + tankLabel +
         (transferStatus ? " " + transferStatus + " " + originDescription(selectedOrigin()) : ""),
