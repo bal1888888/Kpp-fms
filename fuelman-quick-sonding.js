@@ -96,7 +96,7 @@
     const required = needsSource();
     const outbound = storage.value.startsWith("MT");
     const label = $("quickSondingSourceLabel");
-    if (label) label.textContent = outbound ? "🚚 Ke FT mana?" : "🚛 Dari mana?";
+    if (label) label.textContent = outbound ? "🛢️ Ke FT mana?" : "🚛 Dari mana?";
     sourceBox.hidden = !required;
     const previous = sourceSelect.value;
     const valid = rows.filter(row => row.storage_type === (outbound ? "FT" : "MT") &&
