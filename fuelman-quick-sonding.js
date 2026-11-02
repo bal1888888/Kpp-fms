@@ -134,10 +134,10 @@
       : purpose() === "AFTER" ? "Setelah transfer dari" : null;
     const report = [
       "HASIL CEK SONDING" + (transferStatus ? " " + transferStatus + " " + sourceSelect.value : ""),
-      "Fuelman: " + String(profile?.display_name || profile?.username || "-"),
+      "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
+        " | Shift: " + op.shift +
+        " | " + (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
       "Tanggal shift: " + op.tanggal,
-      "Shift: " + op.shift,
-      (result.code.startsWith("MT") ? "MT" : result.code.startsWith("FT") ? "FT" : "Storage") + ": " + result.code,
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
