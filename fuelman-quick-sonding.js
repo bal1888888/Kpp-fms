@@ -402,6 +402,11 @@
     const transferStatus = purpose() === "BEFORE" ? "SEBELUM DARI"
       : purpose() === "AFTER" ? "SESUDAH DARI" : null;
     const tankLabel = result.code.replace(/^(FT|MT)/i, (_, prefix) => prefix.toUpperCase() + " ");
+    // The difference below is physical sonding evidence, not an official transfer quantity.
+    const ctx = stageContext();
+    const hasBefore = purpose() === "AFTER" && ctx &&
+      evidenceLoadedKey === ctx.key && evidence?.before_liters != null;
+    const volumeChange = hasBefore ? result.liters - Number(evidence.before_liters) : null;
     const report = [
       "HASIL CEK SONDING " + tankLabel +
         (transferStatus ? " " + transferStatus + " " + originDescription(selectedOrigin()) : ""),
@@ -411,7 +416,13 @@
       "Sonding depan: " + cm(result.front),
       "Sonding belakang: " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
-      "Hasil tera: " + liter(result.liters)
+      "Hasil tera: " + liter(result.liters),
+      ...(volumeChange === null ? [] : [
+        (volumeChange >= 0 ? "Penambahan volume (sonding): +" : "Pengurangan volume (sonding): -") +
+          liter(Math.abs(volumeChange))
+      ]),
+      ...(purpose() === "AFTER" && result.code.startsWith("FT")
+        ? ["Total FT: " + liter(result.liters)] : [])
     ].join("\n");
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(report);
