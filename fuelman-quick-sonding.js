@@ -413,16 +413,12 @@
       "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
         " | Shift: " + op.shift,
       "Tanggal shift: " + op.tanggal,
-      "Sonding depan: " + cm(result.front),
-      "Sonding belakang: " + cm(result.rear),
+      "Depan / Belakang: " + cm(result.front) + " / " + cm(result.rear),
       "Rata-rata: " + cm(result.average),
       "Hasil tera: " + liter(result.liters),
       ...(volumeChange === null ? [] : [
-        (volumeChange >= 0 ? "Penambahan volume (sonding): +" : "Pengurangan volume (sonding): -") +
-          liter(Math.abs(volumeChange))
-      ]),
-      ...(purpose() === "AFTER" && result.code.startsWith("FT")
-        ? ["Total FT: " + liter(result.liters)] : [])
+        "Total TF: " + (volumeChange >= 0 ? "+" : "-") + liter(Math.abs(volumeChange))
+      ])
     ].join("\n");
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(report);
