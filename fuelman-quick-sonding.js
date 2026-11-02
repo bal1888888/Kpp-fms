@@ -11,14 +11,48 @@
   const copy = $("quickSondingCopy"), reset = $("quickSondingReset");
   const purposeInputs = [...document.querySelectorAll('input[name="quickSondingPurpose"]')];
   const sourceBox = $("quickSondingSourceBox"), sourceSelect = $("quickSondingSource");
-  const purpose = () => purposeInputs.find(input => input.checked)?.value || "CHECK_ONLY";
-  const needsSource = () => purpose() !== "CHECK_ONLY";
+  const purpose = () => purposeInputs.find(input => input.checked)?.value || "";
+  const needsSource = () => purpose() === "BEFORE" || purpose() === "AFTER";
+  const workArea = $("quickSondingWorkArea"), modeTitle = $("quickSondingModeTitle");
+  const intro = $("quickSondingIntro");
   let profile = null, rows = [], ready = false, loading = null;
   const steps = $("quickSondingSteps"), stepHint = $("quickSondingStepHint");
   const savedBefore = $("quickSondingSavedBefore"), deltaBox = $("quickSondingDelta");
   const saveBefore = $("quickSondingSaveBefore"), saveAfter = $("quickSondingSaveAfter");
   let evidence = null, evidenceRequest = 0, evidenceLoading = false, evidenceBusy = false;
   let evidenceLoadedKey = "";
+  const inputDrafts = new Map();
+  let activeDraftKey = "";
+  function draftKey() {
+    if (!purpose()) return "";
+    return [purpose(), storage.value, needsSource() ? sourceSelect.value : ""].join("|");
+  }
+  function stashDraft() {
+    if (activeDraftKey) inputDrafts.set(activeDraftKey, {front:front.value,rear:rear.value});
+  }
+  function restoreDraft() {
+    activeDraftKey = draftKey();
+    const draft = inputDrafts.get(activeDraftKey);
+    front.value = draft?.front ?? "";
+    rear.value = draft?.rear ?? "";
+  }
+  function updateModeUI() {
+    const selected = purpose();
+    workArea.hidden = !selected;
+    if (!selected) {
+      intro.textContent = "Pilih pekerjaan yang mau dilakukan.";
+    } else if (selected === "BEFORE") {
+      intro.textContent = "1 • Ukur solar sebelum transfer.";
+      modeTitle.textContent = "TAHAP 1: Pilih storage dan MT asal, lalu isi hasil sonding SEBELUM.";
+    } else if (selected === "AFTER") {
+      intro.textContent = "2 • Ukur solar setelah transfer.";
+      modeTitle.textContent = "TAHAP 2: Pilih pasangan yang sama. Data SEBELUM diambil dari web.";
+    } else {
+      intro.textContent = "Cek cepat volume solar.";
+      modeTitle.textContent = "Pilih tangki dan masukkan hasil sonding. Tidak perlu menyimpan.";
+    }
+    renderSteps();
+  }
   const cm = n => Number(n).toLocaleString("id-ID", {minimumFractionDigits:1,maximumFractionDigits:3}) + " cm";
   const liter = n => Number(n).toLocaleString("id-ID", {maximumFractionDigits:1}) + " L";
   function message(text, isError = false) {
@@ -62,12 +96,12 @@
   }
   function renderSteps() {
     const mode = purpose(), ctx = stageContext();
-    steps.hidden = mode === "CHECK_ONLY";
+    steps.hidden = mode !== "BEFORE" && mode !== "AFTER";
     if (steps.hidden) return;
     const valid = !!ctx && evidenceLoadedKey === ctx.key && hasMeasurement() && ready && !evidenceBusy && !evidenceLoading;
     stepHint.textContent = mode === "BEFORE"
-      ? "TAHAP 1 DARI 2 • Sonding fisik SEBELUM menerima solar dari MT. Simpan agar tersedia di web."
-      : "TAHAP 2 DARI 2 • Muat data SEBELUM dari web, ukur fisik SESUDAH transfer, lalu simpan.";
+      ? "LANGKAH 1 / 2 • Simpan hasil SEBELUM"
+      : "LANGKAH 2 / 2 • Simpan hasil SESUDAH";
     saveBefore.hidden = mode !== "BEFORE";
     saveAfter.hidden = mode !== "AFTER";
     saveBefore.disabled = mode !== "BEFORE" || !valid || evidence?.status === "OPEN";
@@ -83,14 +117,15 @@
     }
     if (!evidence) {
       savedBefore.textContent = mode === "BEFORE"
-        ? "Belum ada hasil sebelum untuk pasangan ini. Isi sonding depan dan belakang lalu SIMPAN SEBELUM."
-        : "Data SEBELUM belum ada. Pilih 'Sebelum dari MT' dan simpan dahulu untuk storage serta MT yang sama.";
+        ? "Belum ada catatan. Ukur dan tekan SIMPAN SEBELUM."
+        : "Belum ada data SEBELUM. Kerjakan tahap 1 dahulu.";
       return;
     }
     const beforeText = "SEBELUM TERSIMPAN • " + liter(evidence.before_liters) +
       " (depan " + cm(evidence.before_front_cm) + " / belakang " + cm(evidence.before_rear_cm) + ")";
     if (evidence.status === "OPEN") {
-      savedBefore.textContent = beforeText + " • Siap dilanjutkan di tahap SESUDAH.";
+      savedBefore.textContent = beforeText + " • Lanjut ke SESUDAH.";
+      if (mode === "BEFORE") stepHint.textContent = "LANGKAH 1 SUDAH SELESAI • Pilih SESUDAH TRANSFER";
     } else {
       savedBefore.textContent = beforeText + " • Pengecekan pasangan ini sudah SELESAI. " +
         (mode === "BEFORE" ? "Boleh mulai pengecekan baru." : "Untuk pengukuran berikutnya mulai dari SEBELUM.");
@@ -172,12 +207,16 @@
         return;
       }
       if (stage === "BEFORE") {
+        // Never reuse the BEFORE measurement as the AFTER input.
+        inputDrafts.delete(activeDraftKey);
+        inputDrafts.delete(["AFTER",ctx.storage,ctx.source].join("|"));
         const afterOption = purposeInputs.find(input => input.value === "AFTER");
         if (afterOption) afterOption.checked = true;
-        front.value = rear.value = "";
         syncSource();
+        restoreDraft();
+        updateModeUI();
         clearResult();
-        message("✓ SEBELUM sudah tersimpan di web. Sekarang ukur SESUDAH transfer, lalu simpan tahap 2.");
+        message("✓ SEBELUM tersimpan di web. Sekarang ukur SESUDAH transfer.");
       } else {
         message("✓ SEBELUM dan SESUDAH sudah tersimpan di web. Hasil perbandingan siap dibaca.");
       }
@@ -217,10 +256,10 @@
       averageOut.textContent = cm(average);
       finalOut.textContent = cm(finalHeight);
       litersOut.textContent = liter(tera.liters);
-      copy.disabled = needsSource() && !sourceSelect.value;
+      copy.disabled = !purpose() || (needsSource() && !sourceSelect.value);
       message(copy.disabled
-        ? "Pilih MT asal terlebih dahulu. Hasil tera tetap bisa dilihat."
-        : "Hasil siap disalin. Hanya tombol SIMPAN yang menyimpan catatan cek ke web.");
+        ? "Pilih MT asal."
+        : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
       renderSteps();
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
     } catch (error) {
@@ -252,6 +291,8 @@
       ready = true;
       storage.disabled = front.disabled = rear.disabled = false;
       syncSource();
+      restoreDraft();
+      updateModeUI();
       calculate();
       await fetchEvidence();
     })().catch(error => {
@@ -268,13 +309,22 @@
     toggle.textContent = opening ? "SEMBUNYIKAN −" : "TAMPILKAN ＋";
     if (opening) void load().catch(() => {});
   });
-  storage.addEventListener("change", () => { syncSource(); calculate(); void fetchEvidence(); });
-  purposeInputs.forEach(input => input.addEventListener("change", () => { syncSource(); calculate(); void fetchEvidence(); }));
-  sourceSelect.addEventListener("change", () => { calculate(); void fetchEvidence(); });
+  function onChoiceChange() {
+    stashDraft();
+    syncSource();
+    restoreDraft();
+    updateModeUI();
+    calculate();
+    void fetchEvidence();
+  }
+  storage.addEventListener("change", onChoiceChange);
+  purposeInputs.forEach(input => input.addEventListener("change", onChoiceChange));
+  sourceSelect.addEventListener("change", onChoiceChange);
   front.addEventListener("input", calculate);
   rear.addEventListener("input", calculate);
   reset.addEventListener("click", () => {
     front.value = rear.value = "";
+    if (activeDraftKey) inputDrafts.delete(activeDraftKey);
     clearResult();
     renderSteps();
     message("Isian kosong. Masukkan hasil sonding yang baru.");
