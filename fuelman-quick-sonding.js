@@ -472,7 +472,7 @@
           const ok = window.confirm(
             "Batalkan pengecekan SEBELUM yang tersimpan untuk " +
             ctx.storage + " dari " + originDescription({type:ctx.sourceType,source:ctx.source}) +
-            "?\\n\\nCatatan ini akan ditandai DIBATALKAN di Supabase. " +
+            "?\n\nCatatan ini akan ditandai DIBATALKAN di Supabase. " +
             "Pilih FT dan sumber yang sama untuk mulai pengecekan baru."
           );
           if (!ok) {
