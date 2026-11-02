@@ -208,7 +208,8 @@
       const {data, error} = await query.order("before_at",{ascending:false}).limit(10);
       if (error) throw error;
       if (seq !== evidenceRequest || stageContext()?.key !== ctx.key) return;
-      evidence = (data || []).find(row => row.status === "OPEN") || (data || [])[0] || null;
+      evidence = (data || []).find(row => row.status === "OPEN") ||
+        (data || []).find(row => row.status === "COMPLETED") || null;
       evidenceLoadedKey = ctx.key;
     } catch (error) {
       if (seq !== evidenceRequest) return;
@@ -421,13 +422,8 @@
   });
   front.addEventListener("input", calculate);
   rear.addEventListener("input", calculate);
-  reset.addEventListener("click", () => {
-    if (evidenceBusy) {
-      message("Sedang menyimpan ke web. Selesaikan penyimpanan sebelum membersihkan form.", true);
-      return;
-    }
-    // Clear the form, not the historical Supabase records.
-    // Invalidate any outstanding query so it cannot repopulate a cleared UI.
+  function clearLocalForm() {
+    // Invalidate stale queries so an old response cannot repopulate the cleaned form.
     ++evidenceRequest;
     if (transporterDebounce) clearTimeout(transporterDebounce);
     transporterDebounce = null;
@@ -447,7 +443,64 @@
     savedBefore.textContent = "Pilih FT dan asal solar untuk mulai.";
     deltaBox.hidden = true;
     updateModeUI();
-    message("✓ Form bersih. Pilih pekerjaan baru. Riwayat sebelumnya tetap tersimpan.");
+  }
+  reset.addEventListener("click", async () => {
+    if (evidenceBusy) {
+      message("Masih ada proses simpan/batal yang berjalan. Coba lagi setelah selesai.", true);
+      return;
+    }
+    // If the selected pair has an OPEN row, cancel it explicitly on the server.
+    // COMPLETED records must never be deleted or rewritten.
+    const ctx = stageContext();
+    evidenceBusy = true;
+    reset.disabled = true;
+    ++evidenceRequest; // Ignore earlier lookup responses from a different selection.
+    try {
+      if (ctx && needsSource()) {
+        const originKey = ctx.sourceType === "TRANSPORTIR" ? "source_transporter" : "source_mt";
+        const {data, error} = await window.KPP.db.from("fuelman_sonding_checks")
+          .select("id,status")
+          .eq("user_id",ctx.userId).eq("tanggal",ctx.tanggal).eq("shift",ctx.shift)
+          .eq("storage",ctx.storage).eq("source_type",ctx.sourceType)
+          .eq(originKey,ctx.source).eq("status","OPEN")
+          .limit(1);
+        if (error) throw error;
+        if (stageContext()?.key !== ctx.key) {
+          throw new Error("FT atau sumber berubah. BERSIHKAN dibatalkan untuk keamanan.");
+        }
+        if (data?.length) {
+          const ok = window.confirm(
+            "Batalkan pengecekan SEBELUM yang tersimpan untuk " +
+            ctx.storage + " dari " + originDescription({type:ctx.sourceType,source:ctx.source}) +
+            "?\\n\\nCatatan ini akan ditandai DIBATALKAN di Supabase. " +
+            "Pilih FT dan sumber yang sama untuk mulai pengecekan baru."
+          );
+          if (!ok) {
+            message("Batal membersihkan. Data SEBELUM masih tersimpan dan bisa dilanjutkan.");
+            return;
+          }
+          const response = await window.KPP.db.from("fuelman_sonding_checks")
+            .update({status:"CANCELLED",cancelled_at:new Date().toISOString()})
+            .eq("id",data[0].id).eq("user_id",ctx.userId).eq("status","OPEN")
+            .select("id").maybeSingle();
+          if (response.error) throw response.error;
+          if (!response.data?.id) {
+            throw new Error("Pengecekan sudah berubah di server. Periksa lagi sebelum mengulang.");
+          }
+        }
+      }
+      clearLocalForm();
+      message("✓ Bersih. Pengecekan aktif telah dibatalkan bila ada. Kamu bisa mulai lagi dengan FT/asal yang sama.");
+    } catch (error) {
+      message("Gagal reset: " + (error.message || error) +
+        ". Form dan catatan belum dibersihkan. Periksa koneksi.", true);
+      // Re-read server state before any subsequent save/cancel.
+      void fetchEvidence();
+    } finally {
+      evidenceBusy = false;
+      reset.disabled = false;
+      renderSteps();
+    }
   });
   copy.addEventListener("click", async () => {
     const result = calculate();
