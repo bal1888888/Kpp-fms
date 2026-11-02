@@ -341,6 +341,7 @@ button,.btn,.actions a{min-height:44px}
 border:1px solid #94baf0;border-radius:10px;background:#eaf3ff;color:#1758a8;
 font-weight:900;font-size:12px;text-align:center;cursor:pointer}
 .fuel-quick-transporter-pick.is-active{background:#d7f4e8;border-color:#25a47c;color:#116c53}
+.fuel-quick-transporter-pick[hidden]{display:none!important}
 .fuel-quick-transporter-pick:focus-visible{outline:3px solid #67aaff;outline-offset:2px}
 .fuel-quick-transporter{margin-top:11px;padding-top:11px;border-top:1px solid #d7e6f9}
 .fuel-quick-transporter[hidden]{display:none!important}
@@ -536,7 +537,7 @@ font-weight:900;font-size:12px;text-align:center;cursor:pointer}
             <select id="quickSondingStorage" disabled><option value="">Memuat Master MT/FT...</option></select>
           </div>
           <div class="fuel-quick-source fuel-quick-field full" id="quickSondingSourceBox" hidden>
-            <label for="quickSondingSource">🚛 Dari mana?</label>
+            <label id="quickSondingSourceLabel" for="quickSondingSource">🚛 Dari mana?</label>
             <select id="quickSondingSource" disabled><option value="">-- Pilih sumber solar --</option></select>
             <button id="quickSondingTransporterPick" type="button" class="fuel-quick-transporter-pick"
               aria-pressed="false">🚛 TRANSPORTIR — ISI MANUAL</button>
@@ -583,8 +584,8 @@ font-weight:900;font-size:12px;text-align:center;cursor:pointer}
       <details class="fuel-quick-tutorial">
         <summary>📘 Butuh bantuan? Lihat cara pakai</summary>
         <div class="fuel-quick-guide">
-          <p><b>Sebelum transfer:</b> Pilih FT, lalu sumbernya: MT atau Transportir. Jika Transportir, ketik nama secara manual. Ukur depan/belakang dan tekan SIMPAN SEBELUM.</p>
-          <p><b>Sesudah transfer:</b> Gunakan FT dan sumber yang sama (termasuk nama Transportir). Web memanggil hasil SEBELUM secara otomatis. Ukur lagi lalu tekan SIMPAN SESUDAH.</p>
+          <p><b>Sebelum transfer:</b> Cek FT: pilih asal MT/Transportir. Cek MT: pilih FT tujuan. Ukur sebelum dan tekan SIMPAN SEBELUM.</p>
+          <p><b>Sesudah transfer:</b> Pilih storage dan pasangan yang sama, kemudian ukur ulang. Dari FT, selisih dihitung SESUDAH − SEBELUM. Dari MT, selisih dihitung SEBELUM − SESUDAH. Catatan tidak mengubah stok.</p>
           <p><b>Cek sonding saja:</b> Pilih storage dan ukur. Tidak perlu MT asal atau penyimpanan sebelum/sesudah.</p>
           <p>Hasil perbandingan berdasarkan tabel tera web dan bukan nilai transfer resmi. Transaksi stok tetap di menu Stock.</p>
         </div>
@@ -934,6 +935,6 @@ document.addEventListener("kpp-auth-ready",async(e)=>{
 });
 </script>
 
-<script src="fuelman-quick-sonding.js?v=20261102-reset-cancel-v11"></script>
+<script src="fuelman-quick-sonding.js?v=20261102-mt-outbound-v12"></script>
 </body>
 </html>
