@@ -181,7 +181,7 @@
     if (!evidence) {
       savedBefore.textContent = mode === "BEFORE"
         ? "Belum ada catatan. Ukur dan tekan SIMPAN SEBELUM."
-        : "Belum ada data SEBELUM. Kerjakan tahap 1 dahulu.";
+        : "Tidak ada data SEBELUM. Isi sonding SESUDAH lalu SALIN HASIL (tanpa Total TF).";
       return;
     }
     const beforeText = "SEBELUM " + pairDirection(ctx) + " " + originDescription(ctx && {type:ctx.sourceType,source:ctx.source}) +
@@ -195,7 +195,7 @@
       if (mode !== "AFTER" || justCompletedId !== evidence.id) {
         savedBefore.textContent = mode === "BEFORE"
           ? "Pengecekan sebelumnya sudah selesai. Isi sonding baru, lalu SIMPAN SEBELUM."
-          : "Tidak ada transfer yang menunggu tahap SESUDAH. Mulai dari SEBELUM TRANSFER.";
+          : "Tidak ada data SEBELUM yang aktif. Hasil sonding SESUDAH boleh disalin tanpa Total TF.";
         return;
       }
       savedBefore.textContent = beforeText + " • SESUDAH baru saja disimpan.";
@@ -356,21 +356,26 @@
       averageOut.textContent = cm(average);
       finalOut.textContent = cm(finalHeight);
       litersOut.textContent = liter(tera.liters);
+      // A current physical sounding can be copied even without saved BEFORE.
+      // Wait for an active lookup to finish so Total TF is never inferred from a stale record.
       const ctx = stageContext();
-      const afterHasLinkedBefore = purpose() !== "AFTER" ||
-        (!!ctx && evidenceLoadedKey === ctx.key &&
-          (evidence?.status === "OPEN" ||
-            (evidence?.status === "COMPLETED" && justCompletedId === evidence.id)));
-      copy.disabled = !purpose() || (needsSource() && !selectedOrigin()) || !afterHasLinkedBefore;
+      const linkedBefore = purpose() === "AFTER" && ctx &&
+        evidenceLoadedKey === ctx.key &&
+        (evidence?.status === "OPEN" ||
+          (evidence?.status === "COMPLETED" && justCompletedId === evidence.id));
+      copy.disabled = !purpose() || (needsSource() && !selectedOrigin()) ||
+        (purpose() === "AFTER" && evidenceLoading);
       message(copy.disabled
-        ? (purpose() === "AFTER" && !afterHasLinkedBefore
-            ? "Belum ada hasil SEBELUM yang aktif. Pilih SEBELUM TRANSFER untuk mulai."
+        ? (purpose() === "AFTER" && evidenceLoading
+            ? "Memeriksa data SEBELUM di web..."
             : sourceSelect.value === "TRANSPORTIR"
               ? (!(storage.value.startsWith("FT") || storage.value.startsWith("MT"))
                   ? "Pilih MT atau FT yang akan disonding terlebih dahulu."
                   : "Isi nama Transportir (2–80 karakter).")
               : "Pilih asal solar.")
-        : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
+        : purpose() === "AFTER" && !linkedBefore
+          ? "✓ Sonding siap disalin tanpa Total TF karena data SEBELUM tidak tersedia. SIMPAN SESUDAH tetap memerlukan tahap SEBELUM."
+          : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
       renderSteps();
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
     } catch (error) {
@@ -544,12 +549,10 @@
       (sourceSelect.value === "TRANSPORTIR" ? transporterInput : sourceSelect).focus();
       return;
     }
-    const linkedContext = stageContext();
-    if (purpose() === "AFTER" && (!linkedContext ||
-        evidenceLoadedKey !== linkedContext.key ||
-        !((evidence?.status === "OPEN") ||
-          (evidence?.status === "COMPLETED" && justCompletedId === evidence.id)))) {
-      message("Tidak ada pengecekan SEBELUM yang masih aktif. Mulai dari SEBELUM TRANSFER.", true);
+    // No BEFORE record is required for a standalone AFTER clipboard report.
+    // The strict link is still required by SIMPAN SESUDAH, not by SALIN HASIL.
+    if (purpose() === "AFTER" && evidenceLoading) {
+      message("Sedang memeriksa data SEBELUM. Coba salin setelah pemeriksaan selesai.");
       return;
     }
     const op = window.KPPTime.operationalShift();
