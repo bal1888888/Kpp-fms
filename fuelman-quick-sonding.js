@@ -415,7 +415,8 @@
       "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
         " | Shift: " + op.shift,
       "Tanggal shift: " + op.tanggal,
-      "Depan / Belakang: " + fmtCmPair(result.front, result.rear),
+      "Depan /" + Number(result.front).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:3}) +
+        "  Belakang: / " + Number(result.rear).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:3}) + " cm",
       "Rata-rata: " + cm(result.average),
       "Hasil tera: " + liter(result.liters),
       ...(volumeChange === null ? [] : [
