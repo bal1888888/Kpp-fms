@@ -329,11 +329,13 @@
             (evidence?.status === "COMPLETED" && justCompletedId === evidence.id)));
       copy.disabled = !purpose() || (needsSource() && !selectedOrigin()) || !afterHasLinkedBefore;
       message(copy.disabled
-        ? (sourceSelect.value === "TRANSPORTIR"
-            ? (!storage.value.startsWith("FT")
-                ? "Pilih FT yang akan disonding terlebih dahulu."
-                : "Isi nama Transportir (2–80 karakter).")
-            : "Pilih asal solar.")
+        ? (purpose() === "AFTER" && !afterHasLinkedBefore
+            ? "Belum ada hasil SEBELUM yang aktif. Pilih SEBELUM TRANSFER untuk mulai."
+            : sourceSelect.value === "TRANSPORTIR"
+              ? (!storage.value.startsWith("FT")
+                  ? "Pilih FT yang akan disonding terlebih dahulu."
+                  : "Isi nama Transportir (2–80 karakter).")
+              : "Pilih asal solar.")
         : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
       renderSteps();
       return {code:storage.value, front:a, rear:b, average, finalHeight, liters:tera.liters};
