@@ -52,10 +52,18 @@
       intro.textContent = "Pilih pekerjaan yang mau dilakukan.";
     } else if (selected === "BEFORE") {
       intro.textContent = "1 • Ukur solar sebelum transfer.";
-      modeTitle.textContent = storage.value.startsWith("MT") ? "TAHAP 1: Pilih MT dan FT tujuan, lalu ukur MT SEBELUM." : "TAHAP 1: Pilih FT dan asal solar (MT/Transportir), lalu isi sonding SEBELUM.";
+      modeTitle.textContent = storage.value.startsWith("MT")
+        ? (sourceSelect.value === "TRANSPORTIR"
+          ? "TAHAP 1: MT menerima dari Transportir. Isi nama dan ukur MT SEBELUM bongkar."
+          : "TAHAP 1: Pilih MT lalu FT tujuan atau Transportir. Ukur MT SEBELUM.")
+        : "TAHAP 1: Pilih FT dan asal solar (MT/Transportir), lalu isi sonding SEBELUM.";
     } else if (selected === "AFTER") {
       intro.textContent = "2 • Ukur solar setelah transfer.";
-      modeTitle.textContent = storage.value.startsWith("MT") ? "TAHAP 2: Pilih MT dan FT tujuan yang sama, lalu ukur MT SESUDAH." : "TAHAP 2: Pilih FT dan asal yang sama. Data SEBELUM diambil dari web.";
+      modeTitle.textContent = storage.value.startsWith("MT")
+        ? (sourceSelect.value === "TRANSPORTIR"
+          ? "TAHAP 2: Ukur MT SESUDAH menerima dari Transportir. Data SEBELUM dari web."
+          : "TAHAP 2: Ukur MT SESUDAH transfer ke FT tujuan yang sama.")
+        : "TAHAP 2: Pilih FT dan asal yang sama. Data SEBELUM diambil dari web.";
     } else {
       intro.textContent = "Cek cepat volume solar.";
       modeTitle.textContent = "Pilih tangki dan masukkan hasil sonding. Tidak perlu menyimpan.";
@@ -76,14 +84,16 @@
   }
   function selectedOrigin() {
     if (!needsSource()) return null;
+    if (sourceSelect.value === "TRANSPORTIR") {
+      const name = normalizeTransporter();
+      const tank = rows.find(row => row.code === storage.value && row.active !== false &&
+        (row.storage_type === "FT" || row.storage_type === "MT"));
+      return tank && name.length >= 2 && name.length <= 80
+        ? {type:"TRANSPORTIR",source:name} : null;
+    }
     if (storage.value.startsWith("MT")) {
       const ft = rows.find(row => row.code === sourceSelect.value && row.storage_type === "FT" && row.active !== false);
       return ft ? {type:"FT_DEST",source:ft.code} : null;
-    }
-    if (sourceSelect.value === "TRANSPORTIR") {
-      const name = normalizeTransporter();
-      return storage.value.startsWith("FT") && name.length >= 2 && name.length <= 80
-        ? {type:"TRANSPORTIR",source:name} : null;
     }
     const mt = rows.find(row => row.code === sourceSelect.value &&
       row.storage_type === "MT" && row.active !== false);
@@ -96,26 +106,29 @@
     const required = needsSource();
     const outbound = storage.value.startsWith("MT");
     const label = $("quickSondingSourceLabel");
-    if (label) label.textContent = outbound ? "🛢️ Ke FT mana?" : "🚛 Dari mana?";
+    if (label) label.textContent = outbound
+      ? (sourceSelect.value === "TRANSPORTIR" ? "🛢️ Dari Transportir mana?" : "🛢️ Ke FT / Dari Transportir?")
+      : "🚛 Dari mana?";
     sourceBox.hidden = !required;
     const previous = sourceSelect.value;
     const valid = rows.filter(row => row.storage_type === (outbound ? "FT" : "MT") &&
       row.active !== false && row.code !== storage.value);
     sourceSelect.replaceChildren(
-      new Option(outbound ? "-- Pilih FT tujuan --" : "-- Pilih asal solar --", ""),
+      new Option(outbound ? "-- Pilih FT tujuan atau Transportir --" : "-- Pilih asal solar --", ""),
       ...valid.map(row => new Option(row.code, row.code)),
-      ...(!outbound ? [new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")] : [])
+      new Option("🚛 Transportir (isi manual)", "TRANSPORTIR")
     );
-    if (valid.some(row => row.code === previous) || (!outbound && previous === "TRANSPORTIR"))
+    if (valid.some(row => row.code === previous) || previous === "TRANSPORTIR")
       sourceSelect.value = previous;
     sourceSelect.disabled = !ready || !required;
-    transporterBox.hidden = !required || outbound || sourceSelect.value !== "TRANSPORTIR";
+    transporterBox.hidden = !required || sourceSelect.value !== "TRANSPORTIR";
     transporterInput.disabled = transporterBox.hidden;
-    const activeTransporter = required && !outbound && sourceSelect.value === "TRANSPORTIR";
+    const activeTransporter = required && sourceSelect.value === "TRANSPORTIR";
     transporterPick.classList.toggle("is-active", activeTransporter);
     transporterPick.setAttribute("aria-pressed", String(activeTransporter));
-    transporterPick.hidden = outbound;
-    transporterPick.disabled = !ready || !required || outbound;
+    transporterPick.hidden = false;
+    transporterPick.disabled = !ready || !required;
+    if (label && outbound && activeTransporter) label.textContent = "🛢️ Dari Transportir mana?";
   }
   const checkTable = ctx => ctx?.sourceType === "FT_DEST"
     ? "fuelman_mt_outbound_checks" : "fuelman_sonding_checks";
@@ -155,7 +168,10 @@
     saveAfter.disabled = mode !== "AFTER" || !valid || evidence?.status !== "OPEN";
     deltaBox.hidden = true;
     if (!ctx) {
-      savedBefore.textContent = sourceSelect.value === "TRANSPORTIR" ? "Ketik nama Transportir terlebih dahulu." : storage.value.startsWith("MT") ? "Pilih MT dan FT tujuan." : "Pilih FT dan asal solar.";
+      savedBefore.textContent = sourceSelect.value === "TRANSPORTIR"
+        ? "Ketik nama Transportir terlebih dahulu."
+        : storage.value.startsWith("MT") ? "Pilih FT tujuan atau Transportir."
+        : "Pilih FT dan asal solar.";
       return;
     }
     if (evidenceLoading || evidenceLoadedKey !== ctx.key) {
@@ -350,8 +366,8 @@
         ? (purpose() === "AFTER" && !afterHasLinkedBefore
             ? "Belum ada hasil SEBELUM yang aktif. Pilih SEBELUM TRANSFER untuk mulai."
             : sourceSelect.value === "TRANSPORTIR"
-              ? (!storage.value.startsWith("FT")
-                  ? "Pilih FT yang akan disonding terlebih dahulu."
+              ? (!(storage.value.startsWith("FT") || storage.value.startsWith("MT"))
+                  ? "Pilih MT atau FT yang akan disonding terlebih dahulu."
                   : "Isi nama Transportir (2–80 karakter).")
               : "Pilih asal solar.")
         : "✓ Hasil tera siap. Simpan atau salin sesuai kebutuhan.");
@@ -420,10 +436,10 @@
     if (!ready || !needsSource()) return;
     sourceSelect.value = "TRANSPORTIR";
     onChoiceChange();
-    if (storage.value.startsWith("FT")) {
+    if (storage.value.startsWith("FT") || storage.value.startsWith("MT")) {
       transporterInput.focus();
     } else {
-      message("Pilih FT yang akan disonding, kemudian tulis nama Transportir.", true);
+      message("Pilih MT atau FT yang akan disonding, kemudian tulis nama Transportir.", true);
       storage.focus();
     }
   });
@@ -537,7 +553,7 @@
       return;
     }
     const op = window.KPPTime.operationalShift();
-    const outbound = storage.value.startsWith("MT");
+    const outbound = selectedOrigin()?.type === "FT_DEST";
     const transferStatus = purpose() === "BEFORE" ? (outbound ? "SEBELUM TRANFER KE" : "SEBELUM TRANFER DARI")
       : purpose() === "AFTER" ? (outbound ? "SESUDAH TRANFER KE" : "SESUDAH TRANFER DARI") : null;
     const tankLabel = result.code.replace(/^(FT|MT)/i, (_, prefix) => prefix.toUpperCase() + " ");
