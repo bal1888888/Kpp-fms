@@ -61,6 +61,8 @@
   }
   const cm = n => Number(n).toLocaleString("id-ID", {minimumFractionDigits:1,maximumFractionDigits:3}) + " cm";
   const liter = n => Number(n).toLocaleString("id-ID", {maximumFractionDigits:1}) + " L";
+  const fmtCmPair = (a,b) => Number(a).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:3}) +
+    " / " + Number(b).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:3}) + " cm";
   function message(text, isError = false) {
     status.textContent = text;
     status.classList.toggle("error", isError);
@@ -413,7 +415,7 @@
       "Fuelman: " + String(profile?.display_name || profile?.username || "-") +
         " | Shift: " + op.shift,
       "Tanggal shift: " + op.tanggal,
-      "Depan / Belakang: " + cm(result.front) + " / " + cm(result.rear),
+      "Depan / Belakang: " + fmtCmPair(result.front, result.rear),
       "Rata-rata: " + cm(result.average),
       "Hasil tera: " + liter(result.liters),
       ...(volumeChange === null ? [] : [
