@@ -313,7 +313,92 @@ function renderDOReceiptSummary(rows){
   host.innerHTML='<b>RINGKASAN SUPPLY PER DO (bongkar MT + FT digabung)</b><div class="table-wrap"><table><thead><tr><th>TRANSPORTIR</th><th>DO/PO</th><th>QTY DO</th><th>Σ FLOW</th><th>TUJUAN</th><th>BARIS</th><th>SUPPLY</th></tr></thead><tbody>'+displayed+'</tbody></table></div><small>Hanya baris dalam filter yang ditampilkan; pastikan seluruh bongkaran DO tercakup sebelum menilai hasil akhir.</small>';
 }
 
-async function loadReceipts(){const token=++HISTORY_REQUEST_SEQ.receipt;const body=document.getElementById("receiptBody");const status=document.getElementById("receiptStatus");body.innerHTML='<tr><td colspan="11">Memuat History Penerimaan...</td></tr>';status.textContent="";let query=db.from("stock_movements").select("*").eq("jenis","RECEIPT").order("tanggal",{ascending:false}).order("jam",{ascending:false});const from=document.getElementById("receiptFrom").value;const to=document.getElementById("receiptTo").value;const transporter=document.getElementById("receiptTransporter").value;const reference=document.getElementById("receiptReference").value.trim();const refStatus=document.getElementById("receiptReferenceStatus").value;const period=document.getElementById("receiptPeriod").value;if(from)query=query.gte("tanggal",from);if(to)query=query.lte("tanggal",to);if(transporter)query=query.eq("transporter",transporter);if(reference)query=query.ilike("document_reference","%"+reference+"%");const{data,error,aborted,limitReached}=await fetchPagedHistory(query,"receipt",token);if(aborted)return;if(error){body.innerHTML=`<tr><td colspan="11">[GAGAL] ${esc(error.message)}</td></tr>`;return}ROWS.receipt=(data||[]).filter(row=>{const hasRef=!!String(row.document_reference||"").trim();if(refStatus==="pending"&&hasRef)return false;if(refStatus==="complete"&&!hasRef)return false;if(period!=="all"&&periodFromDate(row.tanggal)!==Number(period))return false;return true});renderDOReceiptSummary(ROWS.receipt);if(!ROWS.receipt.length){body.innerHTML='<tr><td colspan="11">Belum ada data pada filter ini.</td></tr>';status.textContent="0 penerimaan";return}body.innerHTML=ROWS.receipt.slice(0,HISTORY_RENDER_LIMIT).map((row,index)=>{const q=quantities(row);const hasRef=!!String(row.document_reference||"").trim();const audit=auditReceipt(row);return`<tr class="${audit?"kpp-audit-review":""}"><td>${esc(movementTime(row))}</td><td><span class="badge ${periodFromDate(row.tanggal)===1?"p1":"p2"}">${periodLabel(row.tanggal)}</span></td><td>${hasRef?`<b>${esc(row.document_reference)}</b>`:'<span class="badge pending">BELUM DIISI</span>'}</td><td>${esc(row.transporter||"-")}</td><td>${esc(row.destination_storage||"-")}</td><td>${fmt(q.transporter)}<span class="sub">${fmt(row.meter_start_liter)} -> ${fmt(row.meter_end_liter)}</span></td><td>${row.destination_height_before_cm??"-"} -> ${row.destination_height_after_cm??"-"} cm</td><td class="strong">${fmt(q.destination)}</td><td class="${lossClass(q.loss)}">${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"PER DO (LIHAT RINGKASAN)":receiptAuditLabel(q.loss)}</td><td>${esc(row.operator||"-")}</td><td><button class="small copy" onclick="copyReceipt(${index})">SALIN</button> ${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"":`<button class="small edit" onclick="editReceiptReference(${index})">${hasRef?"EDIT":"ISI"} PO/LO</button>`}</td></tr>`}).join("");const p1=ROWS.receipt.filter(row=>periodFromDate(row.tanggal)===1).length;const p2=ROWS.receipt.length-p1;const pending=ROWS.receipt.filter(row=>!String(row.document_reference||"").trim()).length;status.textContent=`${ROWS.receipt.length} penerimaan  |  Periode 1: ${p1}  |  Periode 2: ${p2}  |  PO/LO belum diisi: ${pending}  |  AUDIT FLOWMETER: ${ROWS.receipt.filter(row=>auditReceipt(row)).length} perlu review`+historyLoadNote(ROWS.receipt.length,limitReached)}
+
+function closeDORevision(){
+  if(DO_REVISION_BUSY)return;
+  ACTIVE_DO_REVISION=null;
+  document.getElementById("doRevisionPanel").hidden=true;
+  document.getElementById("doRevisionReason").value="";
+}
+function openDORevision(index){
+  if(!["admin","gl"].includes(String(CURRENT_PROFILE?.role||"").toLowerCase())){
+    toast("Hanya Admin/GL boleh merevisi status DO.",true);return;
+  }
+  const group=DO_SUMMARY_GROUPS[index];
+  if(!group?.rows?.length)return;
+  ACTIVE_DO_REVISION=group;
+  const panel=document.getElementById("doRevisionPanel");
+  document.getElementById("doRevisionIdentity").textContent=
+    group.transporter+" | DO "+group.ref+" | Qty "+fmt(group.doQty)+" | Flow "+fmt(group.flow)+
+    " | "+group.rows.length+" transaksi dalam filter. Pilih bukti bongkaran terakhir yang benar.";
+  document.getElementById("doRevisionAction").value=group.final===1?"REOPEN":"MARK_FINAL";
+  document.getElementById("doRevisionReason").value="";
+  syncDORevisionOptions();
+  panel.hidden=false;
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function syncDORevisionOptions(){
+  const group=ACTIVE_DO_REVISION;
+  if(!group)return;
+  const kind=document.getElementById("doRevisionAction").value;
+  const picker=document.getElementById("doRevisionMovement");
+  const eligible=group.rows.filter(row=>
+    row.calculation_method==="RECEIPT_FLOWMETER_DO" &&
+    (kind==="REOPEN"?row.do_final===true:row.do_final===false));
+  picker.replaceChildren(new Option("-- PILIH TRANSAKSI --",""),
+    ...eligible.map(row=>new Option(
+      "ID "+row.id+" | "+row.tanggal+" Shift "+row.shift+" | "+row.destination_storage+
+      " | "+fmt(row.transporter_measured_qty)+" | "+(row.do_final?"TERAKHIR":"BELUM TERAKHIR"),
+      String(row.id))));
+  document.getElementById("doRevisionSubmit").disabled=!eligible.length;
+}
+async function submitDORevision(){
+  if(DO_REVISION_BUSY)return;
+  if(!["admin","gl"].includes(String(CURRENT_PROFILE?.role||"").toLowerCase())){
+    toast("Akses ditolak. Hanya Admin/GL.",true);return;
+  }
+  const group=ACTIVE_DO_REVISION,action=document.getElementById("doRevisionAction").value;
+  const id=Number(document.getElementById("doRevisionMovement").value);
+  const reason=document.getElementById("doRevisionReason").value.trim();
+  const row=group?.rows?.find(row=>Number(row.id)===id);
+  const next=action==="MARK_FINAL";
+  if(!group||!row||!["MARK_FINAL","REOPEN"].includes(action)||row.do_final===next){
+    toast("Pilih aksi dan transaksi yang sesuai.",true);return;
+  }
+  if(reason.length<10||reason.length>350){
+    toast("Tuliskan alasan revisi 10–350 karakter.",true);return;
+  }
+  if(!confirm("REVISI STATUS DO "+group.ref+"\n\n"+
+    "Transaksi: #"+id+" → "+row.destination_storage+"\n"+
+    "Dari: "+(row.do_final?"TERAKHIR":"MASIH BONGKAR")+"\n"+
+    "Menjadi: "+(next?"BONGKARAN TERAKHIR":"MASIH BONGKAR")+"\n"+
+    "Alasan: "+reason+"\n\n"+
+    "Qty, flowmeter, transaksi stock dan closing TIDAK berubah. Yakin simpan?"))return;
+  DO_REVISION_BUSY=true;
+  const submit=document.getElementById("doRevisionSubmit");
+  submit.disabled=true;
+  submit.textContent="MENYIMPAN...";
+  try{
+    const response=await db.from("stock_movements")
+      .update({do_final:next,do_status_revision_reason:reason})
+      .eq("id",id).eq("jenis","RECEIPT").eq("do_final",!next)
+      .select("id,do_final,do_status_revision_at,do_status_revision_by_name").maybeSingle();
+    if(response.error)throw response.error;
+    if(!response.data?.id)throw new Error("Data berubah/akses ditolak. Refresh History sebelum revisi ulang.");
+    toast("✓ Status DO direvisi dan dicatat di audit oleh "+(response.data.do_status_revision_by_name||"Admin/GL"));
+    ACTIVE_DO_REVISION=null;
+    document.getElementById("doRevisionPanel").hidden=true;
+    await loadReceipts();
+  }catch(error){
+    toast("GAGAL REVISI: "+(error.message||error),true);
+  }finally{
+    DO_REVISION_BUSY=false;
+    submit.textContent="SIMPAN REVISI STATUS";
+    submit.disabled=!ACTIVE_DO_REVISION;
+  }
+}
+
+async function loadReceipts(){if(!DO_REVISION_BUSY)closeDORevision();const token=++HISTORY_REQUEST_SEQ.receipt;const body=document.getElementById("receiptBody");const status=document.getElementById("receiptStatus");body.innerHTML='<tr><td colspan="11">Memuat History Penerimaan...</td></tr>';status.textContent="";let query=db.from("stock_movements").select("*").eq("jenis","RECEIPT").order("tanggal",{ascending:false}).order("jam",{ascending:false});const from=document.getElementById("receiptFrom").value;const to=document.getElementById("receiptTo").value;const transporter=document.getElementById("receiptTransporter").value;const reference=document.getElementById("receiptReference").value.trim();const refStatus=document.getElementById("receiptReferenceStatus").value;const period=document.getElementById("receiptPeriod").value;if(from)query=query.gte("tanggal",from);if(to)query=query.lte("tanggal",to);if(transporter)query=query.eq("transporter",transporter);if(reference)query=query.ilike("document_reference","%"+reference+"%");const{data,error,aborted,limitReached}=await fetchPagedHistory(query,"receipt",token);if(aborted)return;if(error){body.innerHTML=`<tr><td colspan="11">[GAGAL] ${esc(error.message)}</td></tr>`;return}ROWS.receipt=(data||[]).filter(row=>{const hasRef=!!String(row.document_reference||"").trim();if(refStatus==="pending"&&hasRef)return false;if(refStatus==="complete"&&!hasRef)return false;if(period!=="all"&&periodFromDate(row.tanggal)!==Number(period))return false;return true});renderDOReceiptSummary(ROWS.receipt);if(!ROWS.receipt.length){body.innerHTML='<tr><td colspan="11">Belum ada data pada filter ini.</td></tr>';status.textContent="0 penerimaan";return}body.innerHTML=ROWS.receipt.slice(0,HISTORY_RENDER_LIMIT).map((row,index)=>{const q=quantities(row);const hasRef=!!String(row.document_reference||"").trim();const audit=auditReceipt(row);return`<tr class="${audit?"kpp-audit-review":""}"><td>${esc(movementTime(row))}</td><td><span class="badge ${periodFromDate(row.tanggal)===1?"p1":"p2"}">${periodLabel(row.tanggal)}</span></td><td>${hasRef?`<b>${esc(row.document_reference)}</b>`:'<span class="badge pending">BELUM DIISI</span>'}</td><td>${esc(row.transporter||"-")}</td><td>${esc(row.destination_storage||"-")}</td><td>${fmt(q.transporter)}<span class="sub">${fmt(row.meter_start_liter)} -> ${fmt(row.meter_end_liter)}</span></td><td>${row.destination_height_before_cm??"-"} -> ${row.destination_height_after_cm??"-"} cm</td><td class="strong">${fmt(q.destination)}</td><td class="${lossClass(q.loss)}">${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"PER DO (LIHAT RINGKASAN)":receiptAuditLabel(q.loss)}</td><td>${esc(row.operator||"-")}</td><td><button class="small copy" onclick="copyReceipt(${index})">SALIN</button> ${row.calculation_method==="RECEIPT_FLOWMETER_DO"?"":`<button class="small edit" onclick="editReceiptReference(${index})">${hasRef?"EDIT":"ISI"} PO/LO</button>`}</td></tr>`}).join("");const p1=ROWS.receipt.filter(row=>periodFromDate(row.tanggal)===1).length;const p2=ROWS.receipt.length-p1;const pending=ROWS.receipt.filter(row=>!String(row.document_reference||"").trim()).length;status.textContent=`${ROWS.receipt.length} penerimaan  |  Periode 1: ${p1}  |  Periode 2: ${p2}  |  PO/LO belum diisi: ${pending}  |  AUDIT FLOWMETER: ${ROWS.receipt.filter(row=>auditReceipt(row)).length} perlu review`+historyLoadNote(ROWS.receipt.length,limitReached)}
 
 async function loadTransfers(){const token=++HISTORY_REQUEST_SEQ.transfer;const body=document.getElementById("transferBody");const status=document.getElementById("transferStatus");body.innerHTML='<tr><td colspan="11">Memuat History Transfer...</td></tr>';let query=db.from("stock_movements").select("*").eq("jenis","TRANSFER").order("tanggal",{ascending:false}).order("jam",{ascending:false});const from=document.getElementById("transferFrom").value;const to=document.getElementById("transferTo").value;const shift=document.getElementById("transferShift").value;const source=document.getElementById("transferSource").value;const destination=document.getElementById("transferDestination").value;const operator=document.getElementById("transferOperator").value.trim();if(from)query=query.gte("tanggal",from);if(to)query=query.lte("tanggal",to);if(shift)query=query.eq("shift",Number(shift));if(source)query=query.eq("source_storage",source);if(destination)query=query.eq("destination_storage",destination);if(operator)query=query.ilike("operator","%"+operator+"%");const{data,error,aborted,limitReached}=await fetchPagedHistory(query,"transfer",token);if(aborted)return;if(error){body.innerHTML=`<tr><td colspan="11">[GAGAL] ${esc(error.message)}</td></tr>`;return}ROWS.transfer=data||[];if(!ROWS.transfer.length){body.innerHTML='<tr><td colspan="11">Belum ada transfer pada filter ini.</td></tr>';status.textContent="0 transfer";return}body.innerHTML=ROWS.transfer.slice(0,HISTORY_RENDER_LIMIT).map((row,index)=>{const sourceQty=n(row.source_measured_qty??row.qty);const destinationQty=n(row.destination_measured_qty??row.qty);const loss=n(row.measurement_loss_qty??r1(sourceQty-destinationQty));const audit=auditTransfer(row);return`<tr class="${audit?"kpp-audit-review":""}"><td>${esc(movementTime(row))}</td><td>${row.shift||"-"}</td><td><b>${esc(row.source_storage||"-")}</b></td><td><b>${esc(row.destination_storage||"-")}</b></td><td>${row.source_height_before_cm??"-"} -> ${row.source_height_after_cm??"-"} cm</td><td class="strong">${fmt(sourceQty)}</td><td>${row.destination_height_before_cm??"-"} -> ${row.destination_height_after_cm??"-"} cm</td><td class="strong">${fmt(destinationQty)}</td><td class="${lossClass(loss)}">${fmtSigned(loss)}</td><td>${esc(row.operator||"-")}</td><td><button class="small copy" onclick="copyTransfer(${index})">SALIN</button></td></tr>`}).join("");const totalOut=ROWS.transfer.reduce((sum,row)=>sum+n(row.source_measured_qty??row.qty),0);const totalIn=ROWS.transfer.reduce((sum,row)=>sum+n(row.destination_measured_qty??row.qty),0);status.textContent=`${ROWS.transfer.length} transfer  |  Keluar sumber: ${fmt(totalOut)}  |  Masuk tujuan: ${fmt(totalIn)}  |  Loss: ${fmtSigned(totalOut-totalIn)}  |  AUDIT SONDING: ${ROWS.transfer.filter(row=>auditTransfer(row)).length} perlu review`+historyLoadNote(ROWS.transfer.length,limitReached)}
 
