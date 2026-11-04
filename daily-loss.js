@@ -30,14 +30,33 @@
         continue;
       }
       const key=transporter+'|'+document;
-      if(!groups.has(key))groups.set(key,{doQty,flow:0,final:0,consistent:true});
+      if(!groups.has(key))groups.set(key,{
+        doQty,flow:0,final:0,consistent:true,
+        document:String(row.document_reference||'').trim(),
+        transporter:String(row.transporter||'').trim(),
+        ids:[]
+      });
       const group=groups.get(key);
       if(group.doQty!==doQty)group.consistent=false;
       group.flow+=flow;
+      group.ids.push(row.id);
       if(row.do_final===true)group.final++;
     }
-    const unfinished=[...groups.values()].filter(g=>!g.consistent||g.final!==1).length;
-    if(invalid||unfinished)return {...incomplete(),detail:invalid+' transaksi belum punya Qty DO baru; '+unfinished+' DO belum selesai atau berbeda'};
+    const unfinished=[...groups.values()].filter(g=>!g.consistent||g.final!==1);
+    if(invalid||unfinished.length){
+      // Give the team a specific DO to inspect instead of an unactionable generic error.
+      const problems=unfinished.slice(0,2).map(g=>{
+        const why=!g.consistent?'Qty DO berbeda':g.final===0?'belum ada bongkaran terakhir':'bongkaran terakhir ganda';
+        const ids=g.ids.filter(id=>id!==undefined && id!==null);
+        return g.document+' ('+g.transporter+(ids.length?', ID '+ids.join('/'):'')+
+          '; '+why+')';
+      });
+      return {...incomplete(),detail:
+        invalid+' transaksi belum valid; '+unfinished.length+' DO perlu diperiksa'+
+        (problems.length?': '+problems.join('; '):'')+
+        (unfinished.length>2?'; dan '+(unfinished.length-2)+' DO lainnya':'')+
+        '. Buka Stock > History Penerimaan untuk verifikasi.'};
+    }
     const all=[...groups.values()];
     const totalFlow=all.reduce((n,g)=>n+g.flow,0);
     const totalDo=all.reduce((n,g)=>n+g.doQty,0);
