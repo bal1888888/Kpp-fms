@@ -46,6 +46,21 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
 @media(max-width:700px){.container{margin:8px auto;padding:7px}.panel{padding:12px;border-radius:12px}.hero{display:block}.hero h2{font-size:18px}.tabs{margin-top:10px}.tab-btn{font-size:10px;padding:9px 10px}.section-head{display:block}.section-head h3{font-size:16px}.grid{grid-template-columns:1fr 1fr;gap:8px}.actions{grid-column:span 2}.actions button{font-size:10px;padding:9px 7px}label{font-size:10px}input,select{font-size:11px;padding:9px 8px}th,td{font-size:10px;padding:7px}.toast{bottom:13px}.kpp-userbar-inner{padding:8px 10px;flex-wrap:wrap}}
 @media(max-width:420px){.grid{grid-template-columns:1fr}.actions{grid-column:auto}}
 </style>
+<style id="kpp-do-status-revision-css">
+.do-revision-btn{display:block;margin:6px auto 0;background:#e0eeff;color:#15469b;border:1px solid #9ec5fa;border-radius:8px;font-size:10px;padding:7px 10px;min-height:35px;white-space:nowrap}
+.do-revision-btn:hover{background:#cfe4ff}
+.do-revision-panel{margin-top:12px;border:1px solid #9fbdec;border-radius:12px;background:#f6faff;padding:14px}
+.do-revision-panel[hidden]{display:none!important}
+.do-revision-panel h4{font-size:14px;margin:0 0 8px;color:#10345d}
+.do-revision-panel p{font-size:12px;line-height:1.5;color:#344a66}
+.do-revision-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.do-revision-fields label{font-size:12px}
+.do-revision-fields textarea{width:100%;min-height:85px;resize:vertical;border:1px solid #c4d2e4;border-radius:8px;padding:10px;font-size:14px}
+.do-revision-reason{grid-column:1/-1}
+.do-revision-actions{display:flex;gap:8px;flex-wrap:wrap}
+.do-revision-actions button{min-height:42px}
+@media(max-width:700px){.do-revision-fields{grid-template-columns:1fr}.do-revision-panel{padding:10px}.do-revision-btn{font-size:10px;min-height:42px}}
+</style>
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20261019-ui-refresh1">
 
 <style id="kpp-mobile-operational-fix">
@@ -126,6 +141,26 @@ table{width:100%;border-collapse:collapse;min-width:1150px}th,td{border-right:1p
       <div class="actions"><button class="primary" onclick="loadReceipts()">TAMPILKAN</button><button class="green" id="downloadReceipt" onclick="downloadActiveExcel('receipt')"> EXCEL</button></div>
     </div>
     <div id="receiptDoSummary" class="status" aria-live="polite">DO baru yang sudah selesai akan diringkas di sini.</div>
+    <section id="doRevisionPanel" class="do-revision-panel" hidden aria-label="Revisi status DO">
+      <h4>REVISI STATUS DO (ADMIN / GL)</h4>
+      <p id="doRevisionIdentity">Pilih DO untuk direvisi.</p>
+      <div class="do-revision-fields">
+        <div><label for="doRevisionAction">Opsi revisi</label>
+          <select id="doRevisionAction" onchange="syncDORevisionOptions()">
+            <option value="MARK_FINAL">TANDAI SELESAI — bongkaran terakhir</option>
+            <option value="REOPEN">BUKA KEMBALI — belum selesai</option>
+          </select></div>
+        <div><label for="doRevisionMovement">Transaksi yang direvisi</label>
+          <select id="doRevisionMovement"></select></div>
+        <div class="do-revision-reason"><label for="doRevisionReason">Alasan revisi (wajib, minimal 10 karakter)</label>
+          <textarea id="doRevisionReason" maxlength="350" placeholder="Contoh: Bukti bongkaran terakhir ke MT03 telah diverifikasi dari logsheet."></textarea></div>
+      </div>
+      <p>Status DO memengaruhi Supply Loss MTD, <b>tidak mengubah Qty flowmeter, saldo stok, transfer atau closing</b>. Pastikan bukti bongkar tersedia sebelum menyimpan.</p>
+      <div class="do-revision-actions">
+        <button id="doRevisionSubmit" class="primary" type="button" onclick="submitDORevision()">SIMPAN REVISI STATUS</button>
+        <button class="tab-btn" type="button" onclick="closeDORevision()">BATAL</button>
+      </div>
+    </section>
     <div class="table-wrap"><table style="min-width:1450px"><thead><tr><th>KEDATANGAN</th><th>PERIODE</th><th>PO/LO</th><th>TRANSPORTIR</th><th>TUJUAN</th><th>FLOWMETER</th><th>SONDING</th><th>MASUK TANGKI</th><th>LOSS</th><th>OPERATOR</th><th>AKSI</th></tr></thead><tbody id="receiptBody"><tr><td colspan="11">Memuat data...</td></tr></tbody></table></div>
     <div class="status" id="receiptStatus"></div>
   </section>
@@ -200,6 +235,9 @@ function historyLoadNote(total,limitReached){
 }
 let ACTIVE_TAB="receipt";
 let CURRENT_PROFILE=null;
+let DO_SUMMARY_GROUPS=[];
+let ACTIVE_DO_REVISION=null;
+let DO_REVISION_BUSY=false;
 let EXCEL_PROMISE=null;
 let TOAST_TIMER=null;
 
@@ -248,13 +286,14 @@ function groupedDO(rows){
   const groups=new Map();
   for(const row of rows){
     if(row.calculation_method!=="RECEIPT_FLOWMETER_DO"||!row.document_reference||!row.do_qty_liter)continue;
-    const k=String(row.transporter||"").toUpperCase().replace(/[^A-Z0-9]/g,"")+"|"+String(row.document_reference).toUpperCase().trim();
-    if(!groups.has(k))groups.set(k,{ref:row.document_reference,transporter:row.transporter,doQty:Number(row.do_qty_liter),flow:0,storages:new Set(),final:0,count:0,consistent:true});
+    const k=String(row.transporter||"").toUpperCase().replace(/[^A-Z0-9]/g,"")+"|"+String(row.document_reference).toUpperCase().replace(/\s+/g,"");
+    if(!groups.has(k))groups.set(k,{ref:row.document_reference,transporter:row.transporter,doQty:Number(row.do_qty_liter),flow:0,storages:new Set(),final:0,count:0,consistent:true,rows:[]});
     const g=groups.get(k);
     if(g.doQty!==Number(row.do_qty_liter))g.consistent=false;
     g.flow+=Number(row.transporter_measured_qty||0);
     g.storages.add(row.destination_storage||"-");
     g.count++;
+    g.rows.push(row);
     if(row.do_final===true)g.final++;
   }
   return [...groups.values()].map(g=>({...g,selisih:Math.round((g.flow-g.doQty)*10)/10,status:g.consistent&&g.final===1?"complete":"pending"}));
@@ -263,10 +302,13 @@ function renderDOReceiptSummary(rows){
   const host=document.getElementById("receiptDoSummary");
   if(!host)return;
   const groups=groupedDO(rows);
+  DO_SUMMARY_GROUPS=groups;
   if(!groups.length){host.textContent="Belum ada penerimaan dengan DO baru pada filter ini. Data lama tetap ditampilkan tanpa rekalkulasi.";return;}
-  const displayed=groups.map(g=>{
+  const canRevise=['admin','gl'].includes(String(CURRENT_PROFILE?.role||'').toLowerCase());
+  const displayed=groups.map((g,i)=>{
     const label=g.status!=="complete"?"BELUM SELESAI":g.selisih>0?"GAIN":g.selisih<0?"LOSS":"BALANCE";
-    return '<tr><td>'+esc(g.transporter||"-")+'</td><td>'+esc(g.ref)+'</td><td>'+fmt(g.doQty)+'</td><td>'+fmt(g.flow)+'</td><td>'+esc([...g.storages].join(", "))+'</td><td>'+g.count+'</td><td class="'+(g.status==="complete"?(g.selisih>0?"gain":g.selisih<0?"loss":"zero"):"zero")+'">'+esc(label)+(g.status==="complete"?' '+fmt(Math.abs(g.selisih))+' L':'')+'</td></tr>';
+    const action=canRevise?'<button type="button" class="do-revision-btn" onclick="openDORevision('+i+')">REVISI STATUS DO</button>':'';
+    return '<tr><td>'+esc(g.transporter||"-")+'</td><td>'+esc(g.ref)+'</td><td>'+fmt(g.doQty)+'</td><td>'+fmt(g.flow)+'</td><td>'+esc([...g.storages].join(", "))+'</td><td>'+g.count+'</td><td class="'+(g.status==="complete"?(g.selisih>0?"gain":g.selisih<0?"loss":"zero"):"zero")+'">'+esc(label)+(g.status==="complete"?' '+fmt(Math.abs(g.selisih))+' L':'')+action+'</td></tr>';
   }).join("");
   host.innerHTML='<b>RINGKASAN SUPPLY PER DO (bongkar MT + FT digabung)</b><div class="table-wrap"><table><thead><tr><th>TRANSPORTIR</th><th>DO/PO</th><th>QTY DO</th><th>Σ FLOW</th><th>TUJUAN</th><th>BARIS</th><th>SUPPLY</th></tr></thead><tbody>'+displayed+'</tbody></table></div><small>Hanya baris dalam filter yang ditampilkan; pastikan seluruh bongkaran DO tercakup sebelum menilai hasil akhir.</small>';
 }
