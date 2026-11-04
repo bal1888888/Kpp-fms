@@ -1840,10 +1840,11 @@ th{background:#f8fafc;color:#475569}
         <div>
             <label>Status Bongkaran DO</label>
             <select id="receiptDoFinal" required onchange="updateReceiptCalculation()">
-                <option value="false">Masih bongkar ke MT/FT lain</option>
-                <option value="true">Bongkaran terakhir DO ini</option>
+                <option value="" selected disabled>-- PILIH STATUS DO SETIAP SIMPAN --</option>
+                <option value="false">MASIH BONGKAR ke MT/FT lain</option>
+                <option value="true">SELESAI — bongkaran TERAKHIR DO ini</option>
             </select>
-            <span class="field-hint">Tandai terakhir hanya setelah semua MT/FT selesai. MTD tidak menghitung DO yang belum selesai.</span>
+            <span class="field-hint">Wajib pilih status untuk tiap penyimpanan. Kalau bongkar sudah selesai, pilih TERAKHIR supaya Supply Loss MTD tidak tertahan.</span>
         </div>
         <div>
             <label>Flowmeter Awal Transporter (Liter)</label>
@@ -5224,6 +5225,7 @@ async function saveReceipt(){
     const document_reference=document.getElementById("receiptReference").value.trim().toUpperCase().replace(/\s+/g," ")||null;
     const arrivalTime=document.getElementById("receiptArrivalTime").value;
     const do_qty_liter=Number(document.getElementById("receiptDoQty").value);
+    const doFinalSelection=document.getElementById("receiptDoFinal").value;
     const do_final=document.getElementById("receiptDoFinal").value==="true";
     let operator=soundingOfficerName()||document.getElementById("receiptOperator").value.trim();
 
@@ -5241,6 +5243,11 @@ async function saveReceipt(){
     }
     if(![10000,16000,24000].includes(do_qty_liter)){
         alert("Pilih Qty DO: 10.000, 16.000 atau 24.000 liter.");
+        return;
+    }
+    if(doFinalSelection!=="true" && doFinalSelection!=="false"){
+        alert("PILIH STATUS DO: apakah masih bongkar ke tangki lain atau ini bongkaran TERAKHIR? Status harus dipilih setiap kali menyimpan.");
+        document.getElementById("receiptDoFinal").focus();
         return;
     }
     if(!arrivalTime){
@@ -5279,9 +5286,18 @@ async function saveReceipt(){
         alert("DO yang dipilih berbeda dari isian nomor/Qty DO. Pilih kembali agar pengiriman tidak terpisah.");
         return;
     }
+    const existingDO=RECEIPT_PENDING_DO.get(doIdentity(document_reference));
+    const projectedDOFlow=measurement.transporterQty+(existingDO?existingDO.flow:0);
+    if(!do_final && projectedDOFlow>=do_qty_liter*0.95){
+        if(!confirm(
+            "PERIKSA STATUS DO — SUDAH MENDEKATI / MELEBIHI QTY DO!\n"+
+            "Total Flowmeter tercatat: "+fmt(projectedDOFlow)+" L dari Qty DO "+fmt(do_qty_liter)+" L.\n"+
+            "Status masih MASIH BONGKAR. Kalau ini bongkaran terakhir, pilih SELESAI terlebih dahulu.\n\n"+
+            "Yakin MASIH ADA bongkaran lanjutan dari DO ini?"
+        ))return;
+    }
     if(do_final){
-        const existing=RECEIPT_PENDING_DO.get(doIdentity(document_reference));
-        const groupFlow=measurement.transporterQty+(existing?existing.flow:0);
+        const groupFlow=projectedDOFlow;
         if(groupFlow<do_qty_liter*0.95 && !confirm(
             "PERINGATAN DO BELUM PENUH\nTotal flowmeter DO saat ini "+
             fmt(groupFlow)+" L dari Qty DO "+fmt(do_qty_liter)+
@@ -5400,7 +5416,8 @@ async function saveReceipt(){
             "[OK] Bongkaran sebagian disimpan. Nomor DO "+document_reference+
             " dan Qty DO dipertahankan untuk tujuan MT/FT berikutnya.";
     }
-    document.getElementById("receiptDoFinal").value="false";
+    // Never carry over "masih bongkar" as a silent default to the next receipt.
+    document.getElementById("receiptDoFinal").value="";
     document.getElementById("receiptPendingDO").value="";
     void reloadReceiptPendingDO();
     document.getElementById("receiptArrivalTime").value=localTime();
