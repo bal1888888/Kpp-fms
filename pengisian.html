@@ -622,7 +622,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
   .ccr-limit strong{font-size:17px!important}
 }
 </style>
-<script src="reliable-submit.js"></script>
+<script src="reliable-submit.js?v=20261111-delivery-recovery"></script>
 <link rel="stylesheet" href="reliable-submit.css">
 <link rel="stylesheet" href="fuelman-ui.css?v=20260909">
 <link rel="stylesheet" href="kpp-ui-polish.css?v=20261019-ui-refresh1">
@@ -1317,6 +1317,14 @@ window.addEventListener("pagehide", function() {
 });
 
 let fuelDelivery = null;
+async function finishFuelSubmission(data,requestId){
+ const result=await fuelDelivery.completeSuccess(requestId);
+ if(result?.error){
+  alert('Pengisian sudah tersimpan. '+result.error.message);
+  return;
+ }
+ location.reload();
+}
 async function reliableFuelRpc(action,payload){
  if(!fuelDelivery)return {error:{message:"Sesi pengiriman belum siap. Muat ulang setelah tersambung."}};
  return fuelDelivery.send(action,payload);
@@ -1327,7 +1335,7 @@ document.addEventListener("kpp-auth-ready", async function(event) {
     currentStaffProfile = event.detail.profile;
     if (window.KPP_SESSION?.user?.id && !fuelDelivery) {
       fuelDelivery = KPPReliable.mount({scope:'fuel:'+window.KPP_SESSION.user.id, client:supabaseClient,
-        host:document.getElementById('fuelDelivery'), fields:['unitInput','fuelQty','currentHm'],
+        host:document.getElementById('fuelDelivery'), onSuccess:finishFuelSubmission, fields:['unitInput','fuelQty','currentHm'],
         context:()=>({session:activeFuelmanSession?.id || null,truck:selectedFuelTruck,shift:document.getElementById('shift').value}),
         restoreAllowed:c=>c && c.session===(activeFuelmanSession?.id || null) && c.truck===selectedFuelTruck && c.shift===document.getElementById('shift').value});
     }
@@ -2843,7 +2851,7 @@ document
                     "MENYIMPAN & MENUTUP JATAH...";
 
                 try {
-                    const { data, error } =
+                    const { data, error, requestId } =
                         await reliableFuelRpc("submit_ccr_fueling",
                             {
                                 p_allocation_id:
@@ -2906,7 +2914,7 @@ document
                         "Jatah berubah menjadi USED ✅"
                     );
 
-                    location.reload();
+                    await finishFuelSubmission(data,requestId);
 
                 } catch (error) {
                     console.error(error);
@@ -3073,7 +3081,7 @@ document
                 shift
             );
 
-            location.reload();
+            await finishFuelSubmission(saveResult.data,saveResult.requestId);
         }
     );
 
