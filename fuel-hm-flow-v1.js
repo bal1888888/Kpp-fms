@@ -1,5 +1,5 @@
 // KPP-FMS Fuelman HM flow v1
-// Jatah membaca HM CCR; non-jatah membaca HM operator. Referensi HM selalu dari RPC server.
+// Referensi HM selalu dari RPC server. HM Penjatahan tetap tampil pada kartu CCR.
 (() => {
   "use strict";
 
@@ -12,7 +12,7 @@
     const {data,error}=await client.rpc("fuel_hm_reference_info",{p_unit:clean(unit).toUpperCase()});
     if(error)throw error;
     const row=one(data);
-    return row&&Number.isFinite(Number(row.hm))
+    return row&&row.hm!==null&&row.hm!==undefined&&Number.isFinite(Number(row.hm))
       ? {hm:Number(row.hm),source:String(row.source||"Referensi HM server")}
       : {hm:0,source:"Belum ada HM sebelumnya"};
   }
@@ -28,13 +28,11 @@
     const ccrVisible=box&&!box.classList.contains("hidden");
     if(input?.readOnly&&ccrVisible){
       const label=input.closest(".form-group")?.querySelector("label");
-      if(label)label.textContent="HM Penjatahan CCR";
-      input.placeholder="HM dari jatah CCR";
+      const linked=Boolean(currentCCRAllocation?.operator_checkin_id);
+      if(label)label.textContent=linked?"HM Aktual Operator":"HM Petugas";
+      input.placeholder=linked?"Menunggu HM Aktual Operator":"HM dari jatah CCR";
     }
-    const mode=document.getElementById("fuelingModeBox");
-    if(mode&&/MODE CCR/i.test(mode.textContent||"")){
-      mode.textContent="MODE CCR • HM Penjatahan dan batas liter mengikuti jatah CCR. Fuelman hanya input Qty aktual.";
-    }
+
   }
 
   function patch(){

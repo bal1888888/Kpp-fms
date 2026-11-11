@@ -13,7 +13,7 @@ test('CCR runtime v4 memakai restricted preview RPC tanpa memuat runtime legacy'
   assert.doesNotMatch(js,/\.from\("unit_master"\)/);
   assert.doesNotMatch(js,/\.from\("fuel_history"\)/);
   assert.doesNotMatch(time,/ccr-auto-quota-v1\.js/);
-  assert.match(time,/ccr-quota-input-v4\.js\?v=20260916b1/);
+  assert.match(time,/ccr-quota-input-v4\.js\?v=20261111-hm-reference/);
   assert.match(legacyJs,/rpc\("ccr_auto_quota_preview"/);
 });
 

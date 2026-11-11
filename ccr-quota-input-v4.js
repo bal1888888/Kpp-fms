@@ -33,6 +33,11 @@
     HM_REFERENCE_LOADING=false;
     const input=el("hmPreviousInput");
     const source=el("hmPreviousSource");
+    const reference=el("hmTrustedReference");
+    const trusted=number(row?.trusted_hm);
+    if(reference)reference.textContent=trusted===null
+      ? "Patokan Check-in: belum tersedia."
+      : `Patokan Check-in: ${fmt(trusted,1)} HM · ${row.trusted_source||"server"}`;
     if(input)input.value=valid?fmt(last,1):"Belum ada";
     if(source)source.textContent=CURRENT_HM_REF.source;
     if(typeof updateHmIntel==="function")updateHmIntel();
@@ -149,7 +154,7 @@
     HM_REFERENCE_LOADING=true;
     const {data,error}=await client.rpc("ccr_auto_quota_preview",{p_unit:upper(unit)});
     if(error)throw error;
-    if(seq!==snapshotSeq)return null;
+    if(seq!==snapshotSeq || upper(el("unit")?.value)!==upper(unit))return null;
     snapshot=data||{};
     setRef(snapshot);
     setTolerance(snapshot);
@@ -157,17 +162,38 @@
     return snapshot;
   }
 
+  async function refreshOperatorActual(){
+    const chosen=CURRENT_OPERATOR_CHECKIN;
+    const target=el("ccrOperatorActualHm");
+    if(!chosen || !target)return;
+    try{
+      const row=await fetchCheckin(chosen.id);
+      if(CURRENT_OPERATOR_CHECKIN?.id!==row.id || !target.isConnected)return;
+      const hm=row.hm_actual_source==='CCR'?null:number(row.hm_actual);
+      target.textContent=hm===null?"Menunggu HM Aktual Operator.":`HM Aktual Operator ${fmt(hm,1)}.`;
+    }catch(_){
+      target.textContent="HM Aktual Operator gagal dibaca.";
+    }
+  }
+
   async function refreshSnapshot(){
     const unit=upper(el("unit")?.value);
     if(!unit){
       snapshot=null;CURRENT_HM_REF={hm:0,source:"Belum pilih unit"};HM_REFERENCE_LOADING=false;setRef(null);setTolerance(null);setManual("Pilih check-in atau unit terlebih dahulu.");return;
     }
-    try{await loadSnapshot(unit);}catch(error){HM_REFERENCE_LOADING=false;snapshot=null;setTolerance(null);setBlocked(`Referensi HM gagal dibaca: ${error.message}`);}
+    try{await loadSnapshot(unit);}catch(error){
+      if(upper(el("unit")?.value)!==unit)return;
+      HM_REFERENCE_LOADING=false;
+      const reference=el("hmTrustedReference");
+      if(reference)reference.textContent="Patokan Check-in gagal diperbarui.";
+      if(!snapshot || upper(snapshot.unit)!==unit){snapshot=null;setTolerance(null);setBlocked(`Referensi HM gagal dibaca: ${error.message}`);}
+      throw error;
+    }
   }
 
   function relabel(){
     const help=document.querySelector(".panel-monitor .checkin-head p");
-    if(help)help.textContent="Pilih check-in unit. Untuk unit jatah, operator tidak perlu kirim HM kedua; CCR mengisi HM penjatahan.";
+    if(help)help.textContent="Pilih check-in unit. CCR mengisi HM Penjatahan. Operator mengirim HM Aktual sebelum pengisian.";
     const panelState=document.querySelector(".panel-allocation .panel-state");if(panelState)panelState.textContent="HM CCR";
     const hm=el("hm"),wrap=hm?.parentElement;
     const label=wrap?.querySelector("label"),hint=wrap?.querySelector(".input-help");
@@ -225,7 +251,7 @@
 
   async function fetchCheckin(id){
     const client=db();if(!client)throw new Error("Database belum siap.");
-    const {data,error}=await client.from("operator_unit_checkins").select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status,hm_actual,hm_actual_at,hm_actual_received_at,fuel_history_id").eq("id",id).maybeSingle();
+    const {data,error}=await client.from("operator_unit_checkins").select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status,hm_actual,hm_actual_at,hm_actual_received_at,hm_actual_source,fuel_history_id").eq("id",id).maybeSingle();
     if(error)throw error;if(!data)throw new Error("Check-in tidak ditemukan. Refresh monitoring.");return data;
   }
 
@@ -250,9 +276,9 @@
       el("hm").value="";el("hm").readOnly=false;el("hm").placeholder=`HM penjatahan, minimal ${fmt(row.hm_awal,1)}`;
       el("hmTakenTime").value=currentTime();el("hmTakenTime").readOnly=false;
       el("maxQty").value="";setTolerance(null);el("requestReason").value="";el("note").value="";
-      const selected=el("checkinSelected");if(selected){selected.style.display="block";selected.innerHTML=`<b>Check-in terpilih:</b> ${esc(row.unit)} • ${esc(row.operator_name)} • NRP ${esc(row.nrp||"—")} • HM check-in ${fmt(row.hm_awal,1)}.<br><b>CCR isi HM penjatahan.</b> Operator unit jatah tidak perlu mengirim HM kedua.`;}
+      const selected=el("checkinSelected");if(selected){selected.style.display="block";selected.innerHTML=`<b>Check-in terpilih:</b> ${esc(row.unit)} • ${esc(row.operator_name)} • NRP ${esc(row.nrp||"—")} • HM check-in ${fmt(row.hm_awal,1)}.<br><b>CCR isi HM Penjatahan.</b> <span id="ccrOperatorActualHm"></span>`;}
       if(typeof updateQrDisplay==="function")updateQrDisplay();
-      await loadSnapshot(row.unit);
+      await Promise.all([loadSnapshot(row.unit),refreshOperatorActual()]);
       if(typeof refreshFillingNo==="function")await refreshFillingNo();
       if(typeof updateHmIntel==="function")updateHmIntel();
       if(status)status.textContent="Check-in dipilih. Masukkan HM Penjatahan CCR; Qty Jatah dihitung otomatis dan Limit Toleransi diambil dari Master Unit.";
@@ -301,14 +327,24 @@
 
   function bind(){
     ensureStyle();quotaCard();relabel();patchEditTolerance();
+    let refreshing=false;
+    const refreshVisible=async()=>{
+      if(document.hidden || refreshing || picking || el("saveBtn")?.disabled || !upper(el("unit")?.value))return;
+      refreshing=true;
+      try{await Promise.all([refreshSnapshot(),refreshOperatorActual()]);}
+      catch(_){/* Status tersedia pada patokan Check-in. */}
+      finally{refreshing=false;}
+    };
+    setInterval(refreshVisible,15000);
+    document.addEventListener("visibilitychange",refreshVisible);
     let tries=0;const timer=setInterval(()=>{tries++;relabel();patchEditTolerance();if(watchRows()||tries>=60)clearInterval(timer);},100);
     document.addEventListener("click",event=>{const button=event.target.closest?.("button[data-kpp-quota-checkin]");if(!button)return;event.preventDefault();selectCheckin(button.dataset.kppQuotaCheckin);},true);
     el("saveBtn")?.addEventListener("click",saveQuota,true);
     el("hm")?.addEventListener("input",applyQuota);
     el("hm")?.addEventListener("change",applyQuota);
-    el("unit")?.addEventListener("input",()=>{clearTimeout(inputTimer);inputTimer=setTimeout(refreshSnapshot,300);});
-    el("unit")?.addEventListener("change",()=>setTimeout(refreshSnapshot,0));
-    setTimeout(()=>{const unit=upper(el("unit")?.value);if(unit)refreshSnapshot();else{setTolerance(null);setManual("Pilih check-in atau unit terlebih dahulu.");}},0);
+    el("unit")?.addEventListener("input",()=>{clearTimeout(inputTimer);inputTimer=setTimeout(()=>refreshSnapshot().catch(()=>{}),300);});
+    el("unit")?.addEventListener("change",()=>setTimeout(()=>refreshSnapshot().catch(()=>{}),0));
+    setTimeout(()=>{const unit=upper(el("unit")?.value);if(unit)refreshSnapshot().catch(()=>{});else{setTolerance(null);setManual("Pilih check-in atau unit terlebih dahulu.");}},0);
   }
 
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});else bind();

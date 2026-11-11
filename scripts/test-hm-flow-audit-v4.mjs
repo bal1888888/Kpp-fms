@@ -9,7 +9,7 @@ const fuel=fs.readFileSync('fuel-hm-flow-v1.js','utf8');
 const reliable=fs.readFileSync('reliable-submit.js','utf8');
 const loader=fs.readFileSync('wib-time.js','utf8');
 
-test('unit jatah mendapat policy khusus dan operator HM kedua diblok server',()=>{
+test('migrasi September unit jatah mendapat policy khusus dan operator HM kedua diblok server',()=>{
   assert.match(sql,/operator_checkin_flow_info/i);
   assert.match(sql,/u\.fc_standard_lphm is not null and u\.fc_standard_lphm\s*>\s*0/i);
   assert.match(sql,/Unit ini memakai jatah CCR\. Operator cukup check-in awal/i);
@@ -18,7 +18,7 @@ test('unit jatah mendapat policy khusus dan operator HM kedua diblok server',()=
   assert.match(operator,/actualBtn\.hidden=true/);
 });
 
-test('CCR fueling memakai HM allocation walau check-in masih ACTIVE dan hm_actual kosong',()=>{
+test('migrasi September CCR fueling memakai HM allocation walau check-in masih ACTIVE dan hm_actual kosong',()=>{
   assert.match(sql,/v_checkin\.status not in \('ACTIVE','READY'\)/i);
   assert.doesNotMatch(sql,/v_checkin\.hm_actual is null/i);
   assert.doesNotMatch(sql,/v_checkin\.hm_actual is distinct from v_alloc\.hm_ccr/i);
@@ -32,17 +32,16 @@ test('Fuelman mengambil referensi HM dari RPC server dan CCR label tidak menyama
   assert.match(sql,/private\.kpp_current_hm_reference\(p_unit\)/i);
   assert.match(fuel,/rpc\("fuel_hm_reference_info"/);
   assert.match(fuel,/HM PENJATAHAN CCR/);
-  assert.match(fuel,/Fuelman hanya input Qty aktual/);
+  assert.match(fuel,/Menunggu HM Aktual Operator/);
   assert.doesNotMatch(fuel,/from\("hm_corrections"\)/);
 });
 
-test('loader tidak menumpuk dua runtime CCR dan operator patch hanya dimuat di halaman operator',()=>{
+test('loader tidak menumpuk dua runtime CCR dan patch operator lama tidak dimuat',()=>{
   assert.match(loader,/ccr-quota-input-v4\.js/);
   assert.doesNotMatch(loader,/ccr-auto-quota-v1\.js/);
   assert.doesNotMatch(loader,/ccr-quota-input-v3\.js/);
   assert.match(loader,/fuel-hm-flow-v1\.js/);
-  assert.match(reliable,/operator-checkin-flow-v4\.js/);
-  assert.match(reliable,/operator-checkin\\\.html/);
+  assert.doesNotMatch(reliable,/operator-checkin-flow-v4\.js/);
 });
 
 test('observer CCR bebas self-triggering subtree loop',()=>{
