@@ -124,13 +124,13 @@
 
   if(root.KPP_ACTIVE_PAGE==="ccr"){
     onDomReady(async()=>{
-      await loadPageScript("ccr-quota-input-v4.js?v=20260916b1",{async:false});
+      await loadPageScript("ccr-quota-input-v4.js?v=20261111-hm-reference",{async:false});
     });
   }
 
   if(root.KPP_ACTIVE_PAGE==="pengisian"){
     onDomReady(async()=>{
-      await loadPageScript("fuel-hm-flow-v1.js?v=20260916b1",{async:false});
+      await loadPageScript("fuel-hm-flow-v1.js?v=20261111-hm-reference",{async:false});
     });
   }
 

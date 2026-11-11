@@ -15,7 +15,7 @@ test('runtime CCR lama tidak dimuat dan v4 menjadi satu-satunya enhancement quot
   assert.doesNotMatch(loader,/ccr-direct-hm-v1\.js/);
   assert.doesNotMatch(loader,/ccr-auto-quota-v1\.js/);
   assert.doesNotMatch(loader,/ccr-quota-input-v3\.js/);
-  assert.match(loader,/ccr-quota-input-v4\.js\?v=20260916b1/);
+  assert.match(loader,/ccr-quota-input-v4\.js\?v=20261111-hm-reference/);
 });
 
 test('v2 terdokumentasi sebagai riwayat, v3 mengembalikan check-in ke ACTIVE',()=>{

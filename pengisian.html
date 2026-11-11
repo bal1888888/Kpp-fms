@@ -12,7 +12,7 @@
 window.KPP_ALLOWED_ROLES=["gl", "admin", "atasan", "fuelman"];
 window.KPP_ACTIVE_PAGE="pengisian";
 </script>
-<script src="wib-time.js?v=20260915-lubricant2"></script>
+<script src="wib-time.js?v=20261111-hm-reference"></script>
 <script src="auth.js?v=20261019-shared-ui-refresh1"></script>
 <script src="storage-master.js"></script>
 
@@ -677,7 +677,7 @@ input:focus,select:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgb
           <div class="step-content">
             <div class="hm-info-grid">
               <div class="unit-metric"><small>UNIT TERPILIH</small><strong id="unitDisplayMirror">-</strong></div>
-              <div id="previousHmBox" class="previous-hm hidden"><small>HM SEBELUMNYA</small><strong id="previousHm">-</strong><div class="hm-source" id="hmSource"></div></div>
+              <div id="previousHmBox" class="previous-hm hidden"><small>HM REFERENSI</small><strong id="previousHm">-</strong><div class="hm-source" id="hmSource"></div></div>
             </div>
           </div>
         </section>
@@ -2073,7 +2073,7 @@ async function ambilKontrolCcrHariIni(unit) {
     let q = supabaseClient
         .from("ccr_allocations")
         .select(
-            "id,tanggal,shift,unit,operator_unit,hm_previous_ref,hm_previous_source,hm_ccr,hm_taken_time,hm_work_since_previous,used_estimated_hm,used_estimated_runtime,max_qty,tolerance_qty,filling_no,status,request_reason"
+            "id,tanggal,shift,unit,operator_unit,hm_previous_ref,hm_previous_source,hm_ccr,hm_taken_time,hm_work_since_previous,used_estimated_hm,used_estimated_runtime,max_qty,tolerance_qty,filling_no,status,request_reason,operator_checkin_id"
         )
         .eq("unit", unit)
         .eq("tanggal", operationalDate)
@@ -2286,7 +2286,7 @@ function tampilkanJatahCcr(row) {
     operatorInput.placeholder = "Otomatis dari CCR";
 
     const hmInput = document.getElementById("currentHm");
-    hmInput.value = Number(row.hm_ccr).toFixed(1).replace(/\.0$/, "");
+    hmInput.value = row.operator_checkin_id ? "" : Number(row.hm_ccr).toFixed(1).replace(/\.0$/, "");
     hmInput.readOnly = true;
     hmInput.classList.add("ccr-locked");
     hmInput.placeholder = "HM aktual operator / petugas";
@@ -2303,10 +2303,57 @@ function tampilkanJatahCcr(row) {
 
     setFuelingMode(
         "ccr",
-        "MODE CCR - QR unit, operator, HM aktual dan batas liter dikunci dari data CCR. Estimasi HM dinonaktifkan."
+        row.operator_checkin_id ? "Menunggu HM Aktual Operator." : "MODE CCR • Unit tanpa operator. HM petugas dan batas liter dari jatah CCR."
     );
 
 }
+
+async function refreshFuelHmContext(){
+    const unit=currentUnit;
+    const allocation=fuelingMode==="ccr" ? currentCCRAllocation : null;
+    if(!unit || checkedUnit!==unit ||
+       document.getElementById("unitInput").value.trim().toUpperCase()!==unit ||
+       document.getElementById("formArea").classList.contains("hidden"))return;
+    const [reference,ready]=await Promise.all([
+        ambilHmTerakhir(unit),
+        allocation?.operator_checkin_id ? ambilHmOperatorSiap(unit) : null
+    ]);
+    if(unit!==currentUnit || checkedUnit!==unit ||
+       document.getElementById("unitInput").value.trim().toUpperCase()!==unit ||
+       allocation!==(fuelingMode==="ccr" ? currentCCRAllocation : null))return;
+    previousHM=reference.hm;
+    currentHmSource=reference.source;
+    document.getElementById("previousHm").textContent=reference.hm>0
+        ? reference.hm.toLocaleString("id-ID") : "Belum ada data";
+    document.getElementById("hmSource").textContent=reference.source;
+    if(!allocation)return;
+    const actual=allocation.operator_checkin_id
+        ? (Number(ready?.checkin_id)===Number(allocation.operator_checkin_id) ? Number(ready.hm_actual) : null)
+        : Number(allocation.hm_ccr);
+    const hmInput=document.getElementById("currentHm");
+    hmInput.value=actual===null ? "" : String(actual);
+    const difference=actual===null ? null : actual-reference.hm;
+    document.getElementById("hmDifference").textContent=difference===null ? "Menunggu HM Aktual Operator"
+        : reference.hm>0 ? `${difference.toLocaleString("id-ID",{maximumFractionDigits:1})} HM` : "Data awal";
+    const warning=document.getElementById("warning");
+    const message=actual===null ? "Minta operator mengirim HM Aktual pada check-in yang sama."
+        : difference<0 ? "HM Aktual di bawah patokan terbaru. Minta operator cek panel dan kirim ulang HM." : "";
+    warning.textContent=message;
+    warning.style.display=message?"block":"none";
+    setFuelingMode("ccr",message || "Siap Isi • Masukkan Qty aktual sesuai batas jatah CCR.");
+    return {actual,message};
+}
+
+let fuelHmRefreshRunning=false;
+async function refreshVisibleFuelHm(){
+    if(document.hidden || fuelHmRefreshRunning || document.getElementById("saveButton").disabled)return;
+    fuelHmRefreshRunning=true;
+    try{await refreshFuelHmContext();}
+    catch(_){document.getElementById("hmSource").textContent="Referensi HM gagal diperbarui. Sistem akan memeriksa lagi saat disimpan.";}
+    finally{fuelHmRefreshRunning=false;}
+}
+setInterval(refreshVisibleFuelHm,15000);
+document.addEventListener("visibilitychange",refreshVisibleFuelHm);
 
 async function cekUnit() {
     if (!selectedFuelTruck) {
@@ -2403,13 +2450,8 @@ async function cekUnit() {
             const hmData =
                 await ambilHmTerakhir(inputUnit);
 
-            if (allocation.hm_previous_ref !== null && allocation.hm_previous_ref !== undefined && Number(allocation.hm_previous_ref) > 0) {
-                previousHM = Number(allocation.hm_previous_ref);
-                currentHmSource = allocation.hm_previous_source || "Referensi HM saat jatah CCR dibuat";
-            } else {
-                previousHM = hmData.hm;
-                currentHmSource = hmData.source;
-            }
+            previousHM = hmData.hm;
+            currentHmSource = hmData.source;
 
             currentUnit = inputUnit;
             checkedUnit = inputUnit;
@@ -2446,21 +2488,7 @@ async function cekUnit() {
                 applyShiftSelection(allocationShift, true);
             }
 
-            const effectiveHm = Number(allocation.hm_ccr);
-
-            if (previousHM > 0 && Number.isFinite(effectiveHm) && effectiveHm >= previousHM) {
-                document.getElementById("hmDifference").textContent =
-                    (effectiveHm - previousHM).toLocaleString("id-ID", {maximumFractionDigits:1}) + " HM";
-                document.getElementById("warning").style.display = "none";
-            } else if (previousHM > 0 && Number.isFinite(effectiveHm) && effectiveHm < previousHM) {
-                document.getElementById("hmDifference").textContent = "HM CCR < HM REFERENSI";
-                document.getElementById("warning").textContent =
-                    "⚠️ HM aktual operator / petugas lebih kecil dari HM referensi. Cek kembali data HM CCR sebelum pengisian.";
-                document.getElementById("warning").style.display = "block";
-            } else {
-                document.getElementById("hmDifference").textContent = "Data awal";
-                document.getElementById("warning").style.display = "none";
-            }
+            await refreshFuelHmContext();
 
             return;
         }
@@ -2808,7 +2836,6 @@ document
 
                 const baseHm = Number(currentCCRAllocation.hm_ccr);
                 const operator = String(currentCCRAllocation.operator_unit || "").trim();
-                const actualHm = baseHm;
 
                 if (!Number.isFinite(baseHm)) {
                     alert("HM CCR tidak valid.");
@@ -2851,6 +2878,8 @@ document
                     "MENYIMPAN & MENUTUP JATAH...";
 
                 try {
+                    const current=await refreshFuelHmContext();
+                    if(!current || current.message)throw new Error(current?.message || "Periksa kembali unit pengisian.");
                     const { data, error, requestId } =
                         await reliableFuelRpc("submit_ccr_fueling",
                             {
@@ -2861,7 +2890,7 @@ document
                                     currentCCRAllocation.tanggal,
 
                                 p_jam:
-                                    waktu.jam,
+                                    getLocalDateTime().jam,
 
                                 p_fuel:
                                     fuel,
@@ -2893,7 +2922,7 @@ document
                         "Operator: " +
                         operator +
                         "\n" +
-                        "HM Aktual Jatah: " +
+                        "HM Penjatahan CCR: " +
                         Number(currentCCRAllocation.hm_ccr).toLocaleString("id-ID", {maximumFractionDigits:1}) +
                         "\n" +
                         "Jam Ambil HM: " +
