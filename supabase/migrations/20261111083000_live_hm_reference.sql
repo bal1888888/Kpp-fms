@@ -12,6 +12,8 @@ declare
   v_result numeric;
   v_latest timestamp;
   v_at timestamp;
+  v_ft text;
+  v_wh text;
 begin
   if auth.uid() is null or v_role not in ('admin','gl') then
     raise exception 'Hanya Admin/GL yang boleh memverifikasi HM.' using errcode='42501';
@@ -38,6 +40,16 @@ begin
        or v_row.hm_akhir is distinct from p_hm then
       raise exception 'Unit atau HM akhir transaksi tidak cocok.';
     end if;
+    if v_row.tanggal is null or v_row.shift is null or v_row.shift not in (1,2) then
+      raise exception 'Tanggal dan shift transaksi wajib valid.';
+    end if;
+    select s.code,private.kpp_storage_wh(s.warehouse) into v_ft,v_wh
+    from public.storage_master s where s.code=upper(trim(v_row.fuel_truck)) and s.active and s.storage_type='FT';
+    if not found then
+      raise exception 'Pilih Fuel Truck aktif dari Master MT/FT.';
+    end if;
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+      'kpp-stock-shift:'||v_row.tanggal::text||':'||v_row.shift::text,0));
     -- The editor considers the same unit, HM, Qty, shift and FT a duplicate
     -- even when the original logsheet omitted the clock time.
     select * into v_row from public.fuel_history h
@@ -100,9 +112,10 @@ begin
     (select max(h.tanggal + coalesce(h.jam,case h.shift when 1 then time '06:30' else time '18:30' end)
       + case when h.shift=2 and h.jam<time '06:30' then interval '1 day' else interval '0' end)
       from public.fuel_history h where upper(trim(h.unit))=v_unit and not coalesce(h.hm_ref_excluded,false)
-        and h.duplicate_of_id is null and h.hm_akhir is not null and h.fuel>0),
+        and h.duplicate_of_id is null and h.hm_akhir>=0 and h.fuel>0
+        and h.hm_akhir::text not in ('NaN','Infinity','-Infinity')),
     (select max(c.tanggal + coalesce(c.jam,time '00:00'))
-      from public.hm_corrections c where upper(trim(c.unit))=v_unit and c.hm is not null)
+      from public.hm_corrections c where upper(trim(c.unit))=v_unit and c.hm>=0 and c.hm::text not in ('NaN','Infinity','-Infinity'))
   ) into v_latest;
   if v_at < v_latest or (v_at = v_latest and v_row.jam is null) then
     raise exception 'Waktu transaksi lebih lama atau tidak bisa dibedakan dari patokan terakhir. Simpan sebagai riwayat.';
@@ -126,7 +139,7 @@ begin
       fuel,shift,fuel_truck,wh,fuelman_name,hm_ref_excluded,hm_ref_excluded_reason)
     values(v_row.tanggal,v_row.jam,v_unit,v_row.operator,v_ref,p_hm,
       case when v_ref is not null then p_hm-v_ref end,v_row.fuel,v_row.shift,
-      v_row.fuel_truck,v_row.wh,v_row.fuelman_name,false,'HM diverifikasi Admin/GL dari Logsheet Editor.')
+      v_ft,v_wh,v_row.fuelman_name,false,'HM diverifikasi Admin/GL dari Logsheet Editor.')
     returning id into v_row.id;
   end if;
   select r.hm into v_result from private.kpp_current_hm_reference(v_unit) r limit 1;
@@ -138,6 +151,29 @@ end;
 $$;
 revoke all on function public.save_verified_logsheet_hm(bigint,jsonb,text,numeric) from public,anon,authenticated;
 grant execute on function public.save_verified_logsheet_hm(bigint,jsonb,text,numeric) to authenticated;
+
+-- The existing Stock shift lock runs before this trigger. Cover regular Editor
+-- inserts too, because that path still sends bulk inserts directly to PostgREST.
+create or replace function private.kpp_guard_editor_duplicate_at_insert()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.hm_ref_excluded_reason is distinct from 'Dimasukkan melalui Logsheet Editor; histori manual tidak dipakai sebagai HM reference.'
+     and new.hm_ref_excluded_reason is distinct from 'HM diverifikasi Admin/GL dari Logsheet Editor.' then
+    return new;
+  end if;
+  if exists (select 1 from public.fuel_history h
+    where h.tanggal=new.tanggal and h.shift=new.shift and h.duplicate_of_id is null
+      and upper(trim(h.unit))=upper(trim(new.unit))
+      and upper(trim(h.fuel_truck))=upper(trim(new.fuel_truck))
+      and h.hm_akhir is not distinct from new.hm_akhir and h.fuel is not distinct from new.fuel) then
+    raise exception 'Transaksi serupa sudah tersimpan. Muat ulang Logsheet sebelum menyimpan kembali.';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function private.kpp_guard_editor_duplicate_at_insert() from public,anon,authenticated;
+create trigger trg_aac_kpp_guard_editor_duplicate_at_insert before insert on public.fuel_history
+  for each row execute function private.kpp_guard_editor_duplicate_at_insert();
 
 -- CCR actual-HM rollout. Reuse the RPC signatures used by reliable delivery.
 CREATE OR REPLACE FUNCTION public.submit_operator_actual_hm(p_checkin_id bigint, p_unit text, p_token uuid, p_actual_hm numeric, p_observed_at timestamp with time zone DEFAULT NULL::timestamp with time zone)
@@ -425,6 +461,217 @@ begin
     c.hm_actual_received_at desc,
     c.id desc
   limit 1;
+end;
+$function$
+;
+
+-- The date on a Shift 2 record is its operational date, even after midnight.
+CREATE OR REPLACE FUNCTION private.kpp_current_hm_reference(p_unit text)
+ RETURNS TABLE(hm numeric, source text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_unit text := upper(trim(coalesce(p_unit,'')));
+  v_corr public.hm_corrections%rowtype;
+  v_hist_hm numeric;
+  v_recent_median numeric;
+  v_recent_count integer;
+begin
+  if v_unit = '' then return; end if;
+
+  select * into v_corr
+  from public.hm_corrections c
+  where upper(trim(c.unit)) = v_unit
+    and c.hm is not null and c.hm >= 0
+    and c.hm::text not in ('NaN','Infinity','-Infinity')
+  order by c.tanggal desc, c.jam desc, c.id desc
+  limit 1;
+
+  if found then
+    select max(q.hm_akhir) into v_hist_hm
+    from (
+      select h.hm_akhir::numeric as hm_akhir
+      from public.fuel_history h
+      where upper(trim(coalesce(h.unit,''))) = v_unit
+        and coalesce(h.hm_ref_excluded,false) = false
+        and h.duplicate_of_id is null
+        and h.hm_akhir is not null
+        and h.hm_akhir >= v_corr.hm
+        and h.hm_akhir::text not in ('NaN','Infinity','-Infinity')
+        and (
+          public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) > (v_corr.tanggal + coalesce(v_corr.jam,time '00:00'))
+        )
+        and h.hm_akhir::numeric <= v_corr.hm + greatest(
+          48::numeric,
+          (extract(epoch from (
+            public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) - (v_corr.tanggal + coalesce(v_corr.jam,time '00:00'))
+          )) / 3600.0)::numeric + 48
+        )
+      order by public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) desc nulls last, h.id desc
+      limit 30
+    ) q;
+
+    hm := case when v_hist_hm is null then v_corr.hm else greatest(v_corr.hm,v_hist_hm) end;
+    source := case
+      when v_hist_hm is not null and v_hist_hm > v_corr.hm
+        then 'HM valid setelah koreksi (server, outlier guard)'
+      else 'HM Master / Koreksi Aktual (server)'
+    end;
+    return next;
+    return;
+  end if;
+
+  with recent as (
+    select h.hm_akhir::numeric as hm_akhir,
+           public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) as observed_at,
+           h.id
+    from public.fuel_history h
+    where upper(trim(coalesce(h.unit,''))) = v_unit
+      and coalesce(h.hm_ref_excluded,false) = false
+      and h.duplicate_of_id is null
+      and h.hm_akhir is not null
+      and h.hm_akhir >= 0
+      and h.hm_akhir::text not in ('NaN','Infinity','-Infinity')
+    order by public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) desc nulls last, h.id desc
+    limit 7
+  ), stats as (
+    select count(*)::integer as n,
+           percentile_cont(0.5) within group(order by hm_akhir)::numeric as median_hm
+    from recent
+  )
+  select s.n, s.median_hm,
+         case
+           when s.n >= 3 then (
+             select max(r.hm_akhir) from recent r
+             where r.hm_akhir between greatest(0::numeric,s.median_hm*0.5) and s.median_hm*1.5
+           )
+           else (
+             select r.hm_akhir from recent r
+             order by r.observed_at desc nulls last,r.id desc limit 1
+           )
+         end
+    into v_recent_count,v_recent_median,v_hist_hm
+  from stats s;
+
+  if v_hist_hm is null then
+    select h.hm_akhir::numeric into v_hist_hm
+    from public.fuel_history h
+    where upper(trim(coalesce(h.unit,''))) = v_unit
+      and coalesce(h.hm_ref_excluded,false) = false
+      and h.duplicate_of_id is null
+      and h.hm_akhir is not null
+      and h.hm_akhir >= 0
+      and h.hm_akhir::text not in ('NaN','Infinity','-Infinity')
+    order by public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) desc nulls last, h.id desc
+    limit 1;
+  end if;
+
+  if v_hist_hm is not null then
+    hm := v_hist_hm;
+    source := case
+      when coalesce(v_recent_count,0) >= 3
+        then 'HM cluster transaksi terbaru (server, outlier guard)'
+      else 'HM transaksi terbaru (server)'
+    end;
+    return next;
+  end if;
+end;
+$function$
+;
+CREATE OR REPLACE FUNCTION private.kpp_ccr_last_fueling_baseline(p_unit text)
+ RETURNS TABLE(fuel_history_id bigint, hm numeric, tanggal date, jam time without time zone, valid boolean, reason text, source text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_unit text := upper(trim(coalesce(p_unit,'')));
+  v_row public.fuel_history%rowtype;
+  v_robust_hm numeric;
+  v_robust_source text;
+  v_delta numeric;
+begin
+  if v_unit = '' then
+    fuel_history_id := null; hm := null; tanggal := null; jam := null;
+    valid := false; reason := 'Unit belum dipilih.'; source := reason;
+    return next; return;
+  end if;
+
+  select h.* into v_row
+  from public.fuel_history h
+  where upper(trim(coalesce(h.unit,''))) = v_unit
+    and h.hm_akhir is not null
+    and coalesce(h.fuel,0) > 0
+    and coalesce(h.hm_ref_excluded,false) = false
+    and h.duplicate_of_id is null
+  order by public.ccr_operational_timestamp(h.tanggal,'Shift '||h.shift::text,
+            coalesce(h.jam,case h.shift when 1 then time '06:30' when 2 then time '18:30' else time '00:00' end)) desc nulls last, h.id desc
+  limit 1;
+
+  if not found then
+    fuel_history_id := null; hm := null; tanggal := null; jam := null;
+    valid := false;
+    reason := 'Belum ada histori pengisian fuel valid untuk unit ini.';
+    source := reason;
+    return next; return;
+  end if;
+
+  fuel_history_id := v_row.id;
+  hm := v_row.hm_akhir::numeric;
+  tanggal := v_row.tanggal;
+  jam := v_row.jam;
+  source := format(
+    'HM pengisian terakhir #%s (%s%s)',
+    v_row.id,
+    v_row.tanggal,
+    case when v_row.jam is null then '' else ' ' || to_char(v_row.jam,'HH24:MI') end
+  );
+
+  if hm::text in ('NaN','Infinity','-Infinity') or hm < 0 then
+    valid := false;
+    reason := 'HM pengisian terakhir tidak valid.';
+    return next; return;
+  end if;
+
+  if v_row.hm_awal is not null
+     and v_row.hm_awal::text not in ('NaN','Infinity','-Infinity')
+     and v_row.hm_awal >= 0 then
+    v_delta := hm - v_row.hm_awal::numeric;
+    if v_delta < -0.001 or v_delta > 72 then
+      valid := false;
+      reason := format(
+        'HM pengisian terakhir #%s terindikasi data legacy/outlier (HM awal %s, HM akhir %s). Koreksi/tandai HM history sebelum jatah otomatis dipakai.',
+        v_row.id, v_row.hm_awal, hm
+      );
+      return next; return;
+    end if;
+  end if;
+
+  select r.hm, r.source
+    into v_robust_hm, v_robust_source
+  from private.kpp_current_hm_reference(v_unit) r
+  limit 1;
+
+  if v_robust_hm is not null and abs(v_robust_hm - hm) > 72 then
+    valid := false;
+    reason := format(
+      'HM pengisian terakhir #%s (%s) berbeda terlalu jauh dari referensi HM tepercaya %s (%s). Review HM history terlebih dahulu.',
+      v_row.id, hm, v_robust_hm, coalesce(v_robust_source,'server')
+    );
+    return next; return;
+  end if;
+
+  valid := true;
+  reason := 'Baseline HM pengisian terakhir valid.';
+  return next;
 end;
 $function$
 ;

@@ -2311,24 +2311,29 @@ function tampilkanJatahCcr(row) {
 async function refreshFuelHmContext(){
     const unit=currentUnit;
     const allocation=fuelingMode==="ccr" ? currentCCRAllocation : null;
+    const manualCheckin=allocation?null:currentOperatorCheckin;
     if(!unit || checkedUnit!==unit ||
        document.getElementById("unitInput").value.trim().toUpperCase()!==unit ||
        document.getElementById("formArea").classList.contains("hidden"))return;
     const [reference,ready]=await Promise.all([
         ambilHmTerakhir(unit),
-        allocation?.operator_checkin_id ? ambilHmOperatorSiap(unit) : null
+        allocation?.operator_checkin_id || manualCheckin ? ambilHmOperatorSiap(unit) : null
     ]);
     if(unit!==currentUnit || checkedUnit!==unit ||
        document.getElementById("unitInput").value.trim().toUpperCase()!==unit ||
-       allocation!==(fuelingMode==="ccr" ? currentCCRAllocation : null))return;
+       allocation!==(fuelingMode==="ccr" ? currentCCRAllocation : null) ||
+       (manualCheckin && manualCheckin!==currentOperatorCheckin))return;
     previousHM=reference.hm;
     currentHmSource=reference.source;
     document.getElementById("previousHm").textContent=reference.hm>0
         ? reference.hm.toLocaleString("id-ID") : "Belum ada data";
     document.getElementById("hmSource").textContent=reference.source;
-    if(!allocation)return;
-    const actual=allocation.operator_checkin_id
-        ? (Number(ready?.checkin_id)===Number(allocation.operator_checkin_id) ? Number(ready.hm_actual) : null)
+    if(!allocation && !manualCheckin)return;
+    const linkedId=allocation?.operator_checkin_id || manualCheckin?.checkin_id;
+    const sameCheckin=linkedId && Number(ready?.checkin_id)===Number(linkedId);
+    if(manualCheckin && sameCheckin)currentOperatorCheckin=ready;
+    const actual=linkedId
+        ? (sameCheckin && ready.hm_actual!=null ? Number(ready.hm_actual) : null)
         : Number(allocation.hm_ccr);
     const hmInput=document.getElementById("currentHm");
     hmInput.value=actual===null ? "" : String(actual);
@@ -2340,7 +2345,8 @@ async function refreshFuelHmContext(){
         : difference<0 ? "HM Aktual di bawah patokan terbaru. Minta operator cek panel dan kirim ulang HM." : "";
     warning.textContent=message;
     warning.style.display=message?"block":"none";
-    setFuelingMode("ccr",message || "Siap Isi • Masukkan Qty aktual sesuai batas jatah CCR.");
+    setFuelingMode(allocation?"ccr":"manual",message ||
+        (allocation?"Siap Isi • Masukkan Qty aktual sesuai batas jatah CCR.":"Siap Isi • Masukkan Qty aktual."));
     return {actual,message};
 }
 
@@ -2974,6 +2980,19 @@ document
                     "Tekan CEK UNIT / AMBIL DATA kembali."
                 );
                 return;
+            }
+
+            if(!operatorless){
+                try{
+                    const current=await refreshFuelHmContext();
+                    if(!current || current.message){
+                        alert(current?.message || "Periksa kembali check-in unit.");
+                        return;
+                    }
+                }catch(error){
+                    alert(error.message || "Gagal memperbarui HM Aktual Operator.");
+                    return;
+                }
             }
 
             const currentHM =
