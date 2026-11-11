@@ -66,6 +66,7 @@ test('CCR keeps the planned HM and Fuelman records the actual HM from the linked
     await db.exec(`
       create role anon;
       create role authenticated;
+      alter table public.operator_unit_checkins add column hm_actual_source text;
       alter table public.unit_master add column fc_standard_lphm numeric, add column quota_tolerance_liter numeric;
       alter table public.fuel_history add column duplicate_of_id bigint, add column operator_checkin_id bigint;
       create table public.hm_corrections(unit text,tanggal date,jam time,hm numeric);
@@ -94,8 +95,11 @@ test('CCR keeps the planned HM and Fuelman records the actual HM from the linked
     const fuel=(id,qty=100)=>q(`select public.submit_ccr_fueling($1,$2,timezone('Asia/Jakarta',now())::time,$3,'FT0075',null,null) result`,[id,op.date,qty]);
     const actual=hm=>q(`select * from public.submit_operator_actual_hm(1,'DT7441','22222222-2222-4222-8222-222222222222',$1,now())`,[hm]);
     await assert.rejects(()=>fuel(1),/Menunggu HM Aktual Operator/);
+    await q(`update public.operator_unit_checkins set hm_actual=3927,hm_actual_at=now(),hm_actual_source='CCR',status='READY' where id=1`);
+    await assert.rejects(()=>fuel(1),/Menunggu HM Aktual Operator/);
     await assert.rejects(()=>actual(39999),/72 jam/);
     await actual(3929);
+    assert.equal((await q('select hm_actual_source from public.operator_unit_checkins where id=1'))[0].hm_actual_source,'OPERATOR');
     await q(`update public.fuel_history set hm_akhir=3930 where id=1`);
     await assert.rejects(()=>fuel(1),/patokan server terbaru/);
     await actual(3931);

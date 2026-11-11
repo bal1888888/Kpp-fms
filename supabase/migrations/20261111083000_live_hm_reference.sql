@@ -158,7 +158,7 @@ begin
   if not found then raise exception 'Check-in aktif tidak ditemukan atau HM sudah dikirim.';
   end if;
   select r.hm into v_ref from private.kpp_current_hm_reference(p_unit) r limit 1;
-  if v_row.status='READY' and (v_ref is null or v_row.hm_actual>=v_ref) then
+  if v_row.status='READY' and v_row.hm_actual_source is distinct from 'CCR' and (v_ref is null or v_row.hm_actual>=v_ref) then
     raise exception 'HM Aktual sudah dikirim dan masih berlaku.';
   end if;
   if v_ref is not null and p_actual_hm<v_ref then
@@ -180,7 +180,7 @@ begin
   end if;
   if v_observed_at<now()-interval '18 hours' then raise exception 'HM aktual terlalu lama. Lakukan check-in ulang.';
   end if;
-  update public.operator_unit_checkins c set hm_actual=round(p_actual_hm,1),hm_actual_at=v_observed_at,hm_actual_received_at=now(),status='READY',updated_at=now() where c.id=v_row.id returning * into v_row;
+  update public.operator_unit_checkins c set hm_actual=round(p_actual_hm,1),hm_actual_at=v_observed_at,hm_actual_received_at=now(),hm_actual_source='OPERATOR',status='READY',updated_at=now() where c.id=v_row.id returning * into v_row;
   return query select v_row.id,v_row.unit,v_row.operator_name,v_row.nrp,v_row.hm_awal,v_row.hm_actual,v_row.hm_actual_at,v_row.hm_actual_received_at,v_row.tanggal,v_row.shift,v_row.status;
 end;
 $function$;
@@ -248,7 +248,7 @@ begin
   if v_refuel_ts<v_hm_taken_ts then raise exception 'Jam refueling (%) lebih awal dari jam pengambilan HM (%)',p_jam,v_alloc.hm_taken_time;
   end if;
   v_elapsed_hours:=round(greatest(0,extract(epoch from (v_refuel_ts-v_hm_taken_ts))/3600.0)::numeric,1);
-  if v_checkin.id is not null then if v_checkin.status<>'READY' or v_checkin.hm_actual is null or v_checkin.hm_actual_at is null then raise exception 'Menunggu HM Aktual Operator. Minta operator mengirim HM pada check-in yang sama.';
+  if v_checkin.id is not null then if v_checkin.status<>'READY' or v_checkin.hm_actual is null or v_checkin.hm_actual_at is null or v_checkin.hm_actual_source='CCR' then raise exception 'Menunggu HM Aktual Operator. Minta operator mengirim HM pada check-in yang sama.';
   end if;
   if v_refuel_ts<date_trunc('second',timezone('Asia/Jakarta',v_checkin.hm_actual_at)) then raise exception 'Jam pengisian lebih awal dari pembacaan HM Aktual Operator.';
   end if;
@@ -325,3 +325,106 @@ begin
   );
 end;
 $function$;
+
+CREATE OR REPLACE FUNCTION public.operator_active_checkin_info(p_unit text, p_token uuid)
+ RETURNS TABLE(checkin_id bigint, unit text, operator_name text, nrp text, hm_awal numeric, hm_actual numeric, hm_actual_at timestamp with time zone, tanggal date, shift text, status text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_now timestamp;
+  v_date date;
+  v_shift text;
+begin
+  if not exists (
+    select 1
+    from public.unit_master u
+    join public.unit_checkin_tokens t
+      on t.unit = upper(trim(u.code_unit))
+    where upper(u.code_unit) = upper(trim(p_unit))
+      and t.token = p_token
+      and coalesce(u.active, true) = true
+  ) then
+    raise exception 'QR unit tidak valid atau unit tidak aktif.';
+  end if;
+
+  v_now := timezone('Asia/Jakarta', now());
+
+  if v_now::time < time '06:30' then
+    v_date := v_now::date - 1;
+    v_shift := 'Shift 2';
+  elsif v_now::time < time '18:30' then
+    v_date := v_now::date;
+    v_shift := 'Shift 1';
+  else
+    v_date := v_now::date;
+    v_shift := 'Shift 2';
+  end if;
+
+  return query
+  select
+    c.id,
+    c.unit,
+    c.operator_name,
+    c.nrp,
+    c.hm_awal,
+    case when c.hm_actual_source='CCR' then null else c.hm_actual end,
+    case when c.hm_actual_source='CCR' then null else c.hm_actual_at end,
+    c.tanggal,
+    c.shift,
+    case when c.status='READY' and c.hm_actual_source='CCR' then 'ACTIVE' else c.status end
+  from public.operator_unit_checkins c
+  where upper(c.unit) = upper(trim(p_unit))
+    and c.tanggal = v_date
+    and c.shift = v_shift
+    and c.status in ('ACTIVE', 'READY')
+  order by c.id desc
+  limit 1;
+end;
+$function$
+;
+CREATE OR REPLACE FUNCTION public.get_ready_operator_checkin(p_unit text, p_tanggal date, p_shift text)
+ RETURNS TABLE(checkin_id bigint, unit text, operator_name text, nrp text, hm_awal numeric, hm_actual numeric, hm_actual_at timestamp with time zone, hm_actual_received_at timestamp with time zone, tanggal date, shift text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_role text;
+begin
+  v_role := public.current_staff_role();
+
+  if auth.uid() is null or coalesce(v_role,'') not in ('admin','gl','atasan','fuelman') then
+    raise exception
+      'Role % tidak diizinkan mengambil HM operator.',
+      coalesce(v_role, '-');
+  end if;
+
+  return query
+  select
+    c.id,
+    c.unit,
+    c.operator_name,
+    c.nrp,
+    c.hm_awal,
+    c.hm_actual,
+    c.hm_actual_at,
+    c.hm_actual_received_at,
+    c.tanggal,
+    c.shift
+  from public.operator_unit_checkins c
+  where upper(c.unit) = upper(trim(p_unit))
+    and c.tanggal = p_tanggal
+    and c.shift = p_shift
+    and c.status = 'READY'
+    and c.hm_actual_source is distinct from 'CCR'
+    and c.fuel_history_id is null
+    and private.kpp_shift_is_current(c.tanggal,c.shift)
+  order by
+    c.hm_actual_received_at desc,
+    c.id desc
+  limit 1;
+end;
+$function$
+;

@@ -169,7 +169,7 @@
     try{
       const row=await fetchCheckin(chosen.id);
       if(CURRENT_OPERATOR_CHECKIN?.id!==row.id || !target.isConnected)return;
-      const hm=number(row.hm_actual);
+      const hm=row.hm_actual_source==='CCR'?null:number(row.hm_actual);
       target.textContent=hm===null?"Menunggu HM Aktual Operator.":`HM Aktual Operator ${fmt(hm,1)}.`;
     }catch(_){
       target.textContent="HM Aktual Operator gagal dibaca.";
@@ -251,7 +251,7 @@
 
   async function fetchCheckin(id){
     const client=db();if(!client)throw new Error("Database belum siap.");
-    const {data,error}=await client.from("operator_unit_checkins").select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status,hm_actual,hm_actual_at,hm_actual_received_at,fuel_history_id").eq("id",id).maybeSingle();
+    const {data,error}=await client.from("operator_unit_checkins").select("id,created_at,tanggal,jam,shift,unit,egi,operator_name,nrp,hm_awal,status,hm_actual,hm_actual_at,hm_actual_received_at,hm_actual_source,fuel_history_id").eq("id",id).maybeSingle();
     if(error)throw error;if(!data)throw new Error("Check-in tidak ditemukan. Refresh monitoring.");return data;
   }
 
