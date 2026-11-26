@@ -2831,6 +2831,7 @@ async function deleteMovement(id){
     }
 
     await loadStock();
+    if(row.jenis==="RECEIPT")await reloadReceiptPendingDO();
     await finishStockSave(true,"Transaksi stock sudah dihapus.");
 }
 
@@ -2870,6 +2871,7 @@ async function deleteSelectedMovements(){
     }
 
     await loadStock();
+    await reloadReceiptPendingDO();
     await finishStockSave(true,ids.length+" transaksi stock sudah dihapus.");
 }
 
@@ -5151,6 +5153,7 @@ async function saveOpening(){
 
 
 const RECEIPT_PENDING_DO=new Map();
+const RECEIPT_DO_HISTORY=new Map();
 let RECEIPT_PENDING_SEQ=0;
 const doIdentity=v=>String(v||"").trim().toUpperCase().replace(/\s+/g,"");
 async function reloadReceiptPendingDO(){
@@ -5160,8 +5163,9 @@ async function reloadReceiptPendingDO(){
     const targetDate=getPeriod().tanggal;
     const seq=++RECEIPT_PENDING_SEQ;
     RECEIPT_PENDING_DO.clear();
+    RECEIPT_DO_HISTORY.clear();
     picker.replaceChildren(new Option("DO baru / belum memilih DO lama",""));
-    if(!transporter||!targetDate){hint.textContent="Pilih transportir untuk menampilkan DO belum selesai.";return;}
+    if(!transporter||!targetDate){hint.textContent="Pilih transportir untuk menampilkan DO belum selesai.";return false;}
     const since=new Date(targetDate+"T12:00:00Z");
     since.setUTCDate(since.getUTCDate()-14);
     try{
@@ -5186,6 +5190,7 @@ async function reloadReceiptPendingDO(){
             if(r.do_final===true)group.done=true;
         }
         for(const [key,group] of groups){
+            RECEIPT_DO_HISTORY.set(key,group);
             if(group.done||!group.valid||!group.quantity)continue;
             RECEIPT_PENDING_DO.set(key,group);
             picker.add(new Option(group.reference+" • "+group.day+" • "+
@@ -5197,10 +5202,24 @@ async function reloadReceiptPendingDO(){
         hint.textContent=RECEIPT_PENDING_DO.size?
           "Pilih DO yang belum selesai untuk mengisi nomor dan Qty DO otomatis.":
           "Tidak ada DO terbuka dalam 14 hari terakhir untuk transportir ini.";
+        return true;
     }catch(error){
-        if(seq===RECEIPT_PENDING_SEQ)hint.textContent="Daftar DO belum tersedia: "+error.message+". Masukkan nomor secara teliti.";
+        if(seq===RECEIPT_PENDING_SEQ)hint.textContent="Daftar DO belum tersedia: "+error.message+". Coba refresh daftar DO sebelum menyimpan.";
+        return false;
     }
 }
+let RECEIPT_PENDING_LAST_REFRESH=0;
+function refreshReceiptPendingDOOnReturn(){
+    if(document.visibilityState==="hidden")return;
+    const now=Date.now();
+    if(now-RECEIPT_PENDING_LAST_REFRESH<1500)return;
+    RECEIPT_PENDING_LAST_REFRESH=now;
+    const transporter=document.getElementById("receiptTransporter")?.value;
+    if(transporter)void reloadReceiptPendingDO();
+}
+window.addEventListener("focus",refreshReceiptPendingDOOnReturn);
+document.addEventListener("visibilitychange",refreshReceiptPendingDOOnReturn);
+
 function selectReceiptPendingDO(){
     const picker=document.getElementById("receiptPendingDO");
     const group=RECEIPT_PENDING_DO.get(picker.value);
@@ -5277,6 +5296,24 @@ async function saveReceipt(){
 
     if(!transporter){
         alert("Pilih perusahaan transportir.");
+        return;
+    }
+
+    // Always rebuild the DO group from current database rows before validating totals.
+    // This prevents deleted rows or stale tabs from keeping an obsolete PO/DO locked.
+    const pendingReady=await reloadReceiptPendingDO();
+    if(!pendingReady){
+        alert("Daftar DO belum berhasil disinkronkan dari server. Periksa koneksi lalu coba simpan kembali.");
+        return;
+    }
+
+    const historicalDO=RECEIPT_DO_HISTORY.get(doIdentity(document_reference));
+    if(historicalDO?.done){
+        alert("PO/DO ini sudah ditandai SELESAI pada penerimaan sebelumnya. Gunakan nomor DO yang benar untuk pengiriman baru, atau lakukan revisi status DO melalui History Penerimaan.");
+        return;
+    }
+    if(historicalDO && (!historicalDO.valid || historicalDO.quantity!==do_qty_liter)){
+        alert("Data penerimaan sebelumnya dengan nomor PO/DO ini tidak konsisten. Periksa History Penerimaan sebelum melanjutkan.");
         return;
     }
 
