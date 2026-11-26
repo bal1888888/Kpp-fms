@@ -5153,6 +5153,7 @@ async function saveOpening(){
 
 
 const RECEIPT_PENDING_DO=new Map();
+const RECEIPT_DO_HISTORY=new Map();
 let RECEIPT_PENDING_SEQ=0;
 const doIdentity=v=>String(v||"").trim().toUpperCase().replace(/\s+/g,"");
 async function reloadReceiptPendingDO(){
@@ -5162,6 +5163,7 @@ async function reloadReceiptPendingDO(){
     const targetDate=getPeriod().tanggal;
     const seq=++RECEIPT_PENDING_SEQ;
     RECEIPT_PENDING_DO.clear();
+    RECEIPT_DO_HISTORY.clear();
     picker.replaceChildren(new Option("DO baru / belum memilih DO lama",""));
     if(!transporter||!targetDate){hint.textContent="Pilih transportir untuk menampilkan DO belum selesai.";return false;}
     const since=new Date(targetDate+"T12:00:00Z");
@@ -5188,6 +5190,7 @@ async function reloadReceiptPendingDO(){
             if(r.do_final===true)group.done=true;
         }
         for(const [key,group] of groups){
+            RECEIPT_DO_HISTORY.set(key,group);
             if(group.done||!group.valid||!group.quantity)continue;
             RECEIPT_PENDING_DO.set(key,group);
             picker.add(new Option(group.reference+" • "+group.day+" • "+
@@ -5301,6 +5304,16 @@ async function saveReceipt(){
     const pendingReady=await reloadReceiptPendingDO();
     if(!pendingReady){
         alert("Daftar DO belum berhasil disinkronkan dari server. Periksa koneksi lalu coba simpan kembali.");
+        return;
+    }
+
+    const historicalDO=RECEIPT_DO_HISTORY.get(doIdentity(document_reference));
+    if(historicalDO?.done){
+        alert("PO/DO ini sudah ditandai SELESAI pada penerimaan sebelumnya. Gunakan nomor DO yang benar untuk pengiriman baru, atau lakukan revisi status DO melalui History Penerimaan.");
+        return;
+    }
+    if(historicalDO && (!historicalDO.valid || historicalDO.quantity!==do_qty_liter)){
+        alert("Data penerimaan sebelumnya dengan nomor PO/DO ini tidak konsisten. Periksa History Penerimaan sebelum melanjutkan.");
         return;
     }
 
