@@ -2662,6 +2662,32 @@ function closeMovementEditor(){
         .classList.add("hidden");
 }
 
+async function reviseMeasuredTransferDestination(id){
+    if(!canReviseClosing()){alert('Revisi tujuan transfer sounding khusus GL/Admin.');return;}
+    const row=CURRENT_MOVEMENTS.find(item=>String(item.id)===String(id));
+    if(!row || row.jenis!=='TRANSFER' || row.calculation_method!=='TRANSFER_SOURCE_AND_DESTINATION_TERA'){alert('Transaksi transfer sounding tidak ditemukan.');return;}
+    const latestTransfer=CURRENT_MOVEMENTS.filter(item=>item.jenis==='TRANSFER').sort((a,b)=>Number(b.id)-Number(a.id))[0];
+    if(!latestTransfer || String(latestTransfer.id)!==String(row.id)){alert('Revisi hanya tersedia untuk transaksi TRANSFER paling terakhir. Refresh halaman.');return;}
+    const activeFT=STORAGE_ROWS.filter(item=>item.active && item.storage_type==='FT');
+    const options=activeFT.map(item=>item.code).filter(code=>code!==row.destination_storage);
+    const suggested=options.includes('FT0077')?'FT0077':(options[0]||'');
+    const destination=prompt('Tujuan FT baru. Tujuan saat ini: '+row.destination_storage+'\nPilihan: '+options.join(', '),suggested);
+    if(destination===null)return;
+    const newDestination=destination.trim().toUpperCase();
+    if(!options.includes(newDestination)){alert('Pilih kode FT aktif dari daftar: '+options.join(', '));return;}
+    const reason=prompt('Alasan revisi tujuan (minimal 10 karakter). Data sounding dan Qty tidak akan diubah:');
+    if(reason===null)return;
+    if(reason.trim().length<10 || reason.trim().length>350){alert('Alasan wajib 10–350 karakter.');return;}
+    const confirmation='KONFIRMASI REVISI TRANSFER TERAKHIR\n\nID: '+row.id+' | '+row.tanggal+' Shift '+row.shift+'\nSumber: '+row.source_storage+'\nTujuan: '+row.destination_storage+' -> '+newDestination+'\nQty: '+fmt(row.qty)+' Liter\n\nSeluruh angka sounding tetap. Lanjutkan?';
+    if(!confirm(confirmation))return;
+    if(!beginStockSave('Menyimpan revisi tujuan transfer dan audit...'))return;
+    let data,error;
+    try{({data,error}=await stockWithDeadline(db.rpc('revise_stock_transfer_destination',{p_movement_id:Number(row.id),p_new_destination:newDestination,p_reason:reason.trim()}),20000,'Revisi tujuan transfer'));}
+    catch(callError){await finishStockSave(false,'Status revisi belum terkonfirmasi: '+callError.message+'. Refresh riwayat sebelum mencoba ulang.');return;}
+    if(error || !data || data.ok!==true){await finishStockSave(false,error?.message||data?.message||'Server menolak revisi tujuan transfer.');return;}
+    await finishStockSave(true,'Revisi berhasil. Tujuan '+data.old_destination+' -> '+data.new_destination+'; Qty '+fmt(data.qty_liter)+' L tetap; audit tercatat. Baris Closing disinkronkan: '+data.closing_rows_reconciled+'.');
+    await loadStock();
+}
 async function saveMovementEdit(){
     if(!isStockEditor()){
         alert("Khusus GL/Admin/Atasan.");
@@ -5050,6 +5076,7 @@ function renderMovement(movementData,fuelData){
                     canEdit && isMovement
                         ? `
                             <button class="edit-btn small-btn" type="button" onclick="openMovementEditor(${row.id})">EDIT</button>
+                            ${row.jenis==="TRANSFER" && row.calculation_method==="TRANSFER_SOURCE_AND_DESTINATION_TERA" && canReviseClosing() ? `<button class="primary small-btn" type="button" onclick="reviseMeasuredTransferDestination(${row.id})">REVISI TUJUAN</button>` : ""}
                             <button class="danger small-btn" type="button" onclick="deleteMovement(${row.id})">HAPUS</button>
                           `
                         : "-"
