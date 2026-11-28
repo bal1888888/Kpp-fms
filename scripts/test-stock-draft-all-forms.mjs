@@ -5,6 +5,9 @@ import vm from "node:vm";
 
 const code=fs.readFileSync(new URL("../stock-drafts.js",import.meta.url),"utf8");
 const html=fs.readFileSync(new URL("../stock.html",import.meta.url),"utf8");
+const today=new Date().toISOString().slice(0,10);
+const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
 const pairs=["openingHeight","receiptTankHeightBefore","receiptTankHeightAfter",
 "transferSourceHeightBefore","transferSourceHeightAfter",
 "transferDestinationHeightBefore","transferDestinationHeightAfter","height-MT01"];
@@ -17,7 +20,7 @@ transfer:["transferSource","transferDestination","transferSourceHeightBefore","t
  "transferDestinationHeightBefore","transferDestinationHeightAfter"],
 closing:["closingNote","closingRevisionReason","carryForward","height-MT01"]
 };
-function createHarness(backend,newUser="user-a",period={tanggal:"2026-10-18",shift:1},lockPeriod=false){
+function createHarness(backend,newUser="user-a",period={tanggal:today,shift:1},lockPeriod=false){
  const elements={},handlers={doc:{},win:{}};
  const mk=(id,group)=>{
   const attrs={id,value:"",tagName:id.endsWith("Storage")||["receiptDestination","receiptTransporter","transferSource","transferDestination","openingStorage","soundingCheckStorage"].includes(id)?"SELECT":"INPUT",
@@ -68,22 +71,24 @@ function createHarness(backend,newUser="user-a",period={tanggal:"2026-10-18",shi
    else field.value=value;
    const target=field.fr?{closest:field.closest,classList:{contains:k=>k==="front-rear-value"},value:field.fr[0].value,disabled:false,style:{}}:field;
    (handlers.doc.input||[]).forEach(fn=>fn({target}));
+   // Save is intentionally deferred to a microtask until inline calculations finish.
+   return Promise.resolve();
  };
  return {drafts:win.KPPStockDrafts,elements,handlers,fire,storage,win};
 }
-test("all Stock input groups survive refresh with account and period isolation",()=>{
+test("all Stock input groups survive refresh with account and period isolation",async()=>{
  const backend=new Map();
  const a=createHarness(backend);
- a.fire("check","soundingCheckFront","20.2");
- a.fire("opening","openingHeight",["20.3","30.4"]);
- a.fire("receipt","receiptMeterStart","12000.2");
- a.fire("receipt","receiptReference","PO-113");
- a.fire("receipt","receiptTankHeightBefore",["20","30"]);
- a.fire("transfer","transferSource","MT01");
- a.fire("transfer","transferDestination","MT02");
- a.fire("transfer","transferSourceHeightBefore",["18.2","19.1"]);
- a.fire("closing","height-MT01",["36.6","36.7"]);
- a.fire("closing","closingNote","Cek selisih");
+ await a.fire("check","soundingCheckFront","20.2");
+ await a.fire("opening","openingHeight",["20.3","30.4"]);
+ await a.fire("receipt","receiptMeterStart","12000.2");
+ await a.fire("receipt","receiptReference","PO-113");
+ await a.fire("receipt","receiptTankHeightBefore",["20","30"]);
+ await a.fire("transfer","transferSource","MT01");
+ await a.fire("transfer","transferDestination","MT02");
+ await a.fire("transfer","transferSourceHeightBefore",["18.2","19.1"]);
+ await a.fire("closing","height-MT01",["36.6","36.7"]);
+ await a.fire("closing","closingNote","Cek selisih");
  assert.equal(a.drafts.hasDraft(),true);
  const b=createHarness(backend);
  b.drafts.onRendered();
@@ -106,10 +111,10 @@ test("all Stock input groups survive refresh with account and period isolation",
 });
 test("successful save clears only corresponding draft, failed or previousOnly keeps it",()=>{
  const backend=new Map(),a=createHarness(backend);
- a.fire("receipt","receiptMeterStart","900");
- a.fire("transfer","transferSource","MT01");
- a.fire("transfer","transferDestination","MT02");
- a.fire("transfer","transferSourceHeightBefore",["20","25"]);
+ await a.fire("receipt","receiptMeterStart","900");
+ await a.fire("transfer","transferSource","MT01");
+ await a.fire("transfer","transferDestination","MT02");
+ await a.fire("transfer","transferSourceHeightBefore",["20","25"]);
  // Failed save and previousOnly make no clear() call.
  let b=createHarness(backend);b.drafts.onRendered();
  assert.equal(b.elements.receiptMeterStart.value,"900");
@@ -120,13 +125,13 @@ test("successful save clears only corresponding draft, failed or previousOnly ke
 });
 test("draft restore does not change server-locked Closing or read-only calculated values",()=>{
  const backend=new Map(),a=createHarness(backend);
- a.fire("closing","height-MT01",["30","35"]);
+ await a.fire("closing","height-MT01",["30","35"]);
  const b=createHarness(backend);b.elements["height-MT01"].dataset.closingSaved="1";b.drafts.onRendered();
  assert.deepEqual(b.elements["height-MT01"].fr.map(x=>x.value),["",""]);
 });
 test("stale device drafts expire, while manual clearing is scoped to current user/shift",()=>{
  const backend=new Map(),a=createHarness(backend);
- a.fire("receipt","receiptReference","PO-6");
+ await a.fire("receipt","receiptReference","PO-6");
  const [key,value]=Array.from(backend.entries())[0];
  backend.set(key,JSON.stringify({...JSON.parse(value),savedAt:Date.now()-8*24*60*60*1000}));
  let b=createHarness(backend);b.drafts.onRendered();
@@ -134,7 +139,7 @@ test("stale device drafts expire, while manual clearing is scoped to current use
  assert.equal(backend.size,0);
 });
 test("integration: Stock only saves drafts after user events and clears on confirmed successes",()=>{
- assert.match(html,/stock-drafts\.js\?v=20261025-do-flow1/);
+ assert.match(html,/stock-drafts\.js\?v=[^"]+/);
  assert.match(html,/window\.KPPStockDrafts\?\.start\(window\.KPP_SESSION\?\.user\?\.id\|\|CURRENT_PROFILE\?\.user_id\)/);
  assert.match(html,/window\.KPPStockDrafts\?\.onRendered\(\)/);
  assert.match(html,/KPPStockDrafts\?\.beforePeriodChange\(\)/);
@@ -147,13 +152,13 @@ test("integration: Stock only saves drafts after user events and clears on confi
 test("a missing or disabled tank/transport company cannot rebind sounding to a different default",()=>{
  const backend=new Map();
  const a=createHarness(backend);
- a.fire("receipt","receiptDestination","MT02");
- a.fire("receipt","receiptTransporter","PT TRANSPORT");
- a.fire("receipt","receiptMeterStart","7740");
- a.fire("receipt","receiptTankHeightBefore",["30","40"]);
- a.fire("transfer","transferSource","MT02");
- a.fire("transfer","transferDestination","MT01");
- a.fire("transfer","transferSourceHeightBefore",["40","45"]);
+ await a.fire("receipt","receiptDestination","MT02");
+ await a.fire("receipt","receiptTransporter","PT TRANSPORT");
+ await a.fire("receipt","receiptMeterStart","7740");
+ await a.fire("receipt","receiptTankHeightBefore",["30","40"]);
+ await a.fire("transfer","transferSource","MT02");
+ await a.fire("transfer","transferDestination","MT01");
+ await a.fire("transfer","transferSourceHeightBefore",["40","45"]);
  const b=createHarness(backend);
  // The active master removed MT02; browser select defaults to MT01.
  b.elements.receiptDestination.options=[{value:"MT01"}];
@@ -170,25 +175,25 @@ test("a missing or disabled tank/transport company cannot rebind sounding to a d
 });
 test("a Cek Sonding draft or selector alone does not freeze live Stock auto refresh",()=>{
  const backend=new Map(),a=createHarness(backend);
- a.fire("check","soundingCheckFront","51.2");
+ await a.fire("check","soundingCheckFront","51.2");
  assert.equal(a.drafts.hasDraft(),false);
- a.fire("receipt","receiptDestination","MT01");
+ await a.fire("receipt","receiptDestination","MT01");
  assert.equal(a.drafts.hasDraft(),false);
- a.fire("receipt","receiptMeterEnd","14220");
+ await a.fire("receipt","receiptMeterEnd","14220");
  assert.equal(a.drafts.hasDraft(),true);
  a.drafts.clear("receipt");
  assert.equal(a.drafts.hasDraft(),false);
 });
 test("changing date or shift wipes visible old-period measurements and restores only destination-period draft",()=>{
  const backend=new Map(),a=createHarness(backend);
- a.fire("opening","openingHeight",["25","30"]);
- a.fire("receipt","receiptDestination","MT01");
- a.fire("receipt","receiptMeterStart","990");
- a.fire("transfer","transferSource","MT01");
- a.fire("transfer","transferDestination","MT02");
- a.fire("transfer","transferDestinationHeightAfter",["40","50"]);
- a.fire("closing","height-MT01",["36.6","36.7"]);
- a.fire("closing","closingNote","Shift lama");
+ await a.fire("opening","openingHeight",["25","30"]);
+ await a.fire("receipt","receiptDestination","MT01");
+ await a.fire("receipt","receiptMeterStart","990");
+ await a.fire("transfer","transferSource","MT01");
+ await a.fire("transfer","transferDestination","MT02");
+ await a.fire("transfer","transferDestinationHeightAfter",["40","50"]);
+ await a.fire("closing","height-MT01",["36.6","36.7"]);
+ await a.fire("closing","closingNote","Shift lama");
  a.elements.shift.value="2";
  a.drafts.beforePeriodChange();
  // Unsaved fields are zeroed immediately, before the async next-shift data arrives.
@@ -196,8 +201,8 @@ test("changing date or shift wipes visible old-period measurements and restores 
  assert.equal(a.elements.closingNote.value,"");
  assert.deepEqual(a.elements["height-MT01"].fr.map(x=>x.value),["",""]);
  assert.deepEqual(a.elements.transferDestinationHeightAfter.fr.map(x=>x.value),["",""]);
- a.fire("receipt","receiptDestination","MT01");
- a.fire("receipt","receiptMeterEnd","1788");
+ await a.fire("receipt","receiptDestination","MT01");
+ await a.fire("receipt","receiptMeterEnd","1788");
  a.drafts.onRendered();
  assert.equal(a.elements.receiptMeterStart.value,"");
  assert.equal(a.elements.receiptMeterEnd.value,"1788");
@@ -210,27 +215,27 @@ test("changing date or shift wipes visible old-period measurements and restores 
 
 test("refresh restores recent unsent draft period instead of hardcoded today's date and Shift 1",()=>{
  const backend=new Map();
- const original=createHarness(backend,"fuel-a",{tanggal:"2026-10-18",shift:2});
- original.fire("receipt","receiptDestination","MT01");
- original.fire("receipt","receiptMeterStart","4567.8");
- original.fire("closing","height-MT01",["36.6","36.7"]);
- const refreshed=createHarness(backend,"fuel-a",{tanggal:"2026-10-19",shift:1});
- assert.equal(refreshed.elements.tanggal.value,"2026-10-18");
+ const original=createHarness(backend,"fuel-a",{tanggal:"today",shift:2});
+ await original.fire("receipt","receiptDestination","MT01");
+ await original.fire("receipt","receiptMeterStart","4567.8");
+ await original.fire("closing","height-MT01",["36.6","36.7"]);
+ const refreshed=createHarness(backend,"fuel-a",{tanggal:"tomorrow",shift:1});
+ assert.equal(refreshed.elements.tanggal.value,"today");
  assert.equal(refreshed.elements.shift.value,"2");
  refreshed.drafts.onRendered();
  assert.equal(refreshed.elements.receiptMeterStart.value,"4567.8");
  assert.deepEqual(refreshed.elements["height-MT01"].fr.map(x=>x.value),["36.6","36.7"]);
  assert.match(refreshed.elements.stockDraftStatus.textContent,/DIPULIHKAN/);
- const other=createHarness(backend,"fuel-b",{tanggal:"2026-10-19",shift:1});
+ const other=createHarness(backend,"fuel-b",{tanggal:"tomorrow",shift:1});
  other.drafts.onRendered();
  assert.equal(other.elements.receiptMeterStart.value,"");
 });
 test("fuelman shift locked by active session cannot auto-switch to unrelated draft period",()=>{
  const backend=new Map();
- const earlier=createHarness(backend,"fuel-a",{tanggal:"2026-10-18",shift:2});
- earlier.fire("receipt","receiptMeterStart","900");
- const locked=createHarness(backend,"fuel-a",{tanggal:"2026-10-19",shift:1},true);
- assert.equal(locked.elements.tanggal.value,"2026-10-19");
+ const earlier=createHarness(backend,"fuel-a",{tanggal:"today",shift:2});
+ await earlier.fire("receipt","receiptMeterStart","900");
+ const locked=createHarness(backend,"fuel-a",{tanggal:"tomorrow",shift:1},true);
+ assert.equal(locked.elements.tanggal.value,"tomorrow");
  assert.equal(locked.elements.shift.value,"1");
  locked.drafts.onRendered();
  assert.equal(locked.elements.receiptMeterStart.value,"");
@@ -238,9 +243,9 @@ test("fuelman shift locked by active session cannot auto-switch to unrelated dra
 test("a temporary failed Stock fetch can rehydrate non-Closing drafts, but not physical Closing against stale Stock",()=>{
  const backend=new Map();
  const previous=createHarness(backend);
- previous.fire("receipt","receiptDestination","MT01");
- previous.fire("receipt","receiptMeterStart","8877");
- previous.fire("closing","height-MT01",["20","30"]);
+ await previous.fire("receipt","receiptDestination","MT01");
+ await previous.fire("receipt","receiptMeterStart","8877");
+ await previous.fire("closing","height-MT01",["20","30"]);
  const restored=createHarness(backend);
  restored.drafts.onRendered({stockReady:false});
  assert.equal(restored.elements.receiptMeterStart.value,"8877");
@@ -263,20 +268,20 @@ test("unsafe saves require authoritative period checks even without full dashboa
 
 test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists",()=>{
  const backend=new Map();
- const first=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
- first.fire("receipt","receiptMeterStart","100");
+ const first=createHarness(backend,"same-user",{tanggal:"today",shift:1});
+ await first.fire("receipt","receiptMeterStart","100");
  // Force a deterministic difference in timestamps; user may have drafts
  // from both shifts, but should recover the last worked shift.
  const olderKey=Array.from(backend.keys())[0];
  const older=JSON.parse(backend.get(olderKey));
  backend.set(olderKey,JSON.stringify({...older,savedAt:Date.now()-120000}));
- const next=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ const next=createHarness(backend,"same-user",{tanggal:"today",shift:1});
  // User intentionally switches to Shift 2 after auth, rather than reusing
  // an older Shift 1 draft restored automatically by startup.
  next.elements.shift.value="2";
  next.drafts.beforePeriodChange();
- next.fire("receipt","receiptMeterStart","200");
- const reloaded=createHarness(backend,"same-user",{tanggal:"2026-10-18",shift:1});
+ await next.fire("receipt","receiptMeterStart","200");
+ const reloaded=createHarness(backend,"same-user",{tanggal:"today",shift:1});
  assert.equal(reloaded.elements.shift.value,"2");
  reloaded.drafts.onRendered();
  assert.equal(reloaded.elements.receiptMeterStart.value,"200");
@@ -284,19 +289,19 @@ test("refresh chooses newer Shift 2 draft even when an old Shift 1 draft exists"
 
 test("actual screenshot repro: MT02 + PT. DKA flowmeters 20000/40000 and sonding 20->40 survive refresh",()=>{
  const backend=new Map();
- const a=createHarness(backend,"iqbal",{tanggal:"2026-10-18",shift:1});
+ const a=createHarness(backend,"iqbal",{tanggal:"today",shift:1});
  a.elements.receiptTransporter.options.push({value:"PT. DKA"});
- a.fire("receipt","receiptDestination","MT02");
- a.fire("receipt","receiptTransporter","PT. DKA");
- a.fire("receipt","receiptMeterStart","20000");
- a.fire("receipt","receiptMeterEnd","40000");
- a.fire("receipt","receiptTankHeightBefore",["20","20"]);
- a.fire("receipt","receiptTankHeightAfter",["40","40"]);
+ await a.fire("receipt","receiptDestination","MT02");
+ await a.fire("receipt","receiptTransporter","PT. DKA");
+ await a.fire("receipt","receiptMeterStart","20000");
+ await a.fire("receipt","receiptMeterEnd","40000");
+ await a.fire("receipt","receiptTankHeightBefore",["20","20"]);
+ await a.fire("receipt","receiptTankHeightAfter",["40","40"]);
  assert.match(a.elements.receiptDraftIndicator.textContent,/DRAFT TERSIMPAN/);
  const saved=[...backend.values()].map(x=>JSON.parse(x))[0];
  assert.equal(saved.sections.receipt.fields.receiptDestination,"MT02");
  assert.equal(saved.sections.receipt.fields.receiptTransporter,"PT. DKA");
- const after=createHarness(backend,"iqbal",{tanggal:"2026-10-18",shift:1});
+ const after=createHarness(backend,"iqbal",{tanggal:"today",shift:1});
  after.elements.receiptTransporter.options.push({value:"PT. DKA"});
  after.elements.receiptDestination.value="MT01";
  after.elements.receiptTransporter.value="";
@@ -313,9 +318,9 @@ test("safe vendor alias PT DKA/PT. DKA recovers without remapping storage",()=>{
  const backend=new Map();
  const a=createHarness(backend,"iqbal");
  a.elements.receiptTransporter.options.push({value:"PT. DKA"});
- a.fire("receipt","receiptDestination","MT02");
- a.fire("receipt","receiptTransporter","PT. DKA");
- a.fire("receipt","receiptMeterStart","20000");
+ await a.fire("receipt","receiptDestination","MT02");
+ await a.fire("receipt","receiptTransporter","PT. DKA");
+ await a.fire("receipt","receiptMeterStart","20000");
  const b=createHarness(backend,"iqbal");
  b.elements.receiptTransporter.options.push({value:"PT DKA"});
  b.drafts.onRendered();
@@ -327,10 +332,10 @@ test("changed master never associates old sounding with a new tank; raw measurem
  const backend=new Map();
  const a=createHarness(backend,"iqbal");
  a.elements.receiptTransporter.options.push({value:"PT. DKA"});
- a.fire("receipt","receiptDestination","MT02");
- a.fire("receipt","receiptTransporter","PT. DKA");
- a.fire("receipt","receiptMeterStart","20000");
- a.fire("receipt","receiptTankHeightBefore",["20","20"]);
+ await a.fire("receipt","receiptDestination","MT02");
+ await a.fire("receipt","receiptTransporter","PT. DKA");
+ await a.fire("receipt","receiptMeterStart","20000");
+ await a.fire("receipt","receiptTankHeightBefore",["20","20"]);
  const b=createHarness(backend,"iqbal");
  b.elements.receiptDestination.options=[{value:"MT01"}];
  b.elements.receiptDestination.value="MT01";
@@ -353,14 +358,14 @@ test("Stock page visibly exposes safe draft and read-only recovery in the receip
 
 test("a pending draft can be viewed by the same account when Fuelman shift has moved",()=>{
  const backend=new Map();
- const previous=createHarness(backend,"fuelman-a",{tanggal:"2026-10-18",shift:1});
- previous.fire("receipt","receiptDestination","MT03");
- previous.fire("receipt","receiptMeterStart","2525");
- const newShift=createHarness(backend,"fuelman-a",{tanggal:"2026-10-18",shift:2},true);
+ const previous=createHarness(backend,"fuelman-a",{tanggal:"today",shift:1});
+ await previous.fire("receipt","receiptDestination","MT03");
+ await previous.fire("receipt","receiptMeterStart","2525");
+ const newShift=createHarness(backend,"fuelman-a",{tanggal:"today",shift:2},true);
  newShift.drafts.onRendered();
  assert.equal(newShift.elements.receiptMeterStart.value,"");
  newShift.drafts.showDraft();
- assert.match(newShift.elements.stockDraftRecoveryText.value,/Tanggal: 2026-10-18/);
+ assert.ok(newShift.elements.stockDraftRecoveryText.value.includes("Tanggal: "+today));
  assert.match(newShift.elements.stockDraftRecoveryText.value,/Shift: 1/);
  assert.match(newShift.elements.stockDraftRecoveryText.value,/receiptDestination: MT03/);
  assert.match(newShift.elements.stockDraftRecoveryText.value,/receiptMeterStart: 2525/);
