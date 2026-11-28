@@ -159,13 +159,19 @@ test('Dashboard combines MTD supply with H-1 working total and independent shift
  assert.equal(typeof api().calculateDashboard,'function');
  const r=api().calculateDashboard(periodFixture());
  assert.equal(r.supply.qty,-10000);assert.equal(r.supply.percent,-50);
- assert.equal(r.workingDate,'2026-10-23');assert.equal(r.working.qty,10);
- assert.equal(r.workingByShift[1].qty,20);assert.equal(r.workingByShift[1].percent,2.5);
- assert.equal(r.workingByShift[2].qty,-10);assert.equal(r.workingByShift[2].percent,-10);
+ assert.equal(r.workingDate,'2026-10-23');
+ // Dashboard keeps MTD aggregates separate from the selected H-1 daily result.
+ assert.equal(r.working.qty,35);assert.equal(r.working.percent,2.692308);
+ assert.equal(r.dailyWorking.qty,10);
+ assert.equal(r.dailyWorkingByShift[1].qty,20);assert.equal(r.dailyWorkingByShift[1].percent,2.5);
+ assert.equal(r.dailyWorkingByShift[2].qty,-10);assert.equal(r.dailyWorkingByShift[2].percent,-10);
 });
 test('missing older closing does not hide completed H-1 working results',()=>{
  const f=periodFixture();f.closings=f.closings.filter(r=>r.tanggal===f.endDate);
- const r=api().calculateDashboard(f);assert.equal(r.working.status,'complete');assert.equal(r.working.qty,10);assert.equal(r.supply.qty,-10000);
+ const r=api().calculateDashboard(f);
+ assert.equal(r.working.status,'incomplete'); // MTD remains incomplete because an older day is missing.
+ assert.equal(r.dailyWorking.status,'complete'); // H-1 is independently complete.
+ assert.equal(r.dailyWorking.qty,10);assert.equal(r.supply.qty,-10000);
 });
 
 test('one DO split across MT and FT uses DO only once; unfinished DO never generates fake loss',()=>{
