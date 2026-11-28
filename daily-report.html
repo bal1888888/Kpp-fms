@@ -1064,8 +1064,12 @@ async function loadReport(){
     let dailyLoss;
     try{dailyLoss=await window.KPPDailyLoss.load(db,yesterday,yRows,STORAGE_ROWS);}
     catch(error){console.warn("Daily loss:",error);dailyLoss=window.KPPDailyLoss.unavailable(yesterday,"Gagal memuat");}
+    let mtdLoss;
+    try{mtdLoss=await window.KPPDailyLoss.loadPeriod(db,startMTD,yesterday,mtdRows,STORAGE_ROWS);}
+    catch(error){console.warn("Working Loss MTD:",error);mtdLoss=window.KPPDailyLoss.unavailablePeriod(startMTD,yesterday,"Gagal memuat MTD");}
     if(!isCurrent())return;
-    window.KPPDailyLoss.render(lossHost,dailyLoss);
+    const lossReport={...mtdLoss,workingDate:yesterday,dailyWorking:dailyLoss.working,dailyWorkingByShift:dailyLoss.workingByShift};
+    window.KPPDailyLoss.render(lossHost,lossReport);
 
     const totalStock=renderStock(stock);
     const prevTotalStock=Object.values(prevStock).reduce((a,b)=>a+n(b),0);
@@ -1133,7 +1137,7 @@ async function loadReport(){
 
     const reportText=makeReportText({
       reportDate,stock,totalStock,yesterday,ySummary,
-      usageYesterday,usageMTD,avgMTD,ito,activeDays,dailyLoss
+      usageYesterday,usageMTD,avgMTD,ito,activeDays,dailyLoss:lossReport
     });
 
     document.getElementById("reportText").textContent=reportText;
