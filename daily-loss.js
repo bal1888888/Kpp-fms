@@ -69,11 +69,13 @@
     fuels=onDate(fuels).filter(r=>r.duplicate_of_id==null);
     const supply=calculateSupplyDO(movements);
     const workingByShift={};
-    // Validate against the active Master MT/FT registry, not only the rows
-    // that happened to be entered. Missing an entire tank in both opening and
-    // closing must never produce a falsely complete working-loss result.
-    const masterStorages=new Set(master.map(r=>code(r.code)).filter(Boolean));
-    const dailyStorages=masterStorages.size?masterStorages:new Set([...openings,...closings].map(r=>code(r.storage)));
+    // Use the storage footprint evidenced by this operational date.
+    // A master row alone must not make an unrelated or newly added tank
+    // invalidate a historical day. Any tank present in either shift's
+    // Opening/Closing is still required in BOTH shifts; movements and fuel
+    // against a tank without a matching opening are rejected by change().
+    // Master remains the authoritative FT/warehouse resolver below.
+    const dailyStorages=new Set([...openings,...closings].map(r=>code(r.storage)).filter(Boolean));
     const validShifts=![...openings,...closings,...movements,...fuels].some(r=>![1,2].includes(shift(r.shift)));
     for(const sh of [1,2]){
       let workingLoss=0,usage=0,complete=validShifts;
