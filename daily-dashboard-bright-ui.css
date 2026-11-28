@@ -267,3 +267,60 @@ html body.dashboard-workspace.kpp-sidebar-shell>.container{
   .daily-workspace #stockCards .daily-stock-metric strong{overflow-wrap:anywhere}
   .dashboard-workspace #usageTrendBars .usage-trend-ring{max-width:100%!important}
 }
+
+
+/* ===== KPP CONSISTENT CARD INTERACTION =====
+   One shared lift-and-shadow interaction across dashboard and daily report.
+   Hover is limited to actual cards; large layout panels remain stationary.
+*/
+@media (hover:hover) and (pointer:fine){
+  .dashboard-workspace .daily-loss-card,
+  .dashboard-workspace .daily-card,
+  .dashboard-workspace .overview-card,
+  .dashboard-workspace .shift-card,
+  .dashboard-workspace .session-card,
+  .dashboard-workspace .wide-hero-card,
+  .dashboard-workspace .stock-card,
+  .dashboard-workspace .activity-card,
+  .daily-workspace .metric,
+  .daily-workspace .daily-stock-gauge,
+  .daily-workspace .stock-total-card,
+  .daily-workspace .shift-card,
+  .daily-workspace .activity-card{
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important;
+    transform:translateY(0);
+  }
+  .dashboard-workspace .daily-loss-card:hover,
+  .dashboard-workspace .daily-card:hover,
+  .dashboard-workspace .overview-card:hover,
+  .dashboard-workspace .shift-card:hover,
+  .dashboard-workspace .session-card:hover,
+  .dashboard-workspace .wide-hero-card:hover,
+  .dashboard-workspace .stock-card:hover,
+  .dashboard-workspace .activity-card:hover,
+  .daily-workspace .metric:hover,
+  .daily-workspace .daily-stock-gauge:hover,
+  .daily-workspace .stock-total-card:hover,
+  .daily-workspace .shift-card:hover,
+  .daily-workspace .activity-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 13px 28px rgba(22,75,139,.12)!important;
+    border-color:#b9d4f5!important;
+    z-index:2;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-workspace .daily-loss-card,
+  .dashboard-workspace .daily-card,
+  .dashboard-workspace .overview-card,
+  .dashboard-workspace .shift-card,
+  .dashboard-workspace .session-card,
+  .dashboard-workspace .wide-hero-card,
+  .dashboard-workspace .stock-card,
+  .dashboard-workspace .activity-card,
+  .daily-workspace .metric,
+  .daily-workspace .daily-stock-gauge,
+  .daily-workspace .stock-total-card,
+  .daily-workspace .shift-card,
+  .daily-workspace .activity-card{transition:none!important}
+}
