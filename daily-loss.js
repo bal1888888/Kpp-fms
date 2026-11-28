@@ -69,7 +69,11 @@
     fuels=onDate(fuels).filter(r=>r.duplicate_of_id==null);
     const supply=calculateSupplyDO(movements);
     const workingByShift={};
-    const dailyStorages=new Set([...openings,...closings].map(r=>code(r.storage)));
+    // Validate against the active Master MT/FT registry, not only the rows
+    // that happened to be entered. Missing an entire tank in both opening and
+    // closing must never produce a falsely complete working-loss result.
+    const masterStorages=new Set(master.map(r=>code(r.code)).filter(Boolean));
+    const dailyStorages=masterStorages.size?masterStorages:new Set([...openings,...closings].map(r=>code(r.storage)));
     const validShifts=![...openings,...closings,...movements,...fuels].some(r=>![1,2].includes(shift(r.shift)));
     for(const sh of [1,2]){
       let workingLoss=0,usage=0,complete=validShifts;
@@ -83,7 +87,7 @@
         if(!key||qty===null||qty<0||physical.has(key)){complete=false;continue;}
         physical.set(key,qty);
       }
-      if(!balances.size||balances.size!==physical.size||[...dailyStorages].some(storage=>!balances.has(storage)||!physical.has(storage)))complete=false;
+      if(!dailyStorages.size||balances.size!==dailyStorages.size||physical.size!==dailyStorages.size||balances.size!==physical.size||[...dailyStorages].some(storage=>!balances.has(storage)||!physical.has(storage)))complete=false;
       const change=(storage,qty,sign)=>{
         const key=code(storage);
         if(qty===null||qty<0||!balances.has(key)){complete=false;return;}
