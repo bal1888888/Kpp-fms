@@ -1,27 +1,36 @@
-.daily-loss-panel{margin:0 0 16px;padding:14px;background:#fff;border:1px solid #e2e8f0;border-radius:15px}
-.daily-loss-heading{margin:0 0 12px;font-size:14px;line-height:1.5;color:#0f172a;font-weight:800}
-.daily-loss-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.daily-loss-card{min-width:0;min-height:124px;padding:12px 13px;border:1px solid #cbd5e1;border-top:3px solid #64748b;border-radius:13px;background:#f8fafc;box-shadow:0 3px 9px rgba(15,23,42,.05);display:flex;flex-direction:column}
-.daily-loss-card[data-state="loss"]{background:#ffe4e6;border-color:#fb7185;border-top-color:#be123c}
-.daily-loss-card[data-state="gain"]{background:#dcfce7;border-color:#4ade80;border-top-color:#15803d}
-.daily-loss-card[data-state="balance"]{background:#dbeafe;border-color:#60a5fa;border-top-color:#1d4ed8}
-.daily-loss-card[data-state="pending"]{background:#f8fafc;border-color:#cbd5e1;border-top-color:#94a3b8}
-.daily-loss-top{display:flex;align-items:center;gap:9px;margin-bottom:8px;min-width:0}
-.daily-loss-icon{width:36px;height:36px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;border-radius:11px;font-size:17px;font-weight:800;color:#fff;box-shadow:0 4px 10px rgba(15,23,42,.13)}
-.daily-loss-card[data-kind="supply"] .daily-loss-icon{background:linear-gradient(135deg,#f59e0b,#f97316)}
-.daily-loss-card[data-kind="working-total"] .daily-loss-icon{background:linear-gradient(135deg,#64748b,#334155)}
-.daily-loss-card[data-kind="working-1"] .daily-loss-icon{background:linear-gradient(135deg,#22c55e,#15803d)}
-.daily-loss-card[data-kind="working-2"] .daily-loss-icon{background:linear-gradient(135deg,#0ea5e9,#2563eb)}
-.daily-loss-label{font-size:11px;font-weight:800;color:#334155;line-height:1.3;margin:0;overflow-wrap:anywhere}
-.daily-loss-value{font-size:clamp(15px,1.05vw,18px);font-weight:900;color:#0f172a;line-height:1.3;overflow-wrap:anywhere;margin:0}
-.daily-loss-note{font-size:10px;line-height:1.4;color:#475569;margin-top:auto;padding-top:7px}
-.daily-loss-card[data-state="gain"] .daily-loss-value{color:#166534}
-.daily-loss-card[data-state="loss"] .daily-loss-value{color:#9f1239}
-.daily-loss-card[data-state="balance"] .daily-loss-value{color:#1e40af}
-.daily-loss-card[data-state="gain"] .daily-loss-label{color:#14532d}
-.daily-loss-card[data-state="loss"] .daily-loss-label{color:#881337}
-.daily-loss-card[data-state="balance"] .daily-loss-label{color:#1e3a8a}
-.daily-loss-card[data-state="loss"] .daily-loss-note{color:#881337}
-.daily-loss-card[data-state="gain"] .daily-loss-note{color:#166534}
-@media(max-width:1200px){.daily-loss-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.daily-loss-grid{grid-template-columns:1fr}.daily-loss-panel{padding:12px}.daily-loss-card{min-height:106px}.daily-loss-value{font-size:17px}}
+/* KPP-FMS • Loss Intelligence Cards — visual refresh */
+.daily-loss-panel{position:relative;margin:0 0 16px;padding:16px;border:1px solid #dbe5f1;border-radius:18px;background:linear-gradient(145deg,#fff 0%,#f7faff 100%);box-shadow:0 8px 24px rgba(15,39,72,.055);overflow:hidden}
+.daily-loss-panel::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#0f766e 0%,#2563eb 48%,#f59e0b 100%)}
+.daily-loss-heading{display:flex;align-items:center;gap:9px;margin:0 0 13px;font-size:13px;line-height:1.5;color:#102b4e;font-weight:900;letter-spacing:.01em}
+.daily-loss-heading::before{content:"";width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#0ea5a4;box-shadow:0 0 0 4px rgba(14,165,164,.12)}
+.daily-loss-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}
+.daily-loss-card{--loss-accent:#64748b;--loss-soft:#f1f5f9;--loss-ink:#334155;position:relative;isolation:isolate;min-width:0;min-height:116px;padding:13px 14px 12px;border:1px solid #e1e9f2;border-radius:15px;background:linear-gradient(145deg,#fff 0%,#fbfdff 100%);box-shadow:0 4px 13px rgba(15,39,72,.045);display:flex;flex-direction:column;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.daily-loss-card::before{content:"";position:absolute;z-index:-1;left:0;top:0;bottom:0;width:4px;background:var(--loss-accent)}
+.daily-loss-card::after{content:"";position:absolute;z-index:-1;width:94px;height:94px;right:-35px;bottom:-46px;border-radius:50%;background:var(--loss-soft);opacity:.9}
+.daily-loss-card:hover{transform:translateY(-2px);box-shadow:0 9px 20px rgba(15,39,72,.09)}
+.daily-loss-card[data-kind="supply"]{--loss-accent:#d97706;--loss-soft:#fff4d8;--loss-ink:#92400e}
+.daily-loss-card[data-kind="working-total"]{--loss-accent:#2563eb;--loss-soft:#eaf1ff;--loss-ink:#1e40af}
+.daily-loss-card[data-kind="working-1"]{--loss-accent:#0f9f6e;--loss-soft:#dcfce9;--loss-ink:#166534}
+.daily-loss-card[data-kind="working-2"]{--loss-accent:#7c3aed;--loss-soft:#f0eaff;--loss-ink:#5b21b6}
+.daily-loss-top{display:flex;align-items:center;gap:9px;margin-bottom:9px;min-width:0}
+.daily-loss-icon{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:11px;color:#fff;background:linear-gradient(145deg,var(--loss-accent),#26364d);box-shadow:0 5px 11px rgba(15,39,72,.14)}
+.daily-loss-icon svg{display:block;width:20px;height:20px}
+.daily-loss-label{min-width:0;font-size:10px;font-weight:900;color:#263c59;line-height:1.35;overflow-wrap:anywhere}
+.daily-loss-value{position:relative;z-index:1;font-size:clamp(14px,1vw,17px);font-weight:950;color:#102b4e;line-height:1.3;overflow-wrap:anywhere;margin:0;letter-spacing:-.015em}
+.daily-loss-note{position:relative;z-index:1;font-size:9px;line-height:1.45;color:#718096;margin-top:auto;padding-top:8px}
+.daily-loss-card[data-state="gain"] .daily-loss-value{color:#087443}
+.daily-loss-card[data-state="loss"] .daily-loss-value{color:#be123c}
+.daily-loss-card[data-state="balance"] .daily-loss-value{color:#1d4ed8}
+.daily-loss-card[data-state="pending"] .daily-loss-value{color:#64748b}
+.daily-loss-card[data-state="loss"]{border-color:#fecdd3}
+.daily-loss-card[data-state="gain"]{border-color:#bbf7d0}
+.daily-loss-card[data-state="balance"]{border-color:#bfdbfe}
+.daily-loss-card[data-state="pending"]{border-color:#cbd5e1;background:linear-gradient(145deg,#fff,#f8fafc)}
+.daily-loss-card[data-state="loss"]::before{background:#e11d48}
+.daily-loss-card[data-state="gain"]::before{background:#16a34a}
+.daily-loss-card[data-state="balance"]::before{background:#2563eb}
+.daily-loss-card[data-state="pending"]::before{background:#94a3b8}
+@media(max-width:1250px){.daily-loss-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.daily-loss-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.daily-loss-panel{padding:13px}.daily-loss-card{min-height:112px;padding:11px}}
+@media(max-width:430px){.daily-loss-grid{grid-template-columns:1fr}.daily-loss-card{min-height:100px}.daily-loss-value{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.daily-loss-card{transition:none}.daily-loss-card:hover{transform:none}}
