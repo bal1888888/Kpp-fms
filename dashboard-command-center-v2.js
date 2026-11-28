@@ -243,10 +243,11 @@
     foot.textContent="LIVE • "+nf1.format(pct)+"% • "+state.label;
     foot.className="kpp-cc-kpi-foot "+footClass(state.label);
     // ITO konsisten dengan Daily Report: stock dibagi average daily usage MTD.
-    const usage=parseIdNumber(document.getElementById("avgMTD")?.textContent);
+    const usage=Number(window.KPPDashboardMetrics?.avgDailyUsage);
+    const safeUsage=Number.isFinite(usage)&&usage>0?usage:parseIdNumber(document.getElementById("avgMTD")?.textContent);
     const ito=document.getElementById("ito");
-    if(ito&&Number.isFinite(usage)&&usage>0){
-      const v=(snapshot.total/usage).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})+" hari";
+    if(ito&&Number.isFinite(snapshot.total)&&snapshot.total>=0&&Number.isFinite(safeUsage)&&safeUsage>0){
+      const v=(snapshot.total/safeUsage).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})+" hari";
       if(ito.textContent!==v)ito.textContent=v;
     }
   }
