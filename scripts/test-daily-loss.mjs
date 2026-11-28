@@ -75,7 +75,7 @@ test('measured transfer is counted once and duplicate fuel ignored; revised ledg
  f.fuels.push({shift:2,fuel_truck:'FT0073',fuel:5});assert.equal(api().calculate(f).working.qty,20);
 });
 test('historical FT codes and warehouse mapping supported; unmapped fuel blocks working total',()=>{
- const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02',active:false},{code:'MT99',active:true}];
+ const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02',active:false}];
  f.fuels[0].fuel_truck='';f.fuels[0].wh='FT02';assert.equal(api().calculate(f).working.qty,25);
  f.fuels[0].wh='UNKNOWN';assert.equal(api().calculate(f).working.status,'incomplete');
 });
@@ -101,6 +101,13 @@ test('query errors do not masquerade as zero loss',async()=>{
 test('a tank present in either shift requires both daily snapshots in both shifts',()=>{
  const f=fixture();f.openings.push({shift:1,storage:'MT01',qty:500});f.closings.push({shift:1,storage:'MT01',actual_qty:500});
  const r=api().calculate(f);assert.equal(r.working.status,'incomplete');assert.equal(r.working.qty,null);
+});
+test('an active Master tank missing from both snapshots keeps Working Loss incomplete',()=>{
+ const f=fixture();
+ f.master=[{code:'FT0073',active:true},{code:'MT01',active:true}];
+ const r=api().calculate(f);
+ assert.equal(r.working.status,'incomplete');
+ assert.equal(r.working.qty,null);
 });
 test('explicit missing FT cannot be silently replaced by warehouse fallback',()=>{
  const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02'}];
