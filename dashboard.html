@@ -1137,7 +1137,7 @@ async function loadDashboard(){
     const activeDateSet=new Set(mtdRows.filter(row=>n(row.fuel)>0&&row.tanggal).map(row=>row.tanggal));
     const activeDays=activeDateSet.size;
     const avgMTD=activeDays?usageMTD/activeDays:0;
-    const ito=usageYesterday>0?totalStock/usageYesterday:0;
+    const ito=avgMTD>0?totalStock/avgMTD:0;
 
     document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
     renderMTDCompare(usageMTD,previousUsageMTD,prevWindow);
