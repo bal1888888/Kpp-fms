@@ -215,26 +215,26 @@ test("changing date or shift wipes visible old-period measurements and restores 
 
 test("refresh restores recent unsent draft period instead of hardcoded today's date and Shift 1",async()=>{
  const backend=new Map();
- const original=createHarness(backend,"fuel-a",{tanggal:today,shift:2});
+ const original=createHarness(backend,"fuel-a",{tanggal:yesterday,shift:2});
  await original.fire("receipt","receiptDestination","MT01");
  await original.fire("receipt","receiptMeterStart","4567.8");
  await original.fire("closing","height-MT01",["36.6","36.7"]);
- const refreshed=createHarness(backend,"fuel-a",{tanggal:tomorrow,shift:1});
+ const refreshed=createHarness(backend,"fuel-a",{tanggal:today,shift:1});
  assert.equal(refreshed.elements.tanggal.value,yesterday);
  assert.equal(refreshed.elements.shift.value,"2");
  refreshed.drafts.onRendered();
  assert.equal(refreshed.elements.receiptMeterStart.value,"4567.8");
  assert.deepEqual(refreshed.elements["height-MT01"].fr.map(x=>x.value),["36.6","36.7"]);
  assert.match(refreshed.elements.stockDraftStatus.textContent,/DIPULIHKAN/);
- const other=createHarness(backend,"fuel-b",{tanggal:tomorrow,shift:1});
+ const other=createHarness(backend,"fuel-b",{tanggal:today,shift:1});
  other.drafts.onRendered();
  assert.equal(other.elements.receiptMeterStart.value,"");
 });
 test("fuelman shift locked by active session cannot auto-switch to unrelated draft period",async()=>{
  const backend=new Map();
- const earlier=createHarness(backend,"fuel-a",{tanggal:today,shift:2});
+ const earlier=createHarness(backend,"fuel-a",{tanggal:yesterday,shift:2});
  await earlier.fire("receipt","receiptMeterStart","900");
- const locked=createHarness(backend,"fuel-a",{tanggal:tomorrow,shift:1},true);
+ const locked=createHarness(backend,"fuel-a",{tanggal:today,shift:1},true);
  assert.equal(locked.elements.tanggal.value,today);
  assert.equal(locked.elements.shift.value,"1");
  locked.drafts.onRendered();
