@@ -33,14 +33,14 @@ test('both pages load shared module and show identical H-1 working qty and perce
   const h=harness(page);await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
   const text=texts(h.document.getElementById('dailyLossPanel'));
   assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
-  if(page==='dashboard.html'){assert.match(text,/Total Working Loss Harian/);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);}
-  else {assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);assert.match(text,/Working Loss • Shift 1/);assert.match(text,/Working Loss • Shift 2/);}
+  if(page==='dashboard.html'){assert.match(text,/Total Working Loss Harian/);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);}
+  else {assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);}
   if(page==='daily-report.html'){const copy=h.document.getElementById('reportText').textContent;assert.match(copy,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.match(copy,/SHIFT 1 = LOSS 10 LTR \(10%\)/);assert.match(copy,/SHIFT 2 = LOSS 10 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
  }
 });
 test('failed loss query preserves report but copies explicit unavailable status',async()=>{
  const h=harness('daily-report.html');h.failLoss=true;await h.loadReport();
- assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS = Gagal memuat/);
+ assert.match(h.document.getElementById('reportText').textContent,/WORKING LOSS HARIAN = Gagal memuat/);
  assert.doesNotMatch(h.document.getElementById('reportText').textContent,/WORKING LOSS = (?:LOSS|BALANCE) 0/);
 });
 test('refresh clears stale report, blocks copy and an older date response cannot overwrite latest report',async()=>{
@@ -72,7 +72,7 @@ test('Dashboard reads full MTD range and preserves total alongside both shift va
 });
 test('Dashboard loss errors retain four unavailable cards and stale responses cannot replace latest period',async()=>{
  const h=harness('dashboard.html');h.failLoss=true;await h.loadDashboard();
- assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,4);
+ assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);
  assert.match(texts(h.document.getElementById('dailyLossPanel')),/Gagal memuat/);
  h.failLoss=false;const prior=h.fetchPagedFuel;let release;const barrier=new Promise(r=>release=r);
  h.fetchPagedFuel=async(d,e)=>{if(d==='2026-10-23')await barrier;return prior(d,e);};
@@ -82,11 +82,12 @@ test('Dashboard loss errors retain four unavailable cards and stale responses ca
 
 test('loss cards use clear green gain, red loss and blue balance colors across Daily and Dashboard',()=>{
  const css=read('daily-loss.css');
- assert.match(css,/\.daily-loss-card\[data-state="gain"\]\{background:#dcfce7;border-color:#4ade80;border-top-color:#15803d\}/);
- assert.match(css,/\.daily-loss-card\[data-state="loss"\]\{background:#ffe4e6;border-color:#fb7185;border-top-color:#be123c\}/);
- assert.match(css,/\.daily-loss-card\[data-state="balance"\]\{background:#dbeafe;border-color:#60a5fa;border-top-color:#1d4ed8\}/);
- assert.match(css,/\.daily-loss-card\[data-state="gain"\] \.daily-loss-value\{color:#166534\}/);
- assert.match(css,/\.daily-loss-card\[data-state="loss"\] \.daily-loss-value\{color:#9f1239\}/);
+ // Unified navy card surfaces; GAIN/LOSS/BALANCE remain semantically distinct in value text.
+ assert.match(css,/\.daily-loss-card\[data-state="gain"\],/);
+ assert.match(css,/background:linear-gradient\(145deg,#fff 0%,#f6faff 100%\)/);
+ assert.match(css,/\.daily-loss-card\[data-state="gain"\] \.daily-loss-value\{color:#087443\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="loss"\] \.daily-loss-value\{color:#be123c\}/);
+ assert.match(css,/\.daily-loss-card\[data-state="balance"\] \.daily-loss-value\{color:#1d4ed8\}/);
  for(const page of ['daily-report.html','dashboard.html']){
   assert.match(read(page),/daily-loss\.css\?v=20261025-compact-icons1/);
   assert.match(read(page),/daily-loss\.js\?v=20261025-flow-do-group1/);
@@ -94,14 +95,14 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
 });
 
 test('compact loss KPI cards render icons in four stable metric slots for Dashboard and Daily',async()=>{
- const kinds=['supply','working-total','working-1','working-2'];
- const icons=['⛽','Σ','1','2'];
+ const kinds=['supply','working-total','working-total','working-1','working-2'];
+ const icons=['⛽','Σ','Σ','1','2'];
  for(const page of ['daily-report.html','dashboard.html']){
   const h=harness(page);
   await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
   const grid=h.document.getElementById('dailyLossPanel').children[1];
   assert.equal(grid.className,'daily-loss-grid');
-  assert.equal(grid.children.length,4);
+  assert.equal(grid.children.length,5);
   grid.children.forEach((card,i)=>{
    assert.equal(card.className,'daily-loss-card');
    assert.equal(card.dataset.kind,kinds[i]);
@@ -117,7 +118,7 @@ test('compact loss KPI cards render icons in four stable metric slots for Dashbo
   });
  }
  const css=read('daily-loss.css');
- assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\\(5,minmax\\(0,1fr\\)\\)/);
  assert.match(css,/@media\(max-width:1200px\)\{\.daily-loss-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
  assert.match(css,/@media\(max-width:560px\)\{\.daily-loss-grid\{grid-template-columns:1fr\}/);
 });
