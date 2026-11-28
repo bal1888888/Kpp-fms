@@ -69,13 +69,13 @@
     fuels=onDate(fuels).filter(r=>r.duplicate_of_id==null);
     const supply=calculateSupplyDO(movements);
     const workingByShift={};
-    // Use the storage footprint evidenced by this operational date.
-    // A master row alone must not make an unrelated or newly added tank
-    // invalidate a historical day. Any tank present in either shift's
-    // Opening/Closing is still required in BOTH shifts; movements and fuel
-    // against a tank without a matching opening are rejected by change().
-    // Master remains the authoritative FT/warehouse resolver below.
-    const dailyStorages=new Set([...openings,...closings].map(r=>code(r.storage)).filter(Boolean));
+    // Every currently active Master tank is mandatory, even if both
+    // snapshots are missing. Historical/inactive tanks remain in scope only
+    // when they actually appear in this day's Opening/Closing rows.
+    // This preserves historical reporting without hiding a missing active tank.
+    const activeMasterStorages=new Set(master.filter(r=>r.active!==false).map(r=>code(r.code)).filter(Boolean));
+    const historicalStorages=new Set([...openings,...closings].map(r=>code(r.storage)).filter(Boolean));
+    const dailyStorages=new Set([...activeMasterStorages,...historicalStorages]);
     const validShifts=![...openings,...closings,...movements,...fuels].some(r=>![1,2].includes(shift(r.shift)));
     for(const sh of [1,2]){
       let workingLoss=0,usage=0,complete=validShifts;
