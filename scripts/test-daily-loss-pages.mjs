@@ -35,7 +35,7 @@ test('both pages load shared module and show identical H-1 working qty and perce
   assert.match(text,/23\/10\/2026/);assert.match(text,/LOSS 20 LTR \(10%\)/);
   if(page==='dashboard.html'){assert.match(text,/Total Working Loss Harian/);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);}
   else {assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);assert.match(text,/Working Loss Harian • Shift 1/);assert.match(text,/Working Loss Harian • Shift 2/);}
-  if(page==='daily-report.html'){const copy=h.document.getElementById('reportText').textContent;assert.match(copy,/WORKING LOSS = LOSS 20 LTR \(10%\)/);assert.match(copy,/SHIFT 1 = LOSS 10 LTR \(10%\)/);assert.match(copy,/SHIFT 2 = LOSS 10 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
+  if(page==='daily-report.html'){const copy=h.document.getElementById('reportText').textContent;assert.match(copy,/WORKING LOSS HARIAN = LOSS 20 LTR \(10%\)/);assert.match(copy,/SHIFT 1 = LOSS 10 LTR \(10%\)/);assert.match(copy,/SHIFT 2 = LOSS 10 LTR \(10%\)/);assert.equal(h.document.getElementById('copyBtn').disabled,false);}
  }
 });
 test('failed loss query preserves report but copies explicit unavailable status',async()=>{
@@ -70,7 +70,7 @@ test('Dashboard reads full MTD range and preserves total alongside both shift va
  assert.match(text,/Working Loss Harian • Shift 1\nLOSS 10 LTR \(10%\)/);assert.match(text,/Working Loss Harian • Shift 2\nLOSS 10 LTR \(10%\)/);
  assert.equal(requests.length,3);assert.ok(requests.every(q=>q.start==='2026-10-22'&&q.end==='2026-10-23'));
 });
-test('Dashboard loss errors retain four unavailable cards and stale responses cannot replace latest period',async()=>{
+test('Dashboard loss errors retain five unavailable cards and stale responses cannot replace latest period',async()=>{
  const h=harness('dashboard.html');h.failLoss=true;await h.loadDashboard();
  assert.equal(h.document.getElementById('dailyLossPanel').children[1].children.length,5);
  assert.match(texts(h.document.getElementById('dailyLossPanel')),/Gagal memuat/);
