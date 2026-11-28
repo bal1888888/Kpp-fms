@@ -1,0 +1,148 @@
+/* KPP-FMS GLOBAL DESIGN SYSTEM v1
+   Visual-only shared theme. Does not modify business logic, data flow, forms or permissions. */
+:root{
+  --kpp-navy-950:#071a33;
+  --kpp-navy-900:#0b2850;
+  --kpp-navy-800:#123b70;
+  --kpp-blue-700:#1457b8;
+  --kpp-blue-600:#1d6fe5;
+  --kpp-blue-500:#3188f5;
+  --kpp-blue-100:#e8f2ff;
+  --kpp-blue-050:#f4f8ff;
+  --kpp-ink:#132b4b;
+  --kpp-muted:#607895;
+  --kpp-line:#d8e6f6;
+  --kpp-surface:#fff;
+  --kpp-shadow:0 8px 24px rgba(18,59,112,.07);
+  --kpp-shadow-hover:0 15px 32px rgba(18,59,112,.15);
+}
+
+/* Shared page canvas: preserve the dedicated dark CCR/operator workspaces. */
+body.kpp-theme:not(.ccr-workspace):not(.operator-workspace){
+  color:var(--kpp-ink);
+  background:linear-gradient(180deg,#f8fbff 0%,#eef5fd 58%,#f8fbff 100%)!important;
+  background-attachment:scroll!important;
+}
+body.kpp-theme:not(.ccr-workspace):not(.operator-workspace) a{color:var(--kpp-blue-700)}
+body.kpp-theme :focus-visible{
+  outline:3px solid rgba(49,136,245,.28);
+  outline-offset:2px;
+}
+
+/* Consistent navy identity for page headers and workspace title bands. */
+body.kpp-theme>.header,
+body.kpp-theme>header,
+body.kpp-theme .header,
+body.kpp-theme .kpp-workspace-topbar,
+body.kpp-theme .workspace-intro,
+body.kpp-theme .daily-intro,
+body.kpp-theme .stock-intro,
+body.kpp-theme .top-bar,
+body.kpp-theme .page-header,
+body.kpp-theme .brand-header{
+  color:#fff!important;
+  border-color:rgba(147,197,253,.28)!important;
+  background:linear-gradient(112deg,var(--kpp-navy-950) 0%,var(--kpp-navy-900) 58%,var(--kpp-navy-800) 100%)!important;
+  box-shadow:0 12px 30px rgba(7,26,51,.16)!important;
+}
+body.kpp-theme .header h1,
+body.kpp-theme .header h2,
+body.kpp-theme .header p,
+body.kpp-theme .workspace-intro h1,
+body.kpp-theme .workspace-intro h2,
+body.kpp-theme .workspace-intro p,
+body.kpp-theme .daily-intro h1,
+body.kpp-theme .daily-intro h2,
+body.kpp-theme .daily-intro p,
+body.kpp-theme .stock-intro h1,
+body.kpp-theme .stock-intro h2,
+body.kpp-theme .stock-intro p,
+body.kpp-theme .top-bar h1,
+body.kpp-theme .top-bar h2,
+body.kpp-theme .top-bar p,
+body.kpp-theme .page-header h1,
+body.kpp-theme .page-header h2,
+body.kpp-theme .page-header p{
+  color:#fff!important;
+}
+body.kpp-theme .header a,
+body.kpp-theme .workspace-intro a,
+body.kpp-theme .daily-intro a,
+body.kpp-theme .stock-intro a,
+body.kpp-theme .top-bar a,
+body.kpp-theme .page-header a{
+  color:#dbeafe!important;
+}
+
+/* Shared card surfaces. Semantic status colors and each page's grid are preserved. */
+body.kpp-theme :is(.card,.metric,.kpi-card,.stat-card,.overview-card,.daily-card,
+  .shift-card,.session-card,.stock-gauge-card,.stock-card,.activity-card,
+  .form-card,.summary-card,.menu-card,.feature-card,.tank-card,.report-card,
+  .daily-loss-card,.daily-stock-gauge,.stock-total-card,.stock-reconciliation,
+  .stock-recon-grid>div,.trend-radial-item,.checkin-card,.hm-mini,.receipt-card){
+  border-radius:14px;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+
+/* Lift only on mouse/trackpad. No forced hover state on touch devices. */
+@media (hover:hover) and (pointer:fine){
+  body.kpp-theme :is(.card,.metric,.kpi-card,.stat-card,.overview-card,.daily-card,
+    .shift-card,.session-card,.stock-gauge-card,.stock-card,.activity-card,
+    .form-card,.summary-card,.menu-card,.feature-card,.tank-card,.report-card,
+    .daily-loss-card,.daily-stock-gauge,.stock-total-card,.stock-reconciliation,
+    .stock-recon-grid>div,.trend-radial-item,.checkin-card,.hm-mini,.receipt-card):not(.no-hover):hover{
+    transform:translateY(-3px);
+    box-shadow:var(--kpp-shadow-hover)!important;
+    border-color:#9fc7f5!important;
+    position:relative;
+    z-index:2;
+  }
+  body.kpp-theme button:not(:disabled):not(.no-hover):hover,
+  body.kpp-theme .btn:not(.disabled):not(.no-hover):hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 18px rgba(29,111,229,.16);
+  }
+}
+
+/* Unified blue treatment for primary actions; success/danger actions keep their meaning. */
+body.kpp-theme :is(.btn-primary,.btn-blue,.primary-btn,.button-primary){
+  border-color:var(--kpp-blue-600)!important;
+  background:linear-gradient(135deg,var(--kpp-blue-600),var(--kpp-blue-700))!important;
+  color:#fff!important;
+}
+body.kpp-theme :is(.btn-outline,.btn-secondary,.button-secondary){
+  border-color:#c8dcf5;
+  color:var(--kpp-blue-700);
+}
+body.kpp-theme input:focus,
+body.kpp-theme select:focus,
+body.kpp-theme textarea:focus{
+  border-color:#70aaf0!important;
+  box-shadow:0 0 0 3px rgba(49,136,245,.12)!important;
+}
+
+/* Tables use the same navy/blue hierarchy without touching cell values or sorting. */
+body.kpp-theme table thead th{
+  border-color:#d5e4f5;
+}
+body.kpp-theme:not(.ccr-workspace) table thead th{
+  background:linear-gradient(110deg,#eaf3ff,#dcecff);
+  color:#214d7d;
+}
+
+/* Preserve the dedicated mobile terminal and reduced-motion accessibility. */
+@media(max-width:700px){
+  body.kpp-theme:not(.ccr-workspace):not(.operator-workspace){
+    background-attachment:scroll!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  body.kpp-theme *,
+  body.kpp-theme *::before,
+  body.kpp-theme *::after{
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+  }
+}
