@@ -1,6 +1,6 @@
 .daily-loss-panel{margin:0 0 16px;padding:14px;background:#fff;border:1px solid #e2e8f0;border-radius:15px}
 .daily-loss-heading{margin:0 0 12px;font-size:14px;line-height:1.5;color:#0f172a;font-weight:800}
-.daily-loss-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.daily-loss-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .daily-loss-card{min-width:0;min-height:124px;padding:12px 13px;border:1px solid #cbd5e1;border-top:3px solid #64748b;border-radius:13px;background:#f8fafc;box-shadow:0 3px 9px rgba(15,23,42,.05);display:flex;flex-direction:column}
 .daily-loss-card[data-state="loss"]{background:#ffe4e6;border-color:#fb7185;border-top-color:#be123c}
 .daily-loss-card[data-state="gain"]{background:#dcfce7;border-color:#4ade80;border-top-color:#15803d}
