@@ -400,7 +400,7 @@ body{background:var(--kpp-bg);color:var(--kpp-text)}
         <div class="daily-card purple">
           <div class="daily-label">ITO / DAY OF COVER</div>
           <div class="daily-value" id="ito">0 hari</div>
-          <div class="daily-sub">Stock ÷ pemakaian kemarin</div>
+          <div class="daily-sub">Stock ÷ rata-rata pemakaian harian MTD</div>
         </div>
       </div>
     </div>
@@ -1137,6 +1137,7 @@ async function loadDashboard(){
     const activeDateSet=new Set(mtdRows.filter(row=>n(row.fuel)>0&&row.tanggal).map(row=>row.tanggal));
     const activeDays=activeDateSet.size;
     const avgMTD=activeDays?usageMTD/activeDays:0;
+    window.KPPDashboardMetrics={avgDailyUsage:avgMTD,totalStock};
     const ito=avgMTD>0?totalStock/avgMTD:0;
 
     document.getElementById("totalFuelMTD").textContent=formatAngka(usageMTD)+" L";
@@ -1171,7 +1172,7 @@ document.addEventListener("kpp-auth-ready",async()=>{
   await loadDashboard();
 });
 </script>
-<script src="dashboard-command-center-v2.js?v=20261128-ito-average-mtd1"></script>
+<script src="dashboard-command-center-v2.js?v=20261128-ito-average-mtd2"></script>
 
 <script>
 (function mountDashboardFc(){
