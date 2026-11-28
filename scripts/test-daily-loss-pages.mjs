@@ -118,6 +118,6 @@ test('compact loss KPI cards render icons in five stable metric slots for Dashbo
  }
  const css=read('daily-loss.css');
  assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
- assert.match(css,/@media\(max-width:760px\)\{\.daily-loss-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
- assert.match(css,/@media\(max-width:430px\)\{\.daily-loss-grid\{grid-template-columns:1fr\}/);
+ assert.match(css,/@media\(max-width:760px\)\{\.daily-loss-grid\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/@media\(max-width:430px\)\{\.daily-loss-grid\{[^}]*grid-template-columns:1fr/);
 });
