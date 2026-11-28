@@ -35,6 +35,18 @@ test("warehouse fallback picks correct active FT and ignores unrelated FT",()=>{
  assert.equal(x.complete,true);
  assert.equal(x.calculated,85);
 });
+test("unknown non-empty fuel_truck is not reassigned by warehouse fallback",()=>{
+ const x=calc({closing:{storage:"FT0075",system_qty:85,actual_qty:85},opening:{qty:100},master,
+  fuels:[{fuel:15,fuel_truck:"FT-UNKNOWN",wh:"WH FT01"}]});
+ assert.equal(x.complete,false);
+ assert.equal(x.unmapped,1);
+});
+test("blank fuel_truck can still use an unambiguous warehouse fallback",()=>{
+ const x=calc({closing:{storage:"FT0075",system_qty:85,actual_qty:85},opening:{qty:100},master,
+  fuels:[{fuel:15,fuel_truck:"",wh:"WH FT01"}]});
+ assert.equal(x.complete,true);
+ assert.equal(x.calculated,85);
+});
 test("audit never assumes absent opening means zero and warns on unmapped fuel",()=>{
  const missing=calc({closing:{storage:"MT01"},opening:null,master});
  assert.equal(missing.complete,false);
