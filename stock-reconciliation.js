@@ -8,6 +8,11 @@
     const ft=code(row.fuel_truck);
     const direct=(master||[]).find(x=>code(x.storage_type)==="FT"&&code(x.code)===ft);
     if(direct)return code(direct.code);
+    // Match the authoritative SQL stock calculation exactly:
+    // warehouse fallback is permitted only when fuel_truck is blank.
+    // A non-empty but unknown FT code must stay unmapped, never be reassigned
+    // to another truck merely because its warehouse happens to match.
+    if(ft)return "";
     const wh=warehouse(row.wh);
     if(!wh)return "";
     const matches=(master||[]).filter(x=>code(x.storage_type)==="FT"&&warehouse(x.warehouse)===wh);
