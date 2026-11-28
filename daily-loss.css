@@ -34,3 +34,29 @@
 @media(max-width:760px){.daily-loss-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.daily-loss-panel{padding:13px}.daily-loss-card{min-height:112px;padding:11px}}
 @media(max-width:430px){.daily-loss-grid{grid-template-columns:1fr}.daily-loss-card{min-height:100px}.daily-loss-value{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.daily-loss-card{transition:none}.daily-loss-card:hover{transform:none}}
+
+
+/* Unified KPP navy-blue theme: semantic status stays in the value only. */
+.daily-loss-card,
+.daily-loss-card[data-kind="supply"],
+.daily-loss-card[data-kind="working-total"],
+.daily-loss-card[data-kind="working-1"],
+.daily-loss-card[data-kind="working-2"]{
+  --loss-accent:#2563eb;
+  --loss-soft:#eaf2ff;
+  --loss-ink:#1e40af;
+  border-color:#d7e6fa;
+  background:linear-gradient(145deg,#fff 0%,#f6faff 100%);
+}
+.daily-loss-icon{
+  background:linear-gradient(145deg,#287cf0 0%,#174a9b 100%);
+  box-shadow:0 5px 12px rgba(37,99,235,.18);
+}
+.daily-loss-card[data-state="gain"],
+.daily-loss-card[data-state="loss"],
+.daily-loss-card[data-state="balance"],
+.daily-loss-card[data-state="pending"]{border-color:#d7e6fa}
+.daily-loss-card[data-state="gain"]::before,
+.daily-loss-card[data-state="loss"]::before,
+.daily-loss-card[data-state="balance"]::before,
+.daily-loss-card[data-state="pending"]::before{background:#2563eb}
