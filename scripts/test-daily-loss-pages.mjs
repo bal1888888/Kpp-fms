@@ -94,7 +94,7 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
  }
 });
 
-test('compact loss KPI cards render icons in four stable metric slots for Dashboard and Daily',async()=>{
+test('compact loss KPI cards render icons in five stable metric slots for Dashboard and Daily',async()=>{
  const kinds=['supply','working-total','working-total','working-1','working-2'];
  const icons=['⛽','Σ','Σ','1','2'];
  for(const page of ['daily-report.html','dashboard.html']){
