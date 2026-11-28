@@ -90,7 +90,7 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
  assert.match(css,/\.daily-loss-card\[data-state="balance"\] \.daily-loss-value\{color:#1d4ed8\}/);
  for(const page of ['daily-report.html','dashboard.html']){
   assert.match(read(page),/daily-loss\.css\?v=20261025-compact-icons1/);
-  assert.match(read(page),/daily-loss\.js\?v=20261025-flow-do-group1/);
+  assert.match(read(page),/daily-loss\.js\?v=20261128-loss-icons1/);
  }
 });
 
@@ -118,7 +118,7 @@ test('compact loss KPI cards render icons in five stable metric slots for Dashbo
   });
  }
  const css=read('daily-loss.css');
- assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\\(5,minmax\\(0,1fr\\)\\)/);
- assert.match(css,/@media\(max-width:1200px\)\{\.daily-loss-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
- assert.match(css,/@media\(max-width:560px\)\{\.daily-loss-grid\{grid-template-columns:1fr\}/);
+ assert.match(css,/\.daily-loss-grid\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.match(css,/@media\(max-width:760px\)\{\.daily-loss-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
+ assert.match(css,/@media\(max-width:430px\)\{\.daily-loss-grid\{grid-template-columns:1fr\}/);
 });
