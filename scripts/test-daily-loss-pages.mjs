@@ -89,7 +89,7 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
  assert.match(css,/\.daily-loss-card\[data-state="loss"\] \.daily-loss-value\{color:#be123c\}/);
  assert.match(css,/\.daily-loss-card\[data-state="balance"\] \.daily-loss-value\{color:#1d4ed8\}/);
  for(const page of ['daily-report.html','dashboard.html']){
-  assert.match(read(page),/daily-loss\.css\?v=20261025-compact-icons1/);
+  assert.match(read(page),/daily-loss\.css\?v=20261128-unified-tone1/);
   assert.match(read(page),/daily-loss\.js\?v=20261128-loss-icons1/);
  }
 });
