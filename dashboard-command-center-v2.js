@@ -118,7 +118,7 @@
     set("yesterday",text(document.getElementById("usageYesterday"),"0 L"),text(document.getElementById("usageTrendBadge"),"vs. hari sebelumnya"));
     set("mtd",text(document.getElementById("totalFuelMTD"),"0 L"),text(document.getElementById("mtdCompareBadge"),"periode berjalan"));
     set("avg",text(document.getElementById("avgMTD"),"0 L/hari"),text(document.getElementById("activeDays"),"rata-rata harian"));
-    set("ito",text(document.getElementById("ito"),"0 hari"),"day of cover dari pemakaian kemarin");
+    set("ito",text(document.getElementById("ito"),"0 hari"),"day of cover berdasarkan average daily usage MTD");
   }
 
   function setupPerformance(){
@@ -242,8 +242,8 @@
     value.textContent=nf1.format(snapshot.total)+" L";
     foot.textContent="LIVE • "+nf1.format(pct)+"% • "+state.label;
     foot.className="kpp-cc-kpi-foot "+footClass(state.label);
-    // ITO denominator stays yesterday's consumption, not today's partial shift.
-    const usage=parseIdNumber(document.getElementById("usageYesterday")?.textContent);
+    // ITO konsisten dengan Daily Report: stock dibagi average daily usage MTD.
+    const usage=parseIdNumber(document.getElementById("avgMTD")?.textContent);
     const ito=document.getElementById("ito");
     if(ito&&Number.isFinite(usage)&&usage>0){
       const v=(snapshot.total/usage).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1})+" hari";
