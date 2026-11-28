@@ -96,7 +96,6 @@ test('loss cards use clear green gain, red loss and blue balance colors across D
 
 test('compact loss KPI cards render icons in five stable metric slots for Dashboard and Daily',async()=>{
  const kinds=['supply','working-total','working-total','working-1','working-2'];
- const icons=['⛽','Σ','Σ','1','2'];
  for(const page of ['daily-report.html','dashboard.html']){
   const h=harness(page);
   await (page==='daily-report.html'?h.loadReport():h.loadDashboard());
@@ -111,7 +110,7 @@ test('compact loss KPI cards render icons in five stable metric slots for Dashbo
    assert.equal(top.className,'daily-loss-top');
    assert.equal(top.children.length,2);
    assert.equal(top.children[0].className,'daily-loss-icon');
-   assert.equal(top.children[0].textContent,icons[i]);
+   assert.match(top.children[0].innerHTML,/<svg /);
    assert.equal(top.children[0].attributes['aria-hidden'],'true');
    assert.equal(top.children[1].className,'daily-loss-label');
    assert.equal(card.children[1].className,'daily-loss-value');
