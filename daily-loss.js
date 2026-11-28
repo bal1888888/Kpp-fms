@@ -69,11 +69,13 @@
     fuels=onDate(fuels).filter(r=>r.duplicate_of_id==null);
     const supply=calculateSupplyDO(movements);
     const workingByShift={};
-    // Validate against the active Master MT/FT registry, not only the rows
-    // that happened to be entered. Missing an entire tank in both opening and
-    // closing must never produce a falsely complete working-loss result.
-    const masterStorages=new Set(master.map(r=>code(r.code)).filter(Boolean));
-    const dailyStorages=masterStorages.size?masterStorages:new Set([...openings,...closings].map(r=>code(r.storage)));
+    // Every currently active Master tank is mandatory, even if both
+    // snapshots are missing. Historical/inactive tanks remain in scope only
+    // when they actually appear in this day's Opening/Closing rows.
+    // This preserves historical reporting without hiding a missing active tank.
+    const activeMasterStorages=new Set(master.filter(r=>r.active!==false).map(r=>code(r.code)).filter(Boolean));
+    const historicalStorages=new Set([...openings,...closings].map(r=>code(r.storage)).filter(Boolean));
+    const dailyStorages=new Set([...activeMasterStorages,...historicalStorages]);
     const validShifts=![...openings,...closings,...movements,...fuels].some(r=>![1,2].includes(shift(r.shift)));
     for(const sh of [1,2]){
       let workingLoss=0,usage=0,complete=validShifts;

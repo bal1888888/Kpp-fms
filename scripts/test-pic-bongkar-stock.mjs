@@ -13,7 +13,9 @@ test('PIC bongkar sees only the stock workflow it needs',()=>{
   assert.doesNotMatch(s,/\.pic-transfer-mode \.movement-panel/);
   assert.match(s,/Penerimaan Solar dari Transportir/);
   assert.match(s,/Pergerakan \/ Transfer Antar Storage/);
-  assert.match(s,/PIC TRANSFER \/ BONGKAR: catat penerimaan transporter, transfer antar storage, pantau pergerakan fuel/);
+  assert.match(s,/duty_type==="PIC_TRANSFER"/);
+  assert.match(s,/picTransfer\?"PIC MT":"FUELMAN FT"/);
+  assert.match(s,/classList\.toggle\("pic-transfer-mode",picTransfer\)/);
   assert.match(s,/onclick="saveReceipt\(\)"/);
   assert.match(s,/onclick="saveTransfer\(\)"/);
   assert.match(s,/id="movementBody"/);

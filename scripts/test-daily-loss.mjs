@@ -75,7 +75,7 @@ test('measured transfer is counted once and duplicate fuel ignored; revised ledg
  f.fuels.push({shift:2,fuel_truck:'FT0073',fuel:5});assert.equal(api().calculate(f).working.qty,20);
 });
 test('historical FT codes and warehouse mapping supported; unmapped fuel blocks working total',()=>{
- const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02',active:false},{code:'MT99',active:true}];
+ const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02',active:false}];
  f.fuels[0].fuel_truck='';f.fuels[0].wh='FT02';assert.equal(api().calculate(f).working.qty,25);
  f.fuels[0].wh='UNKNOWN';assert.equal(api().calculate(f).working.status,'incomplete');
 });
@@ -101,6 +101,13 @@ test('query errors do not masquerade as zero loss',async()=>{
 test('a tank present in either shift requires both daily snapshots in both shifts',()=>{
  const f=fixture();f.openings.push({shift:1,storage:'MT01',qty:500});f.closings.push({shift:1,storage:'MT01',actual_qty:500});
  const r=api().calculate(f);assert.equal(r.working.status,'incomplete');assert.equal(r.working.qty,null);
+});
+test('an active Master tank missing from both snapshots keeps Working Loss incomplete',()=>{
+ const f=fixture();
+ f.master=[{code:'FT0073',active:true},{code:'MT01',active:true}];
+ const r=api().calculate(f);
+ assert.equal(r.working.status,'incomplete');
+ assert.equal(r.working.qty,null);
 });
 test('explicit missing FT cannot be silently replaced by warehouse fallback',()=>{
  const f=fixture();f.master=[{code:'FT0073',storage_type:'FT',warehouse:'WH FT02'}];
@@ -159,13 +166,19 @@ test('Dashboard combines MTD supply with H-1 working total and independent shift
  assert.equal(typeof api().calculateDashboard,'function');
  const r=api().calculateDashboard(periodFixture());
  assert.equal(r.supply.qty,-10000);assert.equal(r.supply.percent,-50);
- assert.equal(r.workingDate,'2026-10-23');assert.equal(r.working.qty,10);
- assert.equal(r.workingByShift[1].qty,20);assert.equal(r.workingByShift[1].percent,2.5);
- assert.equal(r.workingByShift[2].qty,-10);assert.equal(r.workingByShift[2].percent,-10);
+ assert.equal(r.workingDate,'2026-10-23');
+ // Dashboard keeps MTD aggregates separate from the selected H-1 daily result.
+ assert.equal(r.working.qty,35);assert.equal(r.working.percent,2.692308);
+ assert.equal(r.dailyWorking.qty,10);
+ assert.equal(r.dailyWorkingByShift[1].qty,20);assert.equal(r.dailyWorkingByShift[1].percent,2.5);
+ assert.equal(r.dailyWorkingByShift[2].qty,-10);assert.equal(r.dailyWorkingByShift[2].percent,-10);
 });
 test('missing older closing does not hide completed H-1 working results',()=>{
  const f=periodFixture();f.closings=f.closings.filter(r=>r.tanggal===f.endDate);
- const r=api().calculateDashboard(f);assert.equal(r.working.status,'complete');assert.equal(r.working.qty,10);assert.equal(r.supply.qty,-10000);
+ const r=api().calculateDashboard(f);
+ assert.equal(r.working.status,'incomplete'); // MTD remains incomplete because an older day is missing.
+ assert.equal(r.dailyWorking.status,'complete'); // H-1 is independently complete.
+ assert.equal(r.dailyWorking.qty,10);assert.equal(r.supply.qty,-10000);
 });
 
 test('one DO split across MT and FT uses DO only once; unfinished DO never generates fake loss',()=>{

@@ -69,15 +69,17 @@ test('live Dashboard uses active operational shift, not yesterday; safe 30s refr
   assert.match(cc,/visibilitychange/);
   assert.match(cc,/BELUM TERSINKRON/);
   assert.match(cc,/window\.KPPDashboardLiveStock=snapshot/);
-  assert.match(html,/dashboard-command-center-v2\.js\?v=20261025-live-stock30-v1/);
+  assert.match(html,/dashboard-command-center-v2\.js\?v=20261128-ito-average-mtd2/);
   assert.match(html,/KPPDashboardStockTrendHistory=stockTrendPoints/);
   assert.match(html,/KPPDashboardSyncLiveStockTrend\?\.\(\)/);
   assert.doesNotMatch(cc,/const tanggal=window\.KPPTime\.addDays\(today,-1\)/);
 });
-test('live top stock, per-tank and ITO share the same snapshot and yesterday usage denominator',()=>{
+test('live top stock, per-tank and ITO share the same snapshot and MTD average-usage denominator',()=>{
   assert.match(cc,/displayLiveSnapshot\(snapshot\)/);
   assert.match(cc,/renderStorage\(snapshot\)/);
-  assert.match(cc,/snapshot\.total\/usage/);
+  assert.match(cc,/window\.KPPDashboardMetrics\?\.avgDailyUsage/);
+  assert.match(cc,/snapshot\.total\/safeUsage/);
+  assert.doesNotMatch(cc,/snapshot\.total\/usageYesterday/);
   assert.match(cc,/if\(liveSnapshot\)displayLiveSnapshot\(liveSnapshot\)/);
   assert.match(cc,/stock\.map|snapshot\.storageRows\.map/);
   assert.match(cc,/history\.filter\(x=>x\.tanggal<liveSnapshot\.tanggal\)\.slice\(-4\)/);
