@@ -167,13 +167,14 @@
   function calculateDashboard(input){
     const period=calculatePeriod(input);
     const daily=calculate({...input,date:input.endDate});
-    return {...period,workingDate:input.endDate,working:daily.working,workingByShift:daily.workingByShift};
+    // Keep period aggregates intact; expose the selected day's metrics separately.
+    return {...period,workingDate:input.endDate,dailyWorking:daily.working,dailyWorkingByShift:daily.workingByShift};
   }
   async function loadDashboard(db,startDate,endDate,fuels,master){
     return calculateDashboard({startDate,endDate,...await loadRows(db,startDate,endDate),fuels,master});
   }
   function unavailableDashboard(startDate,endDate,message='Memuat...'){
-    return {...unavailablePeriod(startDate,endDate,message),workingDate:endDate};
+    return {...unavailablePeriod(startDate,endDate,message),workingDate:endDate,dailyWorking:{...incomplete(),note:message},dailyWorkingByShift:{1:{...incomplete(),note:message},2:{...incomplete(),note:message}}};
   }
   function unavailablePeriod(startDate,endDate,message='Memuat...'){
     return {startDate,endDate,...unavailable(endDate,message),workingByShift:{1:{...incomplete(),note:message},2:{...incomplete(),note:message}}};
@@ -184,6 +185,13 @@
     return `${state} ${fmt(Math.abs(m.qty))} LTR (${m.percent===null?'—':fmt(Math.abs(m.percent))+'%'})`;
   }
   function reportText(result){
+    if(result.dailyWorking){
+      const mtd1=result.workingByShift?.[1]||incomplete();
+      const mtd2=result.workingByShift?.[2]||incomplete();
+      const daily1=result.dailyWorkingByShift?.[1]||incomplete();
+      const daily2=result.dailyWorkingByShift?.[2]||incomplete();
+      return `LOSS MTD (${dateLabel(result.startDate)} – ${dateLabel(result.endDate)})\nSUPPLY LOSS MTD = ${valueText(result.supply)}\nWORKING LOSS MTD = ${valueText(result.working)}\n  SHIFT 1 MTD = ${valueText(mtd1)}\n  SHIFT 2 MTD = ${valueText(mtd2)}\n\nLOSS HARIAN (${dateLabel(result.workingDate)} • Shift 1 + 2)\nWORKING LOSS HARIAN = ${valueText(result.dailyWorking)}\n  SHIFT 1 = ${valueText(daily1)}\n  SHIFT 2 = ${valueText(daily2)}`;
+    }
     const shift1=result.workingByShift?.[1]||result.working;
     const shift2=result.workingByShift?.[2]||result.working;
     return `LOSS HARIAN (${dateLabel(result.date)} • Shift 1 + 2)\nSUPPLY LOSS = ${valueText(result.supply)}\nWORKING LOSS = ${valueText(result.working)}\n  SHIFT 1 = ${valueText(shift1)}\n  SHIFT 2 = ${valueText(shift2)}`;
@@ -199,18 +207,24 @@
     heading.textContent=isPeriod
       ? `Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)}`
       : `Loss Harian • ${dateLabel(result.date)} • Shift 1 + 2`;
-    if(dailyWorking)heading.textContent=`Supply MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)} | Working Harian • ${dateLabel(result.workingDate)}`;
+    if(dailyWorking)heading.textContent=`Supply & Working Loss MTD • ${dateLabel(result.startDate)} – ${dateLabel(result.endDate)} | Working Harian • ${dateLabel(result.workingDate)}`;
     host.appendChild(heading);
 
     const grid=doc.createElement('div');
     grid.className='daily-loss-grid';
     host.appendChild(grid);
-    const cards=isPeriod?[
+    const cards=isPeriod?(dailyWorking?[
       ['Supply Loss MTD',result.supply,'% dari total Qty DO MTD','⛽','supply'],
-      [dailyWorking?'Total Working Loss Harian':'Total Working Loss MTD',result.working,dailyWorking?'Shift 1 + 2 • % dari total pemakaian harian':'Shift 1 + 2 • % dari total pemakaian MTD','Σ','working-total'],
-      [dailyWorking?'Working Loss Harian • Shift 1':'Working Loss MTD • Shift 1',result.workingByShift[1],dailyWorking?'% dari pemakaian Shift 1 harian':'% dari pemakaian Shift 1 MTD','1','working-1'],
-      [dailyWorking?'Working Loss Harian • Shift 2':'Working Loss MTD • Shift 2',result.workingByShift[2],dailyWorking?'% dari pemakaian Shift 2 harian':'% dari pemakaian Shift 2 MTD','2','working-2']
+      ['Working Loss MTD',result.working,'Akumulasi Shift 1 + 2 • % dari pemakaian MTD','Σ','working-total'],
+      ['Total Working Loss Harian',result.dailyWorking,'% dari total pemakaian harian','Σ','working-total'],
+      ['Working Loss Harian • Shift 1',result.dailyWorkingByShift?.[1]||incomplete(),'% dari pemakaian Shift 1 harian','1','working-1'],
+      ['Working Loss Harian • Shift 2',result.dailyWorkingByShift?.[2]||incomplete(),'% dari pemakaian Shift 2 harian','2','working-2']
     ]:[
+      ['Supply Loss MTD',result.supply,'% dari total Qty DO MTD','⛽','supply'],
+      ['Total Working Loss MTD',result.working,'Shift 1 + 2 • % dari total pemakaian MTD','Σ','working-total'],
+      ['Working Loss MTD • Shift 1',result.workingByShift[1],'% dari pemakaian Shift 1 MTD','1','working-1'],
+      ['Working Loss MTD • Shift 2',result.workingByShift[2],'% dari pemakaian Shift 2 MTD','2','working-2']
+    ]):[
       ['Supply Loss',result.supply,'Total Flowmeter − Qty DO (per DO selesai) • % dari Qty DO','⛽','supply'],
       ['Working Loss • Total',result.working,'Shift 1 + 2 • % dari total pemakaian harian','Σ','working-total'],
       ['Working Loss • Shift 1',result.workingByShift?.[1]||result.working,'Stock sistem − closing fisik • % pemakaian Shift 1','1','working-1'],
