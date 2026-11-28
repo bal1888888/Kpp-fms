@@ -200,6 +200,16 @@
     const shift2=result.workingByShift?.[2]||result.working;
     return `LOSS HARIAN (${dateLabel(result.date)} • Shift 1 + 2)\nSUPPLY LOSS = ${valueText(result.supply)}\nWORKING LOSS = ${valueText(result.working)}\n  SHIFT 1 = ${valueText(shift1)}\n  SHIFT 2 = ${valueText(shift2)}`;
   }
+  function iconSvg(kind,title){
+    const common='viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+    if(kind==='supply')return '<svg '+common+'><path d="M5 21V4.8A1.8 1.8 0 0 1 6.8 3h7.4A1.8 1.8 0 0 1 16 4.8V21"/><path d="M4 21h14M8 7h6v5H8zM16 8h2l2 2v6a2 2 0 0 1-4 0"/><path d="M18 13h2"/></svg>';
+    if(kind==='working-1')return '<svg '+common+'><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>';
+    if(kind==='working-2')return '<svg '+common+'><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/><path d="m16.5 4 .5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/></svg>';
+    if(kind==='working-total' && /MTD/i.test(title))return '<svg '+common+'><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="3"/><path d="M18 15.5v1.7l1.1.7"/></svg>';
+    if(kind==='working-total')return '<svg '+common+'><path d="M4 19V5m0 14h17"/><path d="m7 15 4-4 3 2 6-7"/><path d="M16 6h4v4"/></svg>';
+    return '<svg '+common+'><path d="M4 19V5m0 14h16"/><path d="M7 15V9m4 6V5m4 10v-4m4 4V7"/></svg>';
+  }
+
   function render(host,result){
     if(!host)return;
     const doc=host.ownerDocument;
@@ -244,7 +254,7 @@
       top.className='daily-loss-top';
       const icon=doc.createElement('div');
       icon.className='daily-loss-icon';
-      icon.textContent=iconText;
+      icon.innerHTML=iconSvg(kind,title);
       icon.setAttribute('aria-hidden','true');
       const label=doc.createElement('div');
       label.className='daily-loss-label';
